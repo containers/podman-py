@@ -37,6 +37,8 @@ gce_instance:
 
 # Update metadata on VM images referenced by this repository state
 meta_task:
+    # see bors.toml
+    skip: $CIRRUS_BRANCH =~ ".*\.tmp"
 
     container:
         image: "quay.io/libpod/imgts:master"  # maintained in libpod repo
@@ -64,6 +66,10 @@ gating_task:
 
     # Only run this on PRs, never during post-merge testing.  This is also required
     # for proper setting of EPOCH_TEST_COMMIT value, required by validation tools.
+    
+    # see bors.toml
+    skip: $CIRRUS_BRANCH =~ ".*\.tmp"
+
     only_if: $CIRRUS_BRANCH != $DEST_BRANCH
 
     env:
@@ -85,9 +91,12 @@ gating_task:
         - make unittest
 
 success_task:
-
     # This task is a required-pass in github settings,
     # it blocks PRs from merging if a depends_on task fails
+    
+    # see bors.toml
+    skip: $CIRRUS_BRANCH =~ ".*\.tmp"
+
     only_if: $CIRRUS_BRANCH != $DEST_BRANCH
 
     # ignores any dependent task conditions
