@@ -39,4 +39,4 @@ timeout_sec = 7200
 block_labels = ["wip", "hold"]
 
 # The number of required `bors r+` needed for a PR to merge
-required_approvals = 1
+required_approvals = 0
