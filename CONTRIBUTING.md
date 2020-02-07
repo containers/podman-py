@@ -1,11 +1,10 @@
 # How to contribute
 
-Thank you in your interest in this project.  We need your help to make it successful. 
+Thank you in your interest in the podman-py project.  We need your help to make it successful. 
 
 You may also want to look at:
  - https://github.com/containers/libpod
  - https://podman.readthedocs.io/en/latest/Reference.html
- - 
  
 ## Reporting Issues
 Before reporting an issue, check our backlog of open issues to see if someone else has already reported it. If so, feel free to add your scenario, or additional information, to the discussion. Or simply "subscribe" to it to be notified when it is updated.
