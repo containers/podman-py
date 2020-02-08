@@ -1,4 +1,8 @@
-"""images provides the operations against images for a Podman service."""
+"""
+Provides the operations against images for a Podman service.
+
+From upstream.
+"""
 import json
 import logging
 
