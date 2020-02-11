@@ -76,6 +76,7 @@ gating_task:
         CIRRUS_WORKING_DIR: "/usr/src/podman-py"
         GOPATH: "/go"
         GOSRC: "/go/src/github.com/containers/podman-py"
+        PATH: "$PATH:/go/bin"
 
     # Runs within Cirrus's "community cluster"
     container:
@@ -87,7 +88,8 @@ gating_task:
 
     gate_script:
         - make
-        - make lint
+        - go get github.com/vbatts/git-validation
+        - make validate
         - make unittest
 
 success_task:
