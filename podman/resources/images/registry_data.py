@@ -1,55 +1,54 @@
+from typing import Union, TYPE_CHECKING
+
+from ..model import Model
+from ...errors import InvalidArgument
+from ...utils import parse_repository_tag
+from .utils import normalize_platform
+
+if TYPE_CHECKING:
+    from .image import Image
+
+
 class RegistryData(Model):
-    """
-    Image metadata stored on the registry, including available platforms.
-    """
+    """ Image metadata stored on the registry, including available platforms. """
     def __init__(self, image_name, *args, **kwargs):
-        super(RegistryData, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.image_name = image_name
 
     @property
-    def id(self):
-        """
-        The ID of the object.
-        """
+    def id(self) -> str:
+        """ The ID of the object. """
         return self.attrs['Descriptor']['digest']
 
     @property
-    def short_id(self):
-        """
-        The ID of the image truncated to 10 characters, plus the ``sha256:``
-        prefix.
-        """
+    def short_id(self) -> str:
+        """ The ID of the image truncated to 10 characters, plus the ``sha256:`` prefix. """
         return self.id[:17]
 
-    def pull(self, platform=None):
+    def pull(self, platform: str = None) -> Image:
         """
         Pull the image digest.
 
         Args:
-            platform (str): The platform to pull the image for.
-            Default: ``None``
+            platform: The platform to pull the image for.
 
-        Returns:
-            (:py:class:`Image`): A reference to the pulled image.
+        Returns: A reference to the pulled image.
         """
         repository, _ = parse_repository_tag(self.image_name)
         return self.collection.pull(repository, tag=self.id, platform=platform)
 
-    def has_platform(self, platform):
+    def has_platform(self, platform: Union[str, dict]) -> bool:
         """
-        Check whether the given platform identifier is available for this
-        digest.
+        Check whether the given platform identifier is available for this digest.
 
         Args:
-            platform (str or dict): A string using the ``os[/arch[/variant]]``
-                format, or a platform dictionary.
+            platform: A string using the ``os[/arch[/variant]]`` format, or
+                a platform dictionary.
 
-        Returns:
-            (bool): ``True`` if the platform is recognized as available,
-            ``False`` otherwise.
+        Returns: ``True`` if the platform is recognized as available, ``False`` otherwise.
 
         Raises:
-            :py:class:`docker.errors.InvalidArgument`
+            :py:class:`podman.errors.InvalidArgument`
                 If the platform argument is not a valid descriptor.
         """
         if platform and not isinstance(platform, dict):

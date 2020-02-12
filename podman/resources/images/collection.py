@@ -1,38 +1,52 @@
+""" Represents the entirety of the images on the server. """
+import itertools
+import re
+import warnings
+from typing import List
+
+from .image import Image
+from .registry_data import RegistryData
+from ..collection import Collection
+from ...errors import BuildError, ImageLoadError
+from ...utils import parse_repository_tag
+from ...utils.json_stream import json_stream
+
+
 class ImageCollection(Collection):
     model = Image
 
     def build(self, **kwargs):
         """
-        Build an image and return it. Similar to the ``docker build``
+        Build an image and return it. Similar to the ``podman build``
         command. Either ``path`` or ``fileobj`` must be set.
 
-        If you have a tar file for the Docker build context (including a
-        Dockerfile) already, pass a readable file-like object to ``fileobj``
+        If you have a tar file for the Podman build context (including a
+        Podmanfile) already, pass a readable file-like object to ``fileobj``
         and also pass ``custom_context=True``. If the stream is compressed
         also, set ``encoding`` to the correct value (e.g ``gzip``).
 
         If you want to get the raw output of the build, use the
-        :py:meth:`~docker.api.build.BuildApiMixin.build` method in the
+        :py:meth:`~podman.api.build.BuildApiMixin.build` method in the
         low-level API.
 
         Args:
-            path (str): Path to the directory containing the Dockerfile
-            fileobj: A file object to use as the Dockerfile. (Or a file-like
+            path (str): Path to the directory containing the Podmanfile
+            fileobj: A file object to use as the Podmanfile. (Or a file-like
                 object)
             tag (str): A tag to add to the final image
             quiet (bool): Whether to return the status
             nocache (bool): Don't use the cache when set to ``True``
-            rm (bool): Remove intermediate containers. The ``docker build``
+            rm (bool): Remove intermediate containers. The ``podman build``
                 command now defaults to ``--rm=true``, but we have kept the old
                 default of `False` to preserve backward compatibility
             timeout (int): HTTP timeout
             custom_context (bool): Optional if using ``fileobj``
             encoding (str): The encoding for a stream. Set to ``gzip`` for
                 compressing
-            pull (bool): Downloads any updates to the FROM image in Dockerfiles
+            pull (bool): Downloads any updates to the FROM image in Podmanfiles
             forcerm (bool): Always remove intermediate containers, even after
                 unsuccessful builds
-            dockerfile (str): path within the build context to the Dockerfile
+            podmanfile (str): path within the build context to the Podmanfile
             buildargs (dict): A dictionary of build arguments
             container_limits (dict): A dictionary of limits applied to each
                 container created by the build process. Valid keys:
@@ -49,7 +63,7 @@ class ImageCollection(Collection):
             cache_from (list): A list of images used for build cache
                 resolution
             target (str): Name of the build-stage to build in a multi-stage
-                Dockerfile
+                Podmanfile
             network_mode (str): networking mode for the run commands during
                 build
             squash (bool): Squash the resulting images layers into a
@@ -59,8 +73,8 @@ class ImageCollection(Collection):
             platform (str): Platform in the format ``os[/arch[/variant]]``.
             isolation (str): Isolation technology used during build.
                 Default: `None`.
-            use_config_proxy (bool): If ``True``, and if the docker client
-                configuration file (``~/.docker/config.json`` by default)
+            use_config_proxy (bool): If ``True``, and if the podman client
+                configuration file (``~/.podman/config.json`` by default)
                 contains a proxy configuration, the corresponding environment
                 variables will be set in the container being built.
 
@@ -70,15 +84,15 @@ class ImageCollection(Collection):
                 build logs as JSON-decoded objects.
 
         Raises:
-            :py:class:`docker.errors.BuildError`
+            :py:class:`podman.errors.BuildError`
                 If there is an error during the build.
-            :py:class:`docker.errors.APIError`
+            :py:class:`podman.errors.APIError`
                 If the server returns any other error.
             ``TypeError``
                 If neither ``path`` nor ``fileobj`` is specified.
         """
         resp = self.client.api.build(**kwargs)
-        if isinstance(resp, six.string_types):
+        if isinstance(resp, str):
             return self.get(resp)
         last_event = None
         image_id = None
@@ -95,7 +109,7 @@ class ImageCollection(Collection):
                     image_id = match.group(2)
             last_event = chunk
         if image_id:
-            return (self.get(image_id), result_stream)
+            return self.get(image_id), result_stream
         raise BuildError(last_event or 'Unknown', result_stream)
 
     def get(self, name):
@@ -109,9 +123,9 @@ class ImageCollection(Collection):
             (:py:class:`Image`): The image.
 
         Raises:
-            :py:class:`docker.errors.ImageNotFound`
+            :py:class:`podman.errors.ImageNotFound`
                 If the image does not exist.
-            :py:class:`docker.errors.APIError`
+            :py:class:`podman.errors.APIError`
                 If the server returns an error.
         """
         return self.prepare_model(self.client.api.inspect_image(name))
@@ -130,7 +144,7 @@ class ImageCollection(Collection):
             (:py:class:`RegistryData`): The data object.
 
         Raises:
-            :py:class:`docker.errors.APIError`
+            :py:class:`podman.errors.APIError`
                 If the server returns an error.
         """
         return RegistryData(
@@ -140,44 +154,43 @@ class ImageCollection(Collection):
             collection=self,
         )
 
-    def list(self, name=None, all=False, filters=None):
+    def list(self, name: str = None, all: bool = False, filters: bool = None) -> List[Image]:
         """
         List images on the server.
 
         Args:
-            name (str): Only show images belonging to the repository ``name``
-            all (bool): Show intermediate image layers. By default, these are
+            name: Only show images belonging to the repository ``name``
+            all: Show intermediate image layers. By default, these are
                 filtered out.
-            filters (dict): Filters to be processed on the image list.
+            filters: Filters to be processed on the image list.
                 Available filters:
                 - ``dangling`` (bool)
-                - `label` (str|list): format either ``"key"``, ``"key=value"``
-                    or a list of such.
+                - `label`: format either ``"key"``, ``"key=value"`` or a list of such.
+                - `reference`: format (<image-name>[:<tag>])
+                - `since`: (<image-name>[:<tag>], <image id> or <image@digest>
 
-        Returns:
-            (list of :py:class:`Image`): The images.
+        Returns: List of :py:class:`Image`
 
         Raises:
-            :py:class:`docker.errors.APIError`
+            :py:class:`podman.errors.APIError`
                 If the server returns an error.
         """
         resp = self.client.api.images(name=name, all=all, filters=filters)
         return [self.get(r["Id"]) for r in resp]
 
-    def load(self, data):
+    def load(self, data: bytes) -> List[Image]:
         """
         Load an image that was previously saved using
-        :py:meth:`~docker.models.images.Image.save` (or ``docker save``).
-        Similar to ``docker load``.
+        :py:meth:`~podman.models.images.Image.save` (or ``podman save``).
+        Similar to ``podman load``.
 
         Args:
-            data (binary): Image data to be loaded.
+            data: Image data to be loaded.
 
-        Returns:
-            (list of :py:class:`Image`): The images.
+        Returns: The Images.
 
         Raises:
-            :py:class:`docker.errors.APIError`
+            :py:class:`podman.errors.APIError`
                 If the server returns an error.
         """
         resp = self.client.api.load_image(data)
@@ -199,12 +212,12 @@ class ImageCollection(Collection):
     def pull(self, repository, tag=None, **kwargs):
         """
         Pull an image of the given name and return it. Similar to the
-        ``docker pull`` command.
+        ``podman pull`` command.
         If no tag is specified, all tags from that repository will be
         pulled.
 
         If you want to get the raw pull output, use the
-        :py:meth:`~docker.api.image.ImageApiMixin.pull` method in the
+        :py:meth:`~podman.api.image.ImageApiMixin.pull` method in the
         low-level API.
 
         Args:
@@ -221,10 +234,13 @@ class ImageCollection(Collection):
                 of :py:class:`Image` objects belonging to this repository.
 
         Raises:
-            :py:class:`docker.errors.APIError`
+            :py:class:`podman.errors.APIError`
                 If the server returns an error.
 
         Example:
+
+            >>> from podman import PodmanClient
+            >>> client = PodmanClient()
 
             >>> # Pull the image tagged `latest` in the busybox repo
             >>> image = client.images.pull('busybox:latest')
@@ -258,21 +274,20 @@ class ImageCollection(Collection):
 
     def push(self, repository, tag=None, **kwargs):
         return self.client.api.push(repository, tag=tag, **kwargs)
-    push.__doc__ = APIClient.push.__doc__
+    # push.__doc__ = APIClient.push.__doc__
 
     def remove(self, *args, **kwargs):
         self.client.api.remove_image(*args, **kwargs)
-    remove.__doc__ = APIClient.remove_image.__doc__
+    # remove.__doc__ = APIClient.remove_image.__doc__
 
     def search(self, *args, **kwargs):
         return self.client.api.search(*args, **kwargs)
-    search.__doc__ = APIClient.search.__doc__
+    # search.__doc__ = APIClient.search.__doc__
 
     def prune(self, filters=None):
         return self.client.api.prune_images(filters=filters)
-    prune.__doc__ = APIClient.prune_images.__doc__
+    # prune.__doc__ = APIClient.prune_images.__doc__
 
     def prune_builds(self, *args, **kwargs):
         return self.client.api.prune_builds(*args, **kwargs)
-    prune_builds.__doc__ = APIClient.prune_builds.__doc__
-
+    # prune_builds.__doc__ = APIClient.prune_builds.__doc__

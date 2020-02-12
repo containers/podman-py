@@ -1,4 +1,4 @@
 """Podman service module."""
-from podman.api_connection import ApiConnection
+from .client import PodmanClient
 
-__ALL__ = ["ApiConnection"]
+__ALL__ = ["PodmanClient"]
