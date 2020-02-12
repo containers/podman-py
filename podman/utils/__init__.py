@@ -6,8 +6,8 @@ from .utils import (
     parse_repository_tag, parse_host,
     kwargs_from_env, convert_filters, datetime_to_timestamp,
     create_host_config, parse_bytes, parse_env_file, version_lt,
-    version_gte, decode_json_header, split_command, create_ipam_config,
-    create_ipam_pool, parse_devices, normalize_links, convert_service_networks,
-    format_environment, format_extra_hosts
+    version_gte, decode_json_header, split_command, parse_devices,
+    normalize_links, convert_service_networks, format_environment,
+    format_extra_hosts
 )
 

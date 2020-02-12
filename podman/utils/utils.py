@@ -1,3 +1,4 @@
+""" Misc utils functions. """
 import base64
 import json
 import os
@@ -6,64 +7,53 @@ import shlex
 import string
 from datetime import datetime
 from distutils.version import StrictVersion
+from urllib.parse import splitnport, urlparse
 
 from .. import errors
-# from .. import tls
+from .. import tls
 from ..constants import DEFAULT_HTTP_HOST
 from ..constants import DEFAULT_UNIX_SOCKET
 from ..constants import DEFAULT_NPIPE
 from ..constants import BYTE_UNITS
 
-from urllib.parse import splitnport, urlparse
-
-
-def create_ipam_pool(*args, **kwargs):
-    raise errors.DeprecatedMethod(
-        'utils.create_ipam_pool has been removed. Please use a '
-        'docker.types.IPAMPool object instead.'
-    )
-
-
-def create_ipam_config(*args, **kwargs):
-    raise errors.DeprecatedMethod(
-        'utils.create_ipam_config has been removed. Please use a '
-        'docker.types.IPAMConfig object instead.'
-    )
-
 
 def decode_json_header(header):
+    """ Decode a json header. """
     data = base64.b64decode(header)
     data = data.decode('utf-8')
     return json.loads(data)
 
 
 def compare_version(v1, v2):
-    """Compare docker versions
-
-    >>> v1 = '1.9'
-    >>> v2 = '1.10'
-    >>> compare_version(v1, v2)
-    1
-    >>> compare_version(v2, v1)
-    -1
-    >>> compare_version(v2, v2)
-    0
     """
-    s1 = StrictVersion(v1)
-    s2 = StrictVersion(v2)
-    if s1 == s2:
+    Compare podman versions
+
+    Examples:
+        >>> v1 = '1.9'
+        >>> v2 = '1.10'
+        >>> compare_version(v1, v2)
+        1
+        >>> compare_version(v2, v1)
+        -1
+        >>> compare_version(v2, v2)
+        0
+    """
+    strict1 = StrictVersion(v1)
+    strict2 = StrictVersion(v2)
+    if strict1 == strict2:
         return 0
-    elif s1 > s2:
+    if strict1 > strict2:
         return -1
-    else:
-        return 1
+    return 1
 
 
 def version_lt(v1, v2):
+    """ Decide if v1 is less than v2. """
     return compare_version(v1, v2) > 0
 
 
 def version_gte(v1, v2):
+    """ Decide if v1 is greater than v2. """
     return not version_lt(v1, v2)
 
 
@@ -96,6 +86,7 @@ def _convert_port_binding(binding):
 
 
 def convert_port_bindings(port_bindings: dict) -> dict:
+    """ Append `/tcp` to the port binding if not protocol is specified """
     result = {}
     for k, v in port_bindings.items():
         key = str(k)
@@ -109,6 +100,7 @@ def convert_port_bindings(port_bindings: dict) -> dict:
 
 
 def convert_volume_binds(binds):
+    """ Correctly format a set of volume bindings. """
     if isinstance(binds, list):
         return binds
 
@@ -121,7 +113,7 @@ def convert_volume_binds(binds):
             if 'ro' in v and 'mode' in v:
                 raise ValueError(
                     'Binding cannot contain both "ro" and "mode": {}'
-                    .format(repr(v))
+                        .format(repr(v))
                 )
 
             bind = v['bind']
@@ -146,13 +138,14 @@ def convert_volume_binds(binds):
 
 
 def convert_tmpfs_mounts(tmpfs):
+    """ Correctly format a set of tmpfs mounts. """
     if isinstance(tmpfs, dict):
         return tmpfs
 
     if not isinstance(tmpfs, list):
         raise ValueError(
             'Expected tmpfs value to be either a list or a dict, found: {}'
-            .format(type(tmpfs).__name__)
+                .format(type(tmpfs).__name__)
         )
 
     result = {}
@@ -167,7 +160,7 @@ def convert_tmpfs_mounts(tmpfs):
         else:
             raise ValueError(
                 "Expected item in tmpfs list to be a string, found: {}"
-                .format(type(mount).__name__)
+                    .format(type(mount).__name__)
             )
 
         result[name] = options
@@ -175,20 +168,22 @@ def convert_tmpfs_mounts(tmpfs):
 
 
 def convert_service_networks(networks):
+    """ Correctly format a set of service networks. """
     if not networks:
         return networks
     if not isinstance(networks, list):
         raise TypeError('networks parameter must be a list.')
 
     result = []
-    for n in networks:
-        if isinstance(n, str):
-            n = {'Target': n}
-        result.append(n)
+    for network in networks:
+        if isinstance(network, str):
+            network = {'Target': network}
+        result.append(network)
     return result
 
 
 def parse_repository_tag(repo_name):
+    """ Split a repository tag into its parts. """
     parts = repo_name.rsplit('@', 1)
     if len(parts) == 2:
         return tuple(parts)
@@ -198,8 +193,8 @@ def parse_repository_tag(repo_name):
     return repo_name, None
 
 
-def parse_host(addr, is_win32=False, tls=False):
-    path = ''
+def parse_host(addr, is_win32=False, tls=False):  # pylint: disable=R0912
+    """ Parse a host string into a more detailed format. """
     port = None
     host = None
 
@@ -223,7 +218,7 @@ def parse_host(addr, is_win32=False, tls=False):
 
     # These protos are valid aliases for our library but not for the
     # official spec
-    if proto == 'http' or proto == 'https':
+    if proto in ('http', 'https'):
         tls = proto == 'https'
         proto = 'tcp'
     elif proto == 'http+unix':
@@ -254,12 +249,12 @@ def parse_host(addr, is_win32=False, tls=False):
             'Invalid bind address format: no path allowed for this protocol:'
             ' {}'.format(addr)
         )
-    else:
-        path = parsed_url.path
-        if proto == 'unix' and parsed_url.hostname is not None:
-            # For legacy reasons, we consider unix://path
-            # to be valid and equivalent to unix:///path
-            path = '/'.join((parsed_url.hostname, path))
+
+    path = parsed_url.path
+    if proto == 'unix' and parsed_url.hostname is not None:
+        # For legacy reasons, we consider unix://path
+        # to be valid and equivalent to unix:///path
+        path = '/'.join((parsed_url.hostname, path))
 
     if proto in ('tcp', 'ssh'):
         # parsed_url.hostname strips brackets from IPv6 addresses,
@@ -288,6 +283,7 @@ def parse_host(addr, is_win32=False, tls=False):
 
 
 def parse_devices(devices):
+    """ Parse a set of devices. """
     device_list = []
     for device in devices:
         if isinstance(device, dict):
@@ -317,6 +313,7 @@ def parse_devices(devices):
 
 
 def kwargs_from_env(ssl_version=None, assert_hostname=None, environment=None):
+    """ Get information from docker environment. """
     if not environment:
         environment = os.environ
     host = environment.get('DOCKER_HOST')
@@ -362,6 +359,7 @@ def kwargs_from_env(ssl_version=None, assert_hostname=None, environment=None):
 
 
 def convert_filters(filters: dict):
+    """ Convert a set of filters. """
     result = {}
     for k, v in filters.items():
         if isinstance(v, bool):
@@ -381,25 +379,26 @@ def datetime_to_timestamp(dt):
     return delta.seconds + delta.days * 24 * 3600
 
 
-def parse_bytes(s):
-    if isinstance(s, (int, float)):
-        return s
-    if len(s) == 0:
+def parse_bytes(memory):
+    """ Convert amount of bytes with a suffix to a number. """
+    if isinstance(memory, (int, float)):
+        return memory
+    if len(memory) == 0:
         return 0
 
-    if s[-2:-1].isalpha() and s[-1].isalpha():
-        if s[-1] == "b" or s[-1] == "B":
-            s = s[:-1]
+    if memory[-2:-1].isalpha() and memory[-1].isalpha():
+        if memory[-1] == "b" or memory[-1] == "B":
+            memory = memory[:-1]
     units = BYTE_UNITS
-    suffix = s[-1].lower()
+    suffix = memory[-1].lower()
 
     # Check if the variable is a string representation of an int
     # without a units part. Assuming that the units are bytes.
     if suffix.isdigit():
-        digits_part = s
+        digits_part = memory
         suffix = 'b'
     else:
-        digits_part = s[:-1]
+        digits_part = memory[:-1]
 
     if suffix in units.keys() or suffix.isdigit():
         try:
@@ -411,18 +410,19 @@ def parse_bytes(s):
             )
 
         # Reconvert to long for the final result
-        s = int(digits * units[suffix])
+        memory = int(digits * units[suffix])
     else:
         raise errors.PodmanException(
             'The specified value for memory ({0}) should specify the'
             ' units. The postfix should be one of the `b` `k` `m` `g`'
-            ' characters'.format(s)
+            ' characters'.format(memory)
         )
 
-    return s
+    return memory
 
 
 def normalize_links(links) -> list:
+    """ Convert set of links to an appropriate string representation. """
     if isinstance(links, dict):
         links = links.items()
 
@@ -436,9 +436,8 @@ def parse_env_file(env_file):
     """
     environment = {}
 
-    with open(env_file, 'r') as f:
-        for line in f:
-
+    with open(env_file, 'r') as file:
+        for line in file:
             if line[0] == '#':
                 continue
 
@@ -459,12 +458,12 @@ def parse_env_file(env_file):
 
 
 def split_command(command: bytes):
-    # if six.PY2 and not isinstance(command, six.binary_type):
-    #     command = command.encode('utf-8')
+    """ Split given command into its parts. """
     return shlex.split(command)
 
 
 def format_environment(environment: dict):
+    """ Format environment dictionary to .env notation. """
     def format_env(key, value):
         if value is None:
             return key
@@ -472,11 +471,12 @@ def format_environment(environment: dict):
             value = value.decode('utf-8')
 
         return u'{key}={value}'.format(key=key, value=value)
+
     return [format_env(*var) for var in environment.items()]
 
 
 def format_extra_hosts(extra_hosts: dict, task=False):
-    # Use format dictated by Swarm API if container is part of a task
+    """ Use format dictated by Swarm API if container is part of a task. """
     if task:
         return [
             '{} {}'.format(v, k) for k, v in sorted(extra_hosts.items())
@@ -485,10 +485,3 @@ def format_extra_hosts(extra_hosts: dict, task=False):
     return [
         '{}:{}'.format(k, v) for k, v in sorted(extra_hosts.items())
     ]
-
-
-def create_host_config(self, *args, **kwargs):
-    raise errors.DeprecatedMethod(
-        'utils.create_host_config has been removed. Please use a '
-        'docker.types.HostConfig object instead.'
-    )

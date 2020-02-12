@@ -225,7 +225,6 @@ class AuthConfig(dict):
         config with full URLs are stripped down to hostnames before checking
         for a match. Returns None if no match was found.
         """
-
         if self.creds_store or self.cred_helpers:
             store_name = self.get_credential_store(registry)
             if store_name is not None:
@@ -318,25 +317,31 @@ class AuthConfig(dict):
         self['auths'][reg] = data
 
 
-def resolve_authconfig(authconfig, registry=None, credstore_env=None):
+def resolve_authconfig(authconfig: AuthConfig, registry=None, credstore_env=None):
+    """
+    Returns the authentication data from the given auth configuration for a
+    specific registry.
+    """
     if not isinstance(authconfig, AuthConfig):
         authconfig = AuthConfig(authconfig, credstore_env)
     return authconfig.resolve_authconfig(registry)
 
 
 def convert_to_hostname(url):
+    """ Extract the hostname from an url. """
     return url.replace('http://', '').replace('https://', '').split('/', 1)[0]
 
 
 def decode_auth(auth):
+    """ Decode authentication header. """
     if isinstance(auth, six.string_types):
         auth = auth.encode('ascii')
-    s = base64.b64decode(auth)
-    login, pwd = s.split(b':', 1)
+    login, pwd = base64.b64decode(auth).split(b':', 1)
     return login.decode('utf8'), pwd.decode('utf8')
 
 
 def encode_header(auth):
+    """ Encode authentication header. """
     auth_json = json.dumps(auth).encode('ascii')
     return base64.urlsafe_b64encode(auth_json)
 
@@ -358,6 +363,7 @@ def parse_auth(entries, raise_on_error=False):
 
 
 def load_config(config_path=None, config_dict=None, credstore_env=None):
+    """ Load authentication config from file. """
     return AuthConfig.load_config(config_path, config_dict, credstore_env)
 
 
@@ -365,8 +371,8 @@ def _load_legacy_config(config_file):
     log.debug("Attempting to parse legacy auth file format")
     try:
         data = []
-        with open(config_file) as f:
-            for line in f.readlines():
+        with open(config_file) as file:
+            for line in file.readlines():
                 data.append(line.strip().split(' = ')[1])
             if len(data) < 2:
                 # Not enough data
@@ -383,9 +389,8 @@ def _load_legacy_config(config_file):
                 'serveraddress': INDEX_URL,
             }
         }}
-    except Exception as e:
+    except Exception as e:  # pylint: disable=W0703
         log.debug(e)
-        pass
 
     log.debug("All parsing attempts failed - returning empty config")
     return {}
