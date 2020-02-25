@@ -6,6 +6,7 @@ from urllib.parse import quote
 
 import requests
 import requests.exceptions
+from requests_unixsocket import Session
 # import websocket
 
 from .. import auth
@@ -36,7 +37,7 @@ except ImportError:
     pass
 
 
-class BaseAPIClient(requests.Session):
+class BaseAPIClient(Session):
     """
     A low-level client for the Podman Engine API.
 
@@ -53,6 +54,8 @@ class BaseAPIClient(requests.Session):
         user_agent (str): Set a custom user agent for requests to the server.
         credstore_env (dict): Override environment variables when calling the
             credential store process.
+
+    TODO: Only allow unix and ssh connections.
     """
 
     __attrs__ = requests.Session.__attrs__ + [
