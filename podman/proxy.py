@@ -22,8 +22,3 @@ def create_forwarding_socket(
     subprocess.run(cmd)
 
     return socket_path
-
-    print('Fetch the response!')
-    session = requests_unixsocket.Session()
-
-    response = session.get('http+unix://%2Ftmp%2Fpodman.sock/v1.24/libpod/images/json')
