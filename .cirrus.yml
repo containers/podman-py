@@ -12,7 +12,7 @@ env:
     GOCACHE: "${HOME}/.cache/go-build"
 
     # VM Images are maintained in the libpod repo.
-    _BUILT_IMAGE_SUFFIX: "libpod-5584367724527616"
+    _BUILT_IMAGE_SUFFIX: "libpod-5874660151656448"
     FEDORA_CACHE_IMAGE_NAME: "fedora-31-${_BUILT_IMAGE_SUFFIX}"
     PRIOR_FEDORA_CACHE_IMAGE_NAME: "fedora-30-${_BUILT_IMAGE_SUFFIX}"
     #UBUNTU_CACHE_IMAGE_NAME: "ubuntu-19-${_BUILT_IMAGE_SUFFIX}"
@@ -66,7 +66,7 @@ gating_task:
 
     # Only run this on PRs, never during post-merge testing.  This is also required
     # for proper setting of EPOCH_TEST_COMMIT value, required by validation tools.
-    
+
     # see bors.toml
     skip: $CIRRUS_BRANCH =~ ".*\.tmp"
 
@@ -95,7 +95,7 @@ gating_task:
 success_task:
     # This task is a required-pass in github settings,
     # it blocks PRs from merging if a depends_on task fails
-    
+
     # see bors.toml
     skip: $CIRRUS_BRANCH =~ ".*\.tmp"
 
@@ -108,4 +108,4 @@ success_task:
     container:
         image: "quay.io/libpod/podmanpy_gating:master"
         cpu: 1
-        memory: 1 
+        memory: 1
