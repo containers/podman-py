@@ -86,7 +86,7 @@ class SSHHTTPAdapter(BaseHTTPAdapter):
             "hostname": base_url.hostname,
             "port": base_url.port,
             "username": base_url.username
-            }
+        }
         ssh_config_file = os.path.expanduser("~/.ssh/config")
         if os.path.exists(ssh_config_file):
             conf = paramiko.SSHConfig()

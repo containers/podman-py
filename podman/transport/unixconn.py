@@ -1,26 +1,23 @@
-import requests.adapters
+import http.client
 import socket
-from six.moves import http_client as httplib
+import urllib3
+
+import requests.adapters
 
 from .basehttpadapter import BaseHTTPAdapter
 from .. import constants
-
-try:
-    import requests.packages.urllib3 as urllib3
-except ImportError:
-    import urllib3
 
 
 RecentlyUsedContainer = urllib3._collections.RecentlyUsedContainer
 
 
-class UnixHTTPResponse(httplib.HTTPResponse, object):
+class UnixHTTPResponse(http.client.HTTPResponse, object):
     def __init__(self, sock, *args, **kwargs):
         disable_buffering = kwargs.pop('disable_buffering', False)
         super().__init__(sock, *args, **kwargs)
 
 
-class UnixHTTPConnection(httplib.HTTPConnection, object):
+class UnixHTTPConnection(http.client.HTTPConnection, object):
     def __init__(self, base_url, unix_socket, timeout=60):
         super().__init__(
             'localhost', timeout=timeout
