@@ -2,6 +2,6 @@
 from .unixconn import UnixHTTPAdapter
 
 try:
-    from .sshconn import SSHHTTPAdapter
+    from .sshadapter import SSHHTTPAdapter
 except ImportError:
     pass

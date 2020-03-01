@@ -5,8 +5,8 @@ import sys
 
 version = "0.0.1"
 
-DEFAULT_DOCKER_API_VERSION = '1.24'
-MINIMUM_DOCKER_API_VERSION = '1.24'
+DEFAULT_API_VERSION = '1.24'
+MINIMUM_API_VERSION = '1.24'
 DEFAULT_TIMEOUT_SECONDS = 60
 STREAM_HEADER_SIZE_BYTES = 8
 CONTAINER_LIMITS_KEYS = [
@@ -15,7 +15,6 @@ CONTAINER_LIMITS_KEYS = [
 
 DEFAULT_HTTP_HOST = "127.0.0.1"
 DEFAULT_UNIX_SOCKET = "http+unix:///run/podman/podman.sock"
-DEFAULT_NPIPE = 'npipe:////./pipe/docker_engine'  # TODO: Currently not applicable as Podman is not available on Windows
 
 BYTE_UNITS = {
     'b': 1,
@@ -23,7 +22,6 @@ BYTE_UNITS = {
     'm': 1024 * 1024,
     'g': 1024 * 1024 * 1024
 }
-
 
 INSECURE_REGISTRY_DEPRECATION_WARNING = \
     'The `insecure_registry` argument to {} ' \

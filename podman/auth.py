@@ -2,8 +2,6 @@ import base64
 import json
 import logging
 
-import six
-
 from . import credentials
 from . import errors
 from .utils import config
@@ -84,7 +82,7 @@ class AuthConfig(dict):
         self._stores = {}
 
     @classmethod
-    def parse_auth(cls, entries, raise_on_error=False):
+    def parse_auth(cls, entries: dict, raise_on_error: bool = False):
         """
         Parses authentication entries
 
@@ -93,12 +91,11 @@ class AuthConfig(dict):
           raise_on_error: If set to true, an invalid format will raise
                           InvalidConfigFile
 
-        Returns:
-          Authentication registry.
+        Returns: Authentication registry.
         """
 
         conf = {}
-        for registry, entry in six.iteritems(entries):
+        for registry, entry in entries.items():
             if not isinstance(entry, dict):
                 log.debug(
                     'Config entry for key {0} is not auth config'.format(
@@ -244,7 +241,7 @@ class AuthConfig(dict):
             log.debug("Found {0}".format(repr(registry)))
             return self.auths[registry]
 
-        for key, conf in six.iteritems(self.auths):
+        for key, conf in self.auths.items():
             if resolve_index_name(key) == registry:
                 log.debug("Found {0}".format(repr(key)))
                 return conf
@@ -334,7 +331,7 @@ def convert_to_hostname(url):
 
 def decode_auth(auth):
     """ Decode authentication header. """
-    if isinstance(auth, six.string_types):
+    if isinstance(auth, str):
         auth = auth.encode('ascii')
     login, pwd = base64.b64decode(auth).split(b':', 1)
     return login.decode('utf8'), pwd.decode('utf8')

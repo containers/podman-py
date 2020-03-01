@@ -4,13 +4,6 @@ import select
 import socket as pysocket
 import struct
 
-import six
-
-try:
-    from ..transport import NpipeSocket
-except ImportError:
-    NpipeSocket = type(None)
-
 
 STDOUT = 1
 STDERR = 2
@@ -24,16 +17,14 @@ def read(socket, n=4096):
     """
     Reads at most n bytes from socket
     """
-
     recoverable_errors = (errno.EINTR, errno.EDEADLK, errno.EWOULDBLOCK)
 
-    if six.PY3 and not isinstance(socket, NpipeSocket):
-        select.select([socket], [], [])
+    select.select([socket], [], [])
 
     try:
         if hasattr(socket, 'recv'):
             return socket.recv(n)
-        if six.PY3 and isinstance(socket, getattr(pysocket, 'SocketIO')):
+        if isinstance(socket, getattr(pysocket, 'SocketIO')):
             return socket.read(n)
         return os.read(socket.fileno(), n)
     except EnvironmentError as e:
@@ -46,7 +37,7 @@ def read_exactly(socket, n):
     Reads exactly n bytes from socket
     Raises SocketError if there isn't enough data
     """
-    data = six.binary_type()
+    data = bytes()
     while len(data) < n:
         next_data = read(socket, n - len(data))
         if not next_data:
@@ -134,7 +125,7 @@ def consume_socket_output(frames, demux=False):
     if demux is False:
         # If the streams are multiplexed, the generator returns strings, that
         # we just need to concatenate.
-        return six.binary_type().join(frames)
+        return bytes().join(frames)
 
     # If the streams are demultiplexed, the generator yields tuples
     # (stdout, stderr)
@@ -162,8 +153,8 @@ def demux_adaptor(stream_id, data):
     socket.
     """
     if stream_id == STDOUT:
-        return (data, None)
+        return data, None
     elif stream_id == STDERR:
-        return (None, data)
+        return None, data
     else:
         raise ValueError('{0} is not a valid stream'.format(stream_id))

@@ -11,9 +11,9 @@ from requests_unixsocket import Session
 
 from .. import auth
 from ..constants import (
-    DEFAULT_TIMEOUT_SECONDS, DEFAULT_USER_AGENT, IS_WINDOWS_PLATFORM,
-    DEFAULT_DOCKER_API_VERSION, MINIMUM_DOCKER_API_VERSION,
-    STREAM_HEADER_SIZE_BYTES, DEFAULT_NUM_POOLS_SSH, DEFAULT_NUM_POOLS
+    DEFAULT_TIMEOUT_SECONDS, DEFAULT_USER_AGENT,
+    DEFAULT_API_VERSION, MINIMUM_API_VERSION,
+    STREAM_HEADER_SIZE_BYTES
 )
 from ..errors import (
     PodmanException, InvalidVersion,
@@ -24,11 +24,6 @@ from ..utils import utils, check_resource, update_headers, config
 from ..utils.socket import frames_iter, consume_socket_output, demux_adaptor
 from ..utils.json_stream import json_stream
 from ..utils.proxy import ProxyConfig
-
-try:
-    from ..transport import NpipeHTTPAdapter
-except ImportError:
-    pass
 
 try:
     from ..transport import SSHHTTPAdapter
@@ -84,11 +79,7 @@ class BaseAPIClient(Session):
         )
         self.credstore_env = credstore_env
 
-        base_url = utils.parse_host(base_url, IS_WINDOWS_PLATFORM)
-
-        # SSH has a different default for num_pools to all other adapters
-        num_pools = num_pools or DEFAULT_NUM_POOLS_SSH if \
-            base_url.startswith('ssh://') else DEFAULT_NUM_POOLS
+        base_url = utils.parse_host(base_url)
 
         if base_url.startswith('http+unix://'):
             self._custom_adapter = UnixHTTPAdapter(
@@ -99,21 +90,6 @@ class BaseAPIClient(Session):
             # host part of URL should be unused, but is resolved by requests
             # module in proxy_bypass_macosx_sysconf()
             self.base_url = 'http+podman://localhost'
-        elif base_url.startswith('npipe://'):
-            if not IS_WINDOWS_PLATFORM:
-                raise PodmanException(
-                    'The npipe:// protocol is only supported on Windows'
-                )
-            try:
-                self._custom_adapter = NpipeHTTPAdapter(
-                    base_url, timeout, pool_connections=num_pools
-                )
-            except NameError:
-                raise PodmanException(
-                    'Install pypiwin32 package to enable npipe:// support'
-                )
-            self.mount('http+podman://', self._custom_adapter)
-            self.base_url = 'http+podman://localnpipe'
         elif base_url.startswith('ssh://'):
             try:
                 self._custom_adapter = SSHHTTPAdapter(
@@ -129,7 +105,7 @@ class BaseAPIClient(Session):
 
         # version detection needs to be after unix adapter mounting
         if version is None:
-            self._version = DEFAULT_DOCKER_API_VERSION
+            self._version = DEFAULT_API_VERSION
         elif isinstance(version, str):
             if version.lower() == 'auto':
                 self._version = self._retrieve_server_version()
@@ -141,10 +117,10 @@ class BaseAPIClient(Session):
                     type(version).__name__
                 )
             )
-        if utils.version_lt(self._version, MINIMUM_DOCKER_API_VERSION):
+        if utils.version_lt(self._version, MINIMUM_API_VERSION):
             raise InvalidVersion(
                 'API versions below {} are no longer supported by this '
-                'library.'.format(MINIMUM_DOCKER_API_VERSION)
+                'library.'.format(MINIMUM_API_VERSION)
             )
 
     def _retrieve_server_version(self):
@@ -254,9 +230,7 @@ class BaseAPIClient(Session):
 
     def _get_raw_response_socket(self, response):
         self._raise_for_status(response)
-        if self.base_url == "http+podman://localnpipe":
-            sock = response.raw._fp.fp.raw.sock
-        elif self.base_url.startswith('http+podman://ssh'):
+        if self.base_url.startswith('http+podman://ssh'):
             sock = response.raw._fp.fp.channel
         else:
             sock = response.raw._fp.fp.raw
@@ -391,7 +365,6 @@ class BaseAPIClient(Session):
                 self._result(res, binary=True)
 
         self._raise_for_status(res)
-        # sep = six.binary_type()
         sep = bytes()
         if stream:
             return self._multiplexed_response_stream_helper(res)

@@ -12,7 +12,6 @@ from urllib.parse import splitnport, urlparse
 from .. import errors
 from ..constants import DEFAULT_HTTP_HOST
 from ..constants import DEFAULT_UNIX_SOCKET
-from ..constants import DEFAULT_NPIPE
 from ..constants import BYTE_UNITS
 
 
@@ -192,14 +191,11 @@ def parse_repository_tag(repo_name):
     return repo_name, None
 
 
-def parse_host(addr, is_win32=False):  # pylint: disable=R0912
+def parse_host(addr):  # pylint: disable=R0912
     """ Parse a host string into a more detailed format. """
     port = None
     host = None
 
-    # Sensible defaults
-    if not addr and is_win32:
-        return DEFAULT_NPIPE
     if not addr or addr.strip() == 'unix://':
         return DEFAULT_UNIX_SOCKET
 
@@ -262,7 +258,7 @@ def parse_host(addr, is_win32=False):  # pylint: disable=R0912
         if not host:
             host = DEFAULT_HTTP_HOST
 
-    if proto in ('http+unix', 'npipe'):
+    if proto in ('http+unix'):
         return "{}://{}".format(proto, path).rstrip('/')
     return '{0}://{1}:{2}{3}'.format(proto, host, port, path).rstrip('/')
 
