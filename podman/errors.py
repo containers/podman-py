@@ -148,17 +148,6 @@ class DeprecatedMethod(PodmanException):
     pass
 
 
-class TLSParameterError(PodmanException):
-    def __init__(self, msg):
-        self.msg = msg
-
-    def __str__(self):
-        return self.msg + (". TLS configurations should map the Podman CLI "
-                           "client configurations. See "
-                           "https://docs.docker.com/engine/articles/https/ "
-                           "for API details.")
-
-
 class NullResource(PodmanException, ValueError):
     pass
 

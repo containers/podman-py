@@ -19,10 +19,6 @@ class PodmanClient:
         version (str): The version of the API to use. Set to ``auto`` to
             automatically detect the server's version. Default: ``1.35``
         timeout (int): Default timeout for API calls, in seconds.
-        tls (bool or :py:class:`~docker.tls.TLSConfig`): Enable TLS. Pass
-            ``True`` to enable it with default options, or pass a
-            :py:class:`~docker.tls.TLSConfig` object to use custom
-            configuration.
         user_agent (str): Set a custom user agent for requests to the server.
         credstore_env (dict): Override environment variables when calling the
             credential store process.

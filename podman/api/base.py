@@ -16,11 +16,10 @@ from ..constants import (
     STREAM_HEADER_SIZE_BYTES, DEFAULT_NUM_POOLS_SSH, DEFAULT_NUM_POOLS
 )
 from ..errors import (
-    PodmanException, InvalidVersion, TLSParameterError,
+    PodmanException, InvalidVersion,
     create_api_error_from_http_exception
 )
-from ..tls import TLSConfig
-from ..transport import SSLHTTPAdapter, UnixHTTPAdapter
+from ..transport import UnixHTTPAdapter
 from ..utils import utils, check_resource, update_headers, config
 from ..utils.socket import frames_iter, consume_socket_output, demux_adaptor
 from ..utils.json_stream import json_stream
@@ -47,10 +46,6 @@ class BaseAPIClient(Session):
         version (str): The version of the API to use. Set to ``auto`` to
             automatically detect the server's version. Default: ``1.35``
         timeout (int): Default timeout for API calls, in seconds.
-        tls (bool or :py:class:`~docker.tls.TLSConfig`): Enable TLS. Pass
-            ``True`` to enable it with default options, or pass a
-            :py:class:`~docker.tls.TLSConfig` object to use custom
-            configuration.
         user_agent (str): Set a custom user agent for requests to the server.
         credstore_env (dict): Override environment variables when calling the
             credential store process.
@@ -66,16 +61,9 @@ class BaseAPIClient(Session):
         'timeout'
     ]
 
-    def __init__(self, base_url=None, version=None,
-                 timeout=DEFAULT_TIMEOUT_SECONDS, tls=False,
-                 user_agent=DEFAULT_USER_AGENT, num_pools=None,
-                 credstore_env=None):
+    def __init__(self, base_url=None, version=None, timeout=DEFAULT_TIMEOUT_SECONDS,
+                 user_agent=DEFAULT_USER_AGENT, num_pools=None, credstore_env=None):
         super().__init__()
-
-        if tls and not base_url:
-            raise TLSParameterError(
-                'If using TLS, the base_url argument must be provided.'
-            )
 
         self.base_url = base_url
         self.timeout = timeout
@@ -96,9 +84,8 @@ class BaseAPIClient(Session):
         )
         self.credstore_env = credstore_env
 
-        base_url = utils.parse_host(
-            base_url, IS_WINDOWS_PLATFORM, tls=bool(tls)
-        )
+        base_url = utils.parse_host(base_url, IS_WINDOWS_PLATFORM)
+
         # SSH has a different default for num_pools to all other adapters
         num_pools = num_pools or DEFAULT_NUM_POOLS_SSH if \
             base_url.startswith('ssh://') else DEFAULT_NUM_POOLS
@@ -139,15 +126,6 @@ class BaseAPIClient(Session):
             self.mount('http+podman://ssh', self._custom_adapter)
             self._unmount('http://', 'https://')
             self.base_url = 'http+podman://ssh'
-        else:
-            # Use SSLAdapter for the ability to specify SSL version
-            if isinstance(tls, TLSConfig):
-                tls.configure_client(self)
-            elif tls:
-                self._custom_adapter = SSLHTTPAdapter(
-                    pool_connections=num_pools)
-                self.mount('https://', self._custom_adapter)
-            self.base_url = base_url
 
         # version detection needs to be after unix adapter mounting
         if version is None:
@@ -284,15 +262,6 @@ class BaseAPIClient(Session):
             sock = response.raw._fp.fp.raw
             if self.base_url.startswith("https://"):
                 sock = sock._sock
-        try:
-            # Keep a reference to the response to stop it being garbage
-            # collected. If the response is garbage collected, it will
-            # close TLS sockets.
-            sock._response = response
-        except AttributeError:
-            # UNIX sockets can't have attributes set on them, but that's
-            # fine because we won't be doing TLS over them
-            pass
 
         return sock
 

@@ -10,7 +10,6 @@ from distutils.version import StrictVersion
 from urllib.parse import splitnport, urlparse
 
 from .. import errors
-from .. import tls
 from ..constants import DEFAULT_HTTP_HOST
 from ..constants import DEFAULT_UNIX_SOCKET
 from ..constants import DEFAULT_NPIPE
@@ -193,7 +192,7 @@ def parse_repository_tag(repo_name):
     return repo_name, None
 
 
-def parse_host(addr, is_win32=False, tls=False):  # pylint: disable=R0912
+def parse_host(addr, is_win32=False):  # pylint: disable=R0912
     """ Parse a host string into a more detailed format. """
     port = None
     host = None
@@ -216,15 +215,7 @@ def parse_host(addr, is_win32=False, tls=False):  # pylint: disable=R0912
     if proto == 'fd':
         raise errors.PodmanException('fd protocol is not implemented')
 
-    # These protos are valid aliases for our library but not for the
-    # official spec
-    if proto in ('http', 'https'):
-        tls = proto == 'https'
-        proto = 'tcp'
-    elif proto == 'http+unix':
-        proto = 'unix'
-
-    if proto not in ('tcp', 'unix', 'npipe', 'ssh'):
+    if proto not in ('unix', 'ssh'):
         raise errors.PodmanException(
             "Invalid bind address protocol: {}".format(addr)
         )
@@ -271,12 +262,6 @@ def parse_host(addr, is_win32=False, tls=False):  # pylint: disable=R0912
         if not host:
             host = DEFAULT_HTTP_HOST
 
-    # Rewrite schemes to fit library internals (requests adapters)
-    if proto == 'tcp':
-        proto = 'http{}'.format('s' if tls else '')
-    elif proto == 'unix':
-        proto = 'http+unix'
-
     if proto in ('http+unix', 'npipe'):
         return "{}://{}".format(proto, path).rstrip('/')
     return '{0}://{1}:{2}{3}'.format(proto, host, port, path).rstrip('/')
@@ -312,48 +297,19 @@ def parse_devices(devices):
     return device_list
 
 
-def kwargs_from_env(ssl_version=None, assert_hostname=None, environment=None):
-    """ Get information from docker environment. """
+def kwargs_from_env(environment=None):
+    """
+    Get information from docker environment.
+
+    TODO: Get information about ssh key to use.
+    """
     if not environment:
         environment = os.environ
     host = environment.get('DOCKER_HOST')
 
-    # empty string for cert path is the same as unset.
-    cert_path = environment.get('DOCKER_CERT_PATH') or None
-
-    # empty string for tls verify counts as "false".
-    # Any value or 'unset' counts as true.
-    tls_verify = environment.get('DOCKER_TLS_VERIFY')
-    if tls_verify == '':
-        tls_verify = False
-    else:
-        tls_verify = tls_verify is not None
-    enable_tls = cert_path or tls_verify
-
     params = {}
-
     if host:
         params['base_url'] = host
-
-    if not enable_tls:
-        return params
-
-    if not cert_path:
-        cert_path = os.path.join(os.path.expanduser('~'), '.docker')
-
-    if not tls_verify and assert_hostname is None:
-        # assert_hostname is a subset of TLS verification,
-        # so if it's not set already then set it to false.
-        assert_hostname = False
-
-    params['tls'] = tls.TLSConfig(
-        client_cert=(os.path.join(cert_path, 'cert.pem'),
-                     os.path.join(cert_path, 'key.pem')),
-        ca_cert=os.path.join(cert_path, 'ca.pem'),
-        verify=tls_verify,
-        ssl_version=ssl_version,
-        assert_hostname=assert_hostname,
-    )
 
     return params
 
