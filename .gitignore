@@ -104,3 +104,6 @@ venv.bak/
 
 # Jetbrains settings
 .idea
+
+# Vagrant cache
+vagrant/.vagrant
