@@ -1,5 +1,3 @@
-import six
-
 from .. import errors
 from ..utils.utils import (
     convert_port_bindings, convert_tmpfs_mounts, convert_volume_binds,
@@ -117,7 +115,7 @@ class Ulimit(DictType):
         name = kwargs.get('name', kwargs.get('Name'))
         soft = kwargs.get('soft', kwargs.get('Soft'))
         hard = kwargs.get('hard', kwargs.get('Hard'))
-        if not isinstance(name, six.string_types):
+        if not isinstance(name, str):
             raise ValueError("Ulimit.name must be a string")
         if soft and not isinstance(soft, int):
             raise ValueError("Ulimit.soft must be an integer")
@@ -199,7 +197,7 @@ class HostConfig(dict):
             self['MemorySwappiness'] = mem_swappiness
 
         if shm_size is not None:
-            if isinstance(shm_size, six.string_types):
+            if isinstance(shm_size, str):
                 shm_size = parse_bytes(shm_size)
 
             self['ShmSize'] = shm_size
@@ -259,7 +257,7 @@ class HostConfig(dict):
             self['Devices'] = parse_devices(devices)
 
         if group_add:
-            self['GroupAdd'] = [six.text_type(grp) for grp in group_add]
+            self['GroupAdd'] = [str(grp) for grp in group_add]
 
         if dns is not None:
             self['Dns'] = dns
@@ -279,11 +277,11 @@ class HostConfig(dict):
             if not isinstance(sysctls, dict):
                 raise host_config_type_error('sysctls', sysctls, 'dict')
             self['Sysctls'] = {}
-            for k, v in six.iteritems(sysctls):
-                self['Sysctls'][k] = six.text_type(v)
+            for k, v in sysctls.items():
+                self['Sysctls'][k] = str(v)
 
         if volumes_from is not None:
-            if isinstance(volumes_from, six.string_types):
+            if isinstance(volumes_from, str):
                 volumes_from = volumes_from.split(',')
 
             self['VolumesFrom'] = volumes_from
@@ -305,7 +303,7 @@ class HostConfig(dict):
 
         if isinstance(lxc_conf, dict):
             formatted = []
-            for k, v in six.iteritems(lxc_conf):
+            for k, v in lxc_conf.items():
                 formatted.append({'Key': k, 'Value': str(v)})
             lxc_conf = formatted
 
@@ -460,7 +458,7 @@ class HostConfig(dict):
             self["PidsLimit"] = pids_limit
 
         if isolation:
-            if not isinstance(isolation, six.string_types):
+            if not isinstance(isolation, str):
                 raise host_config_type_error('isolation', isolation, 'string')
             if version_lt(version, '1.24'):
                 raise host_config_version_error('isolation', '1.24')
@@ -510,7 +508,7 @@ class HostConfig(dict):
             self['CpuPercent'] = cpu_percent
 
         if nano_cpus:
-            if not isinstance(nano_cpus, six.integer_types):
+            if not isinstance(nano_cpus, int):
                 raise host_config_type_error('nano_cpus', nano_cpus, 'int')
             if version_lt(version, '1.25'):
                 raise host_config_version_error('nano_cpus', '1.25')
@@ -580,17 +578,17 @@ class ContainerConfig(dict):
                     'version 1.29'
                 )
 
-        if isinstance(command, six.string_types):
+        if isinstance(command, str):
             command = split_command(command)
 
-        if isinstance(entrypoint, six.string_types):
+        if isinstance(entrypoint, str):
             entrypoint = split_command(entrypoint)
 
         if isinstance(environment, dict):
             environment = format_environment(environment)
 
         if isinstance(labels, list):
-            labels = dict((lbl, six.text_type('')) for lbl in labels)
+            labels = dict((lbl, str('')) for lbl in labels)
 
         if isinstance(ports, list):
             exposed_ports = {}
@@ -604,7 +602,7 @@ class ContainerConfig(dict):
                 exposed_ports['{0}/{1}'.format(port, proto)] = {}
             ports = exposed_ports
 
-        if isinstance(volumes, six.string_types):
+        if isinstance(volumes, str):
             volumes = [volumes, ]
 
         if isinstance(volumes, list):
@@ -633,7 +631,7 @@ class ContainerConfig(dict):
             'Hostname': hostname,
             'Domainname': domainname,
             'ExposedPorts': ports,
-            'User': six.text_type(user) if user is not None else None,
+            'User': str(user) if user is not None else None,
             'Tty': tty,
             'OpenStdin': stdin_open,
             'StdinOnce': stdin_once,

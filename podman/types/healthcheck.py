@@ -1,7 +1,5 @@
 from .base import DictType
 
-import six
-
 
 class Healthcheck(DictType):
     """
@@ -31,7 +29,7 @@ class Healthcheck(DictType):
     """
     def __init__(self, **kwargs):
         test = kwargs.get('test', kwargs.get('Test'))
-        if isinstance(test, six.string_types):
+        if isinstance(test, str):
             test = ["CMD-SHELL", test]
 
         interval = kwargs.get('interval', kwargs.get('Interval'))
@@ -53,7 +51,7 @@ class Healthcheck(DictType):
 
     @test.setter
     def test(self, value):
-        if isinstance(value, six.string_types):
+        if isinstance(value, str):
             value = ["CMD-SHELL", value]
         self['Test'] = value
 

@@ -1,5 +1,3 @@
-import six
-
 from .. import errors
 from ..constants import IS_WINDOWS_PLATFORM
 from ..utils import (
@@ -121,7 +119,7 @@ class ContainerSpec(dict):
                  privileges=None, isolation=None, init=None):
         self['Image'] = image
 
-        if isinstance(command, six.string_types):
+        if isinstance(command, str):
             command = split_command(command)
         self['Command'] = command
         self['Args'] = args
@@ -151,7 +149,7 @@ class ContainerSpec(dict):
         if mounts is not None:
             parsed_mounts = []
             for mount in mounts:
-                if isinstance(mount, six.string_types):
+                if isinstance(mount, str):
                     parsed_mounts.append(Mount.parse_mount_string(mount))
                 else:
                     # If mount already parsed
@@ -260,7 +258,7 @@ class Mount(dict):
         elif type == 'tmpfs':
             tmpfs_opts = {}
             if tmpfs_mode:
-                if not isinstance(tmpfs_mode, six.integer_types):
+                if not isinstance(tmpfs_mode, int):
                     raise errors.InvalidArgument(
                         'tmpfs_mode must be an integer'
                     )
@@ -347,7 +345,7 @@ def _convert_generic_resources_dict(generic_resources):
             ' (found {})'.format(type(generic_resources))
         )
     resources = []
-    for kind, value in six.iteritems(generic_resources):
+    for kind, value in generic_resources.items():
         resource_type = None
         if isinstance(value, int):
             resource_type = 'DiscreteResourceSpec'
@@ -533,7 +531,7 @@ def convert_service_ports(ports):
         )
 
     result = []
-    for k, v in six.iteritems(ports):
+    for k, v in ports.items():
         port_spec = {
             'Protocol': 'tcp',
             'PublishedPort': k

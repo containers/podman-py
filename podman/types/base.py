@@ -1,7 +1,5 @@
-import six
-
-
+# TODO: Remove
 class DictType(dict):
-    def __init__(self, init):
-        for k, v in six.iteritems(init):
+    def __init__(self, init: dict):
+        for k, v in init.items():
             self[k] = v
