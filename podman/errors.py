@@ -1,7 +1,5 @@
-"""
-Errors module is used to extend HTTPException for Podman API.
-"""
-from http.client import HTTPException
+""" Custom exceptions and extensions of requests.HTTPError. """
+import requests
 
 
 class PodmanException(Exception):
@@ -13,48 +11,6 @@ class PodmanException(Exception):
     """
 
 
-class NotFoundError(HTTPException):
-    """ HTTP request returned a http.HTTPStatus.NOT_FOUND. """
-
-    def __init__(self, message, response=None):
-        super().__init__(message)
-        self.response = response
-
-
-class ImageNotFound(NotFoundError):
-    """
-    HTTP request returned a http.HTTPStatus.NOT_FOUND.
-    Specialized for Image not found.
-    """
-
-
-class ContainerNotFound(NotFoundError):
-    """
-    HTTP request returned a http.HTTPStatus.NOT_FOUND.
-    Specialized for Container not found.
-    """
-
-
-class PodNotFound(NotFoundError):
-    """
-    HTTP request returned a http.HTTPStatus.NOT_FOUND.
-    Specialized for Pod not found.
-    """
-
-
-class InternalServerError(HTTPException):
-    """ Podman service reported an internal error. """
-    def __init__(self, message, response=None):
-        super().__init__(message)
-        self.response = response
-
-
-class InvalidArgument(PodmanException):
-    pass
-
-
-# Podman errors
-# TODO: Remove unnecessary errors and unify with those already existing
 def create_api_error_from_http_exception(e):
     """ Create a suitable APIError from requests.exceptions.HTTPError. """
     response = e.response
@@ -74,10 +30,8 @@ def create_api_error_from_http_exception(e):
     raise cls(e, response=response, explanation=explanation)
 
 
-class APIError(PodmanException):
-    """
-    An HTTP error from the API.
-    """
+class APIError(requests.exceptions.HTTPError, PodmanException):
+    """ An HTTP error from the API. """
     def __init__(self, message, response=None, explanation=None):
         # requests 1.2 supports response as a keyword argument, but
         # requests 1.1 doesn't
@@ -202,7 +156,7 @@ class MissingContextParameter(PodmanException):
         self.param = param
 
     def __str__(self):
-        return ("missing parameter: {}".format(self.param))
+        return "missing parameter: {}".format(self.param)
 
 
 class ContextAlreadyExists(PodmanException):
@@ -210,7 +164,7 @@ class ContextAlreadyExists(PodmanException):
         self.name = name
 
     def __str__(self):
-        return ("context {} already exists".format(self.name))
+        return "context {} already exists".format(self.name)
 
 
 class ContextException(PodmanException):
@@ -218,7 +172,7 @@ class ContextException(PodmanException):
         self.msg = msg
 
     def __str__(self):
-        return (self.msg)
+        return self.msg
 
 
 class ContextNotFound(PodmanException):
