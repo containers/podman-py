@@ -19,4 +19,4 @@ with APIConnection(uri) as api:
 ```
 
 ## Contributing
-See [CONTRIBUTING.md](https://github.com/containers/podman-py/blob/master/README.md)
+See [CONTRIBUTING.md](https://github.com/containers/podman-py/blob/master/CONTRIBUTING.md)
