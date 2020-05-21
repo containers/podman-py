@@ -4,7 +4,7 @@ This python package is a set of bindings to use the new RESTful API in [libpod](
 ## Example usage
 ```python
 
-import podman
+from podman import ApiConnection, system, images
 
 # Provide a URI path for the libpod service.  In libpod, the URI can be a unix
 # domain socket(UDS) or TCP.  The TCP connection has not been implemented in this
@@ -12,10 +12,10 @@ import podman
 
 uri = "unix://localhost/run/podman/podman.sock"
 
-with APIConnection(uri) as api:
+with ApiConnection(uri) as api:
   # results are written to the screen as python dictionaries
   print(system.version(api))
-  print(images.remove(api, "alpine", force=True)
+  print(images.remove(api, "alpine", force=True))
 ```
 
 ## Contributing
