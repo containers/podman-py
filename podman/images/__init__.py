@@ -23,6 +23,14 @@ def inspect(api, name):
     except errors.NotFoundError as e:
         _report_not_found(e, e.response)
 
+def image_exists(api, name):
+    """Checks if an image exists in the local store"""
+    try:
+        api.request("GET", api.join("/images/{}/exists".format(api.quote(name))))
+        return "{} image exists".format(name)
+    except errors.NotFoundError as e:
+        _report_not_found(e, e.response)
+
 
 def remove(api, name, force=None):
     """Remove named/identified image from Podman storage."""
@@ -48,5 +56,6 @@ def _report_not_found(e, response):
 __ALL__ = [
     "list_images",
     "inspect",
+    "image_exists",
     "remove",
 ]
