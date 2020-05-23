@@ -23,6 +23,7 @@ def inspect(api, name):
     except errors.NotFoundError as e:
         _report_not_found(e, e.response)
 
+
 def image_exists(api, name):
     """Checks if an image exists in the local store"""
     try:
