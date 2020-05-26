@@ -22,7 +22,7 @@ class ApiConnection(HTTPConnection, AbstractContextManager):
         super().__init__("localhost", *args, **kwargs)
         supported_schemes = ("unix", "ssh")
         uri = urllib.parse.urlparse(url)
-        if uri.scheme not in ("unix", "ssh"):
+        if uri.scheme not in supported_schemes:
             raise ValueError("The scheme '{}' is not supported, only {}".format(
                 uri.scheme, supported_schemes))
         self.uri = uri
