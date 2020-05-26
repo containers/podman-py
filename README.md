@@ -15,7 +15,7 @@ uri = "unix://localhost/run/podman/podman.sock"
 with ApiConnection(uri) as api:
   # results are written to the screen as python dictionaries
   print(system.version(api))
-  print(images.remove(api, "alpine", force=True))
+  print(images.list_images(api))
 ```
 
 ## Contributing
