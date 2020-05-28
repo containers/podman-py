@@ -46,7 +46,7 @@ def prune_unused_data(api):
 
 def version(api):
     """Get system version information"""
-    # uri does not conform to the /{version}/lipod/{endpoint} format
+    # this endpoint is non-functional podman 1.9.2
     return json.loads(make_call(api, "/version"))
 
 
