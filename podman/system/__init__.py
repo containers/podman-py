@@ -5,7 +5,7 @@ import json
 
 def make_call(api, endpoint, method='GET', params=None):
     """A helper function to keep things DRY"""
-    path = api.join(endpoint)
+    path = api.join(endpoint, params)
     response = api.request(method, path)
     return response.read()
 
