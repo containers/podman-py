@@ -272,6 +272,7 @@ def generate_kube_yaml_file(api, name, params=None):
     path = "/generate/{}/kube".format(name)
     return json.loads(make_call(api, path, params=params))
 
+
 def create_based_on_kube_yaml_file(api, name, params, body):
     """Create and run pods based on a Kubernetes YAML file (pod or service kind"""
     # this endpoint is non-functiaon in podman 1.9.2
@@ -279,13 +280,36 @@ def create_based_on_kube_yaml_file(api, name, params, body):
     return json.loads(make_call(api, path, "POST", params, body))
 
 
-
-def _report_not_found(e, response):
-    body = json.loads(response.read())
-    logging.info(body["cause"])
-    raise errors.ImageNotFound(body["message"]) from e
-
-
 __all__ = [
+    "make_call",
+    "commit",
+    "run_healthcheck",
+    "delete_container",
+    "attach_to_container",
+    "report_fs_changes",
+    "checkpoint",
+    "check_container_exists",
+    "export_container",
+    "initialize_container",
+    "inspect_container",
+    "kill_container",
+    "get_container_logs",
+    "mount_container",
+    "pause_container",
+    "resize_tty",
+    "restart_container",
+    "restore_container",
+    "start_container",
+    "get_container_stats",
+    "stop_container",
+    "list_processes",
+    "unmount_container",
+    "unpause_container",
+    "wait_on_container",
+    "create_container",
     "list_containers",
+    "delete_stopped_containers",
+    "show_mounted_containers",
+    "generate_kube_yaml_file",
+    "create_based_on_kube_yaml_file",
 ]
