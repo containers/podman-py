@@ -17,19 +17,27 @@ podman-py:
 
 .PHONY: env
 env:
-	dnf install python3-coverage -y
-	dnf install pylint -y
-	rpm -V python3-coverage pylint
+	dnf install python3-tox -y
 	# -- or --
-	# $(PYTHON) -m pip install coverage
+	# $(PYTHON) -m pip install tox
+	# -- or --
+	# dnf install python3-coverage python3-pylint -y
 .PHONY: lint
 lint:
-	$(PYTHON) -m pylint podman || exit $$(($$? % 4))
+	if command -v tox 2>/dev/null; then \
+		tox -e pylint; \
+	else \
+		$(PYTHON) -m pylint podman || exit $$(($$? % 4)); \
+	fi
 
 .PHONY: unittest
 unittest:
-	coverage run -m unittest discover -s test/unit
-	coverage report -m --skip-covered --fail-under=50 --omit=./test/*
+	if command -v tox 2>/dev/null; then \
+		tox -e coverage; \
+	else \
+		coverage run -m unittest discover -s podman/tests/unit; \
+		coverage report -m --skip-covered --fail-under=50 --omit=./podman/tests/* --omit=.tox/* ;\
+	fi
 
 # .PHONY: integration
 # integration:
