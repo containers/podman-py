@@ -14,19 +14,25 @@ import podman.system as system
 
 
 class ApiConnection(HTTPConnection, AbstractContextManager):
-    """ApiConnection provides a specialized HTTPConnection
-    to a Podman service."""
+    """
+    ApiConnection provides a specialized HTTPConnection
+    to a Podman service.
+    """
 
-    def __init__(self, url, base="/v1.24/libpod", *args, **kwargs):  # pylint: disable-msg=W1113
+    def __init__(
+        self, url, base="/v1.24/libpod", *args, **kwargs
+    ):  # pylint: disable-msg=W1113
         if url is None or not url:
             raise ValueError("url is required for service connection.")
 
         super().__init__("localhost", *args, **kwargs)
         supported_schemes = ("unix", "ssh")
         uri = urllib.parse.urlparse(url)
-        if uri.scheme not in ("unix", "ssh"):
+        if uri.scheme not in supported_schemes:
             raise ValueError(
-                "The scheme '{}' is not supported, only {}".format(uri.scheme, supported_schemes)
+                "The scheme '{}' is not supported, only {}".format(
+                    uri.scheme, supported_schemes
+                )
             )
         self.uri = uri
         self.base = base
@@ -38,7 +44,9 @@ class ApiConnection(HTTPConnection, AbstractContextManager):
             sock.connect(self.uri.path)
             self.sock = sock
         else:
-            raise NotImplementedError("Scheme {} not yet implemented".format(self.uri.scheme))
+            raise NotImplementedError(
+                "Scheme {} not yet implemented".format(self.uri.scheme)
+            )
 
     def delete(self, path, params=None):
         """Basic DELETE wrapper for requests
@@ -80,20 +88,23 @@ class ApiConnection(HTTPConnection, AbstractContextManager):
         data = params
         if not headers:
             headers = {}
+        if 'content-type' not in headers and params:
+            headers['content-type'] = 'application/x-www-form-urlencoded'
+        return self.request('POST',
+                            self.join(path),
+                            body=data,
+                            headers=headers)
 
-        if encode:
-            if "content-type" not in set(key.lower() for key in headers) and params:
-                headers["content-type"] = "application/x-www-form-urlencoded"
-            data = urllib.parse.urlencode(params)
-
-        return self.request("POST", self.join(path), body=data, headers=headers)
-
-    def request(self, method, url, body=None, headers=None, *, encode_chunked=False):
+    def request(
+        self, method, url, body=None, headers=None, *, encode_chunked=False
+    ):
         """Make request to Podman service."""
         if headers is None:
             headers = {}
 
-        super().request(method, url, body, headers, encode_chunked=encode_chunked)
+        super().request(
+            method, url, body, headers, encode_chunked=encode_chunked
+        )
         response = super().getresponse()
 
         # Errors are mapped to exceptions
