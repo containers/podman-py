@@ -88,8 +88,12 @@ class ApiConnection(HTTPConnection, AbstractContextManager):
         data = params
         if not headers:
             headers = {}
-        if 'content-type' not in headers and params:
-            headers['content-type'] = 'application/x-www-form-urlencoded'
+
+        if encode:
+            if "content-type" not in set(key.lower() for key in headers) and params:
+                headers["content-type"] = "application/x-www-form-urlencoded"
+
+            data = urllib.parse.urlencode(params)
         return self.request('POST',
                             self.join(path),
                             body=data,
