@@ -11,65 +11,14 @@ env:
     HOME: "/root"  # not set by default
     GOCACHE: "${HOME}/.cache/go-build"
 
-    # VM Images are maintained in the libpod repo.
-    _BUILT_IMAGE_SUFFIX: "libpod-5874660151656448"
-    FEDORA_CACHE_IMAGE_NAME: "fedora-31-${_BUILT_IMAGE_SUFFIX}"
-    PRIOR_FEDORA_CACHE_IMAGE_NAME: "fedora-30-${_BUILT_IMAGE_SUFFIX}"
-    #UBUNTU_CACHE_IMAGE_NAME: "ubuntu-19-${_BUILT_IMAGE_SUFFIX}"
-    #PRIOR_UBUNTU_CACHE_IMAGE_NAME: "ubuntu-18-${_BUILT_IMAGE_SUFFIX}"
-
-    # Must be defined true when testing w/in containers
-    CONTAINER: "false"
-
-
-gcp_credentials: ENCRYPTED[0c639039cdd3a9a93fac7746ea1bf366d432e5ff3303bf293e64a7ff38dee85fd445f71625fa5626dc438be2b8efe939]
-
-
-
-# Default VM to use unless set or modified by task
-gce_instance:
-    image_project: "${IMAGE_PROJECT}"
-    zone: "us-central1-c"  # Required by Cirrus for the time being
-    cpu: 2
-    memory: "4Gb"
-    disk: 200  # Required for performance reasons
-    image_name: "${FEDORA_CACHE_IMAGE_NAME}"
-
-# Update metadata on VM images referenced by this repository state
-meta_task:
-    # see bors.toml
-    skip: $CIRRUS_BRANCH =~ ".*\.tmp"
-
-    container:
-        image: "quay.io/libpod/imgts:master"  # maintained in libpod repo
-        cpu: 1
-        memory: 1
-
-    env:
-        CONTAINER: true
-        # Space-separated list of images used by this repository state
-        IMGNAMES: |-
-            ${FEDORA_CACHE_IMAGE_NAME}
-            ${PRIOR_FEDORA_CACHE_IMAGE_NAME}
-            #${UBUNTU_CACHE_IMAGE_NAME}
-            #${PRIOR_UBUNTU_CACHE_IMAGE_NAME}
-        BUILDID: "${CIRRUS_BUILD_ID}"
-        REPOREF: "${CIRRUS_CHANGE_IN_REPO}"
-        GCPJSON: ENCRYPTED[e8a53772eff6e86bf6b99107b6e6ee3216e2ca00c36252ae3bd8cb29d9b903ffb2e1a1322ea810ca251b04f833b8f8d9]
-        GCPNAME: ENCRYPTED[fb878daf188d35c2ed356dc777267d99b59863ff3abf0c41199d562fca50ba0668fdb0d87e109c9eaa2a635d2825feed]
-        GCPPROJECT: ${IMAGE_PROJECT}
-        CIRRUS_CLONE_DEPTH: 1  # source not used
-
-    script: /usr/local/bin/entrypoint.sh
 
 gating_task:
 
-    # Only run this on PRs, never during post-merge testing.  This is also required
-    # for proper setting of EPOCH_TEST_COMMIT value, required by validation tools.
-
     # see bors.toml
     skip: $CIRRUS_BRANCH =~ ".*\.tmp"
 
+    # Only run this on PRs, never during post-merge testing.  This is also required
+    # for proper setting of EPOCH_TEST_COMMIT value, required by validation tools.
     only_if: $CIRRUS_BRANCH != $DEST_BRANCH
 
     env:
@@ -91,6 +40,7 @@ gating_task:
         - go get github.com/vbatts/git-validation
         - make validate
         - make unittest
+
 
 success_task:
     # This task is a required-pass in github settings,
