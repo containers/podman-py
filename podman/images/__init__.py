@@ -1,6 +1,7 @@
 """images provides the operations against images for a Podman service."""
 import json
 
+from http import HTTPStatus
 import podman.errors as errors
 
 
@@ -43,9 +44,37 @@ def remove(api, name, force=None):
         api.raise_image_not_found(e, e.response)
 
 
+def tag_image(api, name, repo, tag):
+    """create an image tag using repo and tag
+
+    :param repo: string for the image repo
+    :param tag: string for the image tag
+    :return boolean
+    """
+    data = {
+        'repo': repo,
+        'tag': tag
+    }
+    try:
+        response = api.post('/images/{}/tag'.format(api.quote(name)), data)
+        return response.status == HTTPStatus.CREATED
+    except errors.NotFoundError as e:
+        api.raise_image_not_found(e, e.response)
+
+
+def history(api, name):
+    """get image history"""
+    try:
+        response = api.get('/images/{}/history'.format(api.quote(name)))
+        return json.loads(str(response.read(), 'utf-8'))
+    except errors.NotFoundError as e:
+        api.raise_image_not_found(e, e.response)
+
+
 __ALL__ = [
     "list_images",
     "inspect",
     "image_exists",
     "remove",
+    "tag_image",
 ]
