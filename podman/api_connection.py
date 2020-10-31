@@ -1,4 +1,6 @@
 """ Provides a Connection to a Podman service. """
+import json
+import logging
 import socket
 import urllib.parse
 from contextlib import AbstractContextManager
@@ -37,6 +39,53 @@ class ApiConnection(HTTPConnection, AbstractContextManager):
         else:
             raise NotImplementedError("Scheme {} not yet implemented".format(
                 self.uri.scheme))
+
+    def delete(self, path, params=None):
+        """Basic DELETE wrapper for requests
+
+        Send a delete request with params added to the url as a query string
+
+        :param path: url part to the call, appended to self.base
+        :param params: optional dictionary of query params added to the request
+        :return: http response object
+        """
+        return self.request('DELETE', self.join(path, params))
+
+    def get(self, path, params=None):
+        """Basic GET wrapper for requests
+
+        Send a get request with params added to the url as a query string
+
+        :param path: url part to the call, appended to self.base
+        :param params: optional dictionary of query params added to the request
+        :return: http response object
+        """
+        return self.request('GET', self.join(path, params))
+
+    def post(self, path, params=None, headers=None):
+        """Basic POST wrapper for requests
+
+        Send a POST request with params converted into a urlencoded form to be
+        sent with the post.
+
+        :param path: url part to the call, appended to self.base
+        :param params: optional dictionary of query params added to the post
+                       request as url encoded form data
+        :param headers: optional dictionary of request headers
+        :return: http response object
+        """
+        if params:
+            data = urllib.parse.urlencode(params)
+        else:
+            data = None
+        if not headers:
+            headers = {}
+        if 'content-type' not in headers and params:
+            headers['content-type'] = 'application/x-www-form-urlencoded'
+        return self.request('POST',
+                            self.join(path),
+                            body=data,
+                            headers=headers)
 
     def request(self,
                 method,
@@ -89,9 +138,17 @@ class ApiConnection(HTTPConnection, AbstractContextManager):
             path = path + "?" + query
         return path
 
-    def quote(self, value):  # pylint: disable=no-self-use
+    @staticmethod
+    def quote(value):
         """Quote value for use in a URL"""
         return urllib.parse.quote(value)
+
+    @staticmethod
+    def raise_image_not_found(exc, response):
+        """helper function to raise image not found exception"""
+        body = json.loads(response.read())
+        logging.info(body['cause'])
+        raise errors.ImageNotFound(body['message']) from exc
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
