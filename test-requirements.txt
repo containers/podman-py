@@ -1,0 +1,4 @@
+fixtures
+nose
+coverage
+pylint

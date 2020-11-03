@@ -12,7 +12,10 @@ def version(api, verify_version=False):
     response.read()
     if response.getcode() == HTTPStatus.OK:
         return response.headers
+    # pylint: disable=fixme
     # TODO: verify api.base and header[Api-Version] compatible
+    if verify_version:
+        pass
     return {}
 
 
@@ -38,6 +41,7 @@ def _report_not_found(e, response):
     body = json.loads(response.read())
     logging.info(body["cause"])
     raise errors.ImageNotFound(body["message"]) from e
+
 
 __all__ = [
     "version",
