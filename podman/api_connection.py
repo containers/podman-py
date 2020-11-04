@@ -62,7 +62,7 @@ class ApiConnection(HTTPConnection, AbstractContextManager):
         """
         return self.request('GET', self.join(path, params))
 
-    def post(self, path, params=None, headers=None):
+    def post(self, path, params=None, headers=None, encode=False):
         """Basic POST wrapper for requests
 
         Send a POST request with params converted into a urlencoded form to be
@@ -72,16 +72,21 @@ class ApiConnection(HTTPConnection, AbstractContextManager):
         :param params: optional dictionary of query params added to the post
                        request as url encoded form data
         :param headers: optional dictionary of request headers
+        :param encode: flag to indicate if you want the params to be encoded
+                       prior to posting. When set to False, params are posted
+                       directly as the body of the request.
         :return: http response object
         """
-        if params:
-            data = urllib.parse.urlencode(params)
-        else:
-            data = None
+        data = params
         if not headers:
             headers = {}
-        if 'content-type' not in headers and params:
-            headers['content-type'] = 'application/x-www-form-urlencoded'
+
+        if encode:
+            if ('content-type' not in set(key.lower() for key in headers)
+                    and params):
+                headers['content-type'] = 'application/x-www-form-urlencoded'
+            data = urllib.parse.urlencode(params)
+
         return self.request('POST',
                             self.join(path),
                             body=data,
@@ -118,7 +123,18 @@ class ApiConnection(HTTPConnection, AbstractContextManager):
                 ),
                 response,
             )
-        elif HTTPStatus.INTERNAL_SERVER_ERROR >= response.status:
+        elif (response.status >= HTTPStatus.BAD_REQUEST
+              and response.status < HTTPStatus.INTERNAL_SERVER_ERROR):
+            raise errors.RequestError(
+                "Request {}:{} failed: {}".format(
+                    method,
+                    url,
+                    response.reason
+                    or "Response Status Code {}".format(response.status)
+                ),
+                response,
+            )
+        elif response.status >= HTTPStatus.INTERNAL_SERVER_ERROR:
             raise errors.InternalServerError(
                 "Request {}:{} failed: {}".format(
                     method,
@@ -144,11 +160,11 @@ class ApiConnection(HTTPConnection, AbstractContextManager):
         return urllib.parse.quote(value)
 
     @staticmethod
-    def raise_image_not_found(exc, response):
-        """helper function to raise image not found exception"""
+    def raise_not_found(exc, response, exception_type=errors.ImageNotFound):
+        """helper function to raise a not found exception of exception_type"""
         body = json.loads(response.read())
         logging.info(body['cause'])
-        raise errors.ImageNotFound(body['message']) from exc
+        raise exception_type(body['message']) from exc
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()

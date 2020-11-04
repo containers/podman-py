@@ -25,7 +25,7 @@ def get_info(api):
         response = api.get("/info")
         return json.loads(str(response.read(), 'utf-8'))
     except errors.NotFoundError as e:
-        api.raise_image_not_found(e, e.response)
+        api.raise_not_found(e, e.response)
 
 
 def show_disk_usage(api):
@@ -34,7 +34,7 @@ def show_disk_usage(api):
         response = api.get("/system/df")
         return json.loads(str(response.read(), 'utf-8'))
     except errors.NotFoundError as e:
-        api.raise_image_not_found(e, e.response)
+        api.raise_not_found(e, e.response)
 
 
 def _report_not_found(e, response):
