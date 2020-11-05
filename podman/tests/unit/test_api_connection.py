@@ -46,7 +46,7 @@ class TestApiConnection(unittest.TestCase):
         self.conn.connect()
 
         with self.conn:
-            pass # verify ContextManager code
+            pass  # verify ContextManager code
 
         mock_sock.assert_called_once_with(socket.AF_UNIX, socket.SOCK_STREAM)
         mock_close.assert_called_once_with()
