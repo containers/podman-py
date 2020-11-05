@@ -103,14 +103,15 @@ class TestApiConnection(unittest.TestCase):
         self.conn.request = mock_req
 
         self.conn.post('/baz')
-        self.conn.post('/foo', params={'a': 'b'})
-        self.conn.post('/bar', params={'a': 'b', 'c': 'd'}, headers={'x': 'y'})
+        self.conn.post('/foo', params="{'a': 'b'}")
+        self.conn.post('/bar',
+                       params={'a': 'b', 'c': 'd'},
+                       headers={'x': 'y'},
+                       encode=True)
         calls = [
             mock.call('POST', '/test/baz', body=None, headers={}),
-            mock.call('POST', '/test/foo', body='a=b',
-                      headers={
-                          'content-type': 'application/x-www-form-urlencoded'
-                      }),
+            mock.call('POST', '/test/foo', body="{'a': 'b'}",
+                      headers={}),
             mock.call('POST', '/test/bar', body='a=b&c=d',
                       headers={
                           'x': 'y',
@@ -149,6 +150,20 @@ class TestApiConnection(unittest.TestCase):
 
     @mock.patch('http.client.HTTPConnection.getresponse')
     @mock.patch('http.client.HTTPConnection.request')
+    def test_request_request_error(self, mock_request, mock_response):
+        """test request with server error response"""
+        mock_resp = mock.MagicMock()
+        mock_resp.status = 400
+        mock_response.return_value = mock_resp
+        self.assertRaises(podman.errors.RequestError,
+                          self.conn.request,
+                          'GET', 'unix://foo')
+        mock_request.assert_called_once_with('GET', 'unix://foo', None, {},
+                                             encode_chunked=False)
+        mock_response.assert_called_once_with()
+
+    @mock.patch('http.client.HTTPConnection.getresponse')
+    @mock.patch('http.client.HTTPConnection.request')
     def test_request_server_error(self, mock_request, mock_response):
         """test request with server error response"""
         mock_resp = mock.MagicMock()
@@ -167,14 +182,14 @@ class TestApiConnection(unittest.TestCase):
         self.assertEqual(ret, '%22')
 
     @mock.patch('json.loads')
-    def test_raise_image_not_found(self, mock_json):
+    def test_raise_not_found(self, mock_json):
         """test raise image not found function"""
         exc = Exception('meh')
         mock_resp = mock.MagicMock()
         mock_json.return_value = {'cause': 'c', 'message': 'msg'}
         # pylint: disable=protected-access
         self.assertRaises(podman.errors.ImageNotFound,
-                          self.conn.raise_image_not_found,
+                          self.conn.raise_not_found,
                           exc,
                           mock_resp)
         mock_json.assert_called_once()

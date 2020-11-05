@@ -63,7 +63,7 @@ class TestSystem(unittest.TestCase):
         self.request.side_effect = podman.errors.NotFoundError('yikes')
         mock_raise = mock.MagicMock()
         mock_raise.side_effect = podman.errors.ImageNotFound('yikes')
-        self.api.raise_image_not_found = mock_raise
+        self.api.raise_not_found = mock_raise
         self.assertRaises(podman.errors.ImageNotFound,
                           podman.system.get_info,
                           self.api)
@@ -82,7 +82,7 @@ class TestSystem(unittest.TestCase):
         self.request.side_effect = podman.errors.NotFoundError('yikes')
         mock_raise = mock.MagicMock()
         mock_raise.side_effect = podman.errors.ImageNotFound('yikes')
-        self.api.raise_image_not_found = mock_raise
+        self.api.raise_not_found = mock_raise
         self.assertRaises(podman.errors.ImageNotFound,
                           podman.system.show_disk_usage,
                           self.api)

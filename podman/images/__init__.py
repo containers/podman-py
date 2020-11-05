@@ -40,7 +40,7 @@ def remove(api, name, force=None):
         response = api.delete(path, params)
         return json.loads(str(response.read(), 'utf-8'))
     except errors.NotFoundError as e:
-        api.raise_image_not_found(e, e.response)
+        api.raise_not_found(e, e.response)
 
 
 __ALL__ = [

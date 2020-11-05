@@ -95,7 +95,7 @@ class TestImages(unittest.TestCase):
         """test remove call with missing image"""
         mock_raise = mock.MagicMock()
         mock_raise.side_effect = podman.errors.ImageNotFound('yikes')
-        self.api.raise_image_not_found = mock_raise
+        self.api.raise_not_found = mock_raise
         self.request.side_effect = podman.errors.NotFoundError('nope')
         self.assertRaises(podman.errors.ImageNotFound,
                           podman.images.remove,
