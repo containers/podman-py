@@ -34,6 +34,7 @@ class PodNotFound(NotFoundError):
 
 class RequestError(HTTPException):
     """Podman service reported issue with the request"""
+
     def __init__(self, message, response=None):
         super().__init__(message)
         self.response = response

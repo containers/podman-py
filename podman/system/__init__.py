@@ -1,7 +1,7 @@
 """Provide system level information for the Podman service."""
-from http import HTTPStatus
 import json
 import logging
+from http import HTTPStatus
 
 import podman.errors as errors
 

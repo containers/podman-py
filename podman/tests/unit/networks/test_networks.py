@@ -14,11 +14,11 @@
 #
 """podman.networks unit tests"""
 
-import unittest
-
-from unittest import mock
 import json
+import unittest
 import urllib.parse
+from unittest import mock
+
 import podman.errors
 import podman.networks
 
