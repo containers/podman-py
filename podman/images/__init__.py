@@ -19,7 +19,7 @@ def inspect(api, name):
         response = api.get("/images/{}/json".format(api.quote(name)))
         return json.loads(str(response.read(), "utf-8"))
     except errors.NotFoundError as e:
-        api.raise_not_found(e, e.response)
+        api.raise_image_not_found(e, e.response)
 
 
 def image_exists(api, name):
