@@ -31,15 +31,11 @@ class TestApiConnection(unittest.TestCase):
 
     def test_missing_url(self):
         """test missing url to constructor"""
-        self.assertRaises(ValueError,
-                          ApiConnection,
-                          None)
+        self.assertRaises(ValueError, ApiConnection, None)
 
     def test_invalid_scheme(self):
         """test invalid scheme to constructor"""
-        self.assertRaises(ValueError,
-                          ApiConnection,
-                          "tcp://localhost//")
+        self.assertRaises(ValueError, ApiConnection, "tcp://localhost//")
 
     @mock.patch('socket.socket')
     def test_connect(self, mock_sock):
@@ -52,8 +48,7 @@ class TestApiConnection(unittest.TestCase):
     def test_connect_fail(self):
         """test connect not implemented"""
         conn = ApiConnection('ssh:///')
-        self.assertRaises(NotImplementedError,
-                          conn.connect)
+        self.assertRaises(NotImplementedError, conn.connect)
 
     def test_join(self):
         """test join call"""
@@ -64,8 +59,7 @@ class TestApiConnection(unittest.TestCase):
         """test join call with params"""
         path = '/foo'
         params = {'a': '"b"'}
-        self.assertEqual(self.conn.join(path, params),
-                         '/test/foo?a=%22b%22')
+        self.assertEqual(self.conn.join(path, params), '/test/foo?a=%22b%22')
 
     def test_delete(self):
         """test delete wrapper"""
@@ -78,7 +72,7 @@ class TestApiConnection(unittest.TestCase):
         calls = [
             mock.call('DELETE', '/test/baz'),
             mock.call('DELETE', '/test/foo?a=b'),
-            mock.call('DELETE', '/test/bar?a=b&c=d')
+            mock.call('DELETE', '/test/bar?a=b&c=d'),
         ]
         mock_req.assert_has_calls(calls)
 
@@ -93,7 +87,7 @@ class TestApiConnection(unittest.TestCase):
         calls = [
             mock.call('GET', '/test/baz'),
             mock.call('GET', '/test/foo?a=b'),
-            mock.call('GET', '/test/bar?a=b&c=d')
+            mock.call('GET', '/test/bar?a=b&c=d'),
         ]
         mock_req.assert_has_calls(calls)
 
@@ -104,20 +98,16 @@ class TestApiConnection(unittest.TestCase):
 
         self.conn.post('/baz')
         self.conn.post('/foo', params="{'a': 'b'}")
-        self.conn.post('/bar',
-                       params={'a': 'b', 'c': 'd'},
-                       headers={'x': 'y'},
-                       encode=True)
+        self.conn.post('/bar', params={'a': 'b', 'c': 'd'}, headers={'x': 'y'}, encode=True)
         calls = [
             mock.call('POST', '/test/baz', body=None, headers={}),
-            mock.call('POST', '/test/foo', body="{'a': 'b'}",
-                      headers={}),
-            mock.call('POST', '/test/bar', body='a=b&c=d',
-                      headers={
-                          'x':            'y',
-                          'content-type': 'application/x-www-form-urlencoded'
-                      }),
-
+            mock.call('POST', '/test/foo', body="{'a': 'b'}", headers={}),
+            mock.call(
+                'POST',
+                '/test/bar',
+                body='a=b&c=d',
+                headers={'x': 'y', 'content-type': 'application/x-www-form-urlencoded'},
+            ),
         ]
         mock_req.assert_has_calls(calls)
 
@@ -129,8 +119,7 @@ class TestApiConnection(unittest.TestCase):
         mock_resp.status = 200
         mock_response.return_value = mock_resp
         ret = self.conn.request('GET', 'unix://foo')
-        mock_request.assert_called_once_with('GET', 'unix://foo', None, {},
-                                             encode_chunked=False)
+        mock_request.assert_called_once_with('GET', 'unix://foo', None, {}, encode_chunked=False)
         mock_response.assert_called_once_with()
         self.assertEqual(ret, mock_resp)
 
@@ -141,11 +130,8 @@ class TestApiConnection(unittest.TestCase):
         mock_resp = mock.MagicMock()
         mock_resp.status = 404
         mock_response.return_value = mock_resp
-        self.assertRaises(podman.errors.NotFoundError,
-                          self.conn.request,
-                          'GET', 'unix://foo')
-        mock_request.assert_called_once_with('GET', 'unix://foo', None, {},
-                                             encode_chunked=False)
+        self.assertRaises(podman.errors.NotFoundError, self.conn.request, 'GET', 'unix://foo')
+        mock_request.assert_called_once_with('GET', 'unix://foo', None, {}, encode_chunked=False)
         mock_response.assert_called_once_with()
 
     @mock.patch('http.client.HTTPConnection.getresponse')
@@ -155,11 +141,8 @@ class TestApiConnection(unittest.TestCase):
         mock_resp = mock.MagicMock()
         mock_resp.status = 400
         mock_response.return_value = mock_resp
-        self.assertRaises(podman.errors.RequestError,
-                          self.conn.request,
-                          'GET', 'unix://foo')
-        mock_request.assert_called_once_with('GET', 'unix://foo', None, {},
-                                             encode_chunked=False)
+        self.assertRaises(podman.errors.RequestError, self.conn.request, 'GET', 'unix://foo')
+        mock_request.assert_called_once_with('GET', 'unix://foo', None, {}, encode_chunked=False)
         mock_response.assert_called_once_with()
 
     @mock.patch('http.client.HTTPConnection.getresponse')
@@ -169,11 +152,8 @@ class TestApiConnection(unittest.TestCase):
         mock_resp = mock.MagicMock()
         mock_resp.status = 500
         mock_response.return_value = mock_resp
-        self.assertRaises(podman.errors.InternalServerError,
-                          self.conn.request,
-                          'GET', 'unix://foo')
-        mock_request.assert_called_once_with('GET', 'unix://foo', None, {},
-                                             encode_chunked=False)
+        self.assertRaises(podman.errors.InternalServerError, self.conn.request, 'GET', 'unix://foo')
+        mock_request.assert_called_once_with('GET', 'unix://foo', None, {}, encode_chunked=False)
         mock_response.assert_called_once_with()
 
     def test_quote(self):
@@ -188,8 +168,5 @@ class TestApiConnection(unittest.TestCase):
         mock_resp = mock.MagicMock()
         mock_json.return_value = {'cause': 'c', 'message': 'msg'}
         # pylint: disable=protected-access
-        self.assertRaises(podman.errors.ImageNotFound,
-                          self.conn.raise_not_found,
-                          exc,
-                          mock_resp)
+        self.assertRaises(podman.errors.ImageNotFound, self.conn.raise_not_found, exc, mock_resp)
         mock_json.assert_called_once()

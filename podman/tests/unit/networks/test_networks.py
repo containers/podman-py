@@ -50,7 +50,8 @@ class TestNetwork(unittest.TestCase):
         self.request.assert_called_once_with(
             '/networks/create?name=test',
             headers={'content-type': 'application/json'},
-            params='{"DisableDNS": false}')
+            params='{"DisableDNS": false}',
+        )
 
     def test_create_with_string(self):
         """test create call with string"""
@@ -65,7 +66,8 @@ class TestNetwork(unittest.TestCase):
         self.request.assert_called_once_with(
             '/networks/create?name=test',
             headers={'content-type': 'application/json'},
-            params='{"DisableDNS": false}')
+            params='{"DisableDNS": false}',
+        )
 
     def test_create_fail(self):
         """test create call with an error"""
@@ -73,11 +75,14 @@ class TestNetwork(unittest.TestCase):
             'DisableDNS': False,
         }
         self.response.status = 400
-        self.request.side_effect = podman.errors.RequestError('meh',
-                                                              self.response)
-        self.assertRaises(podman.errors.RequestError,
-                          podman.networks.create,
-                          self.api, 'test', json.dumps(network))
+        self.request.side_effect = podman.errors.RequestError('meh', self.response)
+        self.assertRaises(
+            podman.errors.RequestError,
+            podman.networks.create,
+            self.api,
+            'test',
+            json.dumps(network),
+        )
 
     def test_inspect(self):
         """test inspect call"""
@@ -94,10 +99,9 @@ class TestNetwork(unittest.TestCase):
         mock_raise = mock.MagicMock()
         mock_raise.side_effect = podman.errors.NetworkNotFound('yikes')
         self.api.raise_not_found = mock_raise
-        self.assertRaises(podman.errors.NetworkNotFound,
-                          podman.networks.inspect,
-                          self.api,
-                          'podman')
+        self.assertRaises(
+            podman.errors.NetworkNotFound, podman.networks.inspect, self.api, 'podman'
+        )
 
     def test_list_networks(self):
         """test networks list call"""
@@ -115,8 +119,7 @@ class TestNetwork(unittest.TestCase):
         self.response.read = mock_read
         ret = podman.networks.list_networks(self.api, 'name=podman')
         self.assertEqual(ret, [{'Name': 'podman'}])
-        self.request.assert_called_once_with('/networks/json',
-                                             {'filter': 'name=podman'})
+        self.request.assert_called_once_with('/networks/json', {'filter': 'name=podman'})
 
     def test_remove(self):
         """test remove call"""
@@ -138,8 +141,7 @@ class TestNetwork(unittest.TestCase):
         expected = [{'deleted': 'str', 'untagged': ['str']}]
         ret = podman.networks.remove(self.api, 'foo', True)
         self.assertEqual(ret, expected)
-        self.api.delete.assert_called_once_with('/networks/foo',
-                                                {'force': True})
+        self.api.delete.assert_called_once_with('/networks/foo', {'force': True})
 
     def test_remove_missing(self):
         """test remove call with missing network"""
@@ -147,7 +149,4 @@ class TestNetwork(unittest.TestCase):
         mock_raise.side_effect = podman.errors.NetworkNotFound('yikes')
         self.api.raise_not_found = mock_raise
         self.request.side_effect = podman.errors.NotFoundError('nope')
-        self.assertRaises(podman.errors.NetworkNotFound,
-                          podman.networks.remove,
-                          self.api,
-                          'foo')
+        self.assertRaises(podman.errors.NetworkNotFound, podman.networks.remove, self.api, 'foo')

@@ -25,9 +25,7 @@ def create(api, name, network):
     else:
         data = network
     path = '/networks/create?name={}'.format(api.quote(name))
-    response = api.post(path,
-                        params=data,
-                        headers={'content-type': 'application/json'})
+    response = api.post(path, params=data, headers={'content-type': 'application/json'})
     return json.loads(str(response.read(), 'utf-8'))
 
 

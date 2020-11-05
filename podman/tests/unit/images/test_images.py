@@ -97,9 +97,7 @@ class TestImages(unittest.TestCase):
         mock_raise.side_effect = podman.errors.ImageNotFound("yikes")
         self.api.raise_not_found = mock_raise
         self.request.side_effect = podman.errors.NotFoundError("nope")
-        self.assertRaises(
-            podman.errors.ImageNotFound, podman.images.remove, self.api, "foo"
-        )
+        self.assertRaises(podman.errors.ImageNotFound, podman.images.remove, self.api, "foo")
 
     def test_tag_image(self):
         """test tag image"""
@@ -138,6 +136,4 @@ class TestImages(unittest.TestCase):
         mock_raise.side_effect = podman.errors.ImageNotFound("yikes")
         self.api.raise_image_not_found = mock_raise
         self.request.side_effect = podman.errors.NotFoundError("nope")
-        self.assertRaises(
-            podman.errors.ImageNotFound, podman.images.history, self.api, "foo"
-        )
+        self.assertRaises(podman.errors.ImageNotFound, podman.images.history, self.api, "foo")

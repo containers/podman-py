@@ -12,7 +12,7 @@ class NotFoundError(HTTPException):
 
 class ImageNotFound(NotFoundError):
     """HTTP request returned a http.HTTPStatus.NOT_FOUND.
-       Specialized for Image not found.
+    Specialized for Image not found.
     """
 
 
@@ -22,13 +22,13 @@ class NetworkNotFound(NotFoundError):
 
 class ContainerNotFound(NotFoundError):
     """HTTP request returned a http.HTTPStatus.NOT_FOUND.
-       Specialized for Container not found.
+    Specialized for Container not found.
     """
 
 
 class PodNotFound(NotFoundError):
     """HTTP request returned a http.HTTPStatus.NOT_FOUND.
-       Specialized for Pod not found.
+    Specialized for Pod not found.
     """
 
 

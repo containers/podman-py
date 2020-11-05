@@ -64,9 +64,7 @@ class TestSystem(unittest.TestCase):
         mock_raise = mock.MagicMock()
         mock_raise.side_effect = podman.errors.ImageNotFound('yikes')
         self.api.raise_not_found = mock_raise
-        self.assertRaises(podman.errors.ImageNotFound,
-                          podman.system.get_info,
-                          self.api)
+        self.assertRaises(podman.errors.ImageNotFound, podman.system.get_info, self.api)
 
     def test_show_disk_usage(self):
         """test df call"""
@@ -83,6 +81,4 @@ class TestSystem(unittest.TestCase):
         mock_raise = mock.MagicMock()
         mock_raise.side_effect = podman.errors.ImageNotFound('yikes')
         self.api.raise_not_found = mock_raise
-        self.assertRaises(podman.errors.ImageNotFound,
-                          podman.system.show_disk_usage,
-                          self.api)
+        self.assertRaises(podman.errors.ImageNotFound, podman.system.show_disk_usage, self.api)
