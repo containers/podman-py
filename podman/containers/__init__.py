@@ -98,7 +98,7 @@ def inspect_container(api, name, params=None):
     """Returns low-level information about a container"""
     # this endpoint is non-functional podman 1.9.2
     path = "/containers/{}/json".format(name)
-    return json.loads(make_call(api, path, params))
+    return json.loads(api.make_call(api, path, params))
 
 
 def kill_container(api, name, params=None):
@@ -221,14 +221,14 @@ def unpause_container(api, name):
     return json.loads(response)
 
 
-def wait_on_container(api, name, params=None):
+def wait_on_container(api):
     """Wait on a container to meet a given condition"""
     # this endpoint is non-functional podman 1.9.2
     path = "/containers/{}/wait"
     return api.make_call(api, path, "POST")
 
 
-def create_container(api, name, body):
+def create_container(api, body):
     """Create a container"""
     # this endpoint is non-functional podman 1.9.2
     path = "containers/create"
@@ -264,7 +264,7 @@ def generate_kube_yaml_file(api, name, params=None):
     return json.loads(api.make_call(api, path, params=params))
 
 
-def create_based_on_kube_yaml_file(api, name, body, **kwargs):
+def create_based_on_kube_yaml_file(api, body, **kwargs):
     """Create and run pods based on a Kubernetes YAML file (pod or service kind"""
     # this endpoint is non-functiaon in podman 1.9.2
     path = "/play/kube"
