@@ -81,6 +81,16 @@ class ApiConnection(HTTPConnection, AbstractContextManager):
             )
         return response
 
+    def make_call(api, endpoint, method='GET', params=None, body=None):
+        """A helper function to keep things DRY"""
+        path = api.join(endpoint, params)
+        headers = {}
+        data = None
+        if method == 'POST':
+            headers['Content-type'] = 'application/x-www-form-urlencoded'
+            data = urllib.parse.urlencode(body)
+        return api.request(method, endpoint, body=data, headers=headers)
+
     def join(self, path, query=None):
         """Create a service URL.  Join base + path + query parameters"""
         path = self.base + path
