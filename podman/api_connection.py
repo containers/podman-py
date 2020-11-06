@@ -81,7 +81,7 @@ class ApiConnection(HTTPConnection, AbstractContextManager):
             )
         return response
 
-    def make_call(api, endpoint, method='GET', body=None, **kwargs):
+    def make_call(self, api, endpoint, method='GET', body=None, **kwargs):
         """A helper function to keep things DRY"""
         path = api.join(endpoint, kwargs)
         headers = {}
