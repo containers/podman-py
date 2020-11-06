@@ -15,8 +15,8 @@
 """podman.system unit tests"""
 
 import unittest
-
 from unittest import mock
+
 import podman.errors
 import podman.system
 

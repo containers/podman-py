@@ -62,7 +62,7 @@ def remove(api, name, force=None):
         api.raise_not_found(e, e.response, errors.NetworkNotFound)
 
 
-__ALL__ = [
+__all__ = [
     "create",
     "inspect",
     "list_networks",

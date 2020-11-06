@@ -14,12 +14,12 @@
 #
 """podman.ApiConnection unit tests"""
 
-import unittest
 import socket
-
+import unittest
 from unittest import mock
-from podman import ApiConnection
+
 import podman.errors
+from podman import ApiConnection
 
 
 class TestApiConnection(unittest.TestCase):
@@ -114,7 +114,7 @@ class TestApiConnection(unittest.TestCase):
                       headers={}),
             mock.call('POST', '/test/bar', body='a=b&c=d',
                       headers={
-                          'x': 'y',
+                          'x':            'y',
                           'content-type': 'application/x-www-form-urlencoded'
                       }),
 

@@ -15,9 +15,9 @@
 """podman.images unit tests"""
 
 import unittest
-
-from unittest import mock
 import urllib.parse
+from unittest import mock
+
 import podman.errors
 import podman.system
 
@@ -37,7 +37,7 @@ class TestImages(unittest.TestCase):
         self.api.quote = urllib.parse.quote
 
     def test_list_images(self):
-        """test version call"""
+        """test list call"""
         mock_read = mock.MagicMock()
         mock_read.return_value = b'[{"Id": "foo"}]'
         self.response.status = 200
@@ -45,7 +45,7 @@ class TestImages(unittest.TestCase):
         expected = [{"Id": "foo"}]
         ret = podman.images.list_images(self.api)
         self.assertEqual(ret, expected)
-        self.request.assert_called_once_with('/images/json')
+        self.request.assert_called_once_with("/images/json")
 
     def test_inspect(self):
         """test inspect call"""
@@ -54,20 +54,20 @@ class TestImages(unittest.TestCase):
         self.response.status = 200
         self.response.read = mock_read
         expected = {"Id": "foo"}
-        ret = podman.images.inspect(self.api, 'foo')
+        ret = podman.images.inspect(self.api, "foo")
         self.assertEqual(ret, expected)
-        self.request.assert_called_once_with('/images/foo/json')
+        self.request.assert_called_once_with("/images/foo/json")
 
     def test_image_exists(self):
         """test exists call"""
         self.response.status = 204
-        self.assertTrue(podman.images.image_exists(self.api, 'foo'))
-        self.request.assert_called_once_with('/images/foo/exists')
+        self.assertTrue(podman.images.image_exists(self.api, "foo"))
+        self.request.assert_called_once_with("/images/foo/exists")
 
     def test_image_exists_missing(self):
         """test exists call with missing image"""
-        self.request.side_effect = podman.errors.NotFoundError('nope')
-        self.assertFalse(podman.images.image_exists(self.api, 'foo'))
+        self.request.side_effect = podman.errors.NotFoundError("nope")
+        self.assertFalse(podman.images.image_exists(self.api, "foo"))
 
     def test_remove(self):
         """test remove call"""
@@ -75,10 +75,10 @@ class TestImages(unittest.TestCase):
         mock_read.return_value = b'[{"deleted": "str","untagged": ["str"]}]'
         self.response.status = 200
         self.response.read = mock_read
-        expected = [{'deleted': 'str', 'untagged': ['str']}]
-        ret = podman.images.remove(self.api, 'foo')
+        expected = [{"deleted": "str", "untagged": ["str"]}]
+        ret = podman.images.remove(self.api, "foo")
         self.assertEqual(ret, expected)
-        self.api.delete.assert_called_once_with('/images/foo', {})
+        self.api.delete.assert_called_once_with("/images/foo", {})
 
     def test_remove_force(self):
         """test remove call with force"""
@@ -86,37 +86,40 @@ class TestImages(unittest.TestCase):
         mock_read.return_value = b'[{"deleted": "str","untagged": ["str"]}]'
         self.response.status = 200
         self.response.read = mock_read
-        expected = [{'deleted': 'str', 'untagged': ['str']}]
-        ret = podman.images.remove(self.api, 'foo', True)
+        expected = [{"deleted": "str", "untagged": ["str"]}]
+        ret = podman.images.remove(self.api, "foo", True)
         self.assertEqual(ret, expected)
-        self.api.delete.assert_called_once_with('/images/foo', {'force': True})
+        self.api.delete.assert_called_once_with("/images/foo", {"force": True})
 
     def test_remove_missing(self):
         """test remove call with missing image"""
         mock_raise = mock.MagicMock()
-        mock_raise.side_effect = podman.errors.ImageNotFound('yikes')
+        mock_raise.side_effect = podman.errors.ImageNotFound("yikes")
         self.api.raise_not_found = mock_raise
-        self.request.side_effect = podman.errors.NotFoundError('nope')
-        self.assertRaises(podman.errors.ImageNotFound,
-                          podman.images.remove,
-                          self.api,
-                          'foo')
+        self.request.side_effect = podman.errors.NotFoundError("nope")
+        self.assertRaises(
+            podman.errors.ImageNotFound, podman.images.remove, self.api, "foo"
+        )
 
     def test_tag_image(self):
         """test tag image"""
         self.response.status = 201
-        self.assertTrue(podman.images.tag_image(self.api, 'foo', 'bar', 'baz'))
+        self.assertTrue(podman.images.tag_image(self.api, "foo", "bar", "baz"))
 
     def test_tag_image_fail(self):
         """test remove call with missing image"""
         mock_raise = mock.MagicMock()
-        mock_raise.side_effect = podman.errors.ImageNotFound('yikes')
+        mock_raise.side_effect = podman.errors.ImageNotFound("yikes")
         self.api.raise_image_not_found = mock_raise
-        self.request.side_effect = podman.errors.NotFoundError('nope')
-        self.assertRaises(podman.errors.ImageNotFound,
-                          podman.images.tag_image,
-                          self.api,
-                          'foo', 'bar', 'baz')
+        self.request.side_effect = podman.errors.NotFoundError("nope")
+        self.assertRaises(
+            podman.errors.ImageNotFound,
+            podman.images.tag_image,
+            self.api,
+            "foo",
+            "bar",
+            "baz",
+        )
 
     def test_history(self):
         """test image history"""
@@ -124,18 +127,17 @@ class TestImages(unittest.TestCase):
         mock_read.return_value = b'{"Id": "a"}'
         self.response.status = 200
         self.response.read = mock_read
-        expected = {'Id': 'a'}
-        ret = podman.images.history(self.api, 'foo')
+        expected = {"Id": "a"}
+        ret = podman.images.history(self.api, "foo")
         self.assertEqual(ret, expected)
-        self.api.delete.assert_called_once_with('/images/foo/history')
+        self.api.delete.assert_called_once_with("/images/foo/history")
 
     def test_history_missing_image(self):
         """test history with missing image"""
         mock_raise = mock.MagicMock()
-        mock_raise.side_effect = podman.errors.ImageNotFound('yikes')
+        mock_raise.side_effect = podman.errors.ImageNotFound("yikes")
         self.api.raise_image_not_found = mock_raise
-        self.request.side_effect = podman.errors.NotFoundError('nope')
-        self.assertRaises(podman.errors.ImageNotFound,
-                          podman.images.history,
-                          self.api,
-                          'foo')
+        self.request.side_effect = podman.errors.NotFoundError("nope")
+        self.assertRaises(
+            podman.errors.ImageNotFound, podman.images.history, self.api, "foo"
+        )
