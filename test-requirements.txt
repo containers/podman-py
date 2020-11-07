@@ -2,3 +2,4 @@ fixtures
 nose
 coverage
 pylint
+black
