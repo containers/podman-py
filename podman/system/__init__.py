@@ -29,7 +29,10 @@ def get_info(api):
 
 
 def show_disk_usage(api):
-    """Return information about disk usage for containers, images and volumes"""
+    """
+    Return information about disk usage for containers,
+    images and volumes
+    """
     try:
         response = api.get("/system/df")
         return json.loads(str(response.read(), 'utf-8'))
