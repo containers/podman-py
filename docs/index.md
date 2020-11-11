@@ -18,6 +18,7 @@ development and contributors are welcome!
 │   ├── api_connection.py   // the main class that connects to the libpod api
 │   ├── errors              // error handling
 │   ├── images              // interact with the images stored on your system
+│   ├── pods                // interact with pods
 │   ├── system              // info and management of podman<->OS integration, config, data storage etc.
 │   └── tests               // automated tests, e.g. unit tests
 ├── README.md               // the github landing page info text
