@@ -19,9 +19,7 @@ class ApiConnection(HTTPConnection, AbstractContextManager):
     to a Podman service.
     """
 
-    def __init__(
-        self, url, base="/v1.24/libpod", *args, **kwargs
-    ):  # pylint: disable-msg=W1113
+    def __init__(self, url, base="/v2.0.0/libpod", *args, **kwargs):  # pylint: disable-msg=W1113
         if url is None or not url:
             raise ValueError("url is required for service connection.")
 
@@ -30,9 +28,7 @@ class ApiConnection(HTTPConnection, AbstractContextManager):
         uri = urllib.parse.urlparse(url)
         if uri.scheme not in supported_schemes:
             raise ValueError(
-                "The scheme '{}' is not supported, only {}".format(
-                    uri.scheme, supported_schemes
-                )
+                "The scheme '{}' is not supported, only {}".format(uri.scheme, supported_schemes)
             )
         self.uri = uri
         self.base = base
@@ -44,9 +40,7 @@ class ApiConnection(HTTPConnection, AbstractContextManager):
             sock.connect(self.uri.path)
             self.sock = sock
         else:
-            raise NotImplementedError(
-                "Scheme {} not yet implemented".format(self.uri.scheme)
-            )
+            raise NotImplementedError("Scheme {} not yet implemented".format(self.uri.scheme))
 
     def delete(self, path, params=None):
         """Basic DELETE wrapper for requests
@@ -94,21 +88,14 @@ class ApiConnection(HTTPConnection, AbstractContextManager):
                 headers["content-type"] = "application/x-www-form-urlencoded"
 
             data = urllib.parse.urlencode(params)
-        return self.request('POST',
-                            self.join(path),
-                            body=data,
-                            headers=headers)
+        return self.request('POST', self.join(path), body=data, headers=headers)
 
-    def request(
-        self, method, url, body=None, headers=None, *, encode_chunked=False
-    ):
+    def request(self, method, url, body=None, headers=None, *, encode_chunked=False):
         """Make request to Podman service."""
         if headers is None:
             headers = {}
 
-        super().request(
-            method, url, body, headers, encode_chunked=encode_chunked
-        )
+        super().request(method, url, body, headers, encode_chunked=encode_chunked)
         response = super().getresponse()
 
         # Errors are mapped to exceptions
@@ -168,10 +155,10 @@ class ApiConnection(HTTPConnection, AbstractContextManager):
         raise exception_type(body["message"]) from exc
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.close()
+        super().close()
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     with ApiConnection("unix:///run/podman/podman.sock") as api:
         print(system.version(api))
         print(images.list_images(api))
