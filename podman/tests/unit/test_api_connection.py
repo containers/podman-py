@@ -37,13 +37,19 @@ class TestApiConnection(unittest.TestCase):
         """test invalid scheme to constructor"""
         self.assertRaises(ValueError, ApiConnection, "tcp://localhost//")
 
+    @mock.patch('http.client.HTTPConnection.close')
     @mock.patch('socket.socket')
-    def test_connect(self, mock_sock):
+    def test_connect(self, mock_sock, mock_close):
         """test connect for unix"""
         mock_sock_obj = mock.MagicMock()
         mock_sock.return_value = mock_sock_obj
         self.conn.connect()
+
+        with self.conn:
+            pass # verify ContextManager code
+
         mock_sock.assert_called_once_with(socket.AF_UNIX, socket.SOCK_STREAM)
+        mock_close.assert_called_once_with()
 
     def test_connect_fail(self):
         """test connect not implemented"""
