@@ -32,6 +32,12 @@ class PodNotFound(NotFoundError):
     """
 
 
+class ManifestNotFound(NotFoundError):
+    """HTTP request returned a http.HTTPStatus.NOT_FOUND.
+    Specialized for Manifest not found.
+    """
+
+
 class RequestError(HTTPException):
     """Podman service reported issue with the request"""
 
