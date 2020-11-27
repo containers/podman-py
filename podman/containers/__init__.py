@@ -9,11 +9,11 @@ import podman.errors as errors
 __all__ = []
 
 
-def list_containers(api, all_=None):
+def list_containers(api, all=None):
     """List all images for a Podman service."""
     path = "/containers/json"
     query = {}
-    if all_:
+    if all:
         query["all"] = True
     response = api.get(path, query)
     # observed to return None when no containers
