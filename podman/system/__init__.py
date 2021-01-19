@@ -28,6 +28,16 @@ def get_info(api):
         api.raise_not_found(e, e.response)
 
 
+# this **looks** a lot like the above but is not equivalent - at all !
+# the difference lies with calling api.join()
+# and the output have nothing to do with one another
+# xxx the naming is going to be confusing
+def info(api):
+    """Returns information on the system and libpod configuration"""
+    response = api.get("/info")
+    return json.loads(response.read())
+
+
 def show_disk_usage(api):
     """
     Return information about disk usage for containers,
@@ -49,5 +59,6 @@ def _report_not_found(e, response):
 __all__ = [
     "version",
     "get_info",
+    "info",
     "show_disk_usage",
 ]

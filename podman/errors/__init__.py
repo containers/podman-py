@@ -1,4 +1,4 @@
-"""errors module is used ti extend HTTPException for Podman API."""
+"""errors module is used to extend HTTPException for Podman API."""
 from http.client import HTTPException
 
 
