@@ -123,12 +123,19 @@ class ApiConnection(HTTPConnection, AbstractContextManager):
                 response,
             )
         elif response.status >= HTTPStatus.INTERNAL_SERVER_ERROR:
+            try:
+                error_body = response.read()
+                error_message = json.loads(error_body)["message"]
+            except:
+                error_message = (
+                    HTTPStatus.INTERNAL_SERVER_ERROR.description
+                    or HTTPStatus.INTERNAL_SERVER_ERROR.phrase
+                )
             raise errors.InternalServerError(
                 "Request {}:{} failed: {}".format(
                     method,
                     url,
-                    HTTPStatus.INTERNAL_SERVER_ERROR.description
-                    or HTTPStatus.INTERNAL_SERVER_ERROR.phrase,
+                    error_message
                 ),
                 response,
             )
