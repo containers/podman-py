@@ -157,6 +157,21 @@ class TestApiConnection(unittest.TestCase):
         """test request with server error response"""
         mock_resp = mock.MagicMock()
         mock_resp.status = 500
+        mock_resp.read.return_value = b'{"message":"My error"}'
+        mock_response.return_value = mock_resp
+        with self.assertRaises(podman.errors.InternalServerError, ) as cm:
+            self.conn.request('GET', 'unix://foo')
+        mock_request.assert_called_once_with('GET', 'unix://foo', None, {}, encode_chunked=False)
+        mock_response.assert_called_once_with()
+        self.assertEqual(str(cm.exception), 'Request GET:unix://foo failed: My error')
+
+    @mock.patch('http.client.HTTPConnection.getresponse')
+    @mock.patch('http.client.HTTPConnection.request')
+    def test_request_server_error_nomessage(self, mock_request, mock_response):
+        """test request with server error response, and no message"""
+        mock_resp = mock.MagicMock()
+        mock_resp.status = 500
+        mock_resp.read.return_value = b'I am not json'
         mock_response.return_value = mock_resp
         self.assertRaises(podman.errors.InternalServerError, self.conn.request, 'GET', 'unix://foo')
         mock_request.assert_called_once_with('GET', 'unix://foo', None, {}, encode_chunked=False)
