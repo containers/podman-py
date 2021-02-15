@@ -1,5 +1,13 @@
-"""errors module is used to extend HTTPException for Podman API."""
+"""errors for Podman API.
+
+Notes:
+    See exceptions.py for APIClient errors.
+"""
 from http.client import HTTPException
+
+from .exceptions import APIError, ImageNotFound, NotFound
+
+__all__ = ["APIError", "ImageNotFound", "NotFound"]
 
 
 class NotFoundError(HTTPException):
