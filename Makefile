@@ -11,13 +11,13 @@ HEAD ?= HEAD
 export PODMAN_VERSION ?= '1.80'
 
 .PHONY: podman-py
-podman-py:
+podman-py: env
 	PODMAN_VERSION=$(PODMAN_VERSION) \
 	$(PYTHON) setup.py sdist bdist
 
 .PHONY: env
 env:
-	dnf install python3-coverage python3-pylint -y
+	dnf install python3-coverage python3-pylint python3-requests -y
 	# -- or --
 	# $(PYTHON) -m pip install tox
 	# -- or --

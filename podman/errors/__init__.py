@@ -18,7 +18,8 @@ class NotFoundError(HTTPException):
         self.response = response
 
 
-class ImageNotFound(NotFoundError):
+# TODO this collision needs resolved.
+class ImageNotFound(NotFoundError):  # pylint: disable=function-redefined
     """HTTP request returned a http.HTTPStatus.NOT_FOUND.
     Specialized for Image not found.
     """

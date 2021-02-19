@@ -1,11 +1,13 @@
+"""Specialized Transport Adapter for UNIX domain sockets."""
+
 import socket
 from typing import Any, Mapping, Optional, Union
 from urllib.parse import unquote, urlparse
 
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3 import HTTPConnectionPool
-from requests.packages.urllib3.connection import HTTPConnection
-from requests.packages.urllib3.util import Timeout
+from requests.packages.urllib3 import HTTPConnectionPool  # pylint: disable=import-error
+from requests.packages.urllib3.connection import HTTPConnection  # pylint: disable=import-error
+from requests.packages.urllib3.util import Timeout  # pylint: disable=import-error
 
 
 class UDSConnection(HTTPConnection):
@@ -30,6 +32,7 @@ class UDSConnection(HTTPConnection):
         self.timeout = timeout
 
     def connect(self):
+        """Returns socket for unix domain socket."""
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         sock.settimeout(self.timeout)
 
@@ -38,11 +41,16 @@ class UDSConnection(HTTPConnection):
         self.sock = sock
 
     def __del__(self):
+        """Cleanup connection."""
         if self.sock:
             self.sock.close()
 
 
 class UDSConnectionPool(HTTPConnectionPool):
+    """Specialization of urllib3 HTTPConnectionPool for UNIX domain sockets."""
+
+    # pylint: disable=too-few-public-methods
+
     def __init__(
         self,
         host: str,
@@ -59,6 +67,11 @@ class UDSConnectionPool(HTTPConnectionPool):
 
 
 class UDSAdapter(HTTPAdapter):
+    """Specialization of requests transport adapter for unix domain sockets."""
+
+    # Abstract methods (get_connection) are specialized and pylint cannot walk hierarchy.
+    # pylint: disable=arguments-differ
+
     def __init__(self, *args, **kwargs):
 
         self.timeout = None

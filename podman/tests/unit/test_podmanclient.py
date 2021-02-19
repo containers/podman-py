@@ -11,7 +11,7 @@ class TestPodmanClient(unittest.TestCase):
         super().setUp()
         self.client = PodmanClient(base_url='unix://localhost:9999')
 
-    @mock.patch('http.client.HTTPConnection.close')
+    @mock.patch('requests.Session.close')
     def test_close(self, mock_close):
         self.client.close()
 

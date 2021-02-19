@@ -1,3 +1,4 @@
+"""APIClient for connecting to Podman service."""
 import urllib.parse
 from typing import (
     Any,
@@ -15,7 +16,6 @@ from typing import (
 
 import requests
 from requests import Response
-from requests.adapters import DEFAULT_POOLSIZE
 
 from podman.api.uds import UDSAdapter
 from podman.tlsconfig import TLSConfig
@@ -37,6 +37,10 @@ _Timeout = Union[None, float, Tuple[float, float], Tuple[float, None]]
 class APIClient(requests.Session):
     """Client for Podman service API."""
 
+    # Abstract methods (delete,get,head,post) are specialized and pylint cannot walk hierarchy.
+    # pylint: disable=arguments-differ
+    # pylint: disable=too-many-instance-attributes
+
     # TODO pull version from a future Version library
     api_version: str = "3.0.0"
 
@@ -48,7 +52,9 @@ class APIClient(requests.Session):
     """These headers are included in all requests to service."""
 
     default_headers: ClassVar[Dict[str, str]] = {}
-    """These headers are included in all requests to service. Headers provided in request will override."""
+    """These headers are included in all requests to service.
+       Headers provided in request will override.
+    """
 
     default_timeout = 60.0
 
@@ -69,6 +75,8 @@ class APIClient(requests.Session):
         """
         super().__init__()
 
+        _ = tls
+
         self.base_url = base_url
         self.version = version or APIClient.api_version
         self.path_prefix = f"/v{self.version}/libpod"
@@ -87,10 +95,6 @@ class APIClient(requests.Session):
 
         if uri.scheme == "http+unix" or "unix":
             self.mount(uri.scheme, UDSAdapter())
-
-    def close(self):
-        """Close connection to Podman service."""
-        super().close()
 
     def delete(
         self,

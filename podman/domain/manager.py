@@ -1,3 +1,4 @@
+"""Base classes for PodmanResources and Manager's."""
 from abc import ABC, abstractmethod
 from typing import Any, ClassVar, Dict, List, Type, Union
 
@@ -27,7 +28,7 @@ class PodmanResource(ABC):
         return hash(f"{self.__class__.__name__}:{self.id}")
 
     @property
-    def id(self):
+    def id(self):  # pylint: disable=invalid-name
         """The ID of the object."""
         return self.attrs.get("Id")
 
@@ -58,12 +59,12 @@ class Manager(ABC):
     @abstractmethod
     def list(self) -> List[PodmanResource]:
         """Returns list of resources."""
-        raise NotImplementedError
+        raise NotImplementedError()
 
     @abstractmethod
     def get(self, key: str) -> PodmanResource:
         """Returns representation of resource."""
-        raise NotImplementedError
+        raise NotImplementedError()
 
     @abstractmethod
     def create(self, *args, **kwargs) -> PodmanResource:
@@ -72,21 +73,21 @@ class Manager(ABC):
         Notes:
             TODO method signature should use Annotated[] requires 3.9
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def prepare_model(
         self, attrs: Union[PodmanResource, Dict[str, Any]]
     ) -> Union[None, PodmanResource, List[PodmanResource], bytes]:
         """ Create a model from a set of attributes. """
         if isinstance(attrs, PodmanResource):
-            """Refresh existing PodmanResource."""
+            # Refresh existing PodmanResource.
             attrs.client = self.client
             attrs.collection = self
             return attrs
 
-        elif isinstance(attrs, dict):
-            """Instantiate PodmanResource from Dict[str, Any]."""
+        if isinstance(attrs, dict):
+            # Instantiate PodmanResource from Dict[str, Any]
+            # pylint: disable=not-callable
             return self.resource(attrs=attrs, client=self.client, collection=self)
 
-        else:
-            raise Exception("Can't create %s from %s" % (self.resource.__name__, attrs))
+        raise Exception("Can't create %s from %s" % (self.resource.__name__, attrs))

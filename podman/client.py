@@ -1,6 +1,7 @@
+"""Client for connecting to Podman service."""
 import os
 import ssl
-from typing import Mapping, Optional, Union
+from typing import Any, Dict, Mapping, Optional, Union
 
 from podman.api.client import APIClient
 from podman.domain.containers import ContainerManager
@@ -50,6 +51,8 @@ class PodmanClient:
                 elements = ["http+unix://", "run", "user", str(uid), "podman", "podman.sock"]
             base_url = "%2F".join(elements)
         self.base_url = base_url
+
+        _ = use_ssh_client
 
         self.client = APIClient(
             base_url=base_url,
@@ -194,7 +197,8 @@ class PodmanClient:
 
     @property
     def nodes(self):
-        """
+        """Swarm not supported.
+
         Raises:
             NotImplemented:
         """
@@ -202,11 +206,13 @@ class PodmanClient:
 
     @property
     def secrets(self):
+        """TBD."""
         raise NotImplementedError()
 
     @property
     def services(self):
-        """
+        """Swarm not supported.
+
         Raises:
             NotImplemented:
         """
@@ -214,43 +220,44 @@ class PodmanClient:
 
     @property
     def swarm(self):
-        """
+        """Swarm not supported.
+
         Raises:
             NotImplemented:
         """
         raise NotImplementedError("Swarm not supported.")
 
-    def df(self) -> dict:
+    def df(self) -> Dict[str, Any]:  # pylint: disable=missing-function-docstring,invalid-name
         return SystemManager(client=self.client).df()
 
     df.__doc__ = SystemManager.df.__doc__
 
-    def events(self, *args, **kwargs):
+    def events(self, *args, **kwargs):  # pylint: disable=missing-function-docstring
         return EventManager(client=self.client).apply(*args, **kwargs)
 
     events.__doc__ = EventManager.apply.__doc__
 
-    def info(self, *args, **kwargs):
+    def info(self, *args, **kwargs):  # pylint: disable=missing-function-docstring
         return SystemManager(client=self.client).info(*args, **kwargs)
 
     info.__doc__ = SystemManager.info.__doc__
 
-    def login(self, *args, **kwargs):
+    def login(self, *args, **kwargs):  # pylint: disable=missing-function-docstring
         return SystemManager(client=self.client).login(*args, **kwargs)
 
     login.__doc__ = SystemManager.login.__doc__
 
-    def ping(self) -> bool:
+    def ping(self) -> bool:  # pylint: disable=missing-function-docstring
         return SystemManager(client=self.client).ping()
 
     ping.__doc__ = SystemManager.ping.__doc__
 
-    def version(self, *args, **kwargs):
+    def version(self, *args, **kwargs):  # pylint: disable=missing-function-docstring
         return SystemManager(client=self.client).version(*args, **kwargs)
 
     ping.__doc__ = SystemManager.version.__doc__
 
-    def close(self):
+    def close(self):  # pylint: disable=missing-function-docstring
         """Close connection to service."""
         return self.client.close()
 

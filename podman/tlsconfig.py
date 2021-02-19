@@ -1,3 +1,6 @@
+"""Holds TLS configuration."""
+
+
 class TLSConfig:
     """TLS configuration.
 
@@ -13,5 +16,11 @@ class TLSConfig:
         https://docs.python.org/3.5/library/ssl.html#ssl.PROTOCOL_TLSv1
     """
 
+    # pylint: disable=too-few-public-methods
+
     def __init__(self, **kwargs):
-        pass
+        _ = kwargs
+
+    def configure_client(self, client) -> None:
+        """Add TLS configuration to the client."""
+        _ = client

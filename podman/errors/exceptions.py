@@ -1,3 +1,4 @@
+"""Podman API Errors."""
 from typing import Optional
 
 from requests import Response
@@ -67,5 +68,3 @@ class ImageNotFound(APIError):
     Notes:
         Compatible name, missing Error suffix.
     """
-
-    pass
