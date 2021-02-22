@@ -4,6 +4,7 @@ RUN dnf -y install golang \
 			make \
 			git \
 			golang \
+			python3-requests \
 			python3-coverage \
 			python3-pylint \
 			python3-fixtures && \

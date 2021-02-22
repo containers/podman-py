@@ -73,6 +73,8 @@ target/
 
 #PyCharm
 ./idea/
+.idea*
+.vscode*
 
 # pyenv
 .python-version
