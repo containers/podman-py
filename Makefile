@@ -28,7 +28,7 @@ lint:
 .PHONY: unittest
 unittest:
 	coverage run -m unittest discover -s podman/tests/unit
-	coverage report -m --skip-covered --fail-under=80 --omit=./podman/tests/* --omit=.tox/*
+	coverage report -m --skip-covered --fail-under=80 --omit=./podman/tests/* --omit=.tox/* --omit=/usr/lib/*
 
 # .PHONY: integration
 # integration:
