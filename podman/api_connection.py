@@ -132,11 +132,7 @@ class ApiConnection(HTTPConnection, AbstractContextManager):
                     or HTTPStatus.INTERNAL_SERVER_ERROR.phrase
                 )
             raise errors.InternalServerError(
-                "Request {}:{} failed: {}".format(
-                    method,
-                    url,
-                    error_message
-                ),
+                "Request {}:{} failed: {}".format(method, url, error_message),
                 response,
             )
         return response

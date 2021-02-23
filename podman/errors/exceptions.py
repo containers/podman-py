@@ -1,5 +1,5 @@
 """Podman API Errors."""
-from typing import Optional
+from typing import Iterable, Optional
 
 from requests import Response
 from requests.exceptions import HTTPError
@@ -44,11 +44,11 @@ class APIError(HTTPError):
 
     def is_client_error(self) -> bool:
         """Returns True if error occurred in request."""
-        return 400 <= self.status_code < 500
+        return 400 <= (self.status_code or 0) < 500
 
     def is_server_error(self) -> bool:
         """Returns True if error occurred in service."""
-        return 500 <= self.status_code < 600
+        return 500 <= (self.status_code or 0) < 600
 
 
 class NotFound(APIError):
@@ -68,3 +68,34 @@ class ImageNotFound(APIError):
     Notes:
         Compatible name, missing Error suffix.
     """
+
+
+class DockerException(Exception):
+    """Base class for exception hierarchy.
+
+    Notes:
+        * Provided for compatibility.
+    """
+
+
+class PodmanError(DockerException):
+    """Base class for PodmanPy exceptions."""
+
+
+class BuildError(PodmanError):
+    """Error occurred during build operation."""
+
+    def __init__(self, reason: str, build_log: Iterable[str]) -> None:
+        """Create BuildError.
+
+        Args:
+            reason: describes the error
+            build_log: build log output
+        """
+        super().__init__(reason)
+        self.msg = reason
+        self.build_log = build_log
+
+
+class InvalidArgument(PodmanError):
+    """Parameter to method/function was not valid."""

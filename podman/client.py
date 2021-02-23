@@ -6,7 +6,7 @@ from typing import Any, Dict, Mapping, Optional, Union
 from podman.api.client import APIClient
 from podman.domain.containers import ContainerManager
 from podman.domain.events import EventManager
-from podman.domain.images import ImageManager
+from podman.domain.images_manager import ImagesManager
 from podman.domain.networks import NetworkManager
 from podman.domain.pods import PodManager
 from podman.domain.system import SystemManager
@@ -54,7 +54,7 @@ class PodmanClient:
 
         _ = use_ssh_client
 
-        self.client = APIClient(
+        self.api = APIClient(
             base_url=base_url,
             version=version,
             timeout=timeout,
@@ -157,16 +157,16 @@ class PodmanClient:
         Returns:
             ContainerManager:
         """
-        return ContainerManager(client=self.client)
+        return ContainerManager(client=self.api)
 
     @property
-    def images(self) -> ImageManager:
+    def images(self) -> ImagesManager:
         """Returns object for managing images stored via the Podman service.
 
         Returns:
-            ImageManager:
+            ImagesManager:
         """
-        return ImageManager(client=self.client)
+        return ImagesManager(client=self.api)
 
     @property
     def networks(self) -> NetworkManager:
@@ -175,7 +175,7 @@ class PodmanClient:
         Returns:
             NetworkManager:
         """
-        return NetworkManager(client=self.client)
+        return NetworkManager(client=self.api)
 
     @property
     def volumes(self) -> VolumeManager:
@@ -184,7 +184,7 @@ class PodmanClient:
         Returns:
             VolumeManager:
         """
-        return VolumeManager(client=self.client)
+        return VolumeManager(client=self.api)
 
     @property
     def pods(self) -> PodManager:
@@ -193,7 +193,7 @@ class PodmanClient:
         Returns:
             PodManager:
         """
-        return PodManager(client=self.client)
+        return PodManager(client=self.api)
 
     @property
     def nodes(self):
@@ -228,38 +228,38 @@ class PodmanClient:
         raise NotImplementedError("Swarm not supported.")
 
     def df(self) -> Dict[str, Any]:  # pylint: disable=missing-function-docstring,invalid-name
-        return SystemManager(client=self.client).df()
+        return SystemManager(client=self.api).df()
 
     df.__doc__ = SystemManager.df.__doc__
 
     def events(self, *args, **kwargs):  # pylint: disable=missing-function-docstring
-        return EventManager(client=self.client).apply(*args, **kwargs)
+        return EventManager(client=self.api).apply(*args, **kwargs)
 
     events.__doc__ = EventManager.apply.__doc__
 
     def info(self, *args, **kwargs):  # pylint: disable=missing-function-docstring
-        return SystemManager(client=self.client).info(*args, **kwargs)
+        return SystemManager(client=self.api).info(*args, **kwargs)
 
     info.__doc__ = SystemManager.info.__doc__
 
     def login(self, *args, **kwargs):  # pylint: disable=missing-function-docstring
-        return SystemManager(client=self.client).login(*args, **kwargs)
+        return SystemManager(client=self.api).login(*args, **kwargs)
 
     login.__doc__ = SystemManager.login.__doc__
 
     def ping(self) -> bool:  # pylint: disable=missing-function-docstring
-        return SystemManager(client=self.client).ping()
+        return SystemManager(client=self.api).ping()
 
     ping.__doc__ = SystemManager.ping.__doc__
 
     def version(self, *args, **kwargs):  # pylint: disable=missing-function-docstring
-        return SystemManager(client=self.client).version(*args, **kwargs)
+        return SystemManager(client=self.api).version(*args, **kwargs)
 
     ping.__doc__ = SystemManager.version.__doc__
 
     def close(self):  # pylint: disable=missing-function-docstring
         """Close connection to service."""
-        return self.client.close()
+        return self.api.close()
 
     close.__doc__ = APIClient.close.__doc__
 

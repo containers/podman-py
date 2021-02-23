@@ -1,6 +1,7 @@
 [tool.black]
 line-length = 100
 skip-string-normalization = true
+target-version = ["py36"]
 include = '\.pyi?$'
 exclude = '''
 /(
@@ -11,3 +12,7 @@ exclude = '''
   | dist
 )/
 '''
+[tool.isort]
+profile = "black"
+line_length = 100
+

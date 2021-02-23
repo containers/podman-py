@@ -1,14 +1,32 @@
 """Base classes for PodmanResources and Manager's."""
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar, Dict, List, Type, Union
+from typing import Any, ClassVar, Dict, List, Type, TypeVar, Union
 
 from podman.api.client import APIClient
 
+# Abstract methods use this Type when a sub-class of PodmanResource is expected.
+PodmanResourceType = TypeVar("PodmanResourceType", bound="PodmanResource")
+
 
 class PodmanResource(ABC):
-    """Base class for representing resource of a Podman service."""
+    """Base class for representing resource of a Podman service.
 
-    def __init__(self, attrs: dict = None, client: APIClient = None, collection: 'Manager' = None):
+    Attributes:
+        attrs: Dictionary to carry attributes of resource from Podman service
+        id: identifier for resource
+        short_id: truncated view of id
+    """
+
+    def __init__(
+        self, attrs: Dict[str, Any] = None, client: APIClient = None, collection: 'Manager' = None
+    ):
+        """Initialize base class for PodmanResource's.
+
+        Args:
+            attrs: Dictionary to carry attributes of resource from Podman service.
+            client: Configured connection to a Podman service.
+            collection: Manager of this category of resource
+        """
         self.client = client
 
         # parameter named collection for compatibility
@@ -29,12 +47,14 @@ class PodmanResource(ABC):
 
     @property
     def id(self):  # pylint: disable=invalid-name
-        """The ID of the object."""
+        """Returns the identifier for the object."""
         return self.attrs.get("Id")
 
     @property
     def short_id(self):
-        """The ID of the object, truncated to 10 characters."""
+        """Returns truncated identifier. 'sha256' preserved when included in id."""
+        if self.id.startswith('sha256:'):
+            return self.id[:17]
         return self.id[:10]
 
     def reload(self):
@@ -44,40 +64,33 @@ class PodmanResource(ABC):
 
 
 class Manager(ABC):
-    """Base class for representing a Manager of resources for a Podman service."""
+    """Base class for representing a Manager of resources for a Podman service.
+
+    Attributes:
+        resource: Subclass of PodmanResource this manager will operate upon.
+    """
 
     resource: ClassVar[Type[PodmanResource]] = None
-    model = resource
 
     def __init__(self, client: APIClient = None) -> None:
         """Initialize Manager() object.
+
         Args:
             client: Podman client configured to connect to Podman service.
         """
         self.client = client
 
     @abstractmethod
-    def list(self) -> List[PodmanResource]:
+    def list(self, *args, **kwargs) -> List[PodmanResourceType]:
         """Returns list of resources."""
         raise NotImplementedError()
 
     @abstractmethod
-    def get(self, key: str) -> PodmanResource:
+    def get(self, key: str) -> PodmanResourceType:
         """Returns representation of resource."""
         raise NotImplementedError()
 
-    @abstractmethod
-    def create(self, *args, **kwargs) -> PodmanResource:
-        """Creates resource via Podman service and return representation.
-
-        Notes:
-            TODO method signature should use Annotated[] requires 3.9
-        """
-        raise NotImplementedError()
-
-    def prepare_model(
-        self, attrs: Union[PodmanResource, Dict[str, Any]]
-    ) -> Union[None, PodmanResource, List[PodmanResource], bytes]:
+    def prepare_model(self, attrs: Union[PodmanResource, Dict[str, Any]]) -> PodmanResourceType:
         """ Create a model from a set of attributes. """
         if isinstance(attrs, PodmanResource):
             # Refresh existing PodmanResource.
@@ -86,7 +99,7 @@ class Manager(ABC):
             return attrs
 
         if isinstance(attrs, dict):
-            # Instantiate PodmanResource from Dict[str, Any]
+            # Instantiate new PodmanResource from Dict[str, Any]
             # pylint: disable=not-callable
             return self.resource(attrs=attrs, client=self.client, collection=self)
 
