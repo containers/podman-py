@@ -5,7 +5,6 @@ import re
 from typing import Iterator, Tuple
 
 from podman import api
-from podman.api.client import APIClient
 from podman.domain.images import Image
 from podman.errors.exceptions import APIError, BuildError, PodmanError
 
@@ -56,7 +55,8 @@ class BuildMixin:
             http_proxy (bool) - Inject http proxy environment variables into container (Podman only)
 
         Returns:
-            (Tuple[Image, Iterable[str]]): second element Iterable of build logs
+            first item is Image built
+            second item is the build logs
 
         Raises:
             BuildError: when there is an error during the build.
@@ -100,7 +100,6 @@ class BuildMixin:
             params["cpushares"] = kwargs["container_limits"].get("cpushares", None)
             params["memory"] = kwargs["container_limits"].get("memory", None)
             params["memswap"] = kwargs["container_limits"].get("memswap", None)
-            kwargs.get("container_limits")
 
         if "extra_hosts" in kwargs:
             params["extrahosts"] = json.dumps(kwargs.get("extra_hosts"))
@@ -111,7 +110,7 @@ class BuildMixin:
         params = dict(filter(lambda e: e[1] is not None, params.items()))
 
         context_dir = params.pop("path", None)
-        timeout = params.pop("timeout", APIClient.default_timeout)
+        timeout = params.pop("timeout", api.DEFAULT_TIMEOUT)
 
         body = None
         if context_dir:

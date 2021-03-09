@@ -38,16 +38,28 @@ class SystemManager(Manager):
         raise NotImplementedError()
 
     def df(self) -> Dict[str, Any]:  # pylint: disable=invalid-name
-        """Resource usage of Podman service.
+        """Disk usage by Podman resources.
 
         Returns:
             dict: Keyed by resource categories and their data usage.
         """
+        response = self.client.get("/system/df")
+        body = response.json()
 
-    def info(self, *args, **kwargs) -> Dict[str, Any]:
+        if response.status_code == 200:
+            return body
+
+        raise APIError(body["cause"], response=response, explanation=body["message"])
+
+    def info(self, *_, **__) -> Dict[str, Any]:
         """Returns information on Podman service."""
-        _ = args
-        _ = kwargs
+        response = self.client.get("/system/info")
+        body = response.json()
+
+        if response.status_code == 200:
+            return body
+
+        raise APIError(body["cause"], response=response, explanation=body["message"])
 
     def login(
         self,
@@ -73,30 +85,23 @@ class SystemManager(Manager):
 
     def ping(self) -> bool:
         """Returns True if service responded with OK."""
-
-        try:
-            response = self.client.head("/_ping")
-            if response.status_code == 200:
-                return True
-        except OSError as e:
-            raise APIError("Ping failed.") from e
+        response = self.client.head("/_ping")
+        if response.status_code == 200:
+            return True
         return False
 
-    def version(self, *args, **kwargs) -> Dict[str, Any]:
+    def version(self, *_, **kwargs) -> Dict[str, Any]:
         """Get version information from service.
 
         Keyword Args:
-            api_version (bool): Ignored.
+            api_version (bool): When True include API version
         """
-        _ = args
-        _ = kwargs
+        response = self.client.get("/version")
+        body = response.json()
 
-        try:
-            response = self.client.get("/version")
-            if response.status_code == 200:
-                return response.json()
-        except OSError as e:
-            raise APIError("/version") from e
-        raise APIError(
-            response.url, response=response, explanation="Failed to retrieve version information."
-        )
+        if response.status_code == 200:
+            if not kwargs.get("api_version", True):
+                del body["APIVersion"]
+            return body
+
+        raise APIError(body["cause"], response=response, explanation=body["message"])

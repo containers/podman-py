@@ -4,7 +4,7 @@ import ssl
 from typing import Any, Dict, Mapping, Optional, Union
 
 from podman.api.client import APIClient
-from podman.domain.containers import ContainerManager
+from podman.domain.containers_manager import ContainersManager
 from podman.domain.events import EventManager
 from podman.domain.images_manager import ImagesManager
 from podman.domain.networks import NetworkManager
@@ -151,13 +151,13 @@ class PodmanClient:
         raise NotImplementedError()
 
     @property
-    def containers(self) -> ContainerManager:
+    def containers(self) -> ContainersManager:
         """Returns object for managing containers running via the Podman service.
 
         Returns:
             ContainerManager:
         """
-        return ContainerManager(client=self.api)
+        return ContainersManager(client=self.api)
 
     @property
     def images(self) -> ImagesManager:
