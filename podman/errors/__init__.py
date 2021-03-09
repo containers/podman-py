@@ -7,7 +7,8 @@ from http.client import HTTPException
 
 from .exceptions import APIError, ImageNotFound, NotFound
 
-__all__ = ["APIError", "ImageNotFound", "NotFound"]
+# isort: unique-list
+__all__ = ['APIError', 'ImageNotFound', 'NotFound']
 
 
 class NotFoundError(HTTPException):

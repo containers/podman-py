@@ -159,7 +159,9 @@ class TestApiConnection(unittest.TestCase):
         mock_resp.status = 500
         mock_resp.read.return_value = b'{"message":"My error"}'
         mock_response.return_value = mock_resp
-        with self.assertRaises(podman.errors.InternalServerError, ) as cm:
+        with self.assertRaises(
+            podman.errors.InternalServerError,
+        ) as cm:
             self.conn.request('GET', 'unix://foo')
         mock_request.assert_called_once_with('GET', 'unix://foo', None, {}, encode_chunked=False)
         mock_response.assert_called_once_with()

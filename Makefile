@@ -17,7 +17,7 @@ podman-py: env
 
 .PHONY: env
 env:
-	dnf install python3-coverage python3-pylint python3-requests -y
+	dnf install python3-coverage python3-pylint python3-requests python3-requests-mock -y
 	# -- or --
 	# $(PYTHON) -m pip install tox
 	# -- or --

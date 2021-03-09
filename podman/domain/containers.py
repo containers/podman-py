@@ -1,16 +1,6 @@
 """Model and Manager for Container resources."""
 from signal import SIGKILL
-from typing import (
-    Any,
-    Dict,
-    Iterator,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-)
+from typing import Any, Dict, Iterator, List, Mapping, Optional, Sequence, Tuple, Union
 
 from podman.api.client import APIClient
 from podman.domain.images import Image
@@ -548,6 +538,7 @@ class ContainerManager(Manager):
         if isinstance(image, Image):
             image = image.id
 
+        _ = kwargs
         # TODO: Create container create
         _ = command
         # TODO: Get new container

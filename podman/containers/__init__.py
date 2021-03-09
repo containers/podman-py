@@ -2,7 +2,6 @@
 """
 
 import json
-
 from http import HTTPStatus
 
 import podman.errors as errors
