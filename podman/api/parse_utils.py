@@ -1,13 +1,15 @@
 """Helper functions for parsing strings."""
-from typing import Optional, Tuple
+import base64
+import json
+from typing import Any, Dict, Optional, Tuple
 
 
 def parse_repository(name: str) -> Tuple[str, Optional[str]]:
     """Parse repository image name from tag or digest
 
     Returns:
-        element 1: repository name
-        element 2: Either digest and tag, tag, or None
+        item 1: repository name
+        item 2: Either digest and tag, tag, or None
     """
     # split image name and digest
     elements = name.split("@", 1)
@@ -20,3 +22,13 @@ def parse_repository(name: str) -> Tuple[str, Optional[str]]:
         return elements[0], elements[1]
 
     return name, None
+
+
+def decode_header(value: Optional[str]) -> Dict[str, Any]:
+    """Decode a base64 JSON header value."""
+    if value is None:
+        return {}
+
+    value = base64.b64decode(value)
+    text = value.decode("utf-8")
+    return json.loads(text)

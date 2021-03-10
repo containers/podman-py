@@ -4,6 +4,7 @@ import unittest
 import requests_mock
 
 from podman import PodmanClient
+from podman.domain.images_manager import ImagesManager
 
 FIRST_IMAGE = {
     "Id": "326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab",
@@ -44,6 +45,10 @@ class TestClientImages(unittest.TestCase):
         super().tearDown()
 
         self.client.close()
+
+    def test_podmanclient(self):
+        manager = self.client.images
+        self.assertIsInstance(manager, ImagesManager)
 
     @requests_mock.Mocker()
     def test_history(self, mock):

@@ -33,6 +33,8 @@ class APIClient(requests.Session):
     # TODO pull version from a future Version library
     api_version: str = "3.0.0"
 
+    default_timeout: float = 60.0
+
     supported_schemes: ClassVar[List[str]] = ("unix", "http+unix")
 
     required_headers: ClassVar[Dict[str, str]] = {
@@ -44,8 +46,6 @@ class APIClient(requests.Session):
     """These headers are included in all requests to service.
        Headers provided in request will override.
     """
-
-    default_timeout = 60.0
 
     def __init__(
         self,
@@ -172,7 +172,7 @@ class APIClient(requests.Session):
 
         Args:
             path: Relative path to RESTful resource. base_url will be prepended to path.
-            data:
+            data: HTTP body for operation
             params: Optional parameters to include with URL.
             headers: Optional headers to include in request.
             timeout: Number of seconds to wait on request, or (connect timeout, read timeout) tuple
@@ -183,6 +183,38 @@ class APIClient(requests.Session):
         """
         return self._request(
             "POST",
+            path=path,
+            params=params,
+            data=data,
+            headers=headers,
+            timeout=timeout,
+            stream=stream,
+        )
+
+    def put(
+        self,
+        path: Union[str, bytes],
+        params: Union[None, bytes, Mapping[str, str]] = None,
+        data: _Data = None,
+        headers: Optional[Mapping[str, str]] = None,
+        timeout: _Timeout = None,
+        stream: Optional[bool] = False,
+    ) -> Response:
+        """HTTP PUT operation against configured Podman service.
+
+        Args:
+            path: Relative path to RESTful resource. base_url will be prepended to path.
+            data: HTTP body for operation
+            params: Optional parameters to include with URL.
+            headers: Optional headers to include in request.
+            timeout: Number of seconds to wait on request, or (connect timeout, read timeout) tuple
+            stream: Return iterator for content vs reading all content into memory
+
+        Raises:
+            APIError: when service returns an Error.
+        """
+        return self._request(
+            "PUT",
             path=path,
             params=params,
             data=data,

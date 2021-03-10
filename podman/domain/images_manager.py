@@ -233,8 +233,8 @@ class ImagesManager(Manager, BuildMixin):
             },
         ]
 
-        stream = kwargs.pop("stream", False)
-        decode = kwargs.pop("decode", False)
+        stream = kwargs.get("stream", False)
+        decode = kwargs.get("decode", False)
         if stream:
             return self._push_helper(decode, body)
 
