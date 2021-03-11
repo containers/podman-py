@@ -275,7 +275,7 @@ class ContainersManager(Manager):
             raise NotFound(body["cause"], response=response, explanation=body["message"])
         raise APIError(body["cause"], response=response, explanation=body["message"])
 
-    def list(self, *args, **kwargs) -> List[Container]:
+    def list(self, **kwargs) -> List[Container]:
         """Report on containers.
 
         Keyword Args:

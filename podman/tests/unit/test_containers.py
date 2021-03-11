@@ -7,7 +7,6 @@ from collections import Iterable
 import requests_mock
 
 from podman import PodmanClient
-from podman.domain.containers_manager import ContainersManager
 from podman.errors import APIError, NotFound
 
 FIRST_CONTAINER = {
@@ -17,7 +16,7 @@ FIRST_CONTAINER = {
 }
 
 
-class TestClientContainers(unittest.TestCase):
+class ContainersTestCase(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -27,10 +26,6 @@ class TestClientContainers(unittest.TestCase):
         super().tearDown()
 
         self.client.close()
-
-    def test_podmanclient(self):
-        actual = self.client.containers
-        self.assertIsInstance(actual, ContainersManager)
 
     @requests_mock.Mocker()
     def test_remove(self, mock):
@@ -514,9 +509,9 @@ class TestClientContainers(unittest.TestCase):
                     '/usr/bin/ssh-agent /bin/sh -c exec -l /bin/bash -c "/usr/bin/gnome-session"',
                 ],
                 ['jhonce', '5544', '3522', '0', 'Mar01', 'pts/1', '00:00:02', '-bash'],
-                ['jhonce', '6140', '3522', '0,''Mar01', 'pts/2', '00:00:00,''-bash'],
+                ['jhonce', '6140', '3522', '0', 'Mar01', 'pts/2', '00:00:00', '-bash'],
             ],
-            "Titles":    ["UID", "PID", "PPID", "C", "STIME", "TTY", "TIME CMD"],
+            "Titles": ["UID", "PID", "PPID", "C", "STIME", "TTY", "TIME CMD"],
         }
         mock.get(
             "http+unix://localhost:9999/v3.0.0/libpod/containers/"

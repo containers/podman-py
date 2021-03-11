@@ -32,6 +32,7 @@ class APIClient(requests.Session):
 
     # TODO pull version from a future Version library
     api_version: str = "3.0.0"
+    compatible_version: str = "1.40"
 
     default_timeout: float = 60.0
 
@@ -56,6 +57,7 @@ class APIClient(requests.Session):
         user_agent: Optional[str] = None,
         num_pools: Optional[int] = None,
         credstore_env: Optional[Mapping[str, str]] = None,
+        **kwargs,
     ):
         """Instantiate APIClient object.
 
@@ -69,8 +71,13 @@ class APIClient(requests.Session):
         # FIXME map scheme unix:// -> http+unix://,
         # FIXME url quote slashes in netloc
         self.base_url = base_url
+
         self.version = version or APIClient.api_version
         self.path_prefix = f"/v{self.version}/libpod"
+        self.compatible_version = (
+            kwargs.get("compatible_version", None) or APIClient.compatible_version
+        )
+        self.compatible_prefix = f"/v{self.compatible_version}"
 
         uri = urllib.parse.urlparse(self.base_url)
         if uri.scheme not in APIClient.supported_schemes:
@@ -94,6 +101,7 @@ class APIClient(requests.Session):
         headers: Optional[Mapping[str, str]] = None,
         timeout: _Timeout = None,
         stream: Optional[bool] = False,
+        **kwargs,
     ) -> Response:
         """HTTP DELETE operation against configured Podman service.
 
@@ -104,11 +112,20 @@ class APIClient(requests.Session):
             timeout: Number of seconds to wait on request, or (connect timeout, read timeout) tuple
             stream: Return iterator for content vs reading all content into memory
 
+        Keyword Args:
+            compatible: Will override the default path prefix with compatible prefix
+
         Raises:
             APIError: when service returns an Error.
         """
         return self._request(
-            "DELETE", path=path, params=params, headers=headers, timeout=timeout, stream=stream
+            "DELETE",
+            path=path,
+            params=params,
+            headers=headers,
+            timeout=timeout,
+            stream=stream,
+            **kwargs,
         )
 
     def get(
@@ -118,6 +135,7 @@ class APIClient(requests.Session):
         headers: Optional[Mapping[str, str]] = None,
         timeout: _Timeout = None,
         stream: Optional[bool] = False,
+        **kwargs,
     ) -> Response:
         """HTTP GET operation against configured Podman service.
 
@@ -128,11 +146,21 @@ class APIClient(requests.Session):
             timeout: Number of seconds to wait on request, or (connect timeout, read timeout) tuple
             stream: Return iterator for content vs reading all content into memory
 
+        Keyword Args:
+            compatible: Will override the default path prefix with compatible prefix with
+                compatible prefix
+
         Raises:
             APIError: when service returns an Error.
         """
         return self._request(
-            "GET", path=path, params=params, headers=headers, timeout=timeout, stream=stream
+            "GET",
+            path=path,
+            params=params,
+            headers=headers,
+            timeout=timeout,
+            stream=stream,
+            **kwargs,
         )
 
     def head(
@@ -142,6 +170,7 @@ class APIClient(requests.Session):
         headers: Optional[Mapping[str, str]] = None,
         timeout: _Timeout = None,
         stream: Optional[bool] = False,
+        **kwargs,
     ) -> Response:
         """HTTP HEAD operation against configured Podman service.
 
@@ -152,11 +181,20 @@ class APIClient(requests.Session):
             timeout: Number of seconds to wait on request, or (connect timeout, read timeout) tuple
             stream: Return iterator for content vs reading all content into memory
 
+        Keyword Args:
+            compatible: Will override the default path prefix with compatible prefix
+
         Raises:
             APIError: when service returns an Error.
         """
         return self._request(
-            "HEAD", path=path, params=params, headers=headers, timeout=timeout, stream=stream
+            "HEAD",
+            path=path,
+            params=params,
+            headers=headers,
+            timeout=timeout,
+            stream=stream,
+            **kwargs,
         )
 
     def post(
@@ -167,6 +205,7 @@ class APIClient(requests.Session):
         headers: Optional[Mapping[str, str]] = None,
         timeout: _Timeout = None,
         stream: Optional[bool] = False,
+        **kwargs,
     ) -> Response:
         """HTTP POST operation against configured Podman service.
 
@@ -177,6 +216,9 @@ class APIClient(requests.Session):
             headers: Optional headers to include in request.
             timeout: Number of seconds to wait on request, or (connect timeout, read timeout) tuple
             stream: Return iterator for content vs reading all content into memory
+
+        Keyword Args:
+            compatible: Will override the default path prefix with compatible prefix
 
         Raises:
             APIError: when service returns an Error.
@@ -189,6 +231,7 @@ class APIClient(requests.Session):
             headers=headers,
             timeout=timeout,
             stream=stream,
+            **kwargs,
         )
 
     def put(
@@ -199,6 +242,7 @@ class APIClient(requests.Session):
         headers: Optional[Mapping[str, str]] = None,
         timeout: _Timeout = None,
         stream: Optional[bool] = False,
+        **kwargs,
     ) -> Response:
         """HTTP PUT operation against configured Podman service.
 
@@ -209,6 +253,9 @@ class APIClient(requests.Session):
             headers: Optional headers to include in request.
             timeout: Number of seconds to wait on request, or (connect timeout, read timeout) tuple
             stream: Return iterator for content vs reading all content into memory
+
+        Keyword Args:
+            compatible: Will override the default path prefix with compatible prefix
 
         Raises:
             APIError: when service returns an Error.
@@ -221,6 +268,7 @@ class APIClient(requests.Session):
             headers=headers,
             timeout=timeout,
             stream=stream,
+            **kwargs,
         )
 
     def _request(
@@ -232,6 +280,7 @@ class APIClient(requests.Session):
         headers: Optional[Mapping[str, str]] = None,
         timeout: _Timeout = None,
         stream: Optional[bool] = None,
+        **kwargs,
     ) -> Response:
         """HTTP operation against configured Podman service.
 
@@ -242,6 +291,9 @@ class APIClient(requests.Session):
             headers: Optional headers to include in request.
             timeout: Number of seconds to wait on request, or (connect timeout, read timeout) tuple
 
+        Keyword Args:
+            compatible: Will override the default path prefix with compatible prefix
+
         Raises:
             APIError: when service returns an Error.
         """
@@ -251,10 +303,13 @@ class APIClient(requests.Session):
         if not path.startswith("/"):
             path = f"/{path}"
 
+        compatible = kwargs.get("compatible", False)
+        path_prefix = self.compatible_prefix if compatible else self.path_prefix
+
         try:
             return self.request(
                 method.upper(),
-                self.base_url + self.path_prefix + path,
+                self.base_url + path_prefix + path,
                 params=params,
                 data=data,
                 headers=self._headers(headers or {}),

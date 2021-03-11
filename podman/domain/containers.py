@@ -11,15 +11,7 @@ from podman.errors import APIError, NotFound
 
 
 class Container(PodmanResource):
-    """Details and configuration for a container managed by the Podman service.
-
-    Attributes:
-        name: Container name
-        image: Image used to create container
-        labels: Labels associated with container
-        status:Operational status of container
-        ports: Ports exposed by container
-    """
+    """Details and configuration for a container managed by the Podman service."""
 
     @property
     def name(self) -> Optional[str]:
@@ -223,9 +215,9 @@ class Container(PodmanResource):
                 raise NotFound(body["cause"], response=response, explanation=body["message"])
             raise APIError(body["cause"], response=response, explanation=body["message"])
 
-        stats = response.headers.get('x-docker-container-path-stat', None)
-        stats = api.decode_header(stats)
-        return response.iter_content(chunk_size=chunk_size), stats
+        stat = response.headers.get('x-docker-container-path-stat', None)
+        stat = api.decode_header(stat)
+        return response.iter_content(chunk_size=chunk_size), stat
 
     def kill(self, signal: Union[str, int, None] = None) -> None:
         """Send signal to container. """
