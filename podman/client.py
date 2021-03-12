@@ -7,8 +7,8 @@ from podman.api.client import APIClient
 from podman.domain.containers_manager import ContainersManager
 from podman.domain.events import EventManager
 from podman.domain.images_manager import ImagesManager
-from podman.domain.networks import NetworkManager
-from podman.domain.pods import PodManager
+from podman.domain.networks_manager import NetworksManager
+from podman.domain.pods import PodsManager
 from podman.domain.system import SystemManager
 from podman.domain.volumes import VolumeManager
 from podman.tlsconfig import TLSConfig
@@ -169,13 +169,13 @@ class PodmanClient:
         return ImagesManager(client=self.api)
 
     @property
-    def networks(self) -> NetworkManager:
+    def networks(self) -> NetworksManager:
         """Returns object for managing networks created via the Podman service.
 
         Returns:
-            NetworkManager:
+            NetworksManager:
         """
-        return NetworkManager(client=self.api)
+        return NetworksManager(client=self.api)
 
     @property
     def volumes(self) -> VolumeManager:
@@ -187,13 +187,13 @@ class PodmanClient:
         return VolumeManager(client=self.api)
 
     @property
-    def pods(self) -> PodManager:
+    def pods(self) -> PodsManager:
         """Returns object for managing pods created via the Podman service.
 
         Returns:
-            PodManager:
+            PodsManager:
         """
-        return PodManager(client=self.api)
+        return PodsManager(client=self.api)
 
     @property
     def nodes(self):
@@ -255,9 +255,9 @@ class PodmanClient:
     def version(self, *args, **kwargs):  # pylint: disable=missing-function-docstring
         return SystemManager(client=self.api).version(*args, **kwargs)
 
-    ping.__doc__ = SystemManager.version.__doc__
+    version.__doc__ = SystemManager.version.__doc__
 
-    def close(self):  # pylint: disable=missing-function-docstring
+    def close(self):  # ppylint: disable=missing-function-docstring
         """Close connection to service."""
         return self.api.close()
 

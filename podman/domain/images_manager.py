@@ -23,7 +23,7 @@ class ImagesManager(Manager, BuildMixin):
 
     resource: ClassVar[Type[Image]] = Image
 
-    def list(self, *args, **kwargs) -> List[Image]:
+    def list(self, **kwargs) -> List[Image]:
         """Report on images.
 
         Keyword Args:
@@ -155,7 +155,7 @@ class ImagesManager(Manager, BuildMixin):
                 reclaimed += element["Size"]
                 deleted.append(
                     {
-                        "Deleted":  element["Id"],
+                        "Deleted": element["Id"],
                         "Untagged": "",
                     }
                 )
@@ -165,7 +165,7 @@ class ImagesManager(Manager, BuildMixin):
         # body -> Dict[Literal["ImagesDeleted", "SpaceReclaimed"],
         #   List[Dict[Literal["Deleted", "Untagged"], str]
         return {
-            "ImagesDeleted":  deleted,
+            "ImagesDeleted": deleted,
             "SpaceReclaimed": reclaimed,
         }
 
@@ -183,7 +183,7 @@ class ImagesManager(Manager, BuildMixin):
         return {"CachesDeleted": [], "SpaceReclaimed": 0}
 
     def push(
-            self, repository: str, tag: Optional[str] = None, **kwargs
+        self, repository: str, tag: Optional[str] = None, **kwargs
     ) -> Union[str, Iterator[Union[str, Dict[str, Any]]]]:
         """Push Image or repository to the registry.
 
@@ -227,9 +227,9 @@ class ImagesManager(Manager, BuildMixin):
                 "status": f"Pushing repository {repository} ({tag_count} tags)",
             },
             {
-                "status":         "Pushing",
+                "status": "Pushing",
                 "progressDetail": {},
-                "id":             repository,
+                "id": repository,
             },
         ]
 
@@ -245,7 +245,7 @@ class ImagesManager(Manager, BuildMixin):
 
     @staticmethod
     def _push_helper(
-            decode: bool, body: List[Dict[str, Any]]
+        decode: bool, body: List[Dict[str, Any]]
     ) -> Iterator[Union[str, Dict[str, Any]]]:
         """Helper needed to allow push() to return either a generator or a str."""
         for entry in body:
@@ -256,7 +256,7 @@ class ImagesManager(Manager, BuildMixin):
 
     # pylint: disable=too-many-locals,too-many-branches
     def pull(
-            self, repository: str, tag: Optional[str] = None, all_tags: bool = False, **kwargs
+        self, repository: str, tag: Optional[str] = None, all_tags: bool = False, **kwargs
     ) -> Union[Image, List[Image]]:
         """Request Podman service to pull image(s) from repository.
 
@@ -324,7 +324,7 @@ class ImagesManager(Manager, BuildMixin):
         return images
 
     def remove(
-            self, image: str, force: bool = False, noprune: bool = False
+        self, image: str, force: bool = False, noprune: bool = False
     ) -> List[Dict[str, Union[str, int]]]:
         """Delete image from Podman service.
 
@@ -381,7 +381,7 @@ class ImagesManager(Manager, BuildMixin):
             APIError: when service returns an error
         """
         params = {
-            "term":    [term],
+            "term": [term],
             "noTrunc": True,
         }
         if "limit" in kwargs:

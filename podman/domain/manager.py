@@ -48,7 +48,7 @@ class PodmanResource(ABC):
     @property
     def id(self):  # pylint: disable=invalid-name
         """Returns the identifier for the object."""
-        return self.attrs.get("Id")
+        return self.attrs.get("Id", None)
 
     @property
     def short_id(self):
@@ -81,13 +81,13 @@ class Manager(ABC):
         self.client = client
 
     @abstractmethod
-    def list(self, *args, **kwargs) -> List[PodmanResourceType]:
-        """Returns list of resources."""
+    def get(self, key: str) -> PodmanResourceType:
+        """Returns representation of resource."""
         raise NotImplementedError()
 
     @abstractmethod
-    def get(self, key: str) -> PodmanResourceType:
-        """Returns representation of resource."""
+    def list(self, **kwargs) -> List[PodmanResourceType]:
+        """Returns list of resources."""
         raise NotImplementedError()
 
     def prepare_model(self, attrs: Union[PodmanResource, Dict[str, Any]]) -> PodmanResourceType:
