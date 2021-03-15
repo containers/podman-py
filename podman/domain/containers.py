@@ -221,9 +221,7 @@ class Container(PodmanResource):
 
     def kill(self, signal: Union[str, int, None] = None) -> None:
         """Send signal to container. """
-        params = {}
-        if signal is None:
-            params = {"signal": signal}
+        params = {"signal": signal}
 
         response = self.client.post(f"/containers/{self.id}/kill", params=params)
         if response.status_code == 204:
@@ -293,11 +291,10 @@ class Container(PodmanResource):
             link (bool): Ignored.
             force (bool): Kill a running container before deleting.
         """
-        params = {}
-        if "v" in kwargs:
-            params["v"] = kwargs["v"]
-        if "force" in kwargs:
-            params["force"] = kwargs["force"]
+        params = {
+            "v": kwargs.get("v"),
+            "force": kwargs.get("force"),
+        }
 
         response = self.client.delete(f"/containers/{self.id}", params=params)
         if response.status_code == 204:
@@ -466,8 +463,8 @@ class Container(PodmanResource):
             ps_args (str): Optional arguments passed to ps
         """
         params = {
-            "ps_args": kwargs.get("ps_args", None),
-            "stream": kwargs.get("stream", None),
+            "ps_args": kwargs.get("ps_args"),
+            "stream": False,
         }
         response = self.client.get(f"/containers/{self.id}/top", params=params)
         body = response.json()
