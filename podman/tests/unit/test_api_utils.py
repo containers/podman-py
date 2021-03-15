@@ -30,7 +30,7 @@ class TestUtilsCase(unittest.TestCase):
         ]
 
         for case in cases:
-            actual = api.format_filters(case.input)
+            actual = api.prepare_filters(case.input)
             self.assertEqual(
                 case.expected,
                 actual,

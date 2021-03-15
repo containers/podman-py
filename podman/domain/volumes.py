@@ -125,7 +125,7 @@ class VolumesManager(Manager):
                 - label (Dict[str, str]): filter by label and/or value
                 - name (str): filter by volume's name
         """
-        filters = api.format_filters(kwargs.get("filters"))
+        filters = api.prepare_filters(kwargs.get("filters"))
         response = self.client.get("/volumes", params={"filters": filters})
 
         if response.status_code == 404:

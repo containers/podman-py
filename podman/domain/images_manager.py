@@ -43,7 +43,7 @@ class ImagesManager(Manager, BuildMixin):
         if "name" in kwargs:
             params["name"] = kwargs.pop("name")
         if "filters" in kwargs:
-            params["filters"] = api.format_filters(kwargs.pop("filters"))
+            params["filters"] = api.prepare_filters(kwargs.pop("filters"))
 
         response = self.client.get("/images/json", params=params)
         body = response.json()
@@ -137,7 +137,7 @@ class ImagesManager(Manager, BuildMixin):
         """
         params = {}
         if filters is not None:
-            params["filters"] = api.format_filters(filters)
+            params["filters"] = api.prepare_filters(filters)
 
         response = self.client.post("/images/prune", params=params)
         body = response.json()
@@ -387,7 +387,7 @@ class ImagesManager(Manager, BuildMixin):
         if "limit" in kwargs:
             params["limit"] = kwargs.pop("limit")
         if "filters" in kwargs:
-            params["filters"] = api.format_filters(kwargs.pop("filters"))
+            params["filters"] = api.prepare_filters(kwargs.pop("filters"))
 
         response = self.client.get("/images/search", params=params)
         body = response.json()

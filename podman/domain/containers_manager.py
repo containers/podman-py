@@ -315,7 +315,7 @@ class ContainersManager(Manager):
 
         # filters formatted last because some kwargs need to be mapped into filters
         if len(params["filters"]) > 0:
-            params["filters"] = api.format_filters(params["filters"])
+            params["filters"] = api.prepare_filters(params["filters"])
 
         response = self.client.get("/containers/json", params=params)
         body = response.json()
@@ -344,7 +344,7 @@ class ContainersManager(Manager):
         """
         params = dict()
         if filters is not None:
-            params = {"filters", api.format_filters(filters)}
+            params = {"filters", api.prepare_filters(filters)}
 
         response = self.client.post("/containers/prune", params=params)
         body = response.json()

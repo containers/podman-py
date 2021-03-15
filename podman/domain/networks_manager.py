@@ -62,7 +62,7 @@ class NetworksManager(Manager):
         filters = kwargs.get("filters", dict())
         filters["name"] = kwargs.get("names", None)
         filters["id"] = kwargs.get("ids", None)
-        filters = api.format_filters(filters)
+        filters = api.prepare_filters(filters)
 
         params = {"filters": filters}
         path = f"/networks{'' if compatible else '/json'}"
@@ -204,7 +204,7 @@ class NetworksManager(Manager):
         compatible = kwargs.get("compatible", True)
 
         response = self.client.post(
-            "/networks/prune", filters=api.format_filters(filters), compatible=compatible
+            "/networks/prune", filters=api.prepare_filters(filters), compatible=compatible
         )
         body = response.json()
 

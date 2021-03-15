@@ -1,7 +1,8 @@
 """Helper functions for parsing strings."""
 import base64
 import json
-from typing import Any, Dict, MutableMapping, Optional, Tuple
+from datetime import datetime
+from typing import Any, Dict, MutableMapping, Optional, Tuple, Union
 
 
 def parse_repository(name: str) -> Tuple[str, Optional[str]]:
@@ -43,3 +44,18 @@ def prepare_body(body: MutableMapping[str, Any]) -> str:
     for key in targets:
         del body[key]
     return json.dumps(body)
+
+
+def prepare_timestamp(value: Union[datetime, int, None]) -> Optional[int]:
+    """Returns a UTC UNIX timestamp from given input."""
+    if value is None:
+        return None
+
+    if isinstance(value, int):
+        return value
+
+    if isinstance(value, datetime):
+        delta = value - datetime.utcfromtimestamp(0)
+        return delta.seconds + delta.days * 24 * 3600
+
+    raise ValueError(f"Type '{type(value)}' is not supported by prepare_timestamp()")
