@@ -11,6 +11,14 @@ class APIError(HTTPError):
     def __init__(
         self, message: str, response: Optional[Response] = None, explanation: Optional[str] = None
     ):
+        """Create an APIError.
+
+        Args:
+            message: Message from service. Default: response.text, may be enhanced or wrapped by
+                bindings
+            response: HTTP Response from service.
+            explanation: An enhanced or wrapped version of message with additional context.
+        """
         super().__init__(message, response=response)
         self.explanation = explanation
 

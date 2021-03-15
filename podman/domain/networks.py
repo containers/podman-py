@@ -9,7 +9,6 @@ import hashlib
 import json
 from typing import List, Optional, Union
 
-from podman import api
 from podman.domain.containers import Container
 from podman.domain.manager import PodmanResource
 from podman.errors import APIError

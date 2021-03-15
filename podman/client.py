@@ -10,7 +10,7 @@ from podman.domain.images_manager import ImagesManager
 from podman.domain.networks_manager import NetworksManager
 from podman.domain.pods import PodsManager
 from podman.domain.system import SystemManager
-from podman.domain.volumes import VolumeManager
+from podman.domain.volumes import VolumesManager
 from podman.tlsconfig import TLSConfig
 
 
@@ -178,13 +178,13 @@ class PodmanClient:
         return NetworksManager(client=self.api)
 
     @property
-    def volumes(self) -> VolumeManager:
+    def volumes(self) -> VolumesManager:
         """Returns object for managing volumes maintained via the Podman service.
 
         Returns:
-            VolumeManager:
+            VolumesManager:
         """
-        return VolumeManager(client=self.api)
+        return VolumesManager(client=self.api)
 
     @property
     def pods(self) -> PodsManager:

@@ -134,7 +134,7 @@ class NetworksManager(Manager):
             APIError when Podman service reports an error
         """
         params = {"name": name}
-        body = {
+        data = {
             "DisabledDNS": kwargs.get("disabled_dns"),
             "Driver": kwargs.get("driver"),
             "Internal": kwargs.get("internal"),
@@ -152,18 +152,18 @@ class NetworksManager(Manager):
                     raise ValueError("Podman service only supports one IPAM config.")
 
                 ip_config = ipam["Config"][0]
-                body["Gateway"] = ip_config.get("Gateway")
+                data["Gateway"] = ip_config.get("Gateway")
 
                 if "IPRange" in ip_config:
                     iprange = ipaddress.ip_network(ip_config["IPRange"])
-                    body["Range"] = {
+                    data["Range"] = {
                         "IP": str(iprange.network_address),
                         "Mask": str(iprange.netmask),
                     }
 
                 if "Subnet" in ip_config:
                     subnet = ipaddress.ip_network(ip_config["Subnet"])
-                    body["Subnet"] = {
+                    data["Subnet"] = {
                         "IP": str(subnet.network_address),
                         "Mask": str(subnet.netmask),
                     }
@@ -174,11 +174,11 @@ class NetworksManager(Manager):
         response = self.client.post(
             "/networks/create",
             params=params,
-            data=api.prepare_body(body),
+            data=api.prepare_body(data),
             headers={"Content-Type": "application/json"},
         )
         if response.status_code != 200:
-            raise APIError(body["cause"], response=response, explanation=body["message"])
+            raise APIError(data["cause"], response=response, explanation=data["message"])
 
         return self.get(network_id=name, **kwargs)
 
