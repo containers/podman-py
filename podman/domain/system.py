@@ -1,18 +1,12 @@
 """SystemManager to provide system level information from Podman service."""
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from podman.api.client import APIClient
-from podman.domain.manager import Manager, PodmanResource
 from podman.errors import APIError
 
 
-class SystemManager(Manager):
+class SystemManager:
     """SystemManager to provide system level information from Podman service."""
-
-    # Abstract methods (create,get,list) are specialized and pylint cannot walk hierarchy.
-    # pylint: disable=arguments-differ
-
-    resource = None
 
     def __init__(self, client: APIClient) -> None:
         """Initiate SystemManager object.
@@ -20,22 +14,7 @@ class SystemManager(Manager):
         Args:
             client: Connection to Podman service.
         """
-        super().__init__(client)
-
-    def list(self) -> List[PodmanResource]:
-        """NotImplementedError."""
-        raise NotImplementedError()
-
-    def get(self, key: str) -> PodmanResource:
-        """NotImplementedError."""
-        _ = key
-        raise NotImplementedError()
-
-    def create(self, **kwargs) -> PodmanResource:
-        """NotImplementedError."""
-        _ = kwargs
-
-        raise NotImplementedError()
+        self.client = client
 
     def df(self) -> Dict[str, Any]:  # pylint: disable=invalid-name
         """Disk usage by Podman resources.
@@ -90,7 +69,7 @@ class SystemManager(Manager):
             return True
         return False
 
-    def version(self, *_, **kwargs) -> Dict[str, Any]:
+    def version(self, **kwargs) -> Dict[str, Any]:
         """Get version information from service.
 
         Keyword Args:

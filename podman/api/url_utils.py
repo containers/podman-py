@@ -3,13 +3,13 @@ import json
 from typing import Dict, List, Mapping, Optional, Union
 
 
-def format_filters(filters: Union[str, List[str], Mapping[str, str]]) -> Optional[str]:
-    """Returns filters as an URL quoted JSON Dict[str, List[str]]."""
+def prepare_filters(filters: Union[str, List[str], Mapping[str, str]]) -> Optional[str]:
+    """Returns filters as an URL quoted JSON Dict[str, List[Any]]."""
 
     if filters is None or len(filters) == 0:
         return None
 
-    criteria: Dict[str, List[str]] = {}
+    criteria: Dict[str, List[str]] = dict()
     if isinstance(filters, str):
         _format_string(filters, criteria)
     elif isinstance(filters, dict):

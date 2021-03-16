@@ -88,7 +88,7 @@ class PodsManager(Manager):
             APIError: Error returned by service.
         """
         params = {"filters": kwargs.get("filters")}
-        response = self.client.get("/pods/json", params=api.format_filters(params))
+        response = self.client.get("/pods/json", params=api.prepare_filters(params))
         body = response.json()
 
         if response.status_code != 200:
@@ -108,7 +108,7 @@ class PodsManager(Manager):
         Notes:
             SpaceReclaimed always reported as 0
         """
-        response = self.client.post("/pods/prune", params={"filters": api.format_filters(filters)})
+        response = self.client.post("/pods/prune", params={"filters": api.prepare_filters(filters)})
         body = response.json()
 
         if response.status_code != 200:

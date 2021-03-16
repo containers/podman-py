@@ -59,6 +59,7 @@ def remove(api, name, force=None):
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.NetworkNotFound)
 
+
 def prune(api):
     """prune unused networks"""
     path = '/networks/prune'

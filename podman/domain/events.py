@@ -1,21 +1,15 @@
 """Model and Manager for Event resources."""
-from typing import List
+import json
+from datetime import datetime
+from typing import Any, Dict, Optional, Union
 
+from podman import api
 from podman.api.client import APIClient
-from podman.domain.manager import Manager, PodmanResource
+from podman.errors import APIError
 
 
-class Event(PodmanResource):
-    """Details and configuration for a event managed by the Podman service."""
-
-
-class EventManager(Manager):
+class EventsManager:  # pylint: disable=too-few-public-methods
     """Specialized Manager for Event resources."""
-
-    # Abstract methods (create,get,list) are specialized and pylint cannot walk hierarchy.
-    # pylint: disable=arguments-differ
-
-    resource = Event
 
     def __init__(self, client: APIClient) -> None:
         """Initiate EventManager object.
@@ -23,25 +17,40 @@ class EventManager(Manager):
         Args:
             client: Connection to Podman service.
         """
-        super().__init__(client)
+        self.client = client
 
-    def list(self) -> List[Event]:
-        """Report on networks."""
-
-    def get(self, event_id: str) -> Event:
-        """Get event by name or id.
+    def list(
+        self,
+        since: Union[datetime, int, None] = None,
+        until: Union[datetime, int, None] = None,
+        filters: Optional[Dict[str, Any]] = None,
+        decode: bool = False,
+    ):
+        """Report on networks.
 
         Args:
-            event_id: Event name or id.
+            decode: When True, decode stream into dict's. Default: False
+            filters: Criteria for including events.
+            since: Get events newer than this time.
+            until: Get events older than this time.
 
-        Raises:
-            NotFound: Event does not exist.
-            APIError: Error return by service.
+        Yields:
+            When decode is True, Iterator[Dict[str, Any]]
+            When decode is False, Iterator[str]
         """
-        _ = event_id
+        params = {
+            "filters": api.prepare_filters(filters),
+            "since": api.prepare_timestamp(since),
+            "stream": True,
+            "until": api.prepare_timestamp(until),
+        }
+        response = self.client.get("/events", params=params, stream=True)
+        if response.status_code != 200:
+            body = response.json()
+            raise APIError(body["cause"], response=response, explanation=body["message"])
 
-    def create(self, *args, **kwargs) -> Event:
-        """Create an Event."""
-
-    def apply(self, *args, **kwargs) -> object:
-        """TBD."""
+        for item in response.iter_lines():
+            if decode:
+                yield json.loads(item)
+            else:
+                yield item

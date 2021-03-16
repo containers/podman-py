@@ -5,7 +5,7 @@ from typing import Any, Dict, Mapping, Optional, Union
 
 from podman.api.client import APIClient
 from podman.domain.containers_manager import ContainersManager
-from podman.domain.events import EventManager
+from podman.domain.events import EventsManager
 from podman.domain.images_manager import ImagesManager
 from podman.domain.networks_manager import NetworksManager
 from podman.domain.pods_manager import PodsManager
@@ -143,12 +143,12 @@ class PodmanClient:
 
     @property
     def configs(self):
-        """Returns object for managing configuration of the Podman service.
+        """Swarm not supported.
 
         Raises:
-            NotImplementError:
+            NotImplemented:
         """
-        raise NotImplementedError()
+        raise NotImplementedError("Swarm not supported.")
 
     @property
     def containers(self) -> ContainersManager:
@@ -233,9 +233,9 @@ class PodmanClient:
     df.__doc__ = SystemManager.df.__doc__
 
     def events(self, *args, **kwargs):  # pylint: disable=missing-function-docstring
-        return EventManager(client=self.api).apply(*args, **kwargs)
+        return EventsManager(client=self.api).list(*args, **kwargs)
 
-    events.__doc__ = EventManager.apply.__doc__
+    events.__doc__ = EventsManager.list.__doc__
 
     def info(self, *args, **kwargs):  # pylint: disable=missing-function-docstring
         return SystemManager(client=self.api).info(*args, **kwargs)
@@ -253,7 +253,8 @@ class PodmanClient:
     ping.__doc__ = SystemManager.ping.__doc__
 
     def version(self, *args, **kwargs):  # pylint: disable=missing-function-docstring
-        return SystemManager(client=self.api).version(*args, **kwargs)
+        _ = args
+        return SystemManager(client=self.api).version(**kwargs)
 
     version.__doc__ = SystemManager.version.__doc__
 
