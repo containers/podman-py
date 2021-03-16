@@ -150,3 +150,16 @@ class TestNetwork(unittest.TestCase):
         self.api.raise_not_found = mock_raise
         self.request.side_effect = podman.errors.NotFoundError('nope')
         self.assertRaises(podman.errors.NetworkNotFound, podman.networks.remove, self.api, 'foo')
+
+    def test_prune(self):
+        """test prune call"""
+        mock_read = mock.MagicMock()
+        mock_read.return_value = b'[{"Name": "net1"}, {"Name": "net2"}]'
+        self.response.read = mock_read
+        ret = podman.networks.prune(self.api)
+        expected = [{'Name': 'net1'}, {"Name": "net2"}]
+        self.assertEqual(ret, expected)
+        self.request.assert_called_once_with(
+            '/networks/prune',
+            headers={'content-type': 'application/json'},
+        )

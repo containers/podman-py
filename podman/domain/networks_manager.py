@@ -5,7 +5,7 @@ Note:
     By default, most methods in this module uses the Podman compatible API rather than the
         libpod API as the results are so different.  To use the libpod API add the keyword argument
         compatible=False to any method call.
-    """
+"""
 import ipaddress
 from typing import Any, Dict, List, Optional
 
@@ -35,7 +35,7 @@ class NetworksManager(Manager):
         Keyword Args:
             names (List[str]): List of names to filter by.
             ids (List[str]): List of ids to filter by.
-            filters (Mapping[str,str]): Filters to be processed on the network list.
+            filters (Mapping[str,str]): Criteria for listing networks.
                 Available filters:
                 - driver="bridge": Matches a network's driver. Only "bridge" is supported.
                 - label=(Union[str, List[str]]): format either "key", "key=value"
@@ -53,6 +53,9 @@ class NetworksManager(Manager):
                         - macvlan
             greedy (bool): Fetch more details for each network individually.
                 You might want this to get the containers attached to them. (ignored)
+
+        Raises:
+            APIError: Error returned by service.
         """
         compatible = kwargs.get("compatible", True)
 
@@ -110,7 +113,7 @@ class NetworksManager(Manager):
 
         return self.prepare_model(body)
 
-    def create(self, name: str, *_, **kwargs) -> Network:
+    def create(self, name: str, **kwargs) -> Network:
         """Create a Network.
 
         Args:
@@ -194,6 +197,9 @@ class NetworksManager(Manager):
 
         Raises:
             APIError when service reports error
+
+        Notes:
+            SpaceReclaimed always reported as 0
         """
         compatible = kwargs.get("compatible", True)
 
@@ -218,4 +224,4 @@ class NetworksManager(Manager):
                 )
             deleted.append(item["Name"])
 
-        return {"NetworksDeleted": deleted}
+        return {"NetworksDeleted": deleted, "SpaceReclaimed": 0}

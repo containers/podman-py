@@ -8,7 +8,7 @@ from podman.domain.containers_manager import ContainersManager
 from podman.domain.events import EventManager
 from podman.domain.images_manager import ImagesManager
 from podman.domain.networks_manager import NetworksManager
-from podman.domain.pods import PodsManager
+from podman.domain.pods_manager import PodsManager
 from podman.domain.system import SystemManager
 from podman.domain.volumes import VolumesManager
 from podman.tlsconfig import TLSConfig

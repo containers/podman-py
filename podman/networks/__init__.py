@@ -39,7 +39,7 @@ def inspect(api, name):
 
 
 def list_networks(api, filters=None):
-    """list network useing filter"""
+    """list networks using filters"""
     filters_param = {}
     if filters:
         filters_param = {'filter': filters}
@@ -48,7 +48,7 @@ def list_networks(api, filters=None):
 
 
 def remove(api, name, force=None):
-    """Remove named/identified image from Podman storage."""
+    """remove a named network"""
     params = {}
     path = '/networks/{}'.format(api.quote(name))
     if force is not None:
@@ -59,10 +59,17 @@ def remove(api, name, force=None):
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.NetworkNotFound)
 
+def prune(api):
+    """prune unused networks"""
+    path = '/networks/prune'
+    response = api.post(path, headers={'content-type': 'application/json'})
+    return json.loads(str(response.read(), 'utf-8'))
+
 
 __all__ = [
     "create",
     "inspect",
     "list_networks",
     "remove",
+    "prune",
 ]
