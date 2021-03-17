@@ -9,6 +9,8 @@ import hashlib
 import json
 from typing import List, Optional, Union
 
+import requests
+
 from podman.domain.containers import Container
 from podman.domain.manager import PodmanResource
 from podman.errors import APIError
@@ -156,7 +158,10 @@ class Network(PodmanResource):
             f"/networks/{self.name}", params={"force": force}, compatible=compatible
         )
 
-        if response.status_code == 200:
+        if (
+            response.status_code == requests.codes.no_content
+            or response.status_code == requests.codes.okay
+        ):
             return
 
         body = response.json()

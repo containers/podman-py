@@ -39,6 +39,7 @@ def _format_dict(filters, criteria):
     for key, value in filters.items():
         if value is None:
             continue
+        value = str(value)
 
         if key in criteria:
             criteria[key].append(value)

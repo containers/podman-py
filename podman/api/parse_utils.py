@@ -1,5 +1,6 @@
 """Helper functions for parsing strings."""
 import base64
+import ipaddress
 import json
 from datetime import datetime
 from typing import Any, Dict, MutableMapping, Optional, Tuple, Union
@@ -59,3 +60,12 @@ def prepare_timestamp(value: Union[datetime, int, None]) -> Optional[int]:
         return delta.seconds + delta.days * 24 * 3600
 
     raise ValueError(f"Type '{type(value)}' is not supported by prepare_timestamp()")
+
+
+def prepare_cidr(value: Union[ipaddress.IPv4Network, ipaddress.IPv6Network]) -> (str, str):
+    """Returns network address and Base64 encoded netmask from CIDR.
+
+    Notes:
+        The return values are dictated by the Go JSON decoder.
+    """
+    return str(value.network_address), base64.b64encode(value.netmask.packed).decode("utf-8")

@@ -2,12 +2,13 @@ import io
 import json
 import unittest
 from collections import Iterable
+from unittest.mock import patch
 
 import requests_mock
 
-from podman import PodmanClient
+from podman import PodmanClient, api
 from podman.domain.images import Image
-from podman.errors.exceptions import BuildError, DockerException, PodmanError
+from podman.errors.exceptions import BuildError, DockerException
 
 
 class TestBuildCase(unittest.TestCase):
@@ -28,8 +29,12 @@ class TestBuildCase(unittest.TestCase):
 
         self.client.close()
 
-    @requests_mock.Mocker()
-    def test_build(self, mock):
+    @patch.object(api, "create_tar")
+    @patch.object(api, "prepare_containerfile")
+    def test_build(self, mock_prepare_containerfile, mock_create_tar):
+        mock_prepare_containerfile.return_value = "Containerfile"
+        mock_create_tar.return_value = b"This is a mocked tarball."
+
         stream = [
             {"stream": " ---\u003e a9eb17255234"},
             {"stream": "Step 1 : VOLUME /data"},
@@ -40,7 +45,7 @@ class TestBuildCase(unittest.TestCase):
             {"stream": " ---\u003e Running in dba30f2a1a7e"},
             {"stream": " ---\u003e 032b8b2855fc"},
             {"stream": "Removing intermediate container dba30f2a1a7e"},
-            {"stream": "Successfully built 032b8b2855fc"},
+            {"stream": "032b8b2855fc\n"},
         ]
 
         buffer = io.StringIO()
@@ -48,47 +53,56 @@ class TestBuildCase(unittest.TestCase):
             buffer.write(json.JSONEncoder().encode(entry))
             buffer.write("\n")
 
-        mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/build"
-            "?t=latest&cpuperiod=10&extrahosts=%7B%22database%22%3A+%22127.0.0.1%22%7D",
-            text=buffer.getvalue(),
-        )
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/images/032b8b2855fc/json",
-            json={
-                "Id":          "032b8b2855fc",
-                "ParentId":    "",
-                "RepoTags":    ["fedora:latest", "fedora:33", "<none>:<none>"],
-                "RepoDigests": [
-                    "fedora@sha256:9598a10fa72b402db876ccd4b3d240a4061c7d1e442745f1896ba37e1bf38664"
-                ],
-                "Created":     1614033320,
-                "Size":        23855104,
-                "VirtualSize": 23855104,
-                "SharedSize":  0,
-                "Labels":      {},
-                "Containers":  2,
-            }
-        )
+        with requests_mock.Mocker() as mock:
+            mock.post(
+                "http+unix://localhost:9999/v3.0.0/libpod/build"
+                "?t=latest"
+                "&buildargs=%7B%22BUILD_DATE%22%3A+%22January+1%2C+1970%22%7D"
+                "&cpuperiod=10"
+                "&extrahosts=%7B%22database%22%3A+%22127.0.0.1%22%7D"
+                "&labels=%7B%22Unittest%22%3A+%22true%22%7D",
+                text=buffer.getvalue(),
+            )
+            mock.get(
+                "http+unix://localhost:9999/v3.0.0/libpod/images/032b8b2855fc/json",
+                json={
+                    "Id": "032b8b2855fc",
+                    "ParentId": "",
+                    "RepoTags": ["fedora:latest", "fedora:33", "<none>:<none>"],
+                    "RepoDigests": [
+                        "fedora@sha256:9598a10fa72b402db876ccd4b3d240a4061c7d1e442745f1896ba37e1bf38664"
+                    ],
+                    "Created": 1614033320,
+                    "Size": 23855104,
+                    "VirtualSize": 23855104,
+                    "SharedSize": 0,
+                    "Labels": {},
+                    "Containers": 2,
+                },
+            )
 
-        image, logs = self.client.images.build(
-            path="/tmp/context_dir",
-            tag="latest",
-            buildargs={
-                "BUILD_DATE": "January 1, 1970",
-            },
-            container_limits={
-                "cpuperiod": 10,
-            },
-            extra_hosts={"database": "127.0.0.1"},
-            labels={"Unittest": "true"},
-        )
-        self.assertIsInstance(image, Image)
-        self.assertEqual(image.id, "032b8b2855fc")
-        self.assertIsInstance(logs, Iterable)
+            image, logs = self.client.images.build(
+                path="/tmp/context_dir",
+                tag="latest",
+                buildargs={
+                    "BUILD_DATE": "January 1, 1970",
+                },
+                container_limits={
+                    "cpuperiod": 10,
+                },
+                extra_hosts={"database": "127.0.0.1"},
+                labels={"Unittest": "true"},
+            )
+            self.assertIsInstance(image, Image)
+            self.assertEqual(image.id, "032b8b2855fc")
+            self.assertIsInstance(logs, Iterable)
 
-    @requests_mock.Mocker()
-    def test_build_logged_error(self, mock):
+    @patch.object(api, "create_tar")
+    @patch.object(api, "prepare_containerfile")
+    def test_build_logged_error(self, mock_prepare_containerfile, mock_create_tar):
+        mock_prepare_containerfile.return_value = "Containerfile"
+        mock_create_tar.return_value = b"This is a mocked tarball."
+
         stream = [
             {"error": "We do not need any stinking badges."},
         ]
@@ -98,14 +112,15 @@ class TestBuildCase(unittest.TestCase):
             buffer.write(json.JSONEncoder().encode(entry))
             buffer.write("\n")
 
-        mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/build",
-            text=buffer.getvalue(),
-        )
+        with requests_mock.Mocker() as mock:
+            mock.post(
+                "http+unix://localhost:9999/v3.0.0/libpod/build",
+                text=buffer.getvalue(),
+            )
 
-        with self.assertRaises(BuildError) as e:
-            self.client.images.build(path="/tmp/context_dir")
-        self.assertEqual(e.exception.msg, "We do not need any stinking badges.")
+            with self.assertRaises(BuildError) as e:
+                self.client.images.build(path="/tmp/context_dir")
+            self.assertEqual(e.exception.msg, "We do not need any stinking badges.")
 
     @requests_mock.Mocker()
     def test_build_no_context(self, mock):

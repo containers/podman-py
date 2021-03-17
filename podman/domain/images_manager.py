@@ -1,20 +1,23 @@
 """PodmanResource manager subclassed for Images."""
 import io
 import json
-import tarfile
-import tempfile
+import logging
 import urllib.parse
-from typing import IO, Any, ClassVar, Dict, Iterable, Iterator, List, Mapping, Optional, Type, Union
+from typing import Any, ClassVar, Dict, Generator, Iterator, List, Mapping, Optional, Type, Union
+
+import requests
 
 from podman import api
-from podman.domain.image_build import BuildMixin
+from podman.domain.images_build import BuildMixin
 from podman.domain.images import Image
 from podman.domain.manager import Manager
 from podman.domain.registry_data import RegistryData
 from podman.errors.exceptions import APIError, ImageNotFound
 
+logger = logging.getLogger("Images")
 
-class ImagesManager(Manager, BuildMixin):
+
+class ImagesManager(BuildMixin, Manager):
     """Specialized Manager for Image resources.
 
     Attributes:
@@ -37,23 +40,20 @@ class ImagesManager(Manager, BuildMixin):
         Raises:
             APIError: when service returns an error.
         """
-        params = {}
-        if "all" in kwargs:
-            params["all"] = kwargs.pop("all")
-        if "name" in kwargs:
-            params["name"] = kwargs.pop("name")
-        if "filters" in kwargs:
-            params["filters"] = api.prepare_filters(kwargs.pop("filters"))
-
+        params = {
+            "all": kwargs.get("all"),
+            "name": kwargs.get("name"),
+            "filters": api.prepare_filters(kwargs.get("filters")),
+        }
         response = self.client.get("/images/json", params=params)
         body = response.json()
 
-        if response.status_code != 200:
+        if response.status_code != requests.codes.ok:
             raise APIError(body["cause"], response=response, explanation=body["message"])
 
         images: List[Image] = []
         for element in body:
-            images.append(self.prepare_model(element))
+            images.append(self.prepare_model(attrs=element))
         return images
 
     # pylint is flagging 'name' here vs. 'key' parameter in super.get()
@@ -71,10 +71,10 @@ class ImagesManager(Manager, BuildMixin):
         response = self.client.get(f"/images/{name}/json")
         body = response.json()
 
-        if response.status_code == 200:
+        if response.status_code == requests.codes.ok:
             return self.prepare_model(body)
 
-        if response.status_code == 404:
+        if response.status_code == requests.codes.not_found:
             raise ImageNotFound(body["cause"], response=response, explanation=body["message"])
         raise APIError(body["cause"], response=response, explanation=body["message"])
 
@@ -98,28 +98,28 @@ class ImagesManager(Manager, BuildMixin):
             collection=self,
         )
 
-    def load(self, data: bytes) -> Iterable[Image]:
+    def load(self, data: bytes) -> Generator[Image, None, None]:
         """Restore an image previously saved.
 
         Args:
             data: Image to be loaded in tarball format.
 
-        Yields:
-
         Raises:
             APIError: when service returns an error.
         """
-        response = self.client.post(
-            "/images/load", data=data, headers={"Content-type": "application/x-www-form-urlencoded"}
-        )
+        # TODO fix podman swagger cannot use this header!
+        # headers = {"Content-type": "application/x-www-form-urlencoded"}
+
+        headers = {"Content-type": "application/x-tar"}
+        response = self.client.post("/images/load", data=data, headers=headers)
         body = response.json()
 
-        if response.status_code != 200:
+        if response.status_code != requests.codes.ok:
             raise APIError(body["cause"], response=response, explanation=body["message"])
 
         # Dict[Literal["Names"], List[str]]]
-        for i in body["Names"]:
-            yield self.get(i)
+        for item in body["Names"]:
+            yield self.get(item)
 
     def prune(self, filters: Optional[Mapping[str, Any]] = None) -> Dict[str, Any]:
         """Delete unused images.
@@ -135,14 +135,12 @@ class ImagesManager(Manager, BuildMixin):
         Note:
             The Untagged key will always be "".
         """
-        params = {}
-        if filters is not None:
-            params["filters"] = api.prepare_filters(filters)
-
-        response = self.client.post("/images/prune", params=params)
+        response = self.client.post(
+            "/images/prune", params={"filters": api.prepare_filters(filters)}
+        )
         body = response.json()
 
-        if response.status_code != 200:
+        if response.status_code != requests.codes.ok:
             raise APIError(body["cause"], response=response, explanation=body["message"])
 
         deleted: List[Dict[str, str]] = []
@@ -208,16 +206,15 @@ class ImagesManager(Manager, BuildMixin):
             "X-Registry-Auth": ""
         }
 
-        params = {}
-        if "destination" in kwargs:
-            params["destination"] = kwargs.pop("destination")
-        if "tlsVerify" in kwargs:
-            params["tlsVery"] = kwargs.pop("tlsVerify")
+        params = {
+            "destination": kwargs.get("destination"),
+            "tlsVerify": kwargs.get("tlsVerify"),
+        }
 
         name = urllib.parse.quote_plus(repository)
         response = self.client.post(f"/images/{name}/push", params=params, headers=headers)
 
-        if response.status_code != 200:
+        if response.status_code != requests.codes.ok:
             body = response.json()
             raise APIError(body["cause"], response=response, explanation=body["message"])
 
@@ -270,7 +267,6 @@ class ImagesManager(Manager, BuildMixin):
                 config for this request. auth_config should contain the username and password
                 keys to be valid.
             platform (str) – Platform in the format os[/arch[/variant]]
-            all_tags (bool) – Pull all image tags
             tls_verify (bool) - Require TLS verification. Default: True.
 
         Returns:
@@ -282,14 +278,18 @@ class ImagesManager(Manager, BuildMixin):
         if tag is None or len(tag) == 0:
             tag = "latest"
 
-        params = {"reference": repository}
+        params = {
+            "reference": repository,
+            "tlsVerify": kwargs.get("tls_verify"),
+        }
+
         if all_tags:
             params["allTags"] = True
         else:
             params["reference"] = f"{repository}:{tag}"
 
         if "platform" in kwargs:
-            platform = kwargs.pop("platform")
+            platform = kwargs.get("platform")
             ospm, arch, variant = platform.split("/")
 
             if ospm is not None:
@@ -300,38 +300,39 @@ class ImagesManager(Manager, BuildMixin):
                 params["Variant"] = variant
 
         if "auth_config" in kwargs:
-            username = kwargs["auth_config"].get(["username"])
-            password = kwargs["auth_config"].get(["password"])
+            username = kwargs["auth_config"].get("username")
+            password = kwargs["auth_config"].get("password")
             if username is None or password is None:
                 raise ValueError("'auth_config' requires keys 'username' and 'password'")
             params["credentials"] = f'{username}:{password}'
 
-        if "tls_verify" in kwargs:
-            params["tlsVerify"] = kwargs.pop("tls_verify")
-
         response = self.client.post("/images/pull", params=params)
-        body = response.json()
 
-        if response.status_code != 200:
-            raise APIError(response.url, response=response, explanation=body["error"])
+        if response.status_code != requests.codes.ok:
+            body = response.json()
+            raise APIError(body["cause"], response=response, explanation=body["error"])
 
-        if not all_tags:
-            return self.get(body["images"][0])
+        for item in response.iter_lines():
+            body = json.loads(item)
+            if all_tags and "images" in body:
+                images: List[Image] = []
+                for name in body["images"]:
+                    images.append(self.get(name))
+                return images
 
-        images: List[Image] = []
-        for name in body["images"]:
-            images.append(self.get(name))
-        return images
+            if "id" in body:
+                return self.get(body["id"])
+        return self.resource()
 
     def remove(
-        self, image: str, force: bool = False, noprune: bool = False
+        self, image: str, force: Optional[bool] = None, noprune: bool = False
     ) -> List[Dict[str, Union[str, int]]]:
         """Delete image from Podman service.
 
         Args:
             image: Name or Id of Image to remove
-            force: delete Image if in use
-            noprune: do not delete untagged parents. Ignored.
+            force: Delete Image even if in use
+            noprune: Do not delete untagged parents. Ignored.
 
         Returns:
             List[Dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[str, int]]]
@@ -344,14 +345,10 @@ class ImagesManager(Manager, BuildMixin):
         """
         _ = noprune
 
-        params = {}
-        if force:
-            params["force"] = str(bool(force))
-
-        response = self.client.delete(f"/images/{image}", params=params)
+        response = self.client.delete(f"/images/{image}", params={"force": force})
         body = response.json()
 
-        if response.status_code != 200:
+        if response.status_code != requests.codes.ok:
             raise APIError(body["cause"], response=response, explanation=body["message"])
 
         # Dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[int, List[str]]]
@@ -381,32 +378,15 @@ class ImagesManager(Manager, BuildMixin):
             APIError: when service returns an error
         """
         params = {
-            "term": [term],
+            "filters": api.prepare_filters(kwargs.get("filters")),
+            "limit": kwargs.get("limit"),
             "noTrunc": True,
+            "term": [term],
         }
-        if "limit" in kwargs:
-            params["limit"] = kwargs.pop("limit")
-        if "filters" in kwargs:
-            params["filters"] = api.prepare_filters(kwargs.pop("filters"))
 
         response = self.client.get("/images/search", params=params)
         body = response.json()
 
-        if response.status_code == 200:
+        if response.status_code == requests.codes.ok:
             return body
         raise APIError(body["cause"], response=response, explanation=body["message"])
-
-    @staticmethod
-    def _build_context(dockerfile: Union[io.BytesIO, str]) -> IO:
-        file = tempfile.NamedTemporaryFile()
-        with tarfile.open(mode="w", fileobj=file) as tarball:
-            if isinstance(dockerfile, io.BytesIO):
-                info = tarfile.TarInfo("Dockerfile")
-                info.size = len(dockerfile.getvalue())
-                dockerfile.seek(0)
-            else:
-                info = tarball.gettarinfo(fileobj=dockerfile, arcname='Dockerfile')
-            tarball.add(info, dockerfile)
-
-        file.seek(0)
-        return file

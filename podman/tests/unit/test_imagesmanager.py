@@ -20,9 +20,7 @@ FIRST_IMAGE = {
     "Size": 23855104,
     "VirtualSize": 23855104,
     "SharedSize": 0,
-    "Labels": {
-        "license": " Apache-2.0"
-    },
+    "Labels": {"license": " Apache-2.0"},
     "Containers": 2,
 }
 
@@ -126,7 +124,7 @@ class TestClientImagesManager(unittest.TestCase):
         """Unit test filters param for Images list()."""
         mock.get(
             "http+unix://localhost:9999/v3.0.0/libpod/images/json"
-            "?filters=%7B%22dangling%22%3A+%5Btrue%5D%7D",
+            "?filters=%7B%22dangling%22%3A+%5B%22True%22%5D%7D",
             json=[FIRST_IMAGE],
         )
 
@@ -177,7 +175,7 @@ class TestClientImagesManager(unittest.TestCase):
         """Unit test filters param for Images prune()."""
         mock.post(
             "http+unix://localhost:9999/v3.0.0/libpod/images/prune"
-            "?filters=%7B%22dangling%22%3A+%5Btrue%5D%7D",
+            "?filters=%7B%22dangling%22%3A+%5B%22True%22%5D%7D",
             json=[
                 {
                     "Id": "326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab",
@@ -241,7 +239,10 @@ class TestClientImagesManager(unittest.TestCase):
 
         with self.assertRaises(APIError) as e:
             _ = self.client.images.get("bad_image")
-        self.assertEqual(str(e.exception), "/images/bad_image/json")
+        self.assertEqual(
+            str(e.exception),
+            "http+unix://localhost:9999/v3.0.0/libpod/images/bad_image/json (GET operation failed)",
+        )
 
     @requests_mock.Mocker()
     def test_get_404(self, mock):
@@ -393,7 +394,7 @@ class TestClientImagesManager(unittest.TestCase):
     def test_search_filters(self, mock):
         mock.get(
             "http+unix://localhost:9999/v3.0.0/libpod/images/search"
-            "?term=fedora&noTrunc=true&filters=%7B%22stars%22%3A+%5B5%5D%7D",
+            "?filters=%7B%22stars%22%3A+%5B%225%22%5D%7D&noTrunc=True&term=fedora",
             json=[
                 {
                     "description": "mock term=fedora search",

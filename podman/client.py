@@ -1,4 +1,5 @@
 """Client for connecting to Podman service."""
+import logging
 import os
 import ssl
 from typing import Any, Dict, Mapping, Optional, Union
@@ -27,6 +28,7 @@ class PodmanClient:
         credstore_env: Optional[Mapping[str, str]] = None,
         use_ssh_client: bool = False,
         max_pool_size: int = 5,
+        **kwargs,
     ) -> None:
         """Instantiate PodmanClient object
 
@@ -40,8 +42,14 @@ class PodmanClient:
             credstore_env: Dict containing environment for credential store
             use_ssh_client: Use system ssh agent rather than ssh module. Default:False
             max_pool_size: Number of connections to save in pool
+            log_level (int): Threshold for logging events. Valid values: logging.CRITICAL,
+                logging.ERROR,   logging.WARNING, logging.INFO, logging.DEBUG.
+                Default: logging.WARNING
         """
-        # FIXME Should parameters be *args, **kwargs and resolved before calling APIClient()?
+        log_level = kwargs.get("log_level", logging.WARNING)
+        if logging.DEBUG < log_level > logging.CRITICAL:
+            raise ValueError(f"Invalid Logging {logging.getLevelName(log_level)}")
+        logging.basicConfig(level=log_level)
 
         if not base_url:
             uid = os.geteuid()
@@ -135,7 +143,6 @@ class PodmanClient:
             version=version,
             timeout=timeout,
             tls=tls,
-            user_agent="Podman/3.0.0",
             credstore_env=credstore_env,
             use_ssh_client=use_ssh_client,
             max_pool_size=max_pool_size,

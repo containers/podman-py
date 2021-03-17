@@ -19,7 +19,7 @@ from podman.api_connection import ApiConnection
 import podman.tests.integration.base as base
 
 
-class TestSystem(base.BaseIntegrationTest):
+class TestSystem(base.IntegrationTest):
     """system call integration test"""
 
     def setUp(self):

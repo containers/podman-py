@@ -192,7 +192,12 @@ class NetworksManagerTestCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_create(self, mock):
-        adapter = mock.post("http+unix://localhost:9999/v3.0.0/libpod/networks/create?name=podman")
+        adapter = mock.post(
+            "http+unix://localhost:9999/v3.0.0/libpod/networks/create?name=podman",
+            json={
+                "Filename": "/home/developer/.config/cni/net.d/podman.conflist",
+            },
+        )
         mock.get(
             "http+unix://localhost:9999/v1.40/networks/podman",
             json=FIRST_NETWORK,
@@ -204,6 +209,7 @@ class NetworksManagerTestCase(unittest.TestCase):
         network = self.client.networks.create(
             "podman", disabled_dns=True, enable_ipv6=False, ipam=ipam
         )
+        self.assertIsInstance(network, Network)
 
         self.assertEqual(adapter.call_count, 1)
         self.assertDictEqual(
@@ -212,8 +218,8 @@ class NetworksManagerTestCase(unittest.TestCase):
                 'DisabledDNS': True,
                 'Gateway': '172.31.255.254',
                 'IPv6': False,
-                'Range': {'IP': '172.16.0.0', 'Mask': '255.255.0.0'},
-                'Subnet': {'IP': '172.16.0.0', 'Mask': '255.240.0.0'},
+                'Range': {'IP': '172.16.0.0', 'Mask': "//8AAA=="},
+                'Subnet': {'IP': '172.16.0.0', 'Mask': "//AAAA=="},
             },
         )
 
@@ -221,7 +227,12 @@ class NetworksManagerTestCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_create_defaults(self, mock):
-        adapter = mock.post("http+unix://localhost:9999/v3.0.0/libpod/networks/create?name=podman")
+        adapter = mock.post(
+            "http+unix://localhost:9999/v3.0.0/libpod/networks/create?name=podman",
+            json={
+                "Filename": "/home/developer/.config/cni/net.d/podman.conflist",
+            },
+        )
         mock.get(
             "http+unix://localhost:9999/v1.40/networks/podman",
             json=FIRST_NETWORK,

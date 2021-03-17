@@ -89,7 +89,7 @@ class TestUtilsCase(unittest.TestCase):
         mock_parent = mock_path.parent.return_value = Mock()
         mock_parent.samefile.return_value = True
 
-        actual = api.prepare_dockerfile("/work", "/work/Dockerfile")
+        actual = api.prepare_containerfile("/work", "/work/Dockerfile")
         self.assertEqual(actual, "/work/Dockerfile")
         mock_path.assert_called()
 
@@ -98,7 +98,7 @@ class TestUtilsCase(unittest.TestCase):
         mock_parent = mock_path.parent.return_value = Mock()
         mock_parent.samefile.return_value = True
 
-        actual = api.prepare_dockerfile("/work", "/work/Dockerfile")
+        actual = api.prepare_containerfile("/work", "/work/Dockerfile")
         self.assertEqual(actual, "/work/Dockerfile")
         mock_path.assert_called()
 
@@ -109,8 +109,8 @@ class TestUtilsCase(unittest.TestCase):
         with mock.patch.object(pathlib.Path, "parent") as mock_parent:
             mock_parent.samefile.return_value = False
 
-            actual = api.prepare_dockerfile("/work", "/home/Dockerfile")
-            self.assertRegex(actual, r"/work/\.dockerfile\..*")
+            actual = api.prepare_containerfile("/work", "/home/Dockerfile")
+            self.assertRegex(actual, r"\.containerfile\..*")
 
 
 if __name__ == '__main__':

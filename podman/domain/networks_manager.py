@@ -7,7 +7,11 @@ Note:
         compatible=False to any method call.
 """
 import ipaddress
+import socket
+import struct
 from typing import Any, Dict, List, Optional
+
+import requests
 
 from podman import api
 from podman.api import APIClient
@@ -136,7 +140,6 @@ class NetworksManager(Manager):
         Raises:
             APIError when Podman service reports an error
         """
-        params = {"name": name}
         data = {
             "DisabledDNS": kwargs.get("disabled_dns"),
             "Driver": kwargs.get("driver"),
@@ -159,28 +162,31 @@ class NetworksManager(Manager):
 
                 if "IPRange" in ip_config:
                     iprange = ipaddress.ip_network(ip_config["IPRange"])
+                    iprange, mask = api.prepare_cidr(iprange)
                     data["Range"] = {
-                        "IP": str(iprange.network_address),
-                        "Mask": str(iprange.netmask),
+                        "IP": iprange,
+                        "Mask": mask,
                     }
 
                 if "Subnet" in ip_config:
                     subnet = ipaddress.ip_network(ip_config["Subnet"])
+                    subnet, mask = api.prepare_cidr(subnet)
                     data["Subnet"] = {
-                        "IP": str(subnet.network_address),
-                        "Mask": str(subnet.netmask),
+                        "IP": subnet,
+                        "Mask": mask,
                     }
-
         except KeyError:
             pass
 
         response = self.client.post(
             "/networks/create",
-            params=params,
+            params={"name": name},
             data=api.prepare_body(data),
             headers={"Content-Type": "application/json"},
         )
-        if response.status_code != 200:
+        data = response.json()
+
+        if response.status_code != requests.codes.okay:
             raise APIError(data["cause"], response=response, explanation=data["message"])
 
         return self.get(network_id=name, **kwargs)

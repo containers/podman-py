@@ -1,9 +1,11 @@
 import setuptools
 
+import podman
+
 long_description = "Python bindings to manage containers using Podman's new RESTful API."
 setuptools.setup(
     name="podman",
-    version="0.0.1",
+    version=podman.__version__,
     author="Brent Baude",
     author_email="bbaude@redhat.com",
     description="bindings for Podman V2 API",

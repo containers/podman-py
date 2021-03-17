@@ -84,6 +84,7 @@ class NetworkTestCase(unittest.TestCase):
     def test_remove(self, mock):
         adapter = mock.delete(
             "http+unix://localhost:9999/v1.40/networks/podman",
+            status_code=204,
             json={"Name": "podman", "Err": None},
         )
         mock.get("http+unix://localhost:9999/v1.40/networks/podman", json=FIRST_NETWORK)

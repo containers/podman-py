@@ -1,32 +1,39 @@
 """Model and Manager for Image resources."""
+import logging
 from typing import Any, Dict, Iterator, List, Optional, Union
 
+import requests
+
+from podman import api
 from podman.domain.manager import PodmanResource
 from podman.errors.exceptions import APIError, ImageNotFound
 
+logger = logging.getLogger("Images")
+
 
 class Image(PodmanResource):
-    """Details and configuration for an Image managed by the Podman service.
-
-    Attributes:
-        labels: Image labels
-        tags: Image tags
-    """
+    """Details and configuration for an Image managed by the Podman service."""
 
     def __repr__(self) -> str:
-        return "<%s: '%s'>" % (self.__class__.__name__, "', '".join(self.tags))
+        return f"""<{self.__class__.__name__}: '{"', '".join(self.tags)}'>"""
 
     @property
     def labels(self) -> Dict[str, str]:
         """Returns labels associated with Image."""
-        return self.attrs.get("Labels", {})
+        image_labels = self.attrs.get("Labels")
+        if image_labels is None or len(image_labels) == 0:
+            return dict()
+
+        return image_labels
 
     @property
     def tags(self) -> List[str]:
         """Returns tags from Image."""
-        if "RepoTags" in self.attrs:
-            return [tag for tag in self.attrs["RepoTags"] if tag != "<none>:<none>"]
-        return []
+        repo_tags = self.attrs.get("RepoTags")
+        if repo_tags is None or len(repo_tags) == 0:
+            return list()
+
+        return [tag for tag in repo_tags if tag != "<none>:<none>"]
 
     def history(self) -> List[Dict[str, Any]]:
         """Returns history of the Image.
@@ -38,15 +45,17 @@ class Image(PodmanResource):
         response = self.client.get(f"/images/{self.id}/history")
         body = response.json()
 
-        if response.status_code == 200:
+        if response.status_code == requests.codes.ok:
             return body
 
-        if response.status_code == 404:
+        if response.status_code == requests.codes.not_found:
             raise ImageNotFound(body["cause"], response=response, explanation=body["message"])
         raise APIError(body["cause"], response=response, explanation=body["message"])
 
     def save(
-        self, chunk_size: Optional[int] = 2097152, named: Union[str, bool] = False
+        self,
+        chunk_size: Optional[int] = api.DEFAULT_CHUNK_SIZE,
+        named: Union[str, bool] = False,
     ) -> Iterator[bytes]:
         """Returns Image as tarball.
 
@@ -60,10 +69,15 @@ class Image(PodmanResource):
 
         Raises:
             APIError: when service returns an error.
+
+        Notes:
+            Format is set to docker-archive, this allows load() to import this tarball.
         """
         _ = named
 
-        response = self.client.get(f"/images/{self.id}/get", stream=True)
+        response = self.client.get(
+            f"/images/{self.id}/get", params={"format": ["docker-archive"]}, stream=True
+        )
 
         if response.status_code == 200:
             return response.iter_content(chunk_size=chunk_size)
@@ -94,10 +108,10 @@ class Image(PodmanResource):
 
         response = self.client.post(f"/images/{self.id}/tag", params=params)
 
-        if response.status_code == 201:
+        if response.status_code == requests.codes.created:
             return True
 
         error = response.json()
-        if response.status_code == 404:
+        if response.status_code == requests.codes.not_found:
             raise ImageNotFound(error["cause"], response=response, explanation=error["message"])
         raise APIError(error["cause"], response=response, explanation=error["message"])
