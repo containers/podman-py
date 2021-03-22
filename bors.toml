@@ -24,12 +24,12 @@
 #
 # Note: The wild-card character '%' is available.
 status = [
-    "success",
+    "Total Success",
 ]
 
 # Same as 'status' (above) but statuses that must pass on every PR
 pr_status = [
-    "success",
+    "Total Success",
 ]
 
 # Cirrus-CI Max Timeout is 60 * 60 * 2
