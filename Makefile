@@ -11,15 +11,9 @@ HEAD ?= HEAD
 export PODMAN_VERSION ?= '3.0.0'
 
 .PHONY: podman-py
-podman-py: env
+podman-py:
 	PODMAN_VERSION=$(PODMAN_VERSION) \
 	$(PYTHON) setup.py sdist bdist
-
-.PHONY: env
-env:
-	# see contrib/cirrus/gating/Dockerfile
-	dnf install python3-coverage python3-pylint python3-requests python3-requests-mock python3-fixtures \
-		podman -y
 
 .PHONY: lint
 lint:
