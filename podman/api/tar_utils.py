@@ -25,7 +25,7 @@ def prepare_dockerignore(anchor: str) -> List[str]:
         )
 
 
-def prepare_dockerfile(anchor: str, dockerfile: str) -> str:
+def prepare_containerfile(anchor: str, dockerfile: str) -> str:
     """Ensure that Dockerfile or a proxy Dockerfile is in context_dir.
 
     Args:
@@ -41,15 +41,22 @@ def prepare_dockerfile(anchor: str, dockerfile: str) -> str:
     if dockerfile_path.parent.samefile(anchor_path):
         return dockerfile
 
-    proxy_path = anchor_path / f".dockerfile.{random.getrandbits(160):x}"
+    proxy_path = anchor_path / f".containerfile.{random.getrandbits(160):x}"
     shutil.copy2(dockerfile_path, proxy_path, follow_symlinks=False)
-    return str(proxy_path)
+    return proxy_path.name
 
 
 def create_tar(
-    anchor: str, name: Optional[str] = None, exclude: List[str] = None, gzip: bool = False
+    anchor: str, name: str = None, exclude: List[str] = None, gzip: bool = False
 ) -> BinaryIO:
-    """Create a tarfile from context_dir to send to Podman service"""
+    """Create a tarfile from context_dir to send to Podman service.
+
+    Args:
+        anchor: Directory to use as root of tar file.
+        name: Name of tar file.
+        exclude: List of patterns for files to exclude from tar file.
+        gzip: When True, gzip compress tar file.
+    """
 
     def add_filter(info: tarfile.TarInfo) -> Optional[tarfile.TarInfo]:
         """Filter files targeted to be added to tarfile.
@@ -64,6 +71,7 @@ def create_tar(
         Notes:
             exclude is captured from parent
         """
+
         if not (info.isfile() or info.isdir() or info.issym()):
             return None
 
@@ -80,21 +88,27 @@ def create_tar(
 
         if sys.platform == 'win32':
             info.mode = info.mode & 0o755 | 0o111
+
         return info
 
     if name is None:
-        name = tempfile.NamedTemporaryFile()
+        name = tempfile.NamedTemporaryFile(prefix="podman_build_context", suffix=".tar")
     else:
         name = pathlib.Path(name)
 
+    if exclude is None:
+        exclude = list()
+    else:
+        exclude = exclude.copy()
+
     exclude.append(".dockerignore")
-    exclude.append("!" + str(name))
+    exclude.append(name.name)
 
     mode = "w:gz" if gzip else "w"
-    with tarfile.open(name, mode) as tar:
-        tar.add(anchor, arcname=os.path.basename(anchor), recursive=True, filter=add_filter)
+    with tarfile.open(name.name, mode) as tar:
+        tar.add(anchor, arcname="", recursive=True, filter=add_filter)
 
-    return open(name, "rb")
+    return open(name.name, "rb")
 
 
 def _exclude_matcher(path: str, exclude: List[str]) -> bool:

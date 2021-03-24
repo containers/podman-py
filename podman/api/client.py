@@ -1,10 +1,11 @@
 """APIClient for connecting to Podman service."""
 import urllib.parse
-from typing import IO, Any, ClassVar, Dict, Iterable, List, Mapping, Optional, Tuple, Union
+from typing import IO, Any, ClassVar, Iterable, List, Mapping, Optional, Tuple, Union
 
 import requests
 from requests import Response
 
+from podman import api
 from podman.api.uds import UDSAdapter
 from podman.errors.exceptions import APIError
 from podman.tlsconfig import TLSConfig
@@ -30,23 +31,7 @@ class APIClient(requests.Session):
     # pylint: disable=arguments-differ
     # pylint: disable=too-many-instance-attributes
 
-    # TODO pull version from a future Version library
-    api_version: str = "3.0.0"
-    compatible_version: str = "1.40"
-
-    default_timeout: float = 60.0
-
     supported_schemes: ClassVar[List[str]] = ("unix", "http+unix")
-
-    required_headers: ClassVar[Dict[str, str]] = {
-        "User-Agent": f"PodmanPy/{api_version}",
-    }
-    """These headers are included in all requests to service."""
-
-    default_headers: ClassVar[Dict[str, str]] = {}
-    """These headers are included in all requests to service.
-       Headers provided in request will override.
-    """
 
     def __init__(
         self,
@@ -68,31 +53,37 @@ class APIClient(requests.Session):
 
         _ = tls
 
-        # FIXME map scheme unix:// -> http+unix://,
-        # FIXME url quote slashes in netloc
-        self.base_url = base_url
-
-        self.version = version or APIClient.api_version
-        self.path_prefix = f"/v{self.version}/libpod"
-        self.compatible_version = (
-            kwargs.get("compatible_version", None) or APIClient.compatible_version
-        )
-        self.compatible_prefix = f"/v{self.compatible_version}"
-
-        uri = urllib.parse.urlparse(self.base_url)
+        uri = urllib.parse.urlparse(base_url)
         if uri.scheme not in APIClient.supported_schemes:
             raise ValueError(
                 f"The scheme '{uri.scheme}' is not supported, only {APIClient.supported_schemes}"
             )
 
-        self.uri = uri
-        self.timeout = timeout or APIClient.default_timeout
-        self.user_agent = user_agent or f"PodmanPy/{self.version}"
+        if uri.scheme == "unix":
+            uri = uri._replace(scheme="http+unix")
+
+        if uri.netloc == "":
+            uri = uri._replace(netloc=uri.path)._replace(path="")
+
+        if "/" in uri.netloc:
+            uri = uri._replace(netloc=urllib.parse.quote_plus(uri.netloc))
+
+        self.base_url = uri.geturl()
+
+        if uri.scheme == "http+unix":
+            self.mount(uri.scheme, UDSAdapter())
+
+        self.version = version or api.API_VERSION
+        self.path_prefix = f"/v{self.version}/libpod"
+        self.compatible_version = kwargs.get("compatible_version") or api.COMPATIBLE_VERSION
+        self.compatible_prefix = f"/v{self.compatible_version}"
+
+        self.timeout = timeout or api.DEFAULT_TIMEOUT
         self.pool_maxsize = num_pools or requests.adapters.DEFAULT_POOLSIZE
         self.credstore_env = credstore_env or {}
 
-        if uri.scheme == "http+unix" or "unix":
-            self.mount(uri.scheme, UDSAdapter())
+        self.user_agent = user_agent or f"PodmanPy/{self.version}"
+        self.headers.update({"User-Agent": self.user_agent})
 
     def delete(
         self,
@@ -298,35 +289,24 @@ class APIClient(requests.Session):
             APIError: when service returns an Error.
         """
         if timeout is None:
-            timeout = APIClient.default_timeout
+            timeout = api.DEFAULT_TIMEOUT
 
         if not path.startswith("/"):
             path = f"/{path}"
 
         compatible = kwargs.get("compatible", False)
         path_prefix = self.compatible_prefix if compatible else self.path_prefix
+        uri = self.base_url + path_prefix + path
 
         try:
             return self.request(
                 method.upper(),
-                self.base_url + path_prefix + path,
+                uri,
                 params=params,
                 data=data,
-                headers=self._headers(headers or {}),
+                headers=(headers or {}),
                 timeout=timeout,
                 stream=stream,
             )
         except OSError as e:
-            raise APIError(path) from e
-
-    @classmethod
-    def _headers(cls, headers: Mapping[str, str]) -> Dict[str, str]:
-        """Generate header dictionary for request.
-
-        Args:
-            headers: headers unique to this request.
-        """
-        hdrs = APIClient.default_headers.copy()
-        hdrs.update(headers)
-        hdrs.update(APIClient.required_headers)
-        return hdrs
+            raise APIError(uri, explanation=f"{method.upper()} operation failed") from e

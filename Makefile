@@ -8,7 +8,7 @@ DESTDIR ?=
 EPOCH_TEST_COMMIT ?= $(shell git merge-base $${DEST_BRANCH:-master} HEAD)
 HEAD ?= HEAD
 
-export PODMAN_VERSION ?= '1.80'
+export PODMAN_VERSION ?= '3.0.0'
 
 .PHONY: podman-py
 podman-py: env
@@ -17,22 +17,28 @@ podman-py: env
 
 .PHONY: env
 env:
-	dnf install python3-coverage python3-pylint python3-requests python3-requests-mock -y
-	# -- or --
-	# $(PYTHON) -m pip install tox
-	# -- or --
+	# see contrib/cirrus/gating/Dockerfile
+	dnf install python3-coverage python3-pylint python3-requests python3-requests-mock python3-fixtures \
+		podman -y
+
 .PHONY: lint
 lint:
 	$(PYTHON) -m pylint podman || exit $$(($$? % 4));
+
+.PHONY: tests
+tests:
+	DEBUG=1 coverage run -m unittest discover -s podman/tests
+	coverage report -m --skip-covered --fail-under=80 --omit=./podman/tests/* --omit=.tox/* --omit=/usr/lib/*
 
 .PHONY: unittest
 unittest:
 	coverage run -m unittest discover -s podman/tests/unit
 	coverage report -m --skip-covered --fail-under=80 --omit=./podman/tests/* --omit=.tox/* --omit=/usr/lib/*
 
-# .PHONY: integration
-# integration:
-# 	test/integration/test_runner.sh -v
+.PHONY: integration
+integration:
+	coverage run -m unittest discover -s podman/tests/integration
+	coverage report -m --skip-covered --fail-under=80 --omit=./podman/tests/* --omit=.tox/* --omit=/usr/lib/*
 
 # .PHONY: install
 HEAD ?= HEAD

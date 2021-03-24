@@ -1,18 +1,25 @@
 """Mixin for Image build support."""
 import itertools
 import json
+import logging
+import pathlib
+import random
 import re
-from typing import Iterator, Tuple
+import shutil
+import tempfile
+from typing import Any, Dict, Iterator, List, Tuple
 
 from podman import api
 from podman.domain.images import Image
 from podman.errors.exceptions import APIError, BuildError, PodmanError
 
+logger = logging.getLogger("Images")
+
 
 class BuildMixin:
     """Class providing build operation for ImageManager."""
 
-    # pylint: disable=too-many-locals,too-many-branches,too-few-public-methods
+    # pylint: disable=too-many-locals,too-many-branches,too-few-public-methods,too-many-statements
     def build(self, **kwargs) -> Tuple[Image, Iterator[bytes]]:
         """Returns built image.
 
@@ -63,70 +70,35 @@ class BuildMixin:
             APIError: when service returns an error.
             TypeError: when neither path nor fileobj is not specified.
         """
-        if "path" not in kwargs and "fileobj" not in kwargs:
-            raise TypeError("Either path or fileobj must be provided.")
 
-        if "gzip" in kwargs and "encoding" in kwargs:
-            raise PodmanError("Custom encoding not supported when gzip enabled.")
-
-        # All unsupported kwargs are silently ignored
-        params = {
-            "dockerfile": kwargs.get("dockerfile", None),
-            "forcerm": kwargs.get("forcerm", None),
-            "httpproxy": kwargs.get("http_proxy", None),
-            "networkmode": kwargs.get("network_mode", None),
-            "nocache": kwargs.get("nocache", None),
-            "platform": kwargs.get("platform", None),
-            "pull": kwargs.get("pull", None),
-            "q": kwargs.get("quiet", None),
-            "remote": kwargs.get("remote", None),
-            "rm": kwargs.get("rm", None),
-            "shmsize": kwargs.get("shmsize", None),
-            "squash": kwargs.get("squash", None),
-            "t": kwargs.get("tag", None),
-            "target": kwargs.get("target", None),
-        }
-
-        if "buildargs" in kwargs:
-            params["buildargs"] = json.dumps(kwargs.get("buildargs"))
-
-        if "cache_from" in kwargs:
-            params["cacheform"] = json.dumps(kwargs.get("cache_from"))
-
-        if "container_limits" in kwargs:
-            params["cpuperiod"] = kwargs["container_limits"].get("cpuperiod", None)
-            params["cpuquota"] = kwargs["container_limits"].get("cpuquota", None)
-            params["cpusetcpus"] = kwargs["container_limits"].get("cpusetcpus", None)
-            params["cpushares"] = kwargs["container_limits"].get("cpushares", None)
-            params["memory"] = kwargs["container_limits"].get("memory", None)
-            params["memswap"] = kwargs["container_limits"].get("memswap", None)
-
-        if "extra_hosts" in kwargs:
-            params["extrahosts"] = json.dumps(kwargs.get("extra_hosts"))
-
-        if "labels" in kwargs:
-            params["labels"] = json.dumps(kwargs.get("labels"))
-
-        params = dict(filter(lambda e: e[1] is not None, params.items()))
-
-        context_dir = params.pop("path", None)
-        timeout = params.pop("timeout", api.DEFAULT_TIMEOUT)
+        params = self._prepare_params(kwargs)
 
         body = None
-        if context_dir:
+        path = None
+        if "fileobj" in kwargs:
+            path = tempfile.TemporaryDirectory()
+            filename = pathlib.Path(path.name) / params["dockerfile"]
+
+            with open(filename, "w") as file:
+                shutil.copyfileobj(kwargs["fileobj"], file)
+            body = api.create_tar(anchor=path.name, gzip=kwargs.get("gzip", False))
+        elif "path" in kwargs:
             # The Dockerfile will be copied into the context_dir if needed
-            params["dockerfile"] = api.prepare_dockerfile(context_dir, params["dockerfile"])
+            params["dockerfile"] = api.prepare_containerfile(kwargs["path"], params["dockerfile"])
 
-            excludes = api.prepare_dockerignore(context_dir)
-            body = api.create_tar(context_dir, exclude=excludes, gzip=kwargs.get("gzip", False))
+            excludes = api.prepare_dockerignore(kwargs["path"])
+            body = api.create_tar(
+                anchor=kwargs["path"], exclude=excludes, gzip=kwargs.get("gzip", False)
+            )
 
+        timeout = kwargs.get("timeout", api.DEFAULT_TIMEOUT)
         response = self.client.post(
             "/build",
             params=params,
             data=body,
             headers={
                 "Content-type": "application/x-tar",
-                "X-Registry-Config": "TODO",
+                # "X-Registry-Config": "TODO",
             },
             stream=True,
             timeout=timeout,
@@ -134,12 +106,15 @@ class BuildMixin:
         if hasattr(body, "close"):
             body.close()
 
+        if hasattr(path, "cleanup"):
+            path.cleanup()
+
         if response.status_code != 200:
             body = response.json()
             raise APIError(body["cause"], response=response, explanation=body["message"])
 
         image_id = unknown = None
-        marker = re.compile(r'(^Successfully built |sha256:)([0-9a-f]+)$')
+        marker = re.compile(r'(^[0-9a-f]+)\n$')
         report_stream, stream = itertools.tee(response.iter_lines())
         for line in stream:
             result = json.loads(line)
@@ -148,10 +123,64 @@ class BuildMixin:
             if "stream" in result:
                 match = marker.match(result["stream"])
                 if match:
-                    image_id = match.group(2)
+                    image_id = match.group(1)
             unknown = line
 
         if image_id:
             return self.get(image_id), report_stream
 
         raise BuildError(unknown or 'Unknown', report_stream)
+
+    @staticmethod
+    def _prepare_params(kwargs) -> Dict[str, List[Any]]:
+        """Map kwargs to query parameters.
+
+        Notes:
+            All unsupported kwargs are silently ignored.
+        """
+        if "path" not in kwargs and "fileobj" not in kwargs:
+            raise TypeError("Either path or fileobj must be provided.")
+
+        if "gzip" in kwargs and "encoding" in kwargs:
+            raise PodmanError("Custom encoding not supported when gzip enabled.")
+
+        params = {
+            "dockerfile": kwargs.get("dockerfile"),
+            "forcerm": kwargs.get("forcerm"),
+            "httpproxy": kwargs.get("http_proxy"),
+            "networkmode": kwargs.get("network_mode"),
+            "nocache": kwargs.get("nocache"),
+            "platform": kwargs.get("platform"),
+            "pull": kwargs.get("pull"),
+            "q": kwargs.get("quiet"),
+            "remote": kwargs.get("remote"),
+            "rm": kwargs.get("rm"),
+            "shmsize": kwargs.get("shmsize"),
+            "squash": kwargs.get("squash"),
+            "t": kwargs.get("tag"),
+            "target": kwargs.get("target"),
+        }
+
+        if "buildargs" in kwargs:
+            params["buildargs"] = json.dumps(kwargs.get("buildargs"))
+        if "cache_from" in kwargs:
+            params["cacheform"] = json.dumps(kwargs.get("cache_from"))
+
+        if "container_limits" in kwargs:
+            params["cpuperiod"] = kwargs["container_limits"].get("cpuperiod")
+            params["cpuquota"] = kwargs["container_limits"].get("cpuquota")
+            params["cpusetcpus"] = kwargs["container_limits"].get("cpusetcpus")
+            params["cpushares"] = kwargs["container_limits"].get("cpushares")
+            params["memory"] = kwargs["container_limits"].get("memory")
+            params["memswap"] = kwargs["container_limits"].get("memswap")
+
+        if "extra_hosts" in kwargs:
+            params["extrahosts"] = json.dumps(kwargs.get("extra_hosts"))
+        if "labels" in kwargs:
+            params["labels"] = json.dumps(kwargs.get("labels"))
+
+        if params["dockerfile"] is None:
+            params["dockerfile"] = f".containerfile.{random.getrandbits(160):x}"
+
+        # Remove any unset parameters
+        return dict(filter(lambda i: i[1] is not None, params.items()))

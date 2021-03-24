@@ -8,5 +8,7 @@ RUN dnf -y install golang \
 			python3-requests-mock \
 			python3-coverage \
 			python3-pylint \
-			python3-fixtures && \
+			python3-fixtures \
+			podman \
+			&& \
 			dnf -y clean all
