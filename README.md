@@ -2,6 +2,16 @@
 
 This python package is a set of bindings to use the new RESTful API in [libpod](https://github.com/containers/libpod).  It is currently under development and contributors are welcome!
 
+## Dependencies
+
+The following packages (or their distro-equivilents) are required:
+
+* `python3-coverage`
+* `python3-pylint`
+* `python3-requests`
+* `python3-requests-mock`
+* `python3-fixtures`
+
 ## Example usage
 
 ```python
