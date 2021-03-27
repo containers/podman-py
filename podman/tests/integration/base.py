@@ -22,7 +22,14 @@ import podman.tests.integration.utils as utils
 
 
 class IntegrationTest(fixtures.TestWithFixtures):
-    """Base Integration test case"""
+    """Base Integration test case.
+
+    Notes:
+        Logging for the Podman service configured here for later capture, this configuration is
+            inherited by other libraries like unittest and requests.
+        Logging output will start with stdout from the Podman service events, followed by
+            results and logging captured by the unittest module test runner.
+    """
 
     podman: str = None
 
@@ -33,9 +40,16 @@ class IntegrationTest(fixtures.TestWithFixtures):
             raise AssertionError(f"'{command}' not found.")
         IntegrationTest.podman = command
 
+        # For testing, lock in logging configuration
+        if "DEBUG" in os.environ:
+            logging.basicConfig(level=logging.DEBUG)
+        else:
+            logging.basicConfig(level=logging.INFO)
+
     def setUp(self):
         super().setUp()
 
+        # This is the log_level to pass to podman service
         self.log_level = logging.WARNING
         if "DEBUG" in os.environ:
             self.log_level = logging.DEBUG

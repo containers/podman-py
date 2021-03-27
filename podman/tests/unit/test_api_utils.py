@@ -1,3 +1,4 @@
+import json
 import pathlib
 import unittest
 from dataclasses import dataclass
@@ -93,15 +94,6 @@ class TestUtilsCase(unittest.TestCase):
         self.assertEqual(actual, "/work/Dockerfile")
         mock_path.assert_called()
 
-    @mock.patch("pathlib.Path", autospec=True)
-    def test_dockerfile(self, mock_path):
-        mock_parent = mock_path.parent.return_value = Mock()
-        mock_parent.samefile.return_value = True
-
-        actual = api.prepare_containerfile("/work", "/work/Dockerfile")
-        self.assertEqual(actual, "/work/Dockerfile")
-        mock_path.assert_called()
-
     @mock.patch("shutil.copy2")
     def test_dockerfile_copy(self, mock_copy):
         mock_copy.return_value = None
@@ -111,6 +103,51 @@ class TestUtilsCase(unittest.TestCase):
 
             actual = api.prepare_containerfile("/work", "/home/Dockerfile")
             self.assertRegex(actual, r"\.containerfile\..*")
+
+    def test_prepare_body_all_types(self):
+        payload = {
+            "String": "string",
+            "Integer": 42,
+            "Boolean": True,
+            "Dictionary": {"key": "value"},
+            "Tuple": (1, 2),
+            "List": [1, 2],
+        }
+        actual = api.prepare_body(payload)
+        self.assertEqual(actual, json.dumps(payload, sort_keys=True))
+
+    def test_prepare_body_none(self):
+        payload = {
+            "String": "",
+            "Integer": None,
+            "Boolean": False,
+            "Dictionary": dict(),
+            "Tuple": tuple(),
+            "List": list(),
+        }
+        actual = api.prepare_body(payload)
+        self.assertEqual(actual, '{"Boolean": false}')
+
+    def test_prepare_body_embedded(self):
+        payload = {
+            "String": "",
+            "Integer": None,
+            "Boolean": False,
+            "Dictionary": {"key": "value"},
+            "Dictionary2": {"key": {"key2": None}},
+            "Tuple": tuple(),
+            "List": [None],
+            "Set1": {"item1", "item2"},
+            "Set2": {None},
+        }
+        actual = api.prepare_body(payload)
+        actual_dict = json.loads(actual)
+
+        # Because of the sets above we have to do some type dances to test results
+        self.assertListEqual([*actual_dict], ["Boolean", "Dictionary", "Set1"])
+        self.assertEqual(actual_dict["Boolean"], payload["Boolean"])
+        self.assertDictEqual(actual_dict["Dictionary"], payload["Dictionary"])
+        self.assertEqual(set(actual_dict["Set1"]), {"item1", "item2"})
 
 
 if __name__ == '__main__':

@@ -275,7 +275,8 @@ class ContainersTestCase(unittest.TestCase):
         mock.post(
             "http+unix://localhost:9999/v3.0.0/libpod/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/wait",
-            status_code=204,
+            status_code=200,
+            json={"StatusCode": 0},
         )
 
         container = self.client.containers.get(

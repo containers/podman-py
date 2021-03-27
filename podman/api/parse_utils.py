@@ -3,7 +3,7 @@ import base64
 import ipaddress
 import json
 from datetime import datetime
-from typing import Any, Dict, MutableMapping, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 
 def parse_repository(name: str) -> Tuple[str, Optional[str]]:
@@ -34,17 +34,6 @@ def decode_header(value: Optional[str]) -> Dict[str, Any]:
     value = base64.b64decode(value)
     text = value.decode("utf-8")
     return json.loads(text)
-
-
-def prepare_body(body: MutableMapping[str, Any]) -> str:
-    """Strip out any items without a value."""
-    if body is None:
-        return ""
-
-    targets = {k: v for (k, v) in body.items() if v is None}
-    for key in targets:
-        del body[key]
-    return json.dumps(body)
 
 
 def prepare_timestamp(value: Union[datetime, int, None]) -> Optional[int]:

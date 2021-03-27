@@ -14,7 +14,7 @@ from podman.domain.manager import Manager
 from podman.domain.registry_data import RegistryData
 from podman.errors.exceptions import APIError, ImageNotFound
 
-logger = logging.getLogger("Images")
+logger = logging.getLogger("podman.images")
 
 
 class ImagesManager(BuildMixin, Manager):

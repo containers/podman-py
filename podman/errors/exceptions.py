@@ -1,8 +1,13 @@
 """Podman API Errors."""
-from typing import Iterable, Optional
+import typing
+from typing import Iterable, List, Optional, Union
 
 from requests import Response
 from requests.exceptions import HTTPError
+
+# Break circular import
+if typing.TYPE_CHECKING:
+    from podman.domain.containers import Container
 
 
 class APIError(HTTPError):
@@ -66,9 +71,6 @@ class NotFound(APIError):
         Compatible name, missing Error suffix.
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
 
 class ImageNotFound(APIError):
     """Image not found on Podman service.
@@ -103,6 +105,41 @@ class BuildError(PodmanError):
         super().__init__(reason)
         self.msg = reason
         self.build_log = build_log
+
+
+class ContainerError(PodmanError):
+    """Represents a container that has exited with a non-zero exit code."""
+
+    def __init__(
+        self,
+        container: "Container",
+        exit_status: int,
+        command: Union[str, List[str]],
+        image: str,
+        stderr: Optional[Iterable[str]] = None,
+    ):
+        """Initialize ContainerError.
+
+        Args:
+            container: Container that reported error.
+            exit_status: Non-zero status code from Container exit.
+            command: Command passed to container when created.
+            image: Name of image that was used to create container.
+            stderr: Errors reported by Container.
+        """
+        err = f": {stderr}" if stderr is not None else ""
+        msg = (
+            f"Command '{command}' in image '{image}' returned non-zero exit "
+            f"status {exit_status}{err}"
+        )
+
+        super().__init__(msg)
+
+        self.container = container
+        self.exit_status: int = exit_status
+        self.command = command
+        self.image = image
+        self.stderr = stderr
 
 
 class InvalidArgument(PodmanError):

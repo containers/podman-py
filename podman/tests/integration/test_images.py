@@ -26,13 +26,13 @@ from podman.errors.exceptions import ImageNotFound, APIError
 # @unittest.skipIf(os.geteuid() != 0, 'Skipping, not running as root')
 
 
-class TestImages(base.IntegrationTest):
+class ImagesIntegrationTest(base.IntegrationTest):
     """images call integration test"""
 
     def setUp(self):
         super().setUp()
 
-        self.client = PodmanClient(base_url=self.socket_uri, log_level=self.log_level)
+        self.client = PodmanClient(base_url=self.socket_uri)
         self.addCleanup(self.client.close)
 
     def test_image_crud(self):

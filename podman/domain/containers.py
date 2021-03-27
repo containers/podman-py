@@ -1,13 +1,19 @@
 """Model and Manager for Container resources."""
 import io
 import json
+import logging
+from contextlib import suppress
 from typing import Any, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Tuple, Union
+
+import requests
 
 from podman import api
 from podman.domain.images import Image
 from podman.domain.images_manager import ImagesManager
 from podman.domain.manager import PodmanResource
 from podman.errors import APIError, NotFound
+
+logger = logging.getLogger("podman.containers")
 
 
 class Container(PodmanResource):
@@ -16,7 +22,7 @@ class Container(PodmanResource):
     @property
     def name(self) -> Optional[str]:
         """Returns container's name."""
-        if "name" in self.attrs:
+        with suppress(KeyError):
             return self.attrs["Name"].lstrip("/")
         return None
 
@@ -24,16 +30,19 @@ class Container(PodmanResource):
     def image(self) -> Image:
         """Returns Image object used to create Container."""
         if "Image" in self.attrs:
-            image_id = self.attrs["Image"].split(":")[1]
+            image_id = self.attrs["Image"]
+            if ":" in image_id:
+                image_id = image_id.split(":")[1]
+
             return ImagesManager(client=self.client).get(image_id)
         return Image()
 
     @property
     def labels(self) -> Dict[str, str]:
         """Returns labels associated with container."""
-        if "Config" in self.attrs and "Labels" in self.attrs["Config"]:
+        with suppress(KeyError):
             return self.attrs["Config"]["Labels"]
-        return {}
+        return dict()
 
     @property
     def status(self) -> str:
@@ -42,16 +51,16 @@ class Container(PodmanResource):
         Example:
             'running', 'stopped', 'exited'
         """
-        if "State" in self.attrs and "Status" in self.attrs["State"]:
+        with suppress(KeyError):
             return self.attrs["State"]["Status"]
         return "unknown"
 
     @property
     def ports(self) -> Dict[str, int]:
         """Returns ports exposed by container."""
-        if "NetworkSettings" in self.attrs and "Ports" in self.attrs["NetworkSettings"]:
+        with suppress(KeyError):
             return self.attrs["NetworkSettings"]["Ports"]
-        return {}
+        return dict()
 
     def attach(self, **kwargs) -> Union[str, Iterator[str]]:
         """Attach to container's tty.
@@ -79,7 +88,7 @@ class Container(PodmanResource):
             author (str): Name of commit author
             changes (List[str]): Instructions to apply during commit
             comment (List[str]): Instructions to apply while committing in Dockerfile format
-            conf (Dict[str, Any]): Ignored
+            conf (Dict[str, Any]): Ignored.
             format (str): Format of the image manifest and metadata
             message (str): Commit message to include with Image
             pause (bool): Pause the container before committing it
@@ -87,37 +96,38 @@ class Container(PodmanResource):
             See https://docs.podman.io/en/latest/_static/api.html#operation/libpodCommitContainer
         """
         params = {
-            "author": kwargs.get("author", None),
-            "changes": kwargs.get("changes", None),
-            "comment": kwargs.get("comment", None),
+            "author": kwargs.get("author"),
+            "changes": kwargs.get("changes"),
+            "comment": kwargs.get("comment"),
             "container": self.id,
-            "format": kwargs.get("format", None),
-            "pause": kwargs.get("pause", None),
+            "format": kwargs.get("format"),
+            "pause": kwargs.get("pause"),
             "repo": repository,
             "tag": tag,
         }
         response = self.client.post("/commit", params=params)
         body = response.json()
 
-        if response.status_code != 201:
-            if response.status_code == 404:
-                raise NotFound(body["cause"], response=response, explanation=body["message"])
-            raise APIError(body["cause"], response=response, explanation=body["message"])
+        if response.status_code == requests.codes.created:
+            return ImagesManager(client=self.client).get(body["ID"])
 
-        return ImagesManager(client=self.client).get(body["ID"])
+        if response.status_code == requests.codes.not_found:
+            raise NotFound(body["cause"], response=response, explanation=body["message"])
+        raise APIError(body["cause"], response=response, explanation=body["message"])
 
     def diff(self) -> List[Dict[str, int]]:
-        """Report changes on container's filesystem.
+        """Report changes of a container's filesystem.
 
         Raises:
-            APIError when service reports error
+            APIError: when service reports error
         """
         response = self.client.get(f"/containers/{self.id}/changes")
         body = response.json()
 
-        if response.status_code == 200:
+        if response.status_code == requests.codes.okay:
             return body
-        if response.status_code == 404:
+
+        if response.status_code == requests.codes.not_found:
             raise NotFound(body["cause"], response=response, explanation=body["message"])
         raise APIError(body["cause"], response=response, explanation=body["message"])
 
@@ -186,14 +196,15 @@ class Container(PodmanResource):
         """
         response = self.client.get(f"/containers/{self.id}/export", stream=True)
 
-        if response.status_code != 200:
-            body = response.json()
-            if response.status_code == 404:
-                raise NotFound(body["cause"], response=response, explanation=body["message"])
-            raise APIError(body["cause"], response=response, explanation=body["message"])
+        if response.status_code == requests.codes.okay:
+            for out in response.iter_content(chunk_size=chunk_size):
+                yield out
+            return
 
-        for out in response.iter_content(chunk_size=chunk_size):
-            yield out
+        body = response.json()
+        if response.status_code == requests.codes.not_found:
+            raise NotFound(body["cause"], response=response, explanation=body["message"])
+        raise APIError(body["cause"], response=response, explanation=body["message"])
 
     def get_archive(
         self, path: str, chunk_size: int = api.DEFAULT_CHUNK_SIZE
@@ -209,22 +220,21 @@ class Container(PodmanResource):
             Second item is a dict containing stat information on the specified path.
         """
         response = self.client.get(f"/containers/{self.id}/archive", params={"path": [path]})
-        if response.status_code != 200:
-            body = response.json()
-            if response.status_code == 404:
-                raise NotFound(body["cause"], response=response, explanation=body["message"])
-            raise APIError(body["cause"], response=response, explanation=body["message"])
 
-        stat = response.headers.get('x-docker-container-path-stat', None)
-        stat = api.decode_header(stat)
-        return response.iter_content(chunk_size=chunk_size), stat
+        if response.status_code == requests.codes.okay:
+            stat = response.headers.get('x-docker-container-path-stat', None)
+            stat = api.decode_header(stat)
+            return response.iter_content(chunk_size=chunk_size), stat
+
+        body = response.json()
+        if response.status_code == requests.codes.not_found:
+            raise NotFound(body["cause"], response=response, explanation=body["message"])
+        raise APIError(body["cause"], response=response, explanation=body["message"])
 
     def kill(self, signal: Union[str, int, None] = None) -> None:
         """Send signal to container. """
-        params = {"signal": signal}
-
-        response = self.client.post(f"/containers/{self.id}/kill", params=params)
-        if response.status_code == 204:
+        response = self.client.post(f"/containers/{self.id}/kill", params={"signal": signal})
+        if response.status_code == requests.codes.no_content:
             return
 
         body = response.json()
@@ -251,11 +261,11 @@ class Container(PodmanResource):
     def pause(self) -> None:
         """Pause processes within container."""
         response = self.client.post(f"/containers/{self.id}/pause")
-        if response.status_code == 204:
+        if response.status_code == requests.codes.no_content:
             return
 
         body = response.json()
-        if response.status_code == 404:
+        if response.status_code == requests.codes.not_found:
             raise NotFound(body["cause"], response=response, explanation=body["message"])
         raise APIError(body["cause"], response=response, explanation=body["message"])
 
@@ -281,7 +291,7 @@ class Container(PodmanResource):
         response = self.client.put(
             f"/containers/{self.id}/archive", params={"path": path}, data=data
         )
-        return response.status_code == 200
+        return response.status_code == requests.codes.okay
 
     def remove(self, **kwargs) -> None:
         """Delete container.
@@ -297,7 +307,7 @@ class Container(PodmanResource):
         }
 
         response = self.client.delete(f"/containers/{self.id}", params=params)
-        if response.status_code == 204:
+        if response.status_code == requests.codes.no_content:
             return
 
         body = response.json()
@@ -310,11 +320,11 @@ class Container(PodmanResource):
             name: New name for container.
         """
         if not name:
-            raise ValueError("name is a required parameter.")
+            raise ValueError("'name' is a required argument.")
 
         response = self.client.post(f"/containers/{self.id}/rename", params={"name": name})
-        if response.status_code == 204:
-            self.attrs["Name"] = name
+        if response.status_code == requests.codes.no_content:
+            self.attrs["Name"] = name  # shortcut needing a reload()
             return
 
         body = response.json()
@@ -332,11 +342,11 @@ class Container(PodmanResource):
             "w": width,
         }
         response = self.client.post(f"/containers/{self.id}/resize", params=params)
-        if response.status_code == 200:
+        if response.status_code == requests.codes.okay:
             return
 
         body = response.json()
-        if response.status_code == 404:
+        if response.status_code == requests.codes.not_found:
             raise NotFound(body["cause"], response=response, explanation=body["message"])
         raise APIError(body["cause"], response=response, explanation=body["message"])
 
@@ -356,7 +366,7 @@ class Container(PodmanResource):
         response = self.client.post(
             f"/containers/{self.id}/restart", params=params, timeout=connection_timeout
         )
-        if response.status_code == 204:
+        if response.status_code == requests.codes.no_content:
             return
 
         body = response.json()
@@ -373,7 +383,7 @@ class Container(PodmanResource):
             params = {"detachKeys": kwargs["detach_keys"]}
 
         response = self.client.post(f"/containers/{self.id}/start", params=params)
-        if response.status_code == 204:
+        if response.status_code == requests.codes.no_content:
             return
 
         body = response.json()
@@ -401,9 +411,9 @@ class Container(PodmanResource):
 
         response = self.client.get("/containers/stats", params=params)
 
-        if response.status_code != 200:
+        if response.status_code != requests.codes.okay:
             body = response.json()
-            if response.status_code == 404:
+            if response.status_code == requests.codes.not_found:
                 raise NotFound(body["cause"], response=response, explanation=body["message"])
             raise APIError(body["cause"], response=response, explanation=body["message"])
 
@@ -434,22 +444,19 @@ class Container(PodmanResource):
             ignore (bool): When True, ignore error if container already stopped (Podman only)
             timeout (int): Number of seconds to wait on container to stop before killing it.
         """
-        connection_timeout = api.DEFAULT_TIMEOUT
+        params = {"all": kwargs.get("all"), "timeout": kwargs.get("timeout")}
 
-        params = {}
-        if "all" in kwargs:
-            params["all"] = kwargs["all"]
-        if "timeout" in kwargs:
-            params["timeout"] = kwargs["timeout"]
-            connection_timeout += float(kwargs["timeout"])
+        connection_timeout: float = api.DEFAULT_TIMEOUT
+        if params.get("timeout"):
+            connection_timeout += float(params["timeout"])
 
         response = self.client.post(
             f"/containers/{self.id}/stop", params=params, timeout=connection_timeout
         )
-        if response.status_code == 204:
+        if response.status_code == requests.codes.no_content:
             return
 
-        if response.status_code == 304:
+        if response.status_code == requests.codes.not_modified:
             if kwargs.get("ignore", False):
                 return
 
@@ -469,17 +476,17 @@ class Container(PodmanResource):
         response = self.client.get(f"/containers/{self.id}/top", params=params)
         body = response.json()
 
-        if response.status_code != 200:
-            if response.status_code == 404:
-                raise NotFound(body["cause"], response=response, explanation=body["message"])
-            raise APIError(body["cause"], response=response, explanation=body["message"])
+        if response.status_code == requests.codes.okay:
+            return body
 
-        return body
+        if response.status_code == requests.codes.not_found:
+            raise NotFound(body["cause"], response=response, explanation=body["message"])
+        raise APIError(body["cause"], response=response, explanation=body["message"])
 
     def unpause(self) -> None:
         """Unpause processes in container."""
         response = self.client.post(f"/containers/{self.id}/unpause")
-        if response.status_code == 204:
+        if response.status_code == requests.codes.no_content:
             return
 
         body = response.json()
@@ -491,28 +498,34 @@ class Container(PodmanResource):
         Note:
             Podman unsupported operation
         """
-        raise NotImplementedError("container update is not supported by Podman.")
+        raise NotImplementedError("container update is not supported by Podman service.")
 
     def wait(self, **kwargs) -> Dict[str, Any]:
-        """Block until container enters given state.
+        """Block until the container enters given state.
 
         Keyword Args:
             condition (str): Container state on which to release, values:
                 not-running (default), next-exit or removed.
-            timeout (int): Number of seconds to wait for container to stop.
+            timeout (int): Number of seconds to wait for the container to stop.
 
         Returns:
-              API response as a dict, including the container's exit code under the key StatusCode.
+              Keys:
+                - StatusCode (int): Container's exit code
+                - Error["Message"] (str): Error message from container
 
         Raises:
-              ReadTimeoutError: If the timeout is exceeded.
-              APIError: If the service returns as error.
+              NotFound: When Container not found
+              ReadTimeoutError: When timeout is exceeded
+              APIError: When service returns an error
         """
-        params = {"condition": kwargs.get("condition", None)}
-        response = self.client.post(f"/containers/{self.id}/wait", params=params)
-
-        if response.status_code == 204:
-            return
-
+        response = self.client.post(
+            f"/containers/{self.id}/wait", params={"condition": kwargs.get("condition")}
+        )
         body = response.json()
+
+        if response.status_code == requests.codes.okay:
+            return body
+
+        if response.status_code == requests.codes.not_found:
+            raise NotFound(body["cause"], response=response, explanation=body["message"])
         raise APIError(body["cause"], response=response, explanation=body["message"])

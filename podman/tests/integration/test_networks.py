@@ -14,18 +14,16 @@
 #
 """networks calls integration tests"""
 
-
 import unittest
-import os
-from podman import networks, PodmanClient
-from podman.api_connection import ApiConnection
+
 import podman.tests.integration.base as base
+from podman import PodmanClient
 from podman.domain.containers import Container
-from podman.domain.ipam import IPAMPool, IPAMConfig
+from podman.domain.ipam import IPAMConfig, IPAMPool
 from podman.errors import NotFound
 
 
-class TestNetworks(base.IntegrationTest):
+class NetworksIntegrationTest(base.IntegrationTest):
     """networks call integration test"""
 
     pool = IPAMPool(subnet="172.16.0.0/12", iprange="172.16.0.0/16", gateway="172.31.255.254")
@@ -34,7 +32,7 @@ class TestNetworks(base.IntegrationTest):
 
     def setUp(self):
         super().setUp()
-        self.client = PodmanClient(base_url=self.socket_uri, log_level=self.log_level)
+        self.client = PodmanClient(base_url=self.socket_uri)
         self.addCleanup(self.client.close)
 
     def test_network_crud(self):
@@ -45,7 +43,7 @@ class TestNetworks(base.IntegrationTest):
                 "integration_test",
                 disabled_dns=True,
                 enable_ipv6=False,
-                ipam=TestNetworks.ipam,
+                ipam=NetworksIntegrationTest.ipam,
             )
             self.assertEqual(network.name, "integration_test")
 
@@ -75,7 +73,7 @@ class TestNetworks(base.IntegrationTest):
                 "integration_test",
                 disabled_dns=True,
                 enable_ipv6=False,
-                ipam=TestNetworks.ipam,
+                ipam=NetworksIntegrationTest.ipam,
             )
             self.assertEqual(network.name, "integration_test")
 
@@ -102,7 +100,7 @@ class TestNetworks(base.IntegrationTest):
             "integration_test",
             disabled_dns=True,
             enable_ipv6=False,
-            ipam=TestNetworks.ipam,
+            ipam=NetworksIntegrationTest.ipam,
         )
         self.assertEqual(network.name, "integration_test")
 
