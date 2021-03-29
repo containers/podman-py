@@ -22,7 +22,8 @@ lint:
 .PHONY: tests
 tests:
 	DEBUG=1 coverage run -m unittest discover -s podman/tests
-	coverage report -m --skip-covered --fail-under=80 --omit=./podman/tests/* --omit=.tox/* --omit=/usr/lib/*
+	coverage report -m --skip-covered --fail-under=80 --omit=./podman/tests/* --omit=.tox/* \
+	--omit=/usr/lib/* --omit=*/lib/python*
 
 .PHONY: unittest
 unittest:

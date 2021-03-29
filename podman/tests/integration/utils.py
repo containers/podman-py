@@ -15,16 +15,15 @@
 """Integration Test Utils"""
 import logging
 import os
-import pathlib
 import shutil
 import subprocess
-import tempfile
+import threading
 import time
 from typing import List, Optional
 
 import podman.tests.errors as errors
 
-logger = logging.getLogger("fixture")
+logger = logging.getLogger("podman.service")
 
 
 class PodmanLauncher:
@@ -46,7 +45,10 @@ class PodmanLauncher:
             raise errors.PodmanNotInstalled()
 
         self.socket_file: str = socket_uri.replace('unix://', '')
+        self.log_level = log_level
+
         self.proc = None
+        self.reference_id = hash(time.time_ns())
 
         self.cmd: List[str] = []
         if privileged:
@@ -68,17 +70,20 @@ class PodmanLauncher:
             ]
         )
 
-        self.log_file = tempfile.NamedTemporaryFile(
-            prefix="podman_integration_", suffix=".log", delete=False
-        )
-        self.log_file.write(f"Podman command {' '.join(self.cmd)}\n".encode())
-        self.log_file.flush()
-
     def start(self) -> None:
         """start podman service"""
-        print(f"Launching {' '.join(self.cmd)}\n\tLogging to {self.log_file.name}")
-        # self.proc = subprocess.Popen(self.cmd, stdout=self.log_file, stderr=self.log_file)
-        self.proc = subprocess.Popen(self.cmd)
+        logger.info("Launching %s refid=%s", ' '.join(self.cmd), self.reference_id)
+
+        def consume_lines(pipe, consume_fn):
+            with pipe:
+                for line in iter(pipe.readline, b""):
+                    consume_fn(line.decode("utf-8"))
+
+        def consume(line: str):
+            logger.debug(line.strip("\n") + f" refid={self.reference_id}")
+
+        self.proc = subprocess.Popen(self.cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        threading.Thread(target=consume_lines, args=[self.proc.stdout, consume]).start()
 
         # wait for socket to be created
         timeout = time.monotonic() + 30
@@ -100,5 +105,4 @@ class PodmanLauncher:
             return_code = self.proc.wait()
         self.proc = None
 
-        self.log_file.write(f"Podman service return Code: {return_code}\n".encode())
-        self.log_file.close()
+        logger.info("Command return Code: %d refid=%s", return_code, self.reference_id)

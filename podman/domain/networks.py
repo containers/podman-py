@@ -7,6 +7,7 @@ Note:
     """
 import hashlib
 import json
+from contextlib import suppress
 from typing import List, Optional, Union
 
 import requests
@@ -26,10 +27,10 @@ class Network(PodmanResource):
     @property
     def id(self):  # pylint: disable=invalid-name
         """Returns the identifier of the network."""
-        if "Id" in self.attrs:
+        with suppress(KeyError):
             return self.attrs["Id"]
 
-        if "name" in self.attrs:
+        with suppress(KeyError):
             sha256 = hashlib.sha256(self.attrs["name"].encode("ascii"))
             return sha256.hexdigest()
 

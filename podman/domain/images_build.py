@@ -13,11 +13,11 @@ from podman import api
 from podman.domain.images import Image
 from podman.errors.exceptions import APIError, BuildError, PodmanError
 
-logger = logging.getLogger("Images")
+logger = logging.getLogger("podman.images")
 
 
 class BuildMixin:
-    """Class providing build operation for ImageManager."""
+    """Class providing build method for ImagesManager."""
 
     # pylint: disable=too-many-locals,too-many-branches,too-few-public-methods,too-many-statements
     def build(self, **kwargs) -> Tuple[Image, Iterator[bytes]]:
@@ -71,7 +71,7 @@ class BuildMixin:
             TypeError: when neither path nor fileobj is not specified.
         """
 
-        params = self._prepare_params(kwargs)
+        params = self._render_params(kwargs)
 
         body = None
         path = None
@@ -132,7 +132,7 @@ class BuildMixin:
         raise BuildError(unknown or 'Unknown', report_stream)
 
     @staticmethod
-    def _prepare_params(kwargs) -> Dict[str, List[Any]]:
+    def _render_params(kwargs) -> Dict[str, List[Any]]:
         """Map kwargs to query parameters.
 
         Notes:

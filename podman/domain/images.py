@@ -8,7 +8,7 @@ from podman import api
 from podman.domain.manager import PodmanResource
 from podman.errors.exceptions import APIError, ImageNotFound
 
-logger = logging.getLogger("Images")
+logger = logging.getLogger("podman.images")
 
 
 class Image(PodmanResource):

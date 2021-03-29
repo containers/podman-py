@@ -7,12 +7,12 @@ Note:
         compatible=False to any method call.
 """
 import ipaddress
-import socket
-import struct
+from contextlib import suppress
 from typing import Any, Dict, List, Optional
 
 import requests
 
+import podman.api.http_utils
 from podman import api
 from podman.api import APIClient
 from podman.domain.manager import Manager
@@ -150,7 +150,7 @@ class NetworksManager(Manager):
             "Options": kwargs.get("options"),
         }
 
-        try:
+        with suppress(KeyError):
             ipam = kwargs["ipam"]
             if len(ipam["Config"]) > 0:
 
@@ -175,13 +175,11 @@ class NetworksManager(Manager):
                         "IP": subnet,
                         "Mask": mask,
                     }
-        except KeyError:
-            pass
 
         response = self.client.post(
             "/networks/create",
             params={"name": name},
-            data=api.prepare_body(data),
+            data=podman.api.http_utils.prepare_body(data),
             headers={"Content-Type": "application/json"},
         )
         data = response.json()
