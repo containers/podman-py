@@ -518,9 +518,11 @@ class Container(PodmanResource):
               ReadTimeoutError: When timeout is exceeded
               APIError: When service returns an error
         """
-        response = self.client.post(
-            f"/containers/{self.id}/wait", params={"condition": kwargs.get("condition")}
-        )
+        condition = kwargs.get("condition")
+        if isinstance(condition, str):
+            condition = [condition]
+
+        response = self.client.post(f"/containers/{self.id}/wait", params={"condition": condition})
         body = response.json()
 
         if response.status_code == requests.codes.okay:

@@ -21,13 +21,19 @@ class ContainersIntegrationTest(base.IntegrationTest):
 
         self.alpine_image = self.client.images.pull("quay.io/libpod/alpine", tag="latest")
 
+        # TODO should this use podman binary instead?
+        for container in self.client.containers.list():
+            container.remove(force=True)
+
     def test_container_crud(self):
         """Test Container CRUD."""
 
         with self.subTest("Create from Alpine Image"):
             container = self.client.containers.create(self.alpine_image)
             self.assertIsInstance(container, Container)
+            self.assertGreater(len(container.attrs), 0)
             self.assertIsNotNone(container.id)
+            self.assertIsNotNone(container.name)
             self.assertIsInstance(container.image, Image)
 
             self.assertIn("quay.io/libpod/alpine:latest", container.image.tags)
@@ -45,6 +51,25 @@ class ContainersIntegrationTest(base.IntegrationTest):
 
         with self.subTest("Delete Container"):
             container.remove()
+            with self.assertRaises(NotFound):
+                self.client.containers.get(container.id)
+
+        with self.subTest("Run Container"):
+            container = self.client.containers.run(
+                self.alpine_image, "/usr/bin/top", name="TestRunPs", detach=True
+            )
+            self.assertEqual(container.status, "running")
+            container.stop()
+            container.reload()
+            self.assertIn(container.status, ("exited", "stopped"))
+
+        with self.subTest("Prune Containers"):
+            report = self.client.containers.prune()
+            self.assertIn(container.id, report["ContainersDeleted"])
+
+            # SpaceReclaimed is the size of the content created during the running of the container
+            self.assertEqual(report["SpaceReclaimed"], 0)
+
             with self.assertRaises(NotFound):
                 self.client.containers.get(container.id)
 

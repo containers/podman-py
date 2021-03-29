@@ -127,6 +127,6 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
             if entry.get("error", None) is not None:
                 raise APIError(entry["error"], response=response, explanation=entry["error"])
 
-            results["ContainersDeleted"].append(entry["id"])
-            results["SpaceReclaimed"] += entry["space"]
+            results["ContainersDeleted"].append(entry["Id"])
+            results["SpaceReclaimed"] += entry["Size"]
         return results
