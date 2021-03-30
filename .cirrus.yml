@@ -3,12 +3,13 @@
 env:
     DEST_BRANCH: "master"
     GOPATH: "/var/tmp/go"
+    GOBIN: "${GOPATH}/bin"
+    GOCACHE: "${GOPATH}/cache"
+    GOSRC: "${GOPATH}/src/github.com/containers/podman"
     CIRRUS_WORKING_DIR: "${GOPATH}/src/github.com/containers/podman-py"
-    GOSRC: "$CIRRUS_WORKING_DIR"
     SCRIPT_BASE: "./contrib/cirrus"
     CIRRUS_SHELL: "/bin/bash"
     HOME: "/root"  # not set by default
-    GOCACHE: "${HOME}/.cache/go-build"
 
     ####
     #### Cache-image names to test with (double-quotes around names are critical)
@@ -101,6 +102,14 @@ gating_task:
         - go get github.com/vbatts/git-validation
         - make validate
 
+podman_task:
+    name: "Build podman from master"
+    alias: podman
+
+    depends_on:
+        - gating
+
+    script: "$SCRIPT_BASE/latest_podman.sh"
 
 test_task:
     name: "Test on $FEDORA_NAME"
@@ -111,6 +120,7 @@ test_task:
 
     depends_on:
         - gating
+        - podman
 
     script: "$SCRIPT_BASE/test.sh"
 
@@ -129,6 +139,7 @@ success_task:
     depends_on:
         - meta
         - gating
+        - podman
         - test
     container: *smallcontainer
     clone_script: *noop
