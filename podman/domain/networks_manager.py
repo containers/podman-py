@@ -33,6 +33,10 @@ class NetworksManager(Manager):
         """
         super().__init__(client)
 
+    def exists(self, key: str) -> bool:
+        response = self.client.get(f"/networks/{key}/exists")
+        return response.status_code == requests.codes.no_content
+
     def list(self, **kwargs) -> List[Network]:
         """Report on networks.
 
@@ -64,8 +68,8 @@ class NetworksManager(Manager):
         compatible = kwargs.get("compatible", True)
 
         filters = kwargs.get("filters", dict())
-        filters["name"] = kwargs.get("names", None)
-        filters["id"] = kwargs.get("ids", None)
+        filters["name"] = kwargs.get("names")
+        filters["id"] = kwargs.get("ids")
         filters = api.prepare_filters(filters)
 
         params = {"filters": filters}
@@ -74,7 +78,7 @@ class NetworksManager(Manager):
         response = self.client.get(path, params=params, compatible=compatible)
         body = response.json()
 
-        if response.status_code != 200:
+        if response.status_code != requests.codes.okay:
             raise APIError(body["cause"], response=response, explanation=body["message"])
 
         nets: List[Network] = list()
@@ -84,7 +88,7 @@ class NetworksManager(Manager):
 
     # pylint is flagging 'network_id' here vs. 'key' parameter in super.get()
     def get(self, network_id: str, *_, **kwargs) -> Network:  # pylint: disable=arguments-differ
-        """Return information for network network_id.
+        """Return information for the network_id.
 
         Args:
             network_id: Network name or id.
@@ -107,15 +111,15 @@ class NetworksManager(Manager):
         response = self.client.get(path, compatible=compatible)
         body = response.json()
 
-        if response.status_code != 200:
-            if response.status_code == 404:
+        if response.status_code != requests.codes.okay:
+            if response.status_code == requests.codes.not_found:
                 raise NotFound(body["cause"], response=response, explanation=body["message"])
             raise APIError(body["cause"], response=response, explanation=body["message"])
 
         if not compatible:
             body = body[0]
 
-        return self.prepare_model(body)
+        return self.prepare_model(attrs=body)
 
     def create(self, name: str, **kwargs) -> Network:
         """Create a Network.
@@ -212,7 +216,7 @@ class NetworksManager(Manager):
         )
         body = response.json()
 
-        if response.status_code != 200:
+        if response.status_code != requests.codes.okay:
             raise APIError(body["cause"], response=response, explanation=body["message"])
 
         if compatible:

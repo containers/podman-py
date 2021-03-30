@@ -1,11 +1,16 @@
 """Model and Manager for Volume resources."""
 import json
+import logging
 from typing import Any, Dict, List, Optional
+
+import requests
 
 from podman import api
 from podman.api.client import APIClient
 from podman.domain.manager import Manager, PodmanResource
 from podman.errors import APIError, NotFound
+
+logger = logging.getLogger("podman.volumes")
 
 
 class Volume(PodmanResource):
@@ -33,11 +38,11 @@ class Volume(PodmanResource):
         params = {"force": force}
         response = self.client.delete(f"/volumes/{self.name}", params=params)
 
-        if response.status_code == 204:
+        if response.status_code == requests.codes.no_content:
             return
 
         data = response.json()
-        if response.status_code == 404:
+        if response.status_code == requests.codes.not_found:
             raise NotFound(data["cause"], response=response, explanation=data["message"])
 
         raise APIError(data["cause"], response=response, explanation=data["message"])
@@ -49,15 +54,19 @@ class VolumesManager(Manager):
     resource = Volume
 
     def __init__(self, client: APIClient):
-        """Initiate VolumeManager object.
+        """Initialize VolumesManager object.
 
         Args:
             client: Connection to Podman service.
         """
         super().__init__(client)
 
+    def exists(self, key: str) -> bool:
+        response = self.client.get(f"/volumes/{key}/exists")
+        return response.status_code == requests.codes.no_content
+
     def create(self, name: Optional[str] = None, **kwargs) -> Volume:
-        """Create an Volume.
+        """Create a Volume.
 
         Args:
             name: Name given to new volume
@@ -87,8 +96,8 @@ class VolumesManager(Manager):
         )
         data = response.json()
 
-        if response.status_code == 201:
-            return self.prepare_model(data)
+        if response.status_code == requests.codes.created:
+            return self.prepare_model(attrs=data)
 
         raise APIError(data["cause"], response=response, explanation=data["message"])
 
@@ -105,16 +114,16 @@ class VolumesManager(Manager):
         """
         response = self.client.get(f"/volumes/{volume_id}")
 
-        if response.status_code == 404:
+        if response.status_code == requests.codes.not_found:
             raise NotFound(
                 response.text, response=response, explanation=f"Failed to find volume '{volume_id}'"
             )
 
         data = response.json()
-        if response.status_code == 200:
-            return self.prepare_model(data)
+        if response.status_code != requests.codes.okay:
+            raise APIError(data["cause"], response=response, explanation=data["message"])
 
-        raise APIError(data["cause"], response=response, explanation=data["message"])
+        return self.prepare_model(attrs=data)
 
     def list(self, *_, **kwargs) -> List[Volume]:
         """Report on volumes.
@@ -128,17 +137,17 @@ class VolumesManager(Manager):
         filters = api.prepare_filters(kwargs.get("filters"))
         response = self.client.get("/volumes", params={"filters": filters})
 
-        if response.status_code == 404:
+        if response.status_code == requests.codes.not_found:
             return []
 
         data = response.json()
-        if response.status_code == 200:
-            volumes: List[Volume] = list()
-            for item in data:
-                volumes.append(self.prepare_model(item))
-            return volumes
+        if response.status_code != requests.codes.okay:
+            raise APIError(data["cause"], response=response, explanation=data["message"])
 
-        raise APIError(data["cause"], response=response, explanation=data["message"])
+        volumes: List[Volume] = list()
+        for item in data:
+            volumes.append(self.prepare_model(item))
+        return volumes
 
     def prune(
         self, filters: Optional[Dict[str, str]] = None  # pylint: disable=unused-argument
@@ -154,7 +163,7 @@ class VolumesManager(Manager):
         response = self.client.post("/volumes/prune")
         data = response.json()
 
-        if response.status_code != 200:
+        if response.status_code != requests.codes.okay:
             raise APIError(data["cause"], response=response, explanation=data["message"])
 
         volumes: List[str] = list()

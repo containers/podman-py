@@ -6,6 +6,8 @@ Notes:
 import json
 from typing import Dict, List, Optional
 
+import requests
+
 from podman import api
 from podman.api import APIClient
 from podman.domain.manager import Manager
@@ -26,6 +28,10 @@ class PodsManager(Manager):
         """
         super().__init__(client)
 
+    def exists(self, key: str) -> bool:
+        response = self.client.get(f"/pods/{key}/exists")
+        return response.status_code == requests.codes.no_content
+
     def create(self, name: str, **kwargs) -> Pod:
         """Create a Pod.
 
@@ -40,10 +46,10 @@ class PodsManager(Manager):
         response = self.client.post("/pods/create", data=json.dumps(data))
         body = response.json()
 
-        if response.status_code != 200:
+        if response.status_code != requests.codes.okay:
             raise APIError(body["cause"], response=response, explanation=body["message"])
 
-        return self.prepare_model(self.get(body["Id"]))
+        return self.get(body["Id"])
 
     # pylint is flagging 'pod_id' here vs. 'key' parameter in super.get()
     def get(self, pod_id: str) -> Pod:  # pylint: disable=arguments-differ
@@ -59,10 +65,10 @@ class PodsManager(Manager):
         response = self.client.get(f"/pods/{pod_id}/json")
         body = response.json()
 
-        if response.status_code == 200:
-            return self.prepare_model(body)
+        if response.status_code == requests.codes.okay:
+            return self.prepare_model(attrs=body)
 
-        if response.status_code == 404:
+        if response.status_code == requests.codes.not_found:
             raise NotFound(body["cause"], response=response, explanation=body["message"])
         raise APIError(body["cause"], response=response, explanation=body["message"])
 
@@ -91,12 +97,12 @@ class PodsManager(Manager):
         response = self.client.get("/pods/json", params=api.prepare_filters(params))
         body = response.json()
 
-        if response.status_code != 200:
+        if response.status_code != requests.codes.okay:
             raise APIError(body["cause"], response=response, explanation=body["message"])
 
         pods: List[Pod] = list()
         for item in body:
-            pods.append(self.prepare_model(item))
+            pods.append(self.prepare_model(attrs=item))
         return pods
 
     def prune(self, filters: Optional[Dict[str, str]] = None):
@@ -111,7 +117,7 @@ class PodsManager(Manager):
         response = self.client.post("/pods/prune", params={"filters": api.prepare_filters(filters)})
         body = response.json()
 
-        if response.status_code != 200:
+        if response.status_code != requests.codes.okay:
             raise APIError(body["cause"], response=response, explanation=body["message"])
 
         deleted = list()

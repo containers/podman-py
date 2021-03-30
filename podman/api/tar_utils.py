@@ -86,13 +86,13 @@ def create_tar(
         info.uid = 0
         info.uname = info.gname = "root"
 
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             info.mode = info.mode & 0o755 | 0o111
 
         return info
 
     if name is None:
-        name = tempfile.NamedTemporaryFile(prefix="podman_build_context", suffix=".tar")
+        name = tempfile.NamedTemporaryFile(prefix="podman_context", suffix=".tar")
     else:
         name = pathlib.Path(name)
 
@@ -101,7 +101,8 @@ def create_tar(
     else:
         exclude = exclude.copy()
 
-    exclude.append(".dockerignore")
+    # FIXME caller needs to add this...
+    # exclude.append(".dockerignore")
     exclude.append(name.name)
 
     mode = "w:gz" if gzip else "w"

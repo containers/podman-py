@@ -3,6 +3,8 @@ import json
 from datetime import datetime
 from typing import Any, Dict, Optional, Union
 
+import requests
+
 from podman import api
 from podman.api.client import APIClient
 from podman.errors import APIError
@@ -45,7 +47,7 @@ class EventsManager:  # pylint: disable=too-few-public-methods
             "until": api.prepare_timestamp(until),
         }
         response = self.client.get("/events", params=params, stream=True)
-        if response.status_code != 200:
+        if response.status_code != requests.codes.okay:
             body = response.json()
             raise APIError(body["cause"], response=response, explanation=body["message"])
 

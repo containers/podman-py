@@ -79,7 +79,7 @@ class Image(PodmanResource):
             f"/images/{self.id}/get", params={"format": ["docker-archive"]}, stream=True
         )
 
-        if response.status_code == 200:
+        if response.status_code == requests.codes.okay:
             return response.iter_content(chunk_size=chunk_size)
 
         body = response.json()

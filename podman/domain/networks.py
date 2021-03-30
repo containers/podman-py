@@ -109,7 +109,7 @@ class Network(PodmanResource):
             headers={"Content-type": "application/json"},
             compatible=compatible,
         )
-        if response.status_code == 200:
+        if response.status_code == requests.codes.okay:
             return
 
         data = response.json()
@@ -136,7 +136,7 @@ class Network(PodmanResource):
         response = self.client.post(
             f"/networks/{self.name}/disconnect", data=json.dumps(data), compatible=compatible
         )
-        if response.status_code == 200:
+        if response.status_code == requests.codes.okay:
             return
 
         data = response.json()

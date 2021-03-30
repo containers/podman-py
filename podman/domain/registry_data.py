@@ -35,7 +35,7 @@ class RegistryData(PodmanResource):
     @property
     def short_id(self):
         """Returns truncated Image id. 'sha256' preserved when included in id."""
-        if self.id.startswith('sha256:'):
+        if self.id.startswith("sha256:"):
             return self.id[:17]
         return self.id[:10]
 

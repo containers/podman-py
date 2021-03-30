@@ -8,8 +8,8 @@ from typing import Any, ClassVar, Dict, Generator, Iterator, List, Mapping, Opti
 import requests
 
 from podman import api
-from podman.domain.images_build import BuildMixin
 from podman.domain.images import Image
+from podman.domain.images_build import BuildMixin
 from podman.domain.manager import Manager
 from podman.domain.registry_data import RegistryData
 from podman.errors.exceptions import APIError, ImageNotFound
@@ -25,6 +25,11 @@ class ImagesManager(BuildMixin, Manager):
     """
 
     resource: ClassVar[Type[Image]] = Image
+
+    def exists(self, key: str) -> bool:
+        key = urllib.parse.quote_plus(key)
+        response = self.client.get(f"/images/{key}/exists")
+        return response.status_code == requests.codes.no_content
 
     def list(self, **kwargs) -> List[Image]:
         """Report on images.
@@ -47,6 +52,9 @@ class ImagesManager(BuildMixin, Manager):
         }
         response = self.client.get("/images/json", params=params)
         body = response.json()
+
+        if response.status_code == requests.codes.not_found:
+            return []
 
         if response.status_code != requests.codes.ok:
             raise APIError(body["cause"], response=response, explanation=body["message"])
@@ -304,7 +312,7 @@ class ImagesManager(BuildMixin, Manager):
             password = kwargs["auth_config"].get("password")
             if username is None or password is None:
                 raise ValueError("'auth_config' requires keys 'username' and 'password'")
-            params["credentials"] = f'{username}:{password}'
+            params["credentials"] = f"{username}:{password}"
 
         response = self.client.post("/images/pull", params=params)
 

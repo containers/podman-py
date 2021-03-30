@@ -2,8 +2,11 @@
 import base64
 import ipaddress
 import json
+import struct
 from datetime import datetime
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Iterator, Optional, Tuple, Union
+
+from requests import Response
 
 
 def parse_repository(name: str) -> Tuple[str, Optional[str]]:
@@ -58,3 +61,41 @@ def prepare_cidr(value: Union[ipaddress.IPv4Network, ipaddress.IPv6Network]) -> 
         The return values are dictated by the Go JSON decoder.
     """
     return str(value.network_address), base64.b64encode(value.netmask.packed).decode("utf-8")
+
+
+def frames(response: Response) -> Iterator[bytes]:
+    """Returns each frame from multiplexed payload, all results are expected in the payload.
+
+    Notes:
+        The stdout and stderr frames are undifferentiated as they are returned.
+    """
+    length = len(response.content)
+    index = 0
+    while length - index > 8:
+        header = response.content[index : index + 8]
+        _, frame_length = struct.unpack_from(">BxxxL", header)
+        frame_begin = index + 8
+        frame_end = frame_begin + frame_length
+        index = frame_end
+        yield response.content[frame_begin:frame_end]
+
+
+def stream_frames(response: Response) -> Iterator[bytes]:
+    """Returns each frame from multiplexed streamed payload.
+
+    Notes:
+        The stdout and stderr frames are undifferentiated as they are returned.
+    """
+    while True:
+        header = response.raw.read(8)
+        if not header:
+            return
+
+        _, frame_length = struct.unpack_from(">BxxxL", header)
+        if not frame_length:
+            continue
+
+        data = response.raw.read(frame_length)
+        if not data:
+            return
+        yield data

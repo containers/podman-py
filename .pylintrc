@@ -7,7 +7,7 @@ extension-pkg-whitelist=
 
 # Add files or directories to the blacklist. They should be base names, not
 # paths.
-ignore=CVS
+ignore=CVS,docs
 
 # Add files or directories matching the regex patterns to the blacklist. The
 # regex matches against base names, not paths.
@@ -248,10 +248,12 @@ max-spelling-suggestions=4
 
 # Spelling dictionary name. Available dictionaries: none. To make it working
 # install python-enchant package..
+# jhonce: _NEVER_ turn on spelling, it does not differentiate between human comments and strings
+#   for arguments. :-(
 spelling-dict=
 
 # List of comma separated words that should not be checked.
-spelling-ignore-words=
+spelling-ignore-words=podman
 
 # A path to a file that contains private dictionary; one word per line.
 spelling-private-dict-file=
@@ -268,6 +270,11 @@ notes=FIXME,
       XXX,
       TODO
 
+[STRING]
+
+# This flag controls whether inconsistent-quotes generates a warning when the
+# character used as a quote delimiter is used inconsistently within a module.
+check-quote-consistency=no
 
 [FORMAT]
 
@@ -275,7 +282,10 @@ notes=FIXME,
 expected-line-ending-format=
 
 # Regexp for a line that is allowed to be longer than the limit.
-ignore-long-lines=^\s*(# )?<?https?://\S+>?$
+#ignore-long-lines=^\s*(# )?<?https?://\S+>?$
+ignore-long-lines=(?x)(
+  ^\s*(\#\ )?<?https?://\S+>?$|
+  ^\s*(from\s+\S+\s+)?import\s+.+$)
 
 # Number of spaces of indent required inside a hanging  or continued line.
 indent-after-paren=4
@@ -337,6 +347,7 @@ class-attribute-naming-style=any
 # Regular expression matching correct class attribute names. Overrides class-
 # attribute-naming-style.
 #class-attribute-rgx=
+class-attribute-rgx=^(_?[A-Z][A-Z0-9_]*|__[a-z0-9_]+__|_?[a-z][a-z0-9_]*)$
 
 # Naming style matching correct class names.
 class-naming-style=PascalCase
@@ -354,7 +365,7 @@ const-naming-style=UPPER_CASE
 
 # Minimum line length for functions/classes that require docstrings, shorter
 # ones are exempt.
-docstring-min-length=-1
+docstring-min-length=12
 
 # Naming style matching correct function names.
 function-naming-style=snake_case
@@ -384,6 +395,7 @@ inlinevar-naming-style=any
 # Regular expression matching correct inline iteration names. Overrides
 # inlinevar-naming-style.
 #inlinevar-rgx=
+inlinevar-rgx=^[a-z][a-z0-9_]*$
 
 # Naming style matching correct method names.
 method-naming-style=snake_case
@@ -502,7 +514,7 @@ int-import-graph=
 known-standard-library=
 
 # Force import order to recognize a module as part of a third party library.
-known-third-party=enchant
+known-third-party=enchant,requests
 
 
 [DESIGN]
@@ -555,14 +567,17 @@ exclude-protected=_asdict,
                   _make
 
 # List of valid names for the first argument in a class method.
-valid-classmethod-first-arg=cls
+valid-classmethod-first-arg=cls,
+                            class_
 
 # List of valid names for the first argument in a metaclass class method.
-valid-metaclass-classmethod-first-arg=cls
+valid-metaclass-classmethod-first-arg=mcs
 
 
 [EXCEPTIONS]
 
 # Exceptions that will emit a warning when being caught. Defaults to
 # "Exception".
-overgeneral-exceptions=Exception
+overgeneral-exceptions=StandardError,
+                       Exception,
+                       BaseException

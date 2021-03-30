@@ -221,7 +221,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         payload = api.prepare_body(payload)
 
         response = self.client.post(
-            "/containers/create", headers={'content-type': 'application/json'}, data=payload
+            "/containers/create", headers={"content-type": "application/json"}, data=payload
         )
         body = response.json()
 

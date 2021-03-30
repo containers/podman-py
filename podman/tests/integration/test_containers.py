@@ -1,4 +1,8 @@
+import io
+import tarfile
 import unittest
+import random
+from collections import Iterator
 
 import podman.tests.integration.base as base
 from podman import PodmanClient
@@ -28,8 +32,12 @@ class ContainersIntegrationTest(base.IntegrationTest):
     def test_container_crud(self):
         """Test Container CRUD."""
 
+        random_string = f"{random.getrandbits(160):x}"
+
         with self.subTest("Create from Alpine Image"):
-            container = self.client.containers.create(self.alpine_image)
+            container = self.client.containers.create(
+                self.alpine_image, command=["echo", random_string]
+            )
             self.assertIsInstance(container, Container)
             self.assertGreater(len(container.attrs), 0)
             self.assertIsNotNone(container.id)
@@ -43,11 +51,50 @@ class ContainersIntegrationTest(base.IntegrationTest):
             self.assertIsInstance(actual, Container)
             self.assertEqual(actual.id, container.id)
 
+        file_contents = b"This is an integration test for archive."
+        file_buffer = io.BytesIO(file_contents)
+
+        tar_buffer = io.BytesIO()
+        with tarfile.open(fileobj=tar_buffer, mode="w") as tar:
+            info = tarfile.TarInfo("/")
+            info.type = tarfile.DIRTYPE
+            tar.addfile(info)
+
+            info = tarfile.TarInfo("unittest")
+            info.size = len(file_buffer.getbuffer())
+            tar.addfile(info, file_buffer)
+            tarball = tar_buffer.getvalue()
+
+        with self.subTest("Archive /root/unittest"):
+            self.assertTrue(container.put_archive("/root", data=tarball))
+
+            actual, stats = container.get_archive("/root")
+
+            with io.BytesIO() as fd:
+                for chunk in actual:
+                    fd.write(chunk)
+                fd.seek(0, 0)
+
+                self.assertTrue(tarfile.is_tarfile(name=fd))
+                with tarfile.open(fileobj=fd, mode="r") as tar:
+                    contents = tar.extractfile("root/unittest").read()
+                self.assertEqual(contents, file_contents)
+
         with self.subTest("List containers --all"):
             containers = self.client.containers.list(all=True)
             self.assertGreater(len(containers), 0)
             ids = [i.id for i in containers]
             self.assertIn(container.id, ids)
+
+        with self.subTest("Get container's logs"):
+            container.start()
+            container.wait(condition="exited")
+
+            logs_iter = container.logs(stream=False)
+            self.assertIsInstance(logs_iter, Iterator)
+
+            logs = list(logs_iter)
+            self.assertIn(random_string.encode("utf-8"), logs)
 
         with self.subTest("Delete Container"):
             container.remove()
@@ -55,23 +102,38 @@ class ContainersIntegrationTest(base.IntegrationTest):
                 self.client.containers.get(container.id)
 
         with self.subTest("Run Container"):
-            container = self.client.containers.run(
+            top_ctnr = self.client.containers.run(
                 self.alpine_image, "/usr/bin/top", name="TestRunPs", detach=True
             )
-            self.assertEqual(container.status, "running")
-            container.stop()
-            container.reload()
-            self.assertIn(container.status, ("exited", "stopped"))
+            self.assertEqual(top_ctnr.status, "running")
+
+            top_ctnr.pause()
+            top_ctnr.reload()
+            self.assertEqual(top_ctnr.status, "paused")
+
+            top_ctnr.unpause()
+            top_ctnr.reload()
+            self.assertEqual(top_ctnr.status, "running")
+
+            report = top_ctnr.top()
+            # See https://github.com/containers/podman/pull/9892 for the service
+            #   side fix requires podman >= 3.2
+            # processes = [i.strip() for i in report["Processes"][0]]
+            self.assertIn("/usr/bin/top", report["Processes"][0])
+
+            top_ctnr.stop()
+            top_ctnr.reload()
+            self.assertIn(top_ctnr.status, ("exited", "stopped"))
 
         with self.subTest("Prune Containers"):
             report = self.client.containers.prune()
-            self.assertIn(container.id, report["ContainersDeleted"])
+            self.assertIn(top_ctnr.id, report["ContainersDeleted"])
 
             # SpaceReclaimed is the size of the content created during the running of the container
             self.assertEqual(report["SpaceReclaimed"], 0)
 
             with self.assertRaises(NotFound):
-                self.client.containers.get(container.id)
+                self.client.containers.get(top_ctnr.id)
 
 
 if __name__ == '__main__':
