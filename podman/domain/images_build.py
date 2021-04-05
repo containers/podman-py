@@ -9,6 +9,8 @@ import shutil
 import tempfile
 from typing import Any, Dict, Iterator, List, Tuple
 
+import requests
+
 from podman import api
 from podman.domain.images import Image
 from podman.errors.exceptions import APIError, BuildError, PodmanError
@@ -109,12 +111,12 @@ class BuildMixin:
         if hasattr(path, "cleanup"):
             path.cleanup()
 
-        if response.status_code != 200:
+        if response.status_code != requests.codes.okay:
             body = response.json()
             raise APIError(body["cause"], response=response, explanation=body["message"])
 
         image_id = unknown = None
-        marker = re.compile(r'(^[0-9a-f]+)\n$')
+        marker = re.compile(r"(^[0-9a-f]+)\n$")
         report_stream, stream = itertools.tee(response.iter_lines())
         for line in stream:
             result = json.loads(line)
@@ -129,7 +131,7 @@ class BuildMixin:
         if image_id:
             return self.get(image_id), report_stream
 
-        raise BuildError(unknown or 'Unknown', report_stream)
+        raise BuildError(unknown or "Unknown", report_stream)
 
     @staticmethod
     def _render_params(kwargs) -> Dict[str, List[Any]]:

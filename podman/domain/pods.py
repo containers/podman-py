@@ -5,6 +5,8 @@ Notes:
 """
 from typing import Any, Dict, Tuple, Union
 
+import requests
+
 from podman.domain.manager import PodmanResource
 from podman.errors import APIError, NotFound
 
@@ -44,11 +46,11 @@ class Pod(PodmanResource):
         params = {"signal": signal}
 
         response = self.client.post(f"/pods/{self.id}/kill", params=params)
-        if response.status_code == 200:
+        if response.status_code == requests.codes.okay:
             return
 
         body = response.json()
-        if response.status_code == 404:
+        if response.status_code == requests.codes.not_found:
             raise NotFound(body["cause"], response=response, explanation=body["message"])
         raise APIError(body["cause"], response=response, explanation=body["message"])
 
@@ -60,11 +62,11 @@ class Pod(PodmanResource):
             APIError when service reports an error.
         """
         response = self.client.post(f"/pods/{self.id}/pause")
-        if response.status_code == 200:
+        if response.status_code == requests.codes.okay:
             return
 
         body = response.json()
-        if response.status_code == 404:
+        if response.status_code == requests.codes.not_found:
             raise NotFound(body["cause"], response=response, explanation=body["message"])
         raise APIError(body["cause"], response=response, explanation=body["message"])
 
@@ -80,11 +82,11 @@ class Pod(PodmanResource):
         """
         params = {"force": force}
         response = self.client.delete(f"/pods/{self.id}", params=params)
-        if response.status_code == 200:
+        if response.status_code == requests.codes.okay:
             return
 
         body = response.json()
-        if response.status_code == 404:
+        if response.status_code == requests.codes.not_found:
             raise NotFound(body["cause"], response=response, explanation=body["message"])
         raise APIError(body["cause"], response=response, explanation=body["message"])
 
@@ -96,11 +98,11 @@ class Pod(PodmanResource):
             APIError when service reports an error.
         """
         response = self.client.post(f"/pods/{self.id}/restart")
-        if response.status_code == 200:
+        if response.status_code == requests.codes.okay:
             return
 
         body = response.json()
-        if response.status_code == 404:
+        if response.status_code == requests.codes.not_found:
             raise NotFound(body["cause"], response=response, explanation=body["message"])
         raise APIError(body["cause"], response=response, explanation=body["message"])
 
@@ -112,11 +114,11 @@ class Pod(PodmanResource):
             APIError when service reports an error.
         """
         response = self.client.post(f"/pods/{self.id}/start")
-        if response.status_code == 200:
+        if response.status_code == requests.codes.okay:
             return
 
         body = response.json()
-        if response.status_code == 404:
+        if response.status_code == requests.codes.not_found:
             raise NotFound(body["cause"], response=response, explanation=body["message"])
         raise APIError(body["cause"], response=response, explanation=body["message"])
 
@@ -131,14 +133,14 @@ class Pod(PodmanResource):
             NotFound when pod not found.
             APIError when service reports an error.
         """
-        params = dict() if kwargs is None else kwargs.copy()
+        params = dict() if kwargs is None else kwargs
         response = self.client.get("/pods/stats", params=params)
         body = response.json()
 
-        if response.status_code == 200:
+        if response.status_code == requests.codes.okay:
             return body
 
-        if response.status_code == 404:
+        if response.status_code == requests.codes.not_found:
             raise NotFound(body["cause"], response=response, explanation=body["message"])
         raise APIError(body["cause"], response=response, explanation=body["message"])
 
@@ -153,10 +155,10 @@ class Pod(PodmanResource):
         response = self.client.post(f"/pods/{self.id}/stop", params=params)
         body = response.json()
 
-        if response.status_code == 200:
+        if response.status_code == requests.codes.okay:
             return
 
-        if response.status_code == 404:
+        if response.status_code == requests.codes.not_found:
             raise NotFound(body["cause"], response=response, explanation=body["message"])
         raise APIError(body["cause"], response=response, explanation=body["message"])
 
@@ -177,10 +179,10 @@ class Pod(PodmanResource):
         response = self.client.get(f"/containers/{self.id}/top", params=params)
         body = response.json()
 
-        if response.status_code == 200:
+        if response.status_code == requests.codes.okay:
             return body
 
-        if response.status_code == 404:
+        if response.status_code == requests.codes.not_found:
             raise NotFound(body["cause"], response=response, explanation=body["message"])
         raise APIError(body["cause"], response=response, explanation=body["message"])
 
@@ -192,10 +194,10 @@ class Pod(PodmanResource):
             APIError when service reports an error.
         """
         response = self.client.post(f"/pods/{self.id}/unpause")
-        if response.status_code == 200:
+        if response.status_code == requests.codes.okay:
             return
 
         body = response.json()
-        if response.status_code == 404:
+        if response.status_code == requests.codes.not_found:
             raise NotFound(body["cause"], response=response, explanation=body["message"])
         raise APIError(body["cause"], response=response, explanation=body["message"])

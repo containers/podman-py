@@ -6,6 +6,7 @@ from contextlib import suppress
 from typing import Any, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Tuple, Union
 
 import requests
+from requests import Response
 
 from podman import api
 from podman.domain.images import Image
@@ -222,7 +223,7 @@ class Container(PodmanResource):
         response = self.client.get(f"/containers/{self.id}/archive", params={"path": [path]})
 
         if response.status_code == requests.codes.okay:
-            stat = response.headers.get('x-docker-container-path-stat', None)
+            stat = response.headers.get("x-docker-container-path-stat", None)
             stat = api.decode_header(stat)
             return response.iter_content(chunk_size=chunk_size), stat
 
@@ -240,8 +241,8 @@ class Container(PodmanResource):
         body = response.json()
         raise APIError(body["cause"], response=response, explanation=body["message"])
 
-    def logs(self, **kwargs) -> Union[str, Iterator[str]]:
-        """Get logs from container.
+    def logs(self, **kwargs) -> Union[bytes, Iterator[bytes]]:
+        """Get logs from the container.
 
         Keyword Args:
             stdout (bool): Include stdout. Default: True
@@ -249,17 +250,38 @@ class Container(PodmanResource):
             stream (bool): Return generator of strings as the response. Default: False
             timestamps (bool): Show timestamps in output. Default: False
             tail (Union[str, int]): Output specified number of lines at the end of
-                logs. Either an integer of number of lines or the string all. Default: all
+                logs.  Integer representing the number of lines to display, or the string all.
+                Default: all
             since (Union[datetime, int]): Show logs since a given datetime or
                 integer epoch (in seconds)
             follow (bool): Follow log output. Default: False
             until (Union[datetime, int]): Show logs that occurred before the given
                 datetime or integer epoch (in seconds)
         """
-        raise NotImplementedError()
+        params = {
+            "follow": kwargs.get("follow", kwargs.get("stream", None)),
+            "since": api.prepare_timestamp(kwargs.get("since")),
+            "stderr": kwargs.get("stderr", None),
+            "stdout": kwargs.get("stdout", True),
+            "tail": kwargs.get("tail"),
+            "timestamps": kwargs.get("timestamps"),
+            "until": api.prepare_timestamp(kwargs.get("until")),
+        }
+
+        response = self.client.get(f"/containers/{self.id}/logs", params=params)
+
+        if response.status_code != requests.codes.okay:
+            body = response.json()
+            if response.status_code == requests.codes.not_found:
+                raise NotFound(body["cause"], response=response, explanation=body["message"])
+            raise APIError(body["cause"], response=response, explanation=body["message"])
+
+        if bool(kwargs.get("stream", False)):
+            return api.stream_frames(response)
+        return api.frames(response)
 
     def pause(self) -> None:
-        """Pause processes within container."""
+        """Pause processes within the container."""
         response = self.client.post(f"/containers/{self.id}/pause")
         if response.status_code == requests.codes.no_content:
             return
@@ -287,6 +309,9 @@ class Container(PodmanResource):
         """
         if not path or not data:
             raise ValueError("path and data (tar archive) are required parameters.")
+
+        if data is None:
+            data = api.create_tar("/", path)
 
         response = self.client.put(
             f"/containers/{self.id}/archive", params={"path": path}, data=data
@@ -463,25 +488,39 @@ class Container(PodmanResource):
         body = response.json()
         raise APIError(body["cause"], response=response, explanation=body["message"])
 
-    def top(self, **kwargs) -> Dict[str, Any]:
-        """Report on running processes in container.
+    def top(self, **kwargs) -> Union[Iterator[Dict[str, Any]], Dict[str, Any]]:
+        """Report on running processes in the container.
 
         Keyword Args:
-            ps_args (str): Optional arguments passed to ps
+            ps_args (str): When given, arguments will be passed to ps
+            stream (bool): When True, repeatedly return results. Default: False
+
+        Raises:
+            NotFound: when the container no longer exists
+            APIError: when the service reports an error
         """
         params = {
             "ps_args": kwargs.get("ps_args"),
-            "stream": False,
+            "stream": kwargs.get("stream", False),
         }
         response = self.client.get(f"/containers/{self.id}/top", params=params)
-        body = response.json()
 
-        if response.status_code == requests.codes.okay:
-            return body
+        if response.status_code != requests.codes.okay:
+            body = response.json()
 
-        if response.status_code == requests.codes.not_found:
-            raise NotFound(body["cause"], response=response, explanation=body["message"])
-        raise APIError(body["cause"], response=response, explanation=body["message"])
+            if response.status_code == requests.codes.not_found:
+                raise NotFound(body["cause"], response=response, explanation=body["message"])
+            raise APIError(body["cause"], response=response, explanation=body["message"])
+
+        if params["stream"]:
+            self._top_helper(response)
+
+        return response.json()
+
+    @staticmethod
+    def _top_helper(response: Response) -> Iterator[Dict[str, Any]]:
+        for line in response.iter_lines():
+            yield line
 
     def unpause(self) -> None:
         """Unpause processes in container."""
@@ -498,7 +537,7 @@ class Container(PodmanResource):
         Note:
             Podman unsupported operation
         """
-        raise NotImplementedError("container update is not supported by Podman service.")
+        raise NotImplementedError("container.update() is not supported by Podman service.")
 
     def wait(self, **kwargs) -> Dict[str, Any]:
         """Block until the container enters given state.
@@ -518,9 +557,11 @@ class Container(PodmanResource):
               ReadTimeoutError: When timeout is exceeded
               APIError: When service returns an error
         """
-        response = self.client.post(
-            f"/containers/{self.id}/wait", params={"condition": kwargs.get("condition")}
-        )
+        condition = kwargs.get("condition")
+        if isinstance(condition, str):
+            condition = [condition]
+
+        response = self.client.post(f"/containers/{self.id}/wait", params={"condition": condition})
         body = response.json()
 
         if response.status_code == requests.codes.okay:

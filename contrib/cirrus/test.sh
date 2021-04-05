@@ -2,8 +2,9 @@
 
 set -eo pipefail
 
-systemctl enable podman.socket podman.service
-systemctl start podman.socket
+echo "Locate: $(which podman)"
+podman --version
+podman-remote --version
 
 make
 make tests

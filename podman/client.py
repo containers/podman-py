@@ -76,7 +76,7 @@ class PodmanClient:
         environment: dict = None,
         credstore_env: dict = None,
         use_ssh_client: bool = False,
-    ) -> 'PodmanClient':
+    ) -> "PodmanClient":
         """Returns connection to service using environment variables and parameters.
 
         Environment variables:
@@ -115,15 +115,15 @@ class PodmanClient:
             cert_path = (
                 env.get("CONTAINER_CERT_PATH")
                 or env.get("DOCKER_CERT_PATH")
-                or os.path.join(os.path.expanduser('~'), ".config/containers/certs.d")
+                or os.path.join(os.path.expanduser("~"), ".config/containers/certs.d")
             )
 
             tls = TLSConfig(
                 client_cert=(
-                    os.path.join(cert_path, 'cert.pem'),
-                    os.path.join(cert_path, 'key.pem'),
+                    os.path.join(cert_path, "cert.pem"),
+                    os.path.join(cert_path, "key.pem"),
                 ),
-                ca_cert=os.path.join(cert_path, 'ca.pem'),
+                ca_cert=os.path.join(cert_path, "ca.pem"),
                 verify=tls_verify,
                 ssl_version=ssl_version or ssl.PROTOCOL_TLSv1_2,
                 assert_hostname=assert_hostname,

@@ -70,9 +70,19 @@ class PodmanLauncher:
             ]
         )
 
+        process = subprocess.run(
+            [podman_exe, "--version"], check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        )
+        self.version = str(process.stdout.decode("utf-8")).strip().split()[2]
+
     def start(self) -> None:
         """start podman service"""
-        logger.info("Launching %s refid=%s", ' '.join(self.cmd), self.reference_id)
+        logger.info(
+            "Launching(%s) %s refid=%s",
+            self.version,
+            ' '.join(self.cmd),
+            self.reference_id,
+        )
 
         def consume_lines(pipe, consume_fn):
             with pipe:

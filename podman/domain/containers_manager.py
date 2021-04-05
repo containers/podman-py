@@ -25,6 +25,10 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
 
     resource: ClassVar[Type[Image]] = Container
 
+    def exists(self, key: str) -> bool:
+        response = self.client.get(f"/containers/{key}/exists")
+        return response.status_code == requests.codes.no_content
+
     # pylint is flagging 'container_id' here vs. 'key' parameter in super.get()
     def get(self, container_id: str) -> Container:  # pylint: disable=arguments-differ
         """Get container by name or id.
@@ -81,9 +85,9 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
             "limit": kwargs.get("limit"),
         }
         if "before" in kwargs:
-            params["filters"]["before"] = kwargs.get('before')
+            params["filters"]["before"] = kwargs.get("before")
         if "since" in kwargs:
-            params["filters"]["since"] = kwargs.get('since')
+            params["filters"]["since"] = kwargs.get("since")
 
         # filters formatted last because some kwargs may need to be mapped into filters
         params["filters"] = api.prepare_filters(params["filters"])
@@ -127,6 +131,6 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
             if entry.get("error", None) is not None:
                 raise APIError(entry["error"], response=response, explanation=entry["error"])
 
-            results["ContainersDeleted"].append(entry["id"])
-            results["SpaceReclaimed"] += entry["space"]
+            results["ContainersDeleted"].append(entry["Id"])
+            results["SpaceReclaimed"] += entry["Size"]
         return results

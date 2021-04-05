@@ -25,7 +25,7 @@ class UDSConnection(HTTPConnection):
             except TypeError:
                 timeout = None
 
-        super().__init__('localhost', timeout=timeout)
+        super().__init__("localhost", timeout=timeout)
 
         self.url = host
         self.sock: Optional[socket.socket] = None
@@ -59,7 +59,7 @@ class UDSConnectionPool(HTTPConnectionPool):
         if isinstance(timeout, float):
             timeout = Timeout.from_float(timeout)
 
-        super().__init__('localhost', timeout=timeout, retries=10)
+        super().__init__("localhost", timeout=timeout, retries=10)
         self.host = host
 
     def _new_conn(self) -> UDSConnection:

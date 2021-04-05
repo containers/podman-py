@@ -1,5 +1,6 @@
 import unittest
 
+import requests
 import requests_mock
 
 from podman import PodmanClient
@@ -52,7 +53,7 @@ class VolumesManagerTestCase(unittest.TestCase):
         adapter = mock.post(
             "http+unix://localhost:9999/v3.0.0/libpod/volumes/create",
             json=FIRST_VOLUME,
-            status_code=201,
+            status_code=requests.codes.created,
         )
 
         actual = self.client.volumes.create(

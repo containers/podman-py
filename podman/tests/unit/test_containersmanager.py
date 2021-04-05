@@ -152,12 +152,12 @@ class ContainersManagerTestCase(unittest.TestCase):
             "http+unix://localhost:9999/v3.0.0/libpod/containers/prune",
             json=[
                 {
-                    "id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
-                    "space": 1024,
+                    "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
+                    "Size": 1024,
                 },
                 {
-                    "id": "6dc84cc0a46747da94e4c1571efcc01a756b4017261440b4b8985d37203c3c03",
-                    "space": 1024,
+                    "Id": "6dc84cc0a46747da94e4c1571efcc01a756b4017261440b4b8985d37203c3c03",
+                    "Size": 1024,
                 },
             ],
         )

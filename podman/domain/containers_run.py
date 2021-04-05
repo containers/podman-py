@@ -2,7 +2,7 @@
 
 import logging
 from contextlib import suppress
-from typing import Union, List, Optional, Generator, Iterator
+from typing import Generator, Iterator, List, Union
 
 from podman.domain.containers import Container
 from podman.domain.images import Image
@@ -57,6 +57,8 @@ class RunMixin:  # pylint: disable=too-few-public-methods
         """
         if isinstance(image, Image):
             image = image.id
+        if isinstance(command, str):
+            command = [command]
 
         try:
             container = self.create(image=image, command=command, **kwargs)
@@ -65,20 +67,23 @@ class RunMixin:  # pylint: disable=too-few-public-methods
             container = self.create(image=image, command=command, **kwargs)
 
         container.start()
+        container.wait(condition="running")
+        container.reload()
+
         if kwargs.get("detach", False):
             return container
 
         with suppress(KeyError):
-            log_type = container.attrs['HostConfig']['LogConfig']['Type']
+            log_type = container.attrs["HostConfig"]["LogConfig"]["Type"]
 
         log_iter = None
-        if log_type in ('json-file', 'journald'):
+        if log_type in ("json-file", "journald"):
             log_iter = container.logs(stdout=stdout, stderr=stderr, stream=True, follow=True)
 
-        exit_status = container.wait()['StatusCode']
+        exit_status = container.wait()["StatusCode"]
         if exit_status != 0:
             log_iter = None
-            if not kwargs.get('auto_remove', False):
+            if not kwargs.get("auto_remove", False):
                 log_iter = container.logs(stdout=False, stderr=True)
 
         if remove:
@@ -87,4 +92,4 @@ class RunMixin:  # pylint: disable=too-few-public-methods
         if exit_status != 0:
             raise ContainerError(container, exit_status, command, image, log_iter)
 
-        return log_iter if kwargs.get("stream", False) or log_iter is None else b''.join(log_iter)
+        return log_iter if kwargs.get("stream", False) or log_iter is None else b"".join(log_iter)

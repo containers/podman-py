@@ -1,7 +1,14 @@
 """Tools for connecting to a Podman service."""
 from podman.api.client import APIClient
 from podman.api.http_utils import prepare_body, prepare_filters
-from podman.api.parse_utils import decode_header, parse_repository, prepare_cidr, prepare_timestamp
+from podman.api.parse_utils import (
+    decode_header,
+    frames,
+    parse_repository,
+    prepare_cidr,
+    prepare_timestamp,
+    stream_frames,
+)
 from podman.api.tar_utils import create_tar, prepare_containerfile, prepare_dockerignore
 
 from . import version
@@ -21,6 +28,7 @@ __all__ = [
     'DEFAULT_TIMEOUT',
     'create_tar',
     'decode_header',
+    'frames',
     'parse_repository',
     'prepare_body',
     'prepare_cidr',
@@ -28,4 +36,5 @@ __all__ = [
     'prepare_dockerignore',
     'prepare_filters',
     'prepare_timestamp',
+    'stream_frames',
 ]

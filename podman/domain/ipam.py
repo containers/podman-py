@@ -2,11 +2,8 @@
 
 Note:
     Provided for compatibility
-    """
+"""
 from typing import Any, List, Mapping, Optional
-
-# Cannot use @dataclasses as they require python 3.7 and the named parameters are
-#   lowercase while the attributes are hump cased.
 
 
 class IPAMPool(dict):
@@ -30,10 +27,10 @@ class IPAMPool(dict):
         super().__init__()
         self.update(
             {
-                'AuxiliaryAddresses': aux_addresses,
-                'Gateway': gateway,
-                'IPRange': iprange,
-                'Subnet': subnet,
+                "AuxiliaryAddresses": aux_addresses,
+                "Gateway": gateway,
+                "IPRange": iprange,
+                "Subnet": subnet,
             }
         )
 

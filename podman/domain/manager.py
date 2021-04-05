@@ -1,6 +1,6 @@
 """Base classes for PodmanResources and Manager's."""
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar, Dict, List, Type, TypeVar, Union
+from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar, Union
 
 from podman.api.client import APIClient
 
@@ -13,12 +13,13 @@ class PodmanResource(ABC):
 
     Attributes:
         attrs: Dictionary to carry attributes of resource from Podman service
-        id: identifier for resource
-        short_id: truncated view of id
     """
 
     def __init__(
-        self, attrs: Dict[str, Any] = None, client: APIClient = None, collection: 'Manager' = None
+        self,
+        attrs: Optional[Dict[str, Any]] = None,
+        client: Optional[APIClient] = None,
+        collection: Optional["Manager"] = None,
     ):
         """Initialize base class for PodmanResource's.
 
@@ -32,7 +33,7 @@ class PodmanResource(ABC):
         # parameter named collection for compatibility
         self.manager = collection
 
-        self.attrs = {}
+        self.attrs = dict()
         if attrs is not None:
             self.attrs = attrs
 
@@ -46,18 +47,23 @@ class PodmanResource(ABC):
         return hash(f"{self.__class__.__name__}:{self.id}")
 
     @property
-    def id(self):  # pylint: disable=invalid-name
+    def id(self) -> str:  # pylint: disable=invalid-name
         """Returns the identifier for the object."""
         return self.attrs.get("Id", None)
 
     @property
-    def short_id(self):
-        """Returns truncated identifier. 'sha256' preserved when included in id."""
-        if self.id.startswith('sha256:'):
+    def short_id(self) -> str:
+        """Returns truncated identifier. 'sha256' preserved when included in the id.
+
+        Notes:
+            No attempt is made to ensure the returned value is
+                semantically meaningful for all resources.
+        """
+        if self.id.startswith("sha256:"):
             return self.id[:17]
         return self.id[:10]
 
-    def reload(self):
+    def reload(self) -> None:
         """Refresh this object's data from the service."""
         latest = self.manager.get(self.id)
         self.attrs = latest.attrs
@@ -71,6 +77,15 @@ class Manager(ABC):
     """
 
     resource: ClassVar[Type[PodmanResource]] = None
+
+    @abstractmethod
+    def exists(self, key: str) -> bool:
+        """Returns True if resource exists.
+
+        Note:
+            This method does _not_ provide any mutex mechanism.
+        """
+        raise NotImplementedError()
 
     def __init__(self, client: APIClient = None) -> None:
         """Initialize Manager() object.

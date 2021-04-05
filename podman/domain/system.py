@@ -1,6 +1,8 @@
 """SystemManager to provide system level information from Podman service."""
 from typing import Any, Dict, Optional
 
+import requests
+
 from podman.api.client import APIClient
 from podman.errors import APIError
 
@@ -25,7 +27,7 @@ class SystemManager:
         response = self.client.get("/system/df")
         body = response.json()
 
-        if response.status_code == 200:
+        if response.status_code == requests.codes.okay:
             return body
 
         raise APIError(body["cause"], response=response, explanation=body["message"])
@@ -35,7 +37,7 @@ class SystemManager:
         response = self.client.get("/system/info")
         body = response.json()
 
-        if response.status_code == 200:
+        if response.status_code == requests.codes.okay:
             return body
 
         raise APIError(body["cause"], response=response, explanation=body["message"])
@@ -65,7 +67,7 @@ class SystemManager:
     def ping(self) -> bool:
         """Returns True if service responded with OK."""
         response = self.client.head("/_ping")
-        if response.status_code == 200:
+        if response.status_code == requests.codes.okay:
             return True
         return False
 
@@ -78,7 +80,7 @@ class SystemManager:
         response = self.client.get("/version")
         body = response.json()
 
-        if response.status_code == 200:
+        if response.status_code == requests.codes.okay:
             if not kwargs.get("api_version", True):
                 del body["APIVersion"]
             return body

@@ -102,15 +102,6 @@ gating_task:
         - go get github.com/vbatts/git-validation
         - make validate
 
-podman_task:
-    name: "Build podman from master"
-    alias: podman
-
-    depends_on:
-        - gating
-
-    script: "$SCRIPT_BASE/latest_podman.sh"
-
 test_task:
     name: "Test on $FEDORA_NAME"
     alias: test
@@ -120,9 +111,10 @@ test_task:
 
     depends_on:
         - gating
-        - podman
 
-    script: "$SCRIPT_BASE/test.sh"
+    script:
+        - "$SCRIPT_BASE/latest_podman.sh"
+        - "$SCRIPT_BASE/test.sh"
 
 
 # Status aggregator for all tests.  This task simply ensures a defined
@@ -139,7 +131,6 @@ success_task:
     depends_on:
         - meta
         - gating
-        - podman
         - test
     container: *smallcontainer
     clone_script: *noop
