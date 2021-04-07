@@ -69,9 +69,9 @@ class ImagesIntegrationTest(base.IntegrationTest):
 
         with self.subTest("List images"):
             image_list = self.client.images.list()
-            found = [i for i in image_list if "quay.io/libpod/alpine:latest" in i.tags]
-            self.assertEqual(
-                len(found), 1, "pulled image 'quay.io/libpod/alpine:latest' not listed."
+            self.assertTrue(
+                any([i for i in image_list if "quay.io/libpod/alpine:latest" in i.tags]),
+                f"pulled image 'quay.io/libpod/alpine:latest' not listed, {image_list}.",
             )
 
         with self.subTest("Tag and reload() Image"):

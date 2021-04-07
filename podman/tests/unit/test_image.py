@@ -35,7 +35,7 @@ SECOND_IMAGE = {
 }
 
 
-class TestClientImages(unittest.TestCase):
+class ImageTestCase(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
 
