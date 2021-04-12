@@ -75,7 +75,6 @@ class ContainersIntegrationTest(base.IntegrationTest):
                     fd.write(chunk)
                 fd.seek(0, 0)
 
-                self.assertTrue(tarfile.is_tarfile(name=fd))
                 with tarfile.open(fileobj=fd, mode="r") as tar:
                     contents = tar.extractfile("root/unittest").read()
                 self.assertEqual(contents, file_contents)
