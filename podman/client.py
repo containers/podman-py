@@ -8,6 +8,7 @@ from podman.api.client import APIClient
 from podman.domain.containers_manager import ContainersManager
 from podman.domain.events import EventsManager
 from podman.domain.images_manager import ImagesManager
+from podman.domain.manifests import ManifestsManager
 from podman.domain.networks_manager import NetworksManager
 from podman.domain.pods_manager import PodsManager
 from podman.domain.system import SystemManager
@@ -152,47 +153,32 @@ class PodmanClient:
 
     @property
     def containers(self) -> ContainersManager:
-        """Returns object for managing containers running via the Podman service.
-
-        Returns:
-            ContainerManager:
-        """
+        """Returns object for managing containers running via the Podman service."""
         return ContainersManager(client=self.api)
 
     @property
     def images(self) -> ImagesManager:
-        """Returns object for managing images stored via the Podman service.
-
-        Returns:
-            ImagesManager:
-        """
+        """Returns object for managing images stored via the Podman service."""
         return ImagesManager(client=self.api)
 
     @property
-    def networks(self) -> NetworksManager:
-        """Returns object for managing networks created via the Podman service.
+    def manifests(self) -> ManifestsManager:
+        """Returns object for managing manifests via the Podman service."""
+        return ManifestsManager(client=self.api)
 
-        Returns:
-            NetworksManager:
-        """
+    @property
+    def networks(self) -> NetworksManager:
+        """Returns object for managing networks created via the Podman service."""
         return NetworksManager(client=self.api)
 
     @property
     def volumes(self) -> VolumesManager:
-        """Returns object for managing volumes maintained via the Podman service.
-
-        Returns:
-            VolumesManager:
-        """
+        """Returns object for managing volumes maintained via the Podman service."""
         return VolumesManager(client=self.api)
 
     @property
     def pods(self) -> PodsManager:
-        """Returns object for managing pods created via the Podman service.
-
-        Returns:
-            PodsManager:
-        """
+        """Returns object for managing pods created via the Podman service."""
         return PodsManager(client=self.api)
 
     @property

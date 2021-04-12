@@ -333,7 +333,7 @@ class ImagesManager(BuildMixin, Manager):
         return self.resource()
 
     def remove(
-        self, image: str, force: Optional[bool] = None, noprune: bool = False
+        self, image: Union[Image, str], force: Optional[bool] = None, noprune: bool = False
     ) -> List[Dict[str, Union[str, int]]]:
         """Delete image from Podman service.
 
@@ -353,10 +353,15 @@ class ImagesManager(BuildMixin, Manager):
         """
         _ = noprune
 
+        if isinstance(image, Image):
+            image = image.id
+
         response = self.client.delete(f"/images/{image}", params={"force": force})
         body = response.json()
 
         if response.status_code != requests.codes.ok:
+            if response.status_code == requests.codes.not_found:
+                raise ImageNotFound(body["cause"], response=response, explanation=body["message"])
             raise APIError(body["cause"], response=response, explanation=body["message"])
 
         # Dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[int, List[str]]]
