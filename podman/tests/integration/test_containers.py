@@ -1,15 +1,15 @@
 import io
+import random
 import tarfile
 import unittest
-import random
 from collections import Iterator
 
 import podman.tests.integration.base as base
 from podman import PodmanClient
 from podman.domain.containers import Container
-
 from podman.domain.images import Image
 from podman.errors import NotFound
+
 
 # @unittest.skipIf(os.geteuid() != 0, 'Skipping, not running as root')
 

@@ -9,6 +9,7 @@ import requests
 from podman import api
 from podman.domain.containers import Container
 from podman.domain.images import Image
+from podman.domain.pods import Pod
 from podman.errors import APIError
 
 logger = logging.getLogger("podman.containers")
@@ -281,8 +282,8 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 f""" currently not supported by Podman API."""
             )
 
-        def pop(key):
-            return args.pop(key, None)
+        def pop(k):
+            return args.pop(k, None)
 
         # Transform keywords into parameters
         params = {
@@ -328,7 +329,6 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "oci_runtime": pop("runtime"),
             "oom_score_adj": pop("oom_score_adj"),
             "overlay_volumes": pop("overlay_volumes"),  # TODO document, podman only
-            "pod": pop("pod"),  # TODO document, podman only
             "pormappings": list(),
             "privileged": pop("privileged"),
             "procfs_opts": pop("procfs_opts"),  # TODO document, podman only
@@ -403,6 +403,12 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             mount_point["options"] = options
 
             params["mounts"].append(mount_point)
+
+        if "pod" in args:
+            pod = args.pop("pod")
+            if isinstance(pod, Pod):
+                pod = pod.id
+            params["pod"] = pod  # TODO document, podman only
 
         for item in args.pop("ports", list()):
             container, host = item

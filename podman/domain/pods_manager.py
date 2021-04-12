@@ -4,33 +4,27 @@ Notes:
     See https://docs.podman.io/en/latest/_static/api.html#tag/pods
 """
 import json
-from typing import Dict, List, Optional
+import logging
+from typing import Dict, List, Optional, Type, ClassVar, Any
 
 import requests
 
 from podman import api
-from podman.api import APIClient
 from podman.domain.manager import Manager
 from podman.domain.pods import Pod
 from podman.errors import APIError, NotFound
 
+logger = logging.getLogger("podman.pods")
+
 
 class PodsManager(Manager):
-    """Specialized Manager for Pod resources."""
+    """Specialized Manager for Pod resources.
 
-    resource = Pod
+    Attributes:
+        resource: Pod subclass of PodmanResource, factory method `prepare_model` will create these.
+    """
 
-    def __init__(self, client: APIClient):
-        """Initiate PodManager object.
-
-        Args:
-            client: Connection to Podman service.
-        """
-        super().__init__(client)
-
-    def exists(self, key: str) -> bool:
-        response = self.client.get(f"/pods/{key}/exists")
-        return response.status_code == requests.codes.no_content
+    resource: ClassVar[Type[Pod]] = Pod
 
     def create(self, name: str, **kwargs) -> Pod:
         """Create a Pod.
@@ -46,10 +40,15 @@ class PodsManager(Manager):
         response = self.client.post("/pods/create", data=json.dumps(data))
         body = response.json()
 
-        if response.status_code != requests.codes.okay:
-            raise APIError(body["cause"], response=response, explanation=body["message"])
+        if response.status_code == requests.codes.created:
+            return self.get(body["Id"])
 
-        return self.get(body["Id"])
+        raise APIError(body["cause"], response=response, explanation=body["message"])
+
+    def exists(self, key: str) -> bool:
+        """Returns True, when pod exists."""
+        response = self.client.get(f"/pods/{key}/exists")
+        return response.status_code == requests.codes.no_content
 
     # pylint is flagging 'pod_id' here vs. 'key' parameter in super.get()
     def get(self, pod_id: str) -> Pod:  # pylint: disable=arguments-differ
@@ -59,8 +58,8 @@ class PodsManager(Manager):
             pod_id: Pod name or id.
 
         Raises:
-            NotFound: Network does not exist.
-            APIError: Error returned by service.
+            NotFound: When network does not exist.
+            APIError: When error returned by service.
         """
         response = self.client.get(f"/pods/{pod_id}/json")
         body = response.json()
@@ -93,8 +92,8 @@ class PodsManager(Manager):
         Raises:
             APIError: Error returned by service.
         """
-        params = {"filters": kwargs.get("filters")}
-        response = self.client.get("/pods/json", params=api.prepare_filters(params))
+        params = {"filters": api.prepare_filters(kwargs.get("filters"))}
+        response = self.client.get("/pods/json", params=params)
         body = response.json()
 
         if response.status_code != requests.codes.okay:
@@ -105,14 +104,16 @@ class PodsManager(Manager):
             pods.append(self.prepare_model(attrs=item))
         return pods
 
-    def prune(self, filters: Optional[Dict[str, str]] = None):
+    def prune(self, filters: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
         """Delete unused Pods.
+
+        Returns:
+            Dictionary Keys:
+                - PodsDeleted (List[str]): List of pod ids deleted.
+                - SpaceReclaimed (int): Always zero.
 
         Raises:
             APIError when service reports error
-
-        Notes:
-            SpaceReclaimed always reported as 0
         """
         response = self.client.post("/pods/prune", params={"filters": api.prepare_filters(filters)})
         body = response.json()
@@ -120,7 +121,7 @@ class PodsManager(Manager):
         if response.status_code != requests.codes.okay:
             raise APIError(body["cause"], response=response, explanation=body["message"])
 
-        deleted = list()
+        deleted: List[str] = list()
         for item in body:
             if item["Err"] is not None:
                 raise APIError(
@@ -130,3 +131,31 @@ class PodsManager(Manager):
                 )
             deleted.append(item["Id"])
         return {"PodsDeleted": deleted, "SpaceReclaimed": 0}
+
+    def stats(self, **kwargs) -> Dict[str, Any]:
+        """Resource usage statistics for the containers in pods.
+
+        Keyword Args:
+            all (bool): Provide statistics for all running pods.
+            name (Union[str, List[str]]): Pods to include in report.
+
+        Raises:
+            NotFound when pod not found.
+            APIError when service reports an error.
+        """
+        if "all" in kwargs and "name" in kwargs:
+            raise ValueError("Keywords 'all' and 'name' are mutually exclusive.")
+
+        params = {
+            "all": kwargs.get("all"),
+            "namesOrIDs": kwargs.get("name"),
+        }
+        response = self.client.get("/pods/stats", params=params)
+        body = response.json()
+
+        if response.status_code == requests.codes.okay:
+            return body
+
+        if response.status_code == requests.codes.not_found:
+            raise NotFound(body["cause"], response=response, explanation=body["message"])
+        raise APIError(body["cause"], response=response, explanation=body["message"])
