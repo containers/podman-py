@@ -1,7 +1,7 @@
 """Model and Manager for Volume resources."""
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Type, ClassVar
 
 import requests
 
@@ -17,26 +17,25 @@ class Volume(PodmanResource):
     """Details and configuration for an image managed by the Podman service."""
 
     @property
-    def id(self):
+    def id(self) -> str:
         """Returns the identifier of the volume."""
         return self.name
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Returns the name of the volume."""
-        return self.attrs["Name"]
+        return self.attrs.get("Name")
 
-    def remove(self, force: bool = None):
+    def remove(self, force: Optional[bool] = None) -> None:
         """Delete this volume.
 
         Args:
-            force: When true, force deletion of volume
+            force: When true, force deletion of in-use volume
 
         Raises:
             APIError when service reports an error
         """
-        params = {"force": force}
-        response = self.client.delete(f"/volumes/{self.name}", params=params)
+        response = self.client.delete(f"/volumes/{self.name}", params={"force": force})
 
         if response.status_code == requests.codes.no_content:
             return
@@ -44,26 +43,18 @@ class Volume(PodmanResource):
         data = response.json()
         if response.status_code == requests.codes.not_found:
             raise NotFound(data["cause"], response=response, explanation=data["message"])
-
         raise APIError(data["cause"], response=response, explanation=data["message"])
 
 
 class VolumesManager(Manager):
-    """Specialized Manager for Volume resources."""
+    """Specialized Manager for Volume resources.
 
-    resource = Volume
+    Attributes:
+        resource: Volume subclass of PodmanResource, factory method `prepare_model` will
+            create these.
+    """
 
-    def __init__(self, client: APIClient):
-        """Initialize VolumesManager object.
-
-        Args:
-            client: Connection to Podman service.
-        """
-        super().__init__(client)
-
-    def exists(self, key: str) -> bool:
-        response = self.client.get(f"/volumes/{key}/exists")
-        return response.status_code == requests.codes.no_content
+    resource: ClassVar[Type[Volume]] = Volume
 
     def create(self, name: Optional[str] = None, **kwargs) -> Volume:
         """Create a Volume.
@@ -80,18 +71,14 @@ class VolumesManager(Manager):
             APIError when service reports error
         """
         data = {
-            "Driver": kwargs.get("driver", None),
-            "Labels": kwargs.get("labels", None),
+            "Driver": kwargs.get("driver"),
+            "Labels": kwargs.get("labels"),
             "Name": name,
             "Options": kwargs.get("driver_opts"),
         }
-        # Strip out any keys without a value
-        data = {k: v for (k, v) in data.items() if v is not None}
-        contents = json.dumps(data)
-
         response = self.client.post(
             "/volumes/create",
-            data=contents,
+            data=api.prepare_body(data),
             headers={"Content-Type": "application/json"},
         )
         data = response.json()
@@ -100,6 +87,10 @@ class VolumesManager(Manager):
             return self.prepare_model(attrs=data)
 
         raise APIError(data["cause"], response=response, explanation=data["message"])
+
+    def exists(self, key: str) -> bool:
+        response = self.client.get(f"/volumes/{key}/exists")
+        return response.status_code == requests.codes.no_content
 
     # pylint is flagging 'volume_id' here vs. 'key' parameter in super.get()
     def get(self, volume_id: str) -> Volume:  # pylint: disable=arguments-differ
@@ -156,6 +147,11 @@ class VolumesManager(Manager):
 
         Args:
             filters: Criteria for selecting volumes to delete. Ignored.
+
+        Returns:
+            Dictionary Keys:
+                - VolumesDeleted (List[str]): List of volume ids deleted.
+                - SpaceReclaimed (int): Amount of disk space reclaimed in bytes.
 
         Raises:
             APIError when service reports error

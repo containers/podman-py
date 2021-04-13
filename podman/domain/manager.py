@@ -1,10 +1,11 @@
 """Base classes for PodmanResources and Manager's."""
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar, Union
+from collections import abc
+from typing import Any, ClassVar, List, Optional, Type, TypeVar, Union, Mapping
 
 from podman.api.client import APIClient
 
-# Abstract methods use this Type when a sub-class of PodmanResource is expected.
+# Methods use this Type when a sub-class of PodmanResource is expected.
 PodmanResourceType = TypeVar("PodmanResourceType", bound="PodmanResource")
 
 
@@ -12,30 +13,29 @@ class PodmanResource(ABC):
     """Base class for representing resource of a Podman service.
 
     Attributes:
-        attrs: Dictionary to carry attributes of resource from Podman service
+        attrs: Mapping of attributes for resource from Podman service
     """
 
     def __init__(
         self,
-        attrs: Optional[Dict[str, Any]] = None,
+        attrs: Optional[Mapping[str, Any]] = None,
         client: Optional[APIClient] = None,
         collection: Optional["Manager"] = None,
     ):
         """Initialize base class for PodmanResource's.
 
         Args:
-            attrs: Dictionary to carry attributes of resource from Podman service.
+            attrs: Mapping of attributes for resource from Podman service.
             client: Configured connection to a Podman service.
-            collection: Manager of this category of resource
+            collection: Manager of this category of resource, named `collection` for compatibility
         """
+        super().__init__()
         self.client = client
-
-        # parameter named collection for compatibility
         self.manager = collection
 
         self.attrs = dict()
         if attrs is not None:
-            self.attrs = attrs
+            self.attrs.update(attrs)
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: {self.short_id}>"
@@ -49,7 +49,7 @@ class PodmanResource(ABC):
     @property
     def id(self) -> str:  # pylint: disable=invalid-name
         """Returns the identifier for the object."""
-        return self.attrs.get("Id", None)
+        return self.attrs.get("Id")
 
     @property
     def short_id(self) -> str:
@@ -78,6 +78,15 @@ class Manager(ABC):
 
     resource: ClassVar[Type[PodmanResource]] = None
 
+    def __init__(self, client: APIClient = None) -> None:
+        """Initialize Manager() object.
+
+        Args:
+            client: Podman client configured to connect to Podman service.
+        """
+        super().__init__()
+        self.client = client
+
     @abstractmethod
     def exists(self, key: str) -> bool:
         """Returns True if resource exists.
@@ -86,14 +95,6 @@ class Manager(ABC):
             This method does _not_ provide any mutex mechanism.
         """
         raise NotImplementedError()
-
-    def __init__(self, client: APIClient = None) -> None:
-        """Initialize Manager() object.
-
-        Args:
-            client: Podman client configured to connect to Podman service.
-        """
-        self.client = client
 
     @abstractmethod
     def get(self, key: str) -> PodmanResourceType:
@@ -105,17 +106,19 @@ class Manager(ABC):
         """Returns list of resources."""
         raise NotImplementedError()
 
-    def prepare_model(self, attrs: Union[PodmanResource, Dict[str, Any]]) -> PodmanResourceType:
+    def prepare_model(self, attrs: Union[PodmanResource, Mapping[str, Any]]) -> PodmanResourceType:
         """ Create a model from a set of attributes. """
+
+        # Refresh existing PodmanResource.
         if isinstance(attrs, PodmanResource):
-            # Refresh existing PodmanResource.
             attrs.client = self.client
             attrs.collection = self
             return attrs
 
-        if isinstance(attrs, dict):
-            # Instantiate new PodmanResource from Dict[str, Any]
+        # Instantiate new PodmanResource from Mapping[str, Any]
+        if isinstance(attrs, abc.Mapping):
+            # TODO Determine why pylint is reporting typing.Type not callable
             # pylint: disable=not-callable
             return self.resource(attrs=attrs, client=self.client, collection=self)
 
-        raise Exception("Can't create %s from %s" % (self.resource.__name__, attrs))
+        raise Exception(f"Can't create {self.resource.__name__} from {attrs}")

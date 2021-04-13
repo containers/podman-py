@@ -5,7 +5,7 @@ from typing import Dict, List, Mapping, Optional, Union, MutableMapping, Any
 
 
 def prepare_filters(filters: Union[str, List[str], Mapping[str, str]]) -> Optional[str]:
-    """Returns filters as an URL quoted JSON Dict[str, List[Any]]."""
+    """Return filters as an URL quoted JSON Dict[str, List[Any]]."""
 
     if filters is None or len(filters) == 0:
         return None

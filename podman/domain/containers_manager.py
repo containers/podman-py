@@ -9,7 +9,6 @@ from podman import api
 from podman.domain.containers import Container
 from podman.domain.containers_create import CreateMixin
 from podman.domain.containers_run import RunMixin
-from podman.domain.images import Image
 from podman.domain.manager import Manager
 from podman.errors import APIError, NotFound
 
@@ -23,7 +22,7 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
         resource: Container subclass of PodmanResource, factory method will create these.
     """
 
-    resource: ClassVar[Type[Image]] = Container
+    resource: ClassVar[Type[Container]] = Container
 
     def exists(self, key: str) -> bool:
         response = self.client.get(f"/containers/{key}/exists")
