@@ -10,6 +10,7 @@ from typing import Dict, List, Optional, Type, ClassVar, Any
 import requests
 
 from podman import api
+from podman.api import APIClient
 from podman.domain.manager import Manager
 from podman.domain.pods import Pod
 from podman.errors import APIError, NotFound
