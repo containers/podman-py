@@ -2,7 +2,7 @@
 
 set -eo pipefail
 
-echo "Locate: $(which podman)"
+echo "Locate: $(type -P podman)"
 podman --version
 podman-remote --version
 

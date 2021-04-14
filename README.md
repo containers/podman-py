@@ -16,7 +16,7 @@ The following packages (or their distro-equivilents) are required:
 
 ```python
 
-from podman import ApiConnection, system, images, containers
+from podman import PodmanClient
 
 # Provide a URI path for the libpod service.  In libpod, the URI can be a unix
 # domain socket(UDS) or TCP.  The TCP connection has not been implemented in this
@@ -24,23 +24,22 @@ from podman import ApiConnection, system, images, containers
 
 uri = "unix://localhost/run/podman/podman.sock"
 
-with ApiConnection(uri) as api:
-  # results are written to the screen as python dictionaries
-  print(system.version(api))
-  # get all images
-  l_images = images.list_images(api)
-  # print the first one
-  print(l_images[0])
-  # find all containers
-  l_containers = containers.list_containers(api)
-  # assuming there is at least one
-  first_name = l_containers[0]['Names'][0]
-  # inspect that one
-  container_details = containers.inspect(api, first_name)
-  print(container_details)
-  # available fields
-  print(sorted(container_details.keys()))
-  print(images.remove(api, "alpine", force=True))
+with PodmanClient(uri) as client:
+    print("version: ", client.version())
+    # get all images
+    images = client.images.list()
+    # print the first one
+    print(images[0])
+    # find all containers
+    containers = client.containers.list()
+    # assuming there is at least one
+    first_name = containers[0]['Names'][0]
+    # inspect that one
+    container = client.containers.get(first_name)
+    print(container)
+    # available fields
+    print(sorted(container.attrs.keys()))
+    client.images.remove(images.id)
 ```
 
 ## Contributing

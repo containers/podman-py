@@ -12,7 +12,7 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 #
-"""images call integration tests"""
+"""Images integration tests."""
 import io
 import tarfile
 import unittest

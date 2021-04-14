@@ -2,6 +2,7 @@
 import logging
 import os
 import ssl
+from contextlib import AbstractContextManager
 from typing import Any, Dict, Mapping, Optional, Union
 
 from podman.api.client import APIClient
@@ -11,6 +12,7 @@ from podman.domain.images_manager import ImagesManager
 from podman.domain.manifests import ManifestsManager
 from podman.domain.networks_manager import NetworksManager
 from podman.domain.pods_manager import PodsManager
+from podman.domain.secrets import SecretsManager
 from podman.domain.system import SystemManager
 from podman.domain.volumes import VolumesManager
 from podman.tlsconfig import TLSConfig
@@ -18,7 +20,7 @@ from podman.tlsconfig import TLSConfig
 logger = logging.getLogger("podman")
 
 
-class PodmanClient:
+class PodmanClient(AbstractContextManager):
     """Create client connection to Podman service"""
 
     def __init__(
@@ -65,6 +67,12 @@ class PodmanClient:
             num_pools=max_pool_size,
             credstore_env=credstore_env,
         )
+
+    def __enter__(self) -> "PodmanClient":
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        self.close()
 
     @classmethod
     def from_env(
@@ -193,7 +201,7 @@ class PodmanClient:
     @property
     def secrets(self):
         """TBD."""
-        raise NotImplementedError()
+        return SecretsManager(client=self.api)
 
     @property
     def services(self):

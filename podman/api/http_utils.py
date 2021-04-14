@@ -3,6 +3,8 @@ import collections.abc
 import json
 from typing import Dict, List, Mapping, Optional, Union, MutableMapping, Any
 
+from podman.errors import NotFound, APIError
+
 
 def prepare_filters(filters: Union[str, List[str], Mapping[str, str]]) -> Optional[str]:
     """Return filters as an URL quoted JSON Dict[str, List[Any]]."""
