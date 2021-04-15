@@ -1,9 +1,7 @@
 """Utility functions for working with URL's."""
 import collections.abc
 import json
-from typing import Dict, List, Mapping, Optional, Union, MutableMapping, Any
-
-from podman.errors import NotFound, APIError
+from typing import Dict, List, Mapping, Optional, Union, Any
 
 
 def prepare_filters(filters: Union[str, List[str], Mapping[str, str]]) -> Optional[str]:
@@ -55,7 +53,7 @@ def _format_string(filters, criteria):
     criteria[key] = [value]
 
 
-def prepare_body(body: MutableMapping[str, Any]) -> str:
+def prepare_body(body: Mapping[str, Any]) -> str:
     """Returns JSON payload to be uploaded to server.
 
     Notes:
@@ -69,7 +67,11 @@ def prepare_body(body: MutableMapping[str, Any]) -> str:
 
 
 def _filter_values(mapping: Mapping[str, Any]) -> Dict[str, Any]:
-    """Returns a canonical dictionary with values == None or empty Iterables removed."""
+    """Returns a canonical dictionary with values == None or empty Iterables removed.
+
+    Notes:
+        Dictionary is walked using recursion.
+    """
     canonical = dict()
     for key, value in mapping.items():
         # quick filter if possible...
@@ -77,12 +79,9 @@ def _filter_values(mapping: Mapping[str, Any]) -> Dict[str, Any]:
             continue
 
         # depending on type we need details...
-        if isinstance(value, collections.abc.MutableMapping):
+        if isinstance(value, collections.abc.Mapping):
             proposal = _filter_values(value)
-        elif isinstance(value, collections.abc.Set):
-            # Convert set() to list() to satisfy json encoder
-            proposal = [i for i in list(value) if i is not None]
-        elif isinstance(value, collections.abc.Sequence) and not isinstance(value, str):
+        elif isinstance(value, collections.abc.Iterable) and not isinstance(value, str):
             proposal = [i for i in value if i is not None]
         else:
             proposal = value

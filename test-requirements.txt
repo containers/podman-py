@@ -1,6 +1,6 @@
-fixtures
-nose
-coverage
-pylint
 black
+coverage
+fixtures~=3.0.0
+nose
+pylint
 requests-mock

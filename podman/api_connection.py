@@ -1,8 +1,9 @@
-""" Provides a Connection to a Podman service. """
+""" Provides a Connection to a Podman service."""
 import json
 import logging
 import socket
 import urllib.parse
+import warnings
 from contextlib import AbstractContextManager
 from http import HTTPStatus
 from http.client import HTTPConnection
@@ -32,6 +33,7 @@ class ApiConnection(HTTPConnection, AbstractContextManager):
             )
         self.uri = uri
         self.base = base
+        warnings.warn("APIConnection() and supporting classes.", PendingDeprecationWarning)
 
     def connect(self):
         """Connect to the URL given when initializing class"""

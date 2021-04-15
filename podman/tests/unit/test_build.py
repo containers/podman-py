@@ -6,9 +6,9 @@ from unittest.mock import patch
 
 import requests_mock
 
-from podman import PodmanClient, api
+from podman import PodmanClient, api, tests
 from podman.domain.images import Image
-from podman.errors.exceptions import BuildError, DockerException
+from podman.errors import BuildError, DockerException
 
 
 class TestBuildCase(unittest.TestCase):
@@ -22,7 +22,7 @@ class TestBuildCase(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.client = PodmanClient(base_url="http+unix://localhost:9999")
+        self.client = PodmanClient(base_url=tests.BASE_SOCK)
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -55,7 +55,7 @@ class TestBuildCase(unittest.TestCase):
 
         with requests_mock.Mocker() as mock:
             mock.post(
-                "http+unix://localhost:9999/v3.0.0/libpod/build"
+                tests.BASE_URL + "/libpod/build"
                 "?t=latest"
                 "&buildargs=%7B%22BUILD_DATE%22%3A+%22January+1%2C+1970%22%7D"
                 "&cpuperiod=10"
@@ -64,7 +64,7 @@ class TestBuildCase(unittest.TestCase):
                 text=buffer.getvalue(),
             )
             mock.get(
-                "http+unix://localhost:9999/v3.0.0/libpod/images/032b8b2855fc/json",
+                tests.BASE_URL + "/libpod/images/032b8b2855fc/json",
                 json={
                     "Id": "032b8b2855fc",
                     "ParentId": "",
@@ -114,7 +114,7 @@ class TestBuildCase(unittest.TestCase):
 
         with requests_mock.Mocker() as mock:
             mock.post(
-                "http+unix://localhost:9999/v3.0.0/libpod/build",
+                tests.BASE_URL + "/libpod/build",
                 text=buffer.getvalue(),
             )
 
@@ -124,13 +124,13 @@ class TestBuildCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_build_no_context(self, mock):
-        mock.post("http+unix://localhost:9999/v3.0.0/libpod/images/build")
+        mock.post(tests.BASE_URL + "/libpod/images/build")
         with self.assertRaises(TypeError):
             self.client.images.build()
 
     @requests_mock.Mocker()
     def test_build_encoding(self, mock):
-        mock.post("http+unix://localhost:9999/v3.0.0/libpod/images/build")
+        mock.post(tests.BASE_URL + "/libpod/images/build")
         with self.assertRaises(DockerException):
             self.client.images.build(path="/root", gzip=True, encoding="utf-8")
 

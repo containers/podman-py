@@ -8,7 +8,7 @@ DESTDIR ?=
 EPOCH_TEST_COMMIT ?= $(shell git merge-base $${DEST_BRANCH:-master} HEAD)
 HEAD ?= HEAD
 
-export PODMAN_VERSION ?= '3.0.0'
+export PODMAN_VERSION ?= "3.2.0"
 
 .PHONY: podman-py
 podman-py:
@@ -56,7 +56,7 @@ uninstall:
 
 .PHONY: clean
 clean:
-	rm -rf podman.egg-info dist
+	rm -rf podman_py.egg-info dist
 	find . -depth -name __pycache__ -exec rm -rf {} \;
 	find . -depth -name \*.pyc -exec rm -f {} \;
 	$(PYTHON) ./setup.py clean --all

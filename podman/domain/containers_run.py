@@ -6,8 +6,7 @@ from typing import Generator, Iterator, List, Union
 
 from podman.domain.containers import Container
 from podman.domain.images import Image
-from podman.errors import ImageNotFound
-from podman.errors.exceptions import ContainerError
+from podman.errors import ContainerError, ImageNotFound
 
 logger = logging.getLogger("podman.containers")
 
@@ -18,7 +17,7 @@ class RunMixin:  # pylint: disable=too-few-public-methods
     def run(
         self,
         image: Union[str, Image],
-        command: Union[str, List[str]] = None,
+        command: Union[str, List[str], None] = None,
         stdout=True,
         stderr=False,
         remove: bool = False,

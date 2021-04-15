@@ -1,16 +1,13 @@
-# podman-py
+# podman-py [![Build Status](https://api.cirrus-ci.com/github/containers/podman-py.svg)](https://cirrus-ci.com/github/containers/podman-py/master)
 
-This python package is a set of bindings to use the new RESTful API in [libpod](https://github.com/containers/libpod).  It is currently under development and contributors are welcome!
+This python package is a library of bindings to use the RESTful API for [libpod](https://github.com/containers/podman).
+It is currently under development and contributors are welcome!
+
 
 ## Dependencies
 
-The following packages (or their distro-equivilents) are required:
-
-* `python3-coverage`
-* `python3-pylint`
-* `python3-requests`
-* `python3-requests-mock`
-* `python3-fixtures`
+* For runtime dependencies, see [requirements.txt](requirements.txt).
+* For testing and development dependencies, see [test-requirements.txt](test-requirements.txt).
 
 ## Example usage
 

@@ -7,6 +7,7 @@ Note:
     """
 import hashlib
 import json
+import logging
 from contextlib import suppress
 from typing import List, Optional, Union
 
@@ -15,6 +16,8 @@ import requests
 from podman.domain.containers import Container
 from podman.domain.manager import PodmanResource
 from podman.errors import APIError
+
+logger = logging.getLogger("podman.networks")
 
 
 class Network(PodmanResource):

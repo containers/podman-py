@@ -1,5 +1,6 @@
 """Model and Manager for Event resources."""
 import json
+import logging
 from datetime import datetime
 from typing import Any, Dict, Optional, Union
 
@@ -8,6 +9,8 @@ import requests
 from podman import api
 from podman.api.client import APIClient
 from podman.errors import APIError
+
+logger = logging.getLogger("podman.events")
 
 
 class EventsManager:  # pylint: disable=too-few-public-methods

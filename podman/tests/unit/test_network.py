@@ -2,7 +2,7 @@ import unittest
 
 import requests_mock
 
-from podman import PodmanClient
+from podman import PodmanClient, tests
 from podman.domain.networks import Network
 
 FIRST_NETWORK = {
@@ -56,7 +56,7 @@ class NetworkTestCase(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.client = PodmanClient(base_url="http+unix://localhost:9999")
+        self.client = PodmanClient(base_url=tests.BASE_SOCK)
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -87,9 +87,7 @@ class NetworkTestCase(unittest.TestCase):
             status_code=204,
             json={"Name": "podman", "Err": None},
         )
-        mock.get("http+unix://localhost:9999/v1.40/networks/podman", json=FIRST_NETWORK)
-
-        net = self.client.networks.get("podman")
+        net = Network(attrs=FIRST_NETWORK, client=self.client.api)
 
         net.remove(force=True)
         self.assertTrue(adapter.called_once)
@@ -99,15 +97,13 @@ class NetworkTestCase(unittest.TestCase):
         adapter = mock.post(
             "http+unix://localhost:9999/v1.40/networks/podman/connect",
         )
-        mock.get("http+unix://localhost:9999/v1.40/networks/podman", json=FIRST_NETWORK)
+        net = Network(attrs=FIRST_NETWORK, client=self.client.api)
 
-        net = self.client.networks.get("podman")
         net.connect(
             "podman_ctnr",
             aliases=["production"],
             ipv4_address="172.16.0.1",
         )
-
         self.assertEqual(adapter.call_count, 1)
         self.assertDictEqual(
             adapter.last_request.json(),
@@ -127,11 +123,9 @@ class NetworkTestCase(unittest.TestCase):
         adapter = mock.post(
             "http+unix://localhost:9999/v1.40/networks/podman/disconnect",
         )
-        mock.get("http+unix://localhost:9999/v1.40/networks/podman", json=FIRST_NETWORK)
+        net = Network(attrs=FIRST_NETWORK, client=self.client.api)
 
-        net = self.client.networks.get("podman")
         net.disconnect("podman_ctnr", force=True)
-
         self.assertEqual(adapter.call_count, 1)
         self.assertDictEqual(
             adapter.last_request.json(),

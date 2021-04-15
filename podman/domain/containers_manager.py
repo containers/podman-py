@@ -1,7 +1,7 @@
 """PodmanResource manager subclassed for Containers."""
 import logging
 import urllib
-from typing import Any, ClassVar, Dict, List, Mapping, Type
+from typing import Any, Dict, List, Mapping, Type
 
 import requests
 
@@ -9,20 +9,18 @@ from podman import api
 from podman.domain.containers import Container
 from podman.domain.containers_create import CreateMixin
 from podman.domain.containers_run import RunMixin
-from podman.domain.manager import Manager
+from podman.domain.manager import Manager, PodmanResource
 from podman.errors import APIError, NotFound
 
 logger = logging.getLogger("podman.containers")
 
 
 class ContainersManager(RunMixin, CreateMixin, Manager):
-    """Specialized Manager for Container resources.
+    """Specialized Manager for Container resources."""
 
-    Attributes:
-        resource: Container subclass of PodmanResource, factory method will create these.
-    """
-
-    resource: ClassVar[Type[Container]] = Container
+    @property
+    def resource(self) -> Type[PodmanResource]:
+        return Container
 
     def exists(self, key: str) -> bool:
         response = self.client.get(f"/containers/{key}/exists")
@@ -97,10 +95,7 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
         if response.status_code != requests.codes.okay:
             raise APIError(body["cause"], response=response, explanation=body["message"])
 
-        containers: List[Container] = list()
-        for item in body:
-            containers.append(self.prepare_model(attrs=item))
-        return containers
+        return [self.prepare_model(attrs=i) for i in body]
 
     def prune(self, filters: Mapping[str, str] = None) -> Dict[str, Any]:
         """Delete stopped containers.
@@ -112,7 +107,7 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
 
         Returns:
             Keys:
-                - ContainersDeleted (List[str]): Id's of deleted containers.
+                - ContainersDeleted (List[str]): Identifiers of deleted containers.
                 - SpaceReclaimed (int): Amount of disk space reclaimed in bytes.
 
         Raises:
@@ -125,7 +120,7 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
         if response.status_code != requests.codes.okay:
             raise APIError(body["cause"], response=response, explanation=body["message"])
 
-        results = {"ContainersDeleted": [], "SpaceReclaimed": 0}
+        results = {"ContainersDeleted": list(), "SpaceReclaimed": 0}
         for entry in body:
             if entry.get("error", None) is not None:
                 raise APIError(entry["error"], response=response, explanation=entry["error"])

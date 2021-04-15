@@ -5,7 +5,7 @@ from types import GeneratorType
 
 import requests_mock
 
-from podman import PodmanClient
+from podman import PodmanClient, tests
 from podman.domain.events import EventsManager
 
 
@@ -13,7 +13,7 @@ class EventsManagerTestCase(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.client = PodmanClient(base_url="http+unix://localhost:9999")
+        self.client = PodmanClient(base_url=tests.BASE_SOCK)
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -44,9 +44,7 @@ class EventsManagerTestCase(unittest.TestCase):
             buffer.write(json.JSONEncoder().encode(item))
             buffer.write("\n")
 
-        adapter = mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/events", text=buffer.getvalue()
-        )
+        adapter = mock.get(tests.BASE_URL + "/libpod/events", text=buffer.getvalue())
 
         manager = EventsManager(client=self.client.api)
         actual = manager.list(decode=True)

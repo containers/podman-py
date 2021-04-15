@@ -2,7 +2,7 @@ import unittest
 
 import requests_mock
 
-from podman import PodmanClient
+from podman import PodmanClient, tests
 from podman.domain.ipam import IPAMConfig, IPAMPool
 from podman.domain.networks import Network
 from podman.domain.networks_manager import NetworksManager
@@ -111,7 +111,7 @@ class NetworksManagerTestCase(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.client = PodmanClient(base_url="http+unix://localhost:9999")
+        self.client = PodmanClient(base_url=tests.BASE_SOCK)
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -138,7 +138,7 @@ class NetworksManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_get_libpod(self, mock):
         mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/networks/podman/json",
+            tests.BASE_URL + "/libpod/networks/podman/json",
             json=FIRST_NETWORK_LIBPOD,
         )
 
@@ -171,7 +171,7 @@ class NetworksManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_list_libpod(self, mock):
         mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/networks/json",
+            tests.BASE_URL + "/libpod/networks/json",
             json=FIRST_NETWORK_LIBPOD + SECOND_NETWORK_LIBPOD,
         )
 
@@ -193,7 +193,7 @@ class NetworksManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_create(self, mock):
         adapter = mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/networks/create?name=podman",
+            tests.BASE_URL + "/libpod/networks/create?name=podman",
             json={
                 "Filename": "/home/developer/.config/cni/net.d/podman.conflist",
             },
@@ -228,7 +228,7 @@ class NetworksManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_create_defaults(self, mock):
         adapter = mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/networks/create?name=podman",
+            tests.BASE_URL + "/libpod/networks/create?name=podman",
             json={
                 "Filename": "/home/developer/.config/cni/net.d/podman.conflist",
             },
@@ -256,7 +256,7 @@ class NetworksManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_prune_libpod(self, mock):
         mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/networks/prune",
+            tests.BASE_URL + "/libpod/networks/prune",
             json=[
                 {"Name": "podman", "Error": None},
                 {"Name": "database", "Error": None},

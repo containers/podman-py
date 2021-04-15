@@ -5,13 +5,12 @@ Notes:
 """
 import json
 import logging
-from typing import Dict, List, Optional, Type, ClassVar, Any
+from typing import Any, Dict, List, Optional, Type
 
 import requests
 
 from podman import api
-from podman.api import APIClient
-from podman.domain.manager import Manager
+from podman.domain.manager import Manager, PodmanResource
 from podman.domain.pods import Pod
 from podman.errors import APIError, NotFound
 
@@ -19,13 +18,11 @@ logger = logging.getLogger("podman.pods")
 
 
 class PodsManager(Manager):
-    """Specialized Manager for Pod resources.
+    """Specialized Manager for Pod resources."""
 
-    Attributes:
-        resource: Pod subclass of PodmanResource, factory method `prepare_model` will create these.
-    """
-
-    resource: ClassVar[Type[Pod]] = Pod
+    @property
+    def resource(self) -> Type[PodmanResource]:
+        return Pod
 
     def create(self, name: str, **kwargs) -> Pod:
         """Create a Pod.
@@ -100,10 +97,7 @@ class PodsManager(Manager):
         if response.status_code != requests.codes.okay:
             raise APIError(body["cause"], response=response, explanation=body["message"])
 
-        pods: List[Pod] = list()
-        for item in body:
-            pods.append(self.prepare_model(attrs=item))
-        return pods
+        return [self.prepare_model(attrs=i) for i in body]
 
     def prune(self, filters: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
         """Delete unused Pods.

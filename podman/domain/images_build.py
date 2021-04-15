@@ -13,7 +13,7 @@ import requests
 
 from podman import api
 from podman.domain.images import Image
-from podman.errors.exceptions import APIError, BuildError, PodmanError
+from podman.errors import APIError, BuildError, PodmanError
 
 logger = logging.getLogger("podman.images")
 
@@ -88,7 +88,7 @@ class BuildMixin:
             # The Dockerfile will be copied into the context_dir if needed
             params["dockerfile"] = api.prepare_containerfile(kwargs["path"], params["dockerfile"])
 
-            excludes = api.prepare_dockerignore(kwargs["path"])
+            excludes = api.prepare_containerignore(kwargs["path"])
             body = api.create_tar(
                 anchor=kwargs["path"], exclude=excludes, gzip=kwargs.get("gzip", False)
             )

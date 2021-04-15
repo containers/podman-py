@@ -1,6 +1,6 @@
 import unittest
 
-from podman import PodmanClient
+from podman import PodmanClient, tests
 from podman.domain.manifests import ManifestsManager, Manifest
 
 
@@ -8,7 +8,7 @@ class ManifestTestCase(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.client = PodmanClient(base_url="http+unix://localhost:9999")
+        self.client = PodmanClient(base_url=tests.BASE_SOCK)
 
     def tearDown(self) -> None:
         super().tearDown()
