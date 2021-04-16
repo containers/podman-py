@@ -1,12 +1,10 @@
 """Model and Manager for Volume resources."""
-import json
 import logging
-from typing import Any, Dict, List, Optional, Type, ClassVar
+from typing import Any, Dict, List, Optional, Type
 
 import requests
 
 from podman import api
-from podman.api.client import APIClient
 from podman.domain.manager import Manager, PodmanResource
 from podman.errors import APIError, NotFound
 
@@ -47,14 +45,11 @@ class Volume(PodmanResource):
 
 
 class VolumesManager(Manager):
-    """Specialized Manager for Volume resources.
+    """Specialized Manager for Volume resources."""
 
-    Attributes:
-        resource: Volume subclass of PodmanResource, factory method `prepare_model` will
-            create these.
-    """
-
-    resource: ClassVar[Type[Volume]] = Volume
+    @property
+    def resource(self) -> Type[PodmanResource]:
+        return Volume
 
     def create(self, name: Optional[str] = None, **kwargs) -> Volume:
         """Create a Volume.
@@ -131,14 +126,11 @@ class VolumesManager(Manager):
         if response.status_code == requests.codes.not_found:
             return []
 
-        data = response.json()
+        body = response.json()
         if response.status_code != requests.codes.okay:
-            raise APIError(data["cause"], response=response, explanation=data["message"])
+            raise APIError(body["cause"], response=response, explanation=body["message"])
 
-        volumes: List[Volume] = list()
-        for item in data:
-            volumes.append(self.prepare_model(item))
-        return volumes
+        return [self.prepare_model(i) for i in body]
 
     def prune(
         self, filters: Optional[Dict[str, str]] = None  # pylint: disable=unused-argument

@@ -6,7 +6,7 @@ import requests
 
 from podman import api
 from podman.domain.manager import PodmanResource
-from podman.errors.exceptions import APIError, ImageNotFound
+from podman.errors import APIError, ImageNotFound
 
 logger = logging.getLogger("podman.images")
 
@@ -55,17 +55,14 @@ class Image(PodmanResource):
     def save(
         self,
         chunk_size: Optional[int] = api.DEFAULT_CHUNK_SIZE,
-        named: Union[str, bool] = False,
+        named: Union[str, bool] = False,  # pylint: disable=unused-argument
     ) -> Iterator[bytes]:
         """Returns Image as tarball.
 
         Args:
             chunk_size: If None, data will be streamed in received buffer size.
                 If not None, data will be returned in sized buffers. Default: 2MB
-            named: When False, tarball will not retain repository and tag information.
-                When True, first tag is used to identify the Image.
-                when str, value is used as tag to identify the Image.
-                Always ignored.
+            named: Ignored.
 
         Raises:
             APIError: when service returns an error.
@@ -73,8 +70,6 @@ class Image(PodmanResource):
         Notes:
             Format is set to docker-archive, this allows load() to import this tarball.
         """
-        _ = named
-
         response = self.client.get(
             f"/images/{self.id}/get", params={"format": ["docker-archive"]}, stream=True
         )
@@ -85,13 +80,18 @@ class Image(PodmanResource):
         body = response.json()
         raise APIError(body["cause"], response=response, explanation=body["message"])
 
-    def tag(self, repository: str, tag: Optional[str], force: bool = False) -> bool:
+    def tag(
+        self,
+        repository: str,
+        tag: Optional[str],
+        force: bool = False,  # pylint: disable=unused-argument
+    ) -> bool:
         """Tag Image into repository.
 
         Args:
             repository: The repository for tagging Image.
             tag: optional tag name.
-            force: force tagging. Always ignored.
+            force: Ignored.
 
         Returns:
             True, when operational succeeds.
@@ -100,12 +100,7 @@ class Image(PodmanResource):
             ImageNotFound: when service cannot find image.
             APIError: when service returns an error.
         """
-        _ = force
-
-        params = {"repo": repository}
-        if tag is not None:
-            params["tag"] = tag
-
+        params = {"repo": repository, "tag": tag}
         response = self.client.post(f"/images/{self.id}/tag", params=params)
 
         if response.status_code == requests.codes.created:

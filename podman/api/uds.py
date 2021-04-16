@@ -4,10 +4,17 @@ import socket
 from typing import Any, Mapping, Optional, Union
 from urllib.parse import unquote, urlparse
 
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3 import HTTPConnectionPool  # pylint: disable=import-error
-from requests.packages.urllib3.connection import HTTPConnection  # pylint: disable=import-error
-from requests.packages.urllib3.util import Timeout  # pylint: disable=import-error
+from requests.adapters import HTTPAdapter  # pylint: disable=ungrouped-imports
+
+try:
+    from urllib3 import HTTPConnectionPool
+    from urllib3.connection import HTTPConnection
+    from urllib3.util import Timeout
+except ImportError:
+    # Attempt to fallback to urllib3 that may be included with requests
+    from requests.packages.urllib3 import HTTPConnectionPool  # pylint: disable=import-error
+    from requests.packages.urllib3.connection import HTTPConnection  # pylint: disable=import-error
+    from requests.packages.urllib3.util import Timeout  # pylint: disable=import-error
 
 
 class UDSConnection(HTTPConnection):
@@ -16,7 +23,7 @@ class UDSConnection(HTTPConnection):
     def __init__(
         self,
         host: str,
-        timeout: Optional[Union[float, Timeout]] = None,
+        timeout: Union[float, Timeout, None] = None,
     ):
         """Instantiate connection to UNIX domain socket for HTTP client."""
         if isinstance(timeout, Timeout):

@@ -58,7 +58,7 @@ class Container(PodmanResource):
 
     @property
     def ports(self) -> Dict[str, int]:
-        """Returns ports exposed by container."""
+        """Return ports exposed by container."""
         with suppress(KeyError):
             return self.attrs["NetworkSettings"]["Ports"]
         return dict()
@@ -291,7 +291,7 @@ class Container(PodmanResource):
             raise NotFound(body["cause"], response=response, explanation=body["message"])
         raise APIError(body["cause"], response=response, explanation=body["message"])
 
-    def put_archive(self, path: Union[bytes, str, None] = None, data: bytes = None) -> bool:
+    def put_archive(self, path: str, data: bytes = None) -> bool:
         """Upload tar archive containing a file or folder to be written into container.
 
         Args:
@@ -305,10 +305,10 @@ class Container(PodmanResource):
             APIError when server reports error
 
         Notes:
-            - path must exist.
+            - If data is None, path will be read on client to build tarfile.
         """
-        if not path or not data:
-            raise ValueError("path and data (tar archive) are required parameters.")
+        if path is None:
+            raise ValueError("'path' is a required argument.")
 
         if data is None:
             data = api.create_tar("/", path)
@@ -338,18 +338,21 @@ class Container(PodmanResource):
         body = response.json()
         raise APIError(body["cause"], response=response, explanation=body["message"])
 
-    def rename(self, name: Optional[str] = None) -> None:
+    def rename(self, name: str) -> None:
         """Rename container.
 
         Args:
             name: New name for container.
+
+        Note:
+            Container updated in-situ to avoid reload().
         """
         if not name:
             raise ValueError("'name' is a required argument.")
 
         response = self.client.post(f"/containers/{self.id}/rename", params={"name": name})
         if response.status_code == requests.codes.no_content:
-            self.attrs["Name"] = name  # shortcut needing a reload()
+            self.attrs["Name"] = name  # shortcut to avoid needing reload()
             return
 
         body = response.json()
@@ -383,7 +386,7 @@ class Container(PodmanResource):
         """
         connection_timeout = api.DEFAULT_TIMEOUT
 
-        params = {}
+        params = dict()
         if "timeout" in kwargs:
             params = {"timeout": kwargs["timeout"]}
             connection_timeout += float(kwargs["timeout"])
@@ -403,11 +406,9 @@ class Container(PodmanResource):
         Keyword Args:
             detach_keys: Override the key sequence for detaching a container (Podman only)
         """
-        params = {}
-        if "detach_keys" in kwargs:
-            params = {"detachKeys": kwargs["detach_keys"]}
-
-        response = self.client.post(f"/containers/{self.id}/start", params=params)
+        response = self.client.post(
+            f"/containers/{self.id}/start", params={"detachKeys": kwargs.get("detach_keys")}
+        )
         if response.status_code == requests.codes.no_content:
             return
 

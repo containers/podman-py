@@ -2,10 +2,10 @@ import unittest
 
 import requests_mock
 
-from podman import PodmanClient
+from podman import PodmanClient, tests
 from podman.domain.images_manager import ImagesManager
 from podman.domain.registry_data import RegistryData
-from podman.errors.exceptions import InvalidArgument
+from podman.errors import InvalidArgument
 
 FIRST_IMAGE = {
     "Id": "326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab",
@@ -36,7 +36,7 @@ class RegistryDataTestCase(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.client = PodmanClient(base_url="http+unix://localhost:9999")
+        self.client = PodmanClient(base_url=tests.BASE_SOCK)
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -46,7 +46,7 @@ class RegistryDataTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_init(self, mock):
         mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/images/"
+            tests.BASE_URL + "/libpod/images/"
             "326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/json",
             json=FIRST_IMAGE,
         )

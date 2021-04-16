@@ -1,10 +1,10 @@
 import unittest
-from collections import Iterable, Iterator
+from collections import Iterator
 from unittest.mock import patch, DEFAULT
 
 import requests_mock
 
-from podman import PodmanClient
+from podman import PodmanClient, tests
 from podman.domain.containers import Container
 from podman.domain.containers_manager import ContainersManager
 from podman.errors import NotFound
@@ -33,7 +33,7 @@ class ContainersManagerTestCase(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.client = PodmanClient(base_url="http+unix://localhost:9999")
+        self.client = PodmanClient(base_url=tests.BASE_SOCK)
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -47,7 +47,7 @@ class ContainersManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_get(self, mock):
         mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers"
+            tests.BASE_URL + "/libpod/containers"
             "/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
             json=FIRST_CONTAINER,
         )
@@ -62,7 +62,7 @@ class ContainersManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_get_404(self, mock):
         mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers"
+            tests.BASE_URL + "/libpod/containers"
             "/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
             json={
                 "cause": "Container not found.",
@@ -80,7 +80,7 @@ class ContainersManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_list_empty(self, mock):
         mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/json",
+            tests.BASE_URL + "/libpod/containers/json",
             text="[]",
         )
         actual = self.client.containers.list()
@@ -89,7 +89,7 @@ class ContainersManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_list(self, mock):
         mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/json",
+            tests.BASE_URL + "/libpod/containers/json",
             json=[FIRST_CONTAINER, SECOND_CONTAINER],
         )
         actual = self.client.containers.list()
@@ -105,7 +105,7 @@ class ContainersManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_list_filtered(self, mock):
         mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/json?"
+            tests.BASE_URL + "/libpod/containers/json?"
             "all=True"
             "&filters=%7B"
             "%22before%22%3A"
@@ -133,7 +133,7 @@ class ContainersManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_list_no_filters(self, mock):
         mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/json",
+            tests.BASE_URL + "/libpod/containers/json",
             json=[FIRST_CONTAINER, SECOND_CONTAINER],
         )
         actual = self.client.containers.list()
@@ -149,7 +149,7 @@ class ContainersManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_prune(self, mock):
         mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/prune",
+            tests.BASE_URL + "/libpod/containers/prune",
             json=[
                 {
                     "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
@@ -176,7 +176,7 @@ class ContainersManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_create(self, mock):
         mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/create",
+            tests.BASE_URL + "/libpod/containers/create",
             status_code=201,
             json={
                 "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
@@ -184,7 +184,7 @@ class ContainersManagerTestCase(unittest.TestCase):
             },
         )
         mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers"
+            tests.BASE_URL + "/libpod/containers"
             "/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
             json=FIRST_CONTAINER,
         )
@@ -203,7 +203,7 @@ class ContainersManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_run_detached(self, mock):
         mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/create",
+            tests.BASE_URL + "/libpod/containers/create",
             status_code=201,
             json={
                 "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
@@ -211,12 +211,12 @@ class ContainersManagerTestCase(unittest.TestCase):
             },
         )
         mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
+            tests.BASE_URL + "/libpod/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/start",
             status_code=204,
         )
         mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers"
+            tests.BASE_URL + "/libpod/containers"
             "/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
             json=FIRST_CONTAINER,
         )
@@ -231,7 +231,7 @@ class ContainersManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_run(self, mock):
         mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/create",
+            tests.BASE_URL + "/libpod/containers/create",
             status_code=201,
             json={
                 "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
@@ -239,12 +239,12 @@ class ContainersManagerTestCase(unittest.TestCase):
             },
         )
         mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
+            tests.BASE_URL + "/libpod/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/start",
             status_code=204,
         )
         mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers"
+            tests.BASE_URL + "/libpod/containers"
             "/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
             json=FIRST_CONTAINER,
         )

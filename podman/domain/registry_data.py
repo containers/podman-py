@@ -1,10 +1,13 @@
 """Module for tracking registry metadata."""
+import logging
 from typing import Any, Mapping, Optional, Union
 
 from podman import api
 from podman.domain.images import Image
 from podman.domain.manager import PodmanResource
-from podman.errors.exceptions import InvalidArgument
+from podman.errors import InvalidArgument
+
+logger = logging.getLogger("podman.images")
 
 
 class RegistryData(PodmanResource):
@@ -30,7 +33,7 @@ class RegistryData(PodmanResource):
 
     @property
     def id(self) -> Optional[str]:
-        return self.attrs.get("Id", None)
+        return self.attrs.get("Id")
 
     @property
     def short_id(self):

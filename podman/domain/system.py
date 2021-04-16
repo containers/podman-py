@@ -1,10 +1,13 @@
 """SystemManager to provide system level information from Podman service."""
+import logging
 from typing import Any, Dict, Optional
 
 import requests
 
 from podman.api.client import APIClient
 from podman.errors import APIError
+
+logger = logging.getLogger("podman.system")
 
 
 class SystemManager:

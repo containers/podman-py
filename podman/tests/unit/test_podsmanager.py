@@ -2,7 +2,7 @@ import unittest
 
 import requests_mock
 
-from podman import PodmanClient
+from podman import PodmanClient, tests
 from podman.domain.pods import Pod
 from podman.domain.pods_manager import PodsManager
 from podman.errors import NotFound
@@ -21,7 +21,7 @@ class PodsManagerTestCase(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.client = PodmanClient(base_url="http+unix://localhost:9999")
+        self.client = PodmanClient(base_url=tests.BASE_SOCK)
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -35,12 +35,12 @@ class PodsManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_create(self, mock):
         adapter = mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/pods/create",
+            tests.BASE_URL + "/libpod/pods/create",
             json={"Id": "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8"},
             status_code=201,
         )
         mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/pods"
+            tests.BASE_URL + "/libpod/pods"
             "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/json",
             json=FIRST_POD,
         )
@@ -54,7 +54,7 @@ class PodsManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_get(self, mock):
         mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/pods"
+            tests.BASE_URL + "/libpod/pods"
             "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/json",
             json=FIRST_POD,
         )
@@ -66,29 +66,27 @@ class PodsManagerTestCase(unittest.TestCase):
             actual.id, "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8"
         )
 
-        @requests_mock.Mocker()
-        def test_get404(self, mock):
-            mock.get(
-                "http+unix://localhost:9999/v3.0.0/libpod/pods"
-                "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/json",
-                status_code=404,
-                json={
-                    "cause": "no such pod",
-                    "message": "no pod with name or ID "
-                    "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8"
-                    " found: no such pod",
-                    "response": 404,
-                },
-            )
+    @requests_mock.Mocker()
+    def test_get404(self, mock):
+        mock.get(
+            tests.BASE_URL + "/libpod/pods"
+            "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/json",
+            status_code=404,
+            json={
+                "cause": "no such pod",
+                "message": "no pod with name or ID "
+                "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8"
+                " found: no such pod",
+                "response": 404,
+            },
+        )
 
-            with self.assertRaises(NotFound):
-                self.client.pods.get(
-                    "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8"
-                )
+        with self.assertRaises(NotFound):
+            self.client.pods.get("c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8")
 
     @requests_mock.Mocker()
     def test_list(self, mock):
-        mock.get("http+unix://localhost:9999/v3.0.0/libpod/pods/json", json=[FIRST_POD, SECOND_POD])
+        mock.get(tests.BASE_URL + "/libpod/pods/json", json=[FIRST_POD, SECOND_POD])
 
         actual = self.client.pods.list()
 
@@ -102,7 +100,7 @@ class PodsManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_prune(self, mock):
         adapter = mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/pods/prune",
+            tests.BASE_URL + "/libpod/pods/prune",
             json=[
                 {
                     "Err": None,
@@ -146,7 +144,7 @@ class PodsManagerTestCase(unittest.TestCase):
             "Titles": ["UID", "PID", "PPID", "C", "STIME", "TTY", "TIME CMD"],
         }
         mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/pods/stats"
+            tests.BASE_URL + "/libpod/pods/stats"
             "?namesOrIDs=c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8",
             json=body,
         )

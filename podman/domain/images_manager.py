@@ -3,28 +3,26 @@ import io
 import json
 import logging
 import urllib.parse
-from typing import Any, ClassVar, Dict, Generator, Iterator, List, Mapping, Optional, Type, Union
+from typing import Any, Dict, Generator, Iterator, List, Mapping, Optional, Type, Union
 
 import requests
 
 from podman import api
 from podman.domain.images import Image
 from podman.domain.images_build import BuildMixin
-from podman.domain.manager import Manager
+from podman.domain.manager import Manager, PodmanResource
 from podman.domain.registry_data import RegistryData
-from podman.errors.exceptions import APIError, ImageNotFound
+from podman.errors import APIError, ImageNotFound
 
 logger = logging.getLogger("podman.images")
 
 
 class ImagesManager(BuildMixin, Manager):
-    """Specialized Manager for Image resources.
+    """Specialized Manager for Image resources."""
 
-    Attributes:
-        resource: Image subclass of PodmanResource, factory method will create these.
-    """
-
-    resource: ClassVar[Type[Image]] = Image
+    @property
+    def resource(self) -> Type[PodmanResource]:
+        return Image
 
     def exists(self, key: str) -> bool:
         key = urllib.parse.quote_plus(key)
@@ -59,10 +57,7 @@ class ImagesManager(BuildMixin, Manager):
         if response.status_code != requests.codes.ok:
             raise APIError(body["cause"], response=response, explanation=body["message"])
 
-        images: List[Image] = []
-        for element in body:
-            images.append(self.prepare_model(attrs=element))
-        return images
+        return [self.prepare_model(attrs=i) for i in body]
 
     # pylint is flagging 'name' here vs. 'key' parameter in super.get()
     def get(self, name: str) -> Image:  # pylint: disable=arguments-differ
@@ -86,7 +81,11 @@ class ImagesManager(BuildMixin, Manager):
             raise ImageNotFound(body["cause"], response=response, explanation=body["message"])
         raise APIError(body["cause"], response=response, explanation=body["message"])
 
-    def get_registry_data(self, name: str, auth_config=Mapping[str, str]) -> RegistryData:
+    def get_registry_data(
+        self,
+        name: str,
+        auth_config=Mapping[str, str],  # pylint: disable=unused-argument
+    ) -> RegistryData:
         """Returns registry data for an image.
 
         Args:
@@ -97,7 +96,6 @@ class ImagesManager(BuildMixin, Manager):
             APIError: when service returns an error.
         """
         # FIXME populate attrs using auth_config
-        _ = auth_config
         image = self.get(name)
         return RegistryData(
             image_name=name,
@@ -118,14 +116,14 @@ class ImagesManager(BuildMixin, Manager):
         # TODO fix podman swagger cannot use this header!
         # headers = {"Content-type": "application/x-www-form-urlencoded"}
 
-        headers = {"Content-type": "application/x-tar"}
-        response = self.client.post("/images/load", data=data, headers=headers)
+        response = self.client.post(
+            "/images/load", data=data, headers={"Content-type": "application/x-tar"}
+        )
         body = response.json()
 
         if response.status_code != requests.codes.ok:
             raise APIError(body["cause"], response=response, explanation=body["message"])
 
-        # Dict[Literal["Names"], List[str]]]
         for item in body["Names"]:
             yield self.get(item)
 
@@ -168,8 +166,6 @@ class ImagesManager(BuildMixin, Manager):
         if len(error) > 0:
             raise APIError(response.url, response=response, explanation="; ".join(error))
 
-        # body -> Dict[Literal["ImagesDeleted", "SpaceReclaimed"],
-        #   List[Dict[Literal["Deleted", "Untagged"], str]
         return {
             "ImagesDeleted": deleted,
             "SpaceReclaimed": reclaimed,
@@ -333,14 +329,17 @@ class ImagesManager(BuildMixin, Manager):
         return self.resource()
 
     def remove(
-        self, image: Union[Image, str], force: Optional[bool] = None, noprune: bool = False
+        self,
+        image: Union[Image, str],
+        force: Optional[bool] = None,
+        noprune: bool = False,  # pylint: disable=unused-argument
     ) -> List[Dict[str, Union[str, int]]]:
         """Delete image from Podman service.
 
         Args:
             image: Name or Id of Image to remove
             force: Delete Image even if in use
-            noprune: Do not delete untagged parents. Ignored.
+            noprune: Ignored.
 
         Returns:
             List[Dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[str, int]]]
@@ -351,8 +350,6 @@ class ImagesManager(BuildMixin, Manager):
         Notes:
             The dictionaries with keys Errors and ExitCode are added.
         """
-        _ = noprune
-
         if isinstance(image, Image):
             image = image.id
 
@@ -364,7 +361,6 @@ class ImagesManager(BuildMixin, Manager):
                 raise ImageNotFound(body["cause"], response=response, explanation=body["message"])
             raise APIError(body["cause"], response=response, explanation=body["message"])
 
-        # Dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[int, List[str]]]
         results: List[Dict[str, Union[int, str]]] = []
         for key in ("Deleted", "Untagged", "Errors"):
             if key in body:

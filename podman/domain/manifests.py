@@ -1,14 +1,17 @@
 """Model and Manager for Manifest resources."""
+import logging
 import urllib.parse
-from typing import List, Optional, Union
+from contextlib import suppress
+from typing import List, Optional, Type, Union
 
 import requests
 
 from podman import api
-from podman.api import APIClient
 from podman.domain.images import Image
 from podman.domain.manager import Manager, PodmanResource
-from podman.errors.exceptions import APIError, ImageNotFound, NotFound
+from podman.errors import APIError, ImageNotFound, NotFound
+
+logger = logging.getLogger("podman.manifests")
 
 
 class Manifest(PodmanResource):
@@ -17,10 +20,9 @@ class Manifest(PodmanResource):
     @property
     def id(self) -> str:
         """Returns the identifier of the manifest."""
-        try:
+        with suppress(KeyError, TypeError):
             return self.attrs["manifests"][0]["digest"]
-        except (KeyError, TypeError):
-            return ""
+        return ""
 
     @property
     def name(self) -> str:
@@ -156,15 +158,9 @@ class Manifest(PodmanResource):
 class ManifestsManager(Manager):
     """Specialized Manager for Manifest resources."""
 
-    resource = Manifest
-
-    def __init__(self, client: APIClient):
-        """Initiate ManifestsManager object.
-
-        Args:
-            client: Connection to Podman service.
-        """
-        super().__init__(client)
+    @property
+    def resource(self) -> Type[PodmanResource]:
+        return Manifest
 
     def exists(self, key: str) -> bool:
         key = urllib.parse.quote_plus(key)

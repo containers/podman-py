@@ -1,37 +1,32 @@
 """PodmanResource manager subclassed for Networks.
 
-
 Note:
     By default, most methods in this module uses the Podman compatible API rather than the
         libpod API as the results are so different.  To use the libpod API add the keyword argument
         compatible=False to any method call.
 """
 import ipaddress
+import logging
 from contextlib import suppress
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Type
 
 import requests
 
 import podman.api.http_utils
 from podman import api
-from podman.api import APIClient
-from podman.domain.manager import Manager
+from podman.domain.manager import Manager, PodmanResource
 from podman.domain.networks import Network
 from podman.errors import APIError, NotFound
+
+logger = logging.getLogger("podman.networks")
 
 
 class NetworksManager(Manager):
     """Specialized Manager for Network resources."""
 
-    resource = Network
-
-    def __init__(self, client: APIClient):
-        """Create NetworkManager.
-
-        Args:
-            client: Podman service client.
-        """
-        super().__init__(client)
+    @property
+    def resource(self) -> Type[PodmanResource]:
+        return Network
 
     def exists(self, key: str) -> bool:
         response = self.client.get(f"/networks/{key}/exists")
@@ -81,10 +76,7 @@ class NetworksManager(Manager):
         if response.status_code != requests.codes.okay:
             raise APIError(body["cause"], response=response, explanation=body["message"])
 
-        nets: List[Network] = list()
-        for item in body:
-            nets.append(self.prepare_model(item))
-        return nets
+        return [self.prepare_model(i) for i in body]
 
     # pylint is flagging 'network_id' here vs. 'key' parameter in super.get()
     def get(self, network_id: str, *_, **kwargs) -> Network:  # pylint: disable=arguments-differ
@@ -222,7 +214,7 @@ class NetworksManager(Manager):
         if compatible:
             return body
 
-        deleted = list()
+        deleted: List[str] = list()
         for item in body:
             if item["Error"] is not None:
                 raise APIError(

@@ -3,7 +3,7 @@ from unittest import mock
 
 import requests_mock
 
-from podman import PodmanClient
+from podman import PodmanClient, tests
 
 
 class TestPodmanClient(unittest.TestCase):
@@ -11,7 +11,7 @@ class TestPodmanClient(unittest.TestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.client = PodmanClient(base_url='unix://localhost:9999')
+        self.client = PodmanClient(base_url=tests.BASE_SOCK)
 
     @mock.patch('requests.Session.close')
     def test_close(self, mock_close):
@@ -27,7 +27,7 @@ class TestPodmanClient(unittest.TestCase):
                 "os": "linux",
             }
         }
-        mock.get("http+unix://localhost:9999/v3.0.0/libpod/system/info", json=body)
+        mock.get(tests.BASE_URL + "/libpod/system/info", json=body)
 
         with PodmanClient(base_url="http+unix://localhost:9999") as client:
             actual = client.info()

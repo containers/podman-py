@@ -9,7 +9,7 @@ from podman.api.parse_utils import (
     prepare_timestamp,
     stream_frames,
 )
-from podman.api.tar_utils import create_tar, prepare_containerfile, prepare_dockerignore
+from podman.api.tar_utils import create_tar, prepare_containerfile, prepare_containerignore
 
 from . import version
 
@@ -33,7 +33,7 @@ __all__ = [
     'prepare_body',
     'prepare_cidr',
     'prepare_containerfile',
-    'prepare_dockerignore',
+    'prepare_containerignore',
     'prepare_filters',
     'prepare_timestamp',
     'stream_frames',

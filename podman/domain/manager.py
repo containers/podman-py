@@ -1,7 +1,7 @@
 """Base classes for PodmanResources and Manager's."""
 from abc import ABC, abstractmethod
 from collections import abc
-from typing import Any, ClassVar, List, Optional, Type, TypeVar, Union, Mapping
+from typing import Any, List, Mapping, Optional, Type, TypeVar, Union
 
 from podman.api.client import APIClient
 
@@ -70,13 +70,12 @@ class PodmanResource(ABC):
 
 
 class Manager(ABC):
-    """Base class for representing a Manager of resources for a Podman service.
+    """Base class for representing a Manager of resources for a Podman service."""
 
-    Attributes:
-        resource: Subclass of PodmanResource this manager will operate upon.
-    """
-
-    resource: ClassVar[Type[PodmanResource]] = None
+    @property
+    @abstractmethod
+    def resource(self) -> Type[PodmanResource]:
+        """Subclass of PodmanResource the factory prepare_model() will create."""
 
     def __init__(self, client: APIClient = None) -> None:
         """Initialize Manager() object.
@@ -94,17 +93,14 @@ class Manager(ABC):
         Note:
             This method does _not_ provide any mutex mechanism.
         """
-        raise NotImplementedError()
 
     @abstractmethod
     def get(self, key: str) -> PodmanResourceType:
         """Returns representation of resource."""
-        raise NotImplementedError()
 
     @abstractmethod
     def list(self, **kwargs) -> List[PodmanResourceType]:
         """Returns list of resources."""
-        raise NotImplementedError()
 
     def prepare_model(self, attrs: Union[PodmanResource, Mapping[str, Any]]) -> PodmanResourceType:
         """ Create a model from a set of attributes. """

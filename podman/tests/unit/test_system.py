@@ -2,14 +2,14 @@ import unittest
 
 import requests_mock
 
-from podman import PodmanClient
+from podman import PodmanClient, tests
 
 
 class SystemTestCase(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.client = PodmanClient(base_url="http+unix://localhost:9999")
+        self.client = PodmanClient(base_url=tests.BASE_SOCK)
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -34,7 +34,7 @@ class SystemTestCase(unittest.TestCase):
         }
 
         mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/system/df",
+            tests.BASE_URL + "/libpod/system/df",
             json=body,
         )
 
@@ -49,14 +49,14 @@ class SystemTestCase(unittest.TestCase):
                 "os": "linux",
             }
         }
-        mock.get("http+unix://localhost:9999/v3.0.0/libpod/system/info", json=body)
+        mock.get(tests.BASE_URL + "/libpod/system/info", json=body)
 
         actual = self.client.info()
         self.assertDictEqual(actual, body)
 
     @requests_mock.Mocker()
     def test_ping(self, mock):
-        mock.head("http+unix://localhost:9999/v3.0.0/libpod/_ping")
+        mock.head(tests.BASE_URL + "/libpod/_ping")
         self.assertTrue(self.client.ping())
 
     @requests_mock.Mocker()
@@ -67,7 +67,7 @@ class SystemTestCase(unittest.TestCase):
             "Arch": "amd64",
             "Os": "linux",
         }
-        mock.get("http+unix://localhost:9999/v3.0.0/libpod/version", json=body)
+        mock.get(tests.BASE_URL + "/libpod/version", json=body)
         self.assertDictEqual(self.client.version(), body)
 
 

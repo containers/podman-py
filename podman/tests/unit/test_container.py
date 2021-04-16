@@ -6,7 +6,8 @@ from collections import Iterable
 
 import requests_mock
 
-from podman import PodmanClient
+from podman import PodmanClient, tests
+from podman.domain.containers import Container
 from podman.errors import APIError, NotFound
 
 FIRST_CONTAINER = {
@@ -20,7 +21,7 @@ class ContainersTestCase(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.client = PodmanClient(base_url="http+unix://localhost:9999")
+        self.client = PodmanClient(base_url=tests.BASE_SOCK)
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -29,114 +30,68 @@ class ContainersTestCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_remove(self, mock):
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
-            json=FIRST_CONTAINER,
-        )
-        mock.delete(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
+        adapter = mock.delete(
+            tests.BASE_URL + "/libpod/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd?v=True&force=True",
             status_code=204,
         )
-
-        container = self.client.containers.get(
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
-        )
+        container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
         container.remove(v=True, force=True)
+        self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
     def test_rename(self, mock):
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
-            json=FIRST_CONTAINER,
-        )
-        mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
+        adapter = mock.post(
+            tests.BASE_URL + "/libpod/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/rename",
             status_code=204,
         )
-
-        container = self.client.containers.get(
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
-        )
+        container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
         container.rename("good_galileo")
         self.assertEqual(container.attrs["Name"], "good_galileo")
+        self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
-    def test_rename_409(self, mock):
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
-            json=FIRST_CONTAINER,
+    def test_rename_type_error(self, mock):
+        container = Container(
+            attrs={"ID": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"}
         )
-        mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/rename",
-            status_code=204,
-        )
-
-        container = self.client.containers.get(
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
-        )
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             container.rename()
 
     @requests_mock.Mocker()
     def test_restart(self, mock):
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
-            json=FIRST_CONTAINER,
-        )
-        mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
+        adapter = mock.post(
+            tests.BASE_URL + "/libpod/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/restart?timeout=10",
             status_code=204,
         )
-
-        container = self.client.containers.get(
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
-        )
+        container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
         container.restart(timeout=10)
+        self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
     def test_start_dkeys(self, mock):
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
-            json=FIRST_CONTAINER,
-        )
-        mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
+        adapter = mock.post(
+            tests.BASE_URL + "/libpod/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/start"
             "?detachKeys=%5Ef%5Eu",
             status_code=204,
         )
-
-        container = self.client.containers.get(
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
-        )
+        container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
         container.start(detach_keys="^f^u")
+        self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
     def test_start(self, mock):
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
-            json=FIRST_CONTAINER,
-        )
-        mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
+        adapter = mock.post(
+            tests.BASE_URL + "/libpod/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/start",
             status_code=204,
         )
-
-        container = self.client.containers.get(
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
-        )
+        container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
         container.start()
+        self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
     def test_stats(self, mock):
@@ -157,21 +112,14 @@ class ContainersTestCase(unittest.TestCase):
             buffer.write(json.JSONEncoder().encode(entry))
             buffer.write("\n")
 
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
-            json=FIRST_CONTAINER,
-        )
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/stats"
+        adapter = mock.get(
+            tests.BASE_URL + "/libpod/containers/stats"
             "?containers=87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
             "&stream=True",
             text=buffer.getvalue(),
         )
 
-        container = self.client.containers.get(
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
-        )
+        container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
         stats = container.stats(decode=True)
         self.assertIsInstance(stats, Iterable)
 
@@ -182,36 +130,24 @@ class ContainersTestCase(unittest.TestCase):
                     stat["ContainerId"],
                     "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
                 )
+        self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
     def test_stop(self, mock):
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
-            json=FIRST_CONTAINER,
-        )
-        mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
+        adapter = mock.post(
+            tests.BASE_URL + "/libpod/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/stop"
             "?all=True&timeout=10.0",
             status_code=204,
         )
-
-        container = self.client.containers.get(
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
-        )
-
+        container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
         container.stop(all=True, timeout=10.0)
+        self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
     def test_stop_304(self, mock):
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
-            json=FIRST_CONTAINER,
-        )
-        mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
+        adapter = mock.post(
+            tests.BASE_URL + "/libpod/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/stop",
             json={
                 "cause": "container already stopped",
@@ -220,70 +156,44 @@ class ContainersTestCase(unittest.TestCase):
             },
             status_code=304,
         )
-
+        container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
         with self.assertRaises(APIError):
-            container = self.client.containers.get(
-                "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
-            )
             container.stop()
+        self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
     def test_unpause(self, mock):
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
-            json=FIRST_CONTAINER,
-        )
-        mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
+        adapter = mock.post(
+            tests.BASE_URL + "/libpod/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/unpause",
             status_code=204,
         )
-
-        container = self.client.containers.get(
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
-        )
-
+        container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
         container.unpause()
+        self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
     def test_pause(self, mock):
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
-            json=FIRST_CONTAINER,
-        )
-        mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
+        adapter = mock.post(
+            tests.BASE_URL + "/libpod/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/pause",
             status_code=204,
         )
-
-        container = self.client.containers.get(
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
-        )
-
+        container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
         container.pause()
+        self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
     def test_wait(self, mock):
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
-            json=FIRST_CONTAINER,
-        )
-        mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
+        adapter = mock.post(
+            tests.BASE_URL + "/libpod/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/wait",
             status_code=200,
             json={"StatusCode": 0},
         )
-
-        container = self.client.containers.get(
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
-        )
-
+        container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
         container.wait()
+        self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
     def test_diff(self, mock):
@@ -292,36 +202,20 @@ class ContainersTestCase(unittest.TestCase):
             {"Path": "added", "Kind": 1},
             {"Path": "deleted", "Kind": 2},
         ]
-
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
-            json=FIRST_CONTAINER,
-        )
-
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
+        adapter = mock.get(
+            tests.BASE_URL + "/libpod/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/changes",
             json=payload,
         )
-
-        container = self.client.containers.get(
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
-        )
-
+        container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
         actual = container.diff()
         self.assertListEqual(actual, payload)
+        self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
     def test_diff_404(self, mock):
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
-            json=FIRST_CONTAINER,
-        )
-
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
+        adapter = mock.get(
+            tests.BASE_URL + "/libpod/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/changes",
             json={
                 "cause": "Container not found.",
@@ -330,47 +224,30 @@ class ContainersTestCase(unittest.TestCase):
             },
             status_code=404,
         )
-
-        container = self.client.containers.get(
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
-        )
-
+        container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
         with self.assertRaises(NotFound):
             container.diff()
+        self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
     def test_export(self, mock):
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
-            json=FIRST_CONTAINER,
-        )
-
         tarball = b'Yet another weird tarball...'
         body = io.BytesIO(tarball)
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
+        adapter = mock.get(
+            tests.BASE_URL + "/libpod/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/export",
             body=body,
         )
 
-        container = self.client.containers.get(
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
-        )
-
+        container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
         with io.BytesIO() as fd:
             for chunk in container.export():
                 fd.write(chunk)
             self.assertEqual(fd.getbuffer(), tarball)
+        self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
     def test_get_archive(self, mock):
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
-            json=FIRST_CONTAINER,
-        )
-
         tarball = b'Yet another weird tarball...'
         body = io.BytesIO(tarball)
 
@@ -382,18 +259,14 @@ class ContainersTestCase(unittest.TestCase):
         }
         encoded_value = base64.urlsafe_b64encode(json.dumps(header_value).encode("utf8"))
 
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
+        adapter = mock.get(
+            tests.BASE_URL + "/libpod/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/archive"
             "?path=/etc/motd",
             body=body,
             headers={"x-docker-container-path-stat": encoded_value.decode("utf8")},
         )
-
-        container = self.client.containers.get(
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
-        )
-
+        container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
         actual = container.get_archive("/etc/motd")
         self.assertEqual(len(actual), 2)
 
@@ -403,31 +276,24 @@ class ContainersTestCase(unittest.TestCase):
             for chunk in actual[0]:
                 fd.write(chunk)
             self.assertEqual(fd.getbuffer(), tarball)
+        self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
     def test_commit(self, mock):
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
-            json=FIRST_CONTAINER,
-        )
-        mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/commit"
+        post_adapter = mock.post(
+            tests.BASE_URL + "/libpod/commit"
             "?author=redhat&changes=ADD+%2Fetc%2Fmod&comment=This+is+a+unittest"
             "&container=87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd&format=docker"
             "&pause=True&repo=quay.local&tag=unittest",
             status_code=201,
             json={"ID": "d2459aad75354ddc9b5b23f863786e279637125af6ba4d4a83f881866b3c903f"},
         )
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/images/"
+        get_adapter = mock.get(
+            tests.BASE_URL + "/libpod/images/"
             "d2459aad75354ddc9b5b23f863786e279637125af6ba4d4a83f881866b3c903f/json",
             json={"Id": "d2459aad75354ddc9b5b23f863786e279637125af6ba4d4a83f881866b3c903f"},
         )
-
-        container = self.client.containers.get(
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
-        )
+        container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
 
         image = container.commit(
             repository="quay.local",
@@ -442,61 +308,43 @@ class ContainersTestCase(unittest.TestCase):
         self.assertEqual(
             image.id, "d2459aad75354ddc9b5b23f863786e279637125af6ba4d4a83f881866b3c903f"
         )
+        self.assertTrue(post_adapter.called_once)
+        self.assertTrue(get_adapter.called_once)
 
     @requests_mock.Mocker()
     def test_put_archive(self, mock):
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
-            json=FIRST_CONTAINER,
-        )
-        mock.put(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
+        adapter = mock.put(
+            tests.BASE_URL + "/libpod/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/archive"
             "?path=%2Fetc%2Fmotd",
             status_code=200,
         )
-
-        container = self.client.containers.get(
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
-        )
+        container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
 
         tarball = b'Yet another weird tarball...'
         body = io.BytesIO(tarball)
         actual = container.put_archive(path="/etc/motd", data=body.getvalue())
         self.assertTrue(actual)
+        self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
     def test_put_archive_404(self, mock):
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
-            json=FIRST_CONTAINER,
-        )
-        mock.put(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
+        adapter = mock.put(
+            tests.BASE_URL + "/libpod/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/archive"
             "?path=deadbeef",
             status_code=404,
         )
-
-        container = self.client.containers.get(
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
-        )
+        container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
 
         tarball = b'Yet another weird tarball...'
         body = io.BytesIO(tarball)
         actual = container.put_archive(path="deadbeef", data=body.getvalue())
         self.assertFalse(actual)
+        self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
     def test_top(self, mock):
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
-            json=FIRST_CONTAINER,
-        )
-
         body = {
             "Processes": [
                 [
@@ -514,17 +362,15 @@ class ContainersTestCase(unittest.TestCase):
             ],
             "Titles": ["UID", "PID", "PPID", "C", "STIME", "TTY", "TIME CMD"],
         }
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/containers/"
+        adapter = mock.get(
+            tests.BASE_URL + "/libpod/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/top",
             json=body,
         )
-
-        container = self.client.containers.get(
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
-        )
+        container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
         actual = container.top()
         self.assertDictEqual(actual, body)
+        self.assertTrue(adapter.called_once)
 
 
 if __name__ == '__main__':

@@ -4,7 +4,7 @@ import unittest
 from dataclasses import dataclass
 from typing import Any, Optional
 from unittest import mock
-from unittest.mock import Mock, mock_open
+from unittest.mock import Mock, mock_open, patch
 
 from podman import api
 
@@ -41,12 +41,12 @@ class TestUtilsCase(unittest.TestCase):
             if actual is not None:
                 self.assertIsInstance(actual, str)
 
-    def test_dockerignore_404(self):
-        actual = api.prepare_dockerignore("/does/not/exists")
+    def test_containerignore_404(self):
+        actual = api.prepare_containerignore("/does/not/exists")
         self.assertListEqual([], actual)
 
-    @mock.patch("os.path.exists")
-    def test_dockerignore_read(self, patch_exists):
+    @patch.object(pathlib.Path, "exists", return_value=True)
+    def test_containerignore_read(self, patch_exists):
         data = r"""# unittest
         
         #Ignore the logs directory
@@ -64,29 +64,28 @@ class TestUtilsCase(unittest.TestCase):
         **/*.class
         """
 
-        patch_exists.return_value = True
-        with mock.patch("builtins.open", mock_open(read_data=data)):
-            actual = api.prepare_dockerignore(".")
+        with mock.patch("io.open", mock_open(read_data=data)):
+            actual = api.prepare_containerignore(".")
 
         self.assertListEqual(
             actual, ["logs/", "passwords.txt", ".git", ".cache", "*.md", "**/*.class"]
         )
-        patch_exists.assert_called_once_with("./.dockerignore")
+        patch_exists.assert_called_once_with()
 
-    @mock.patch("os.path.exists")
-    def test_dockerignore_empty(self, patch_exists):
+    @patch.object(pathlib.Path, "exists", return_value=True)
+    def test_containerignore_empty(self, patch_exists):
         data = r"""# unittest
         """
 
         patch_exists.return_value = True
-        with mock.patch("builtins.open", mock_open(read_data=data)):
-            actual = api.prepare_dockerignore(".")
+        with mock.patch("io.open", mock_open(read_data=data)):
+            actual = api.prepare_containerignore(".")
 
         self.assertListEqual(actual, [])
-        patch_exists.assert_called_once_with("./.dockerignore")
+        patch_exists.assert_called_once_with()
 
     @mock.patch("pathlib.Path", autospec=True)
-    def test_dockerfile(self, mock_path):
+    def test_containerfile(self, mock_path):
         mock_parent = mock_path.parent.return_value = Mock()
         mock_parent.samefile.return_value = True
 
@@ -95,7 +94,7 @@ class TestUtilsCase(unittest.TestCase):
         mock_path.assert_called()
 
     @mock.patch("shutil.copy2")
-    def test_dockerfile_copy(self, mock_copy):
+    def test_containerfile_copy(self, mock_copy):
         mock_copy.return_value = None
 
         with mock.patch.object(pathlib.Path, "parent") as mock_parent:

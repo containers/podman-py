@@ -2,7 +2,7 @@ import unittest
 
 import requests_mock
 
-from podman import PodmanClient
+from podman import PodmanClient, tests
 from podman.domain.pods import Pod
 from podman.errors import NotFound
 
@@ -16,7 +16,7 @@ class PodTestCase(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.client = PodmanClient(base_url="http+unix://localhost:9999")
+        self.client = PodmanClient(base_url=tests.BASE_SOCK)
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -35,29 +35,22 @@ class PodTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_kill(self, mock):
         adapter = mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/pods"
+            tests.BASE_URL + "/libpod/pods"
             "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/kill",
             json={
                 "Errs": [],
                 "Id": "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8",
             },
         )
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/pods"
-            "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/json",
-            json=FIRST_POD,
-        )
-        pod = self.client.pods.get(
-            "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8"
-        )
 
+        pod = Pod(attrs=FIRST_POD, client=self.client.api)
         pod.kill()
         self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
     def test_kill_404(self, mock):
         adapter = mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/pods"
+            tests.BASE_URL + "/libpod/pods"
             "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/kill",
             status_code=404,
             json={
@@ -66,44 +59,31 @@ class PodTestCase(unittest.TestCase):
                 "response": 404,
             },
         )
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/pods"
-            "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/json",
-            json=FIRST_POD,
-        )
-        pod = self.client.pods.get(
-            "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8"
-        )
 
+        pod = Pod(attrs=FIRST_POD, client=self.client.api)
         with self.assertRaises(NotFound):
             pod.kill()
+        self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
     def test_pause(self, mock):
         adapter = mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/pods"
+            tests.BASE_URL + "/libpod/pods"
             "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/pause",
             json={
                 "Errs": [],
                 "Id": "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8",
             },
         )
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/pods"
-            "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/json",
-            json=FIRST_POD,
-        )
-        pod = self.client.pods.get(
-            "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8"
-        )
 
+        pod = Pod(attrs=FIRST_POD, client=self.client.api)
         pod.pause()
         self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
     def test_pause_404(self, mock):
         adapter = mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/pods"
+            tests.BASE_URL + "/libpod/pods"
             "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/pause",
             status_code=404,
             json={
@@ -112,103 +92,69 @@ class PodTestCase(unittest.TestCase):
                 "response": 404,
             },
         )
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/pods"
-            "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/json",
-            json=FIRST_POD,
-        )
-        pod = self.client.pods.get(
-            "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8"
-        )
 
+        pod = Pod(attrs=FIRST_POD, client=self.client.api)
         with self.assertRaises(NotFound):
             pod.pause()
+        self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
     def test_remove(self, mock):
         adapter = mock.delete(
-            "http+unix://localhost:9999/v3.0.0/libpod/pods/"
+            tests.BASE_URL + "/libpod/pods/"
             "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8?force=True",
             json={
                 "Errs": [],
                 "Id": "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8",
             },
         )
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/pods"
-            "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/json",
-            json=FIRST_POD,
-        )
-        pod = self.client.pods.get(
-            "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8"
-        )
 
+        pod = Pod(attrs=FIRST_POD, client=self.client.api)
         pod.remove(force=True)
         self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
     def test_restart(self, mock):
         adapter = mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/pods"
+            tests.BASE_URL + "/libpod/pods"
             "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/restart",
             json={
                 "Errs": [],
                 "Id": "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8",
             },
         )
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/pods"
-            "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/json",
-            json=FIRST_POD,
-        )
-        pod = self.client.pods.get(
-            "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8"
-        )
 
+        pod = Pod(attrs=FIRST_POD, client=self.client.api)
         pod.restart()
         self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
     def test_start(self, mock):
         adapter = mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/pods"
+            tests.BASE_URL + "/libpod/pods"
             "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/start",
             json={
                 "Errs": [],
                 "Id": "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8",
             },
         )
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/pods"
-            "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/json",
-            json=FIRST_POD,
-        )
-        pod = self.client.pods.get(
-            "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8"
-        )
 
+        pod = Pod(attrs=FIRST_POD, client=self.client.api)
         pod.start()
         self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
     def test_stop(self, mock):
         adapter = mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/pods"
+            tests.BASE_URL + "/libpod/pods"
             "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/stop?t=70.0",
             json={
                 "Errs": [],
                 "Id": "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8",
             },
         )
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/pods"
-            "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/json",
-            json=FIRST_POD,
-        )
-        pod = self.client.pods.get(
-            "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8"
-        )
 
+        pod = Pod(attrs=FIRST_POD, client=self.client.api)
         pod.stop(timeout=70.0)
         self.assertTrue(adapter.called_once)
 
@@ -231,45 +177,29 @@ class PodTestCase(unittest.TestCase):
             ],
             "Titles": ["UID", "PID", "PPID", "C", "STIME", "TTY", "TIME CMD"],
         }
-
         adapter = mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/pods"
+            tests.BASE_URL + "/libpod/pods"
             "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/top"
             "?ps_args=aux&stream=False",
             json=body,
         )
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/pods"
-            "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/json",
-            json=FIRST_POD,
-        )
-        pod = self.client.pods.get(
-            "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8"
-        )
 
+        pod = Pod(attrs=FIRST_POD, client=self.client.api)
         actual = pod.top(ps_args="aux")
-        self.assertTrue(adapter.called_once)
         self.assertDictEqual(actual, body)
+        self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
     def test_unpause(self, mock):
         adapter = mock.post(
-            "http+unix://localhost:9999/v3.0.0/libpod/pods"
+            tests.BASE_URL + "/libpod/pods"
             "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/unpause",
             json={
                 "Errs": [],
                 "Id": "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8",
             },
         )
-        mock.get(
-            "http+unix://localhost:9999/v3.0.0/libpod/pods"
-            "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/json",
-            json=FIRST_POD,
-        )
-        pod = self.client.pods.get(
-            "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8"
-        )
-
+        pod = Pod(attrs=FIRST_POD, client=self.client.api)
         pod.unpause()
         self.assertTrue(adapter.called_once)
 

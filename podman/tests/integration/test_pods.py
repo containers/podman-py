@@ -2,7 +2,7 @@ import unittest
 import random
 
 from podman import PodmanClient
-from podman.errors.exceptions import NotFound
+from podman.errors import NotFound
 from podman.tests.integration import base
 
 

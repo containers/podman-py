@@ -7,7 +7,7 @@ from requests import Response
 
 from podman import api
 from podman.api.uds import UDSAdapter
-from podman.errors.exceptions import APIError
+from podman.errors import APIError
 from podman.tlsconfig import TLSConfig
 
 _Data = Union[
@@ -38,7 +38,7 @@ class APIClient(requests.Session):
         base_url: str = None,
         version: Optional[str] = None,
         timeout: Optional[float] = None,
-        tls: Union[TLSConfig, bool] = False,
+        tls: Union[TLSConfig, bool] = False,  # pylint: disable=unused-argument
         user_agent: Optional[str] = None,
         num_pools: Optional[int] = None,
         credstore_env: Optional[Mapping[str, str]] = None,
@@ -50,8 +50,6 @@ class APIClient(requests.Session):
             ValueError: when a parameter is incorrect.
         """
         super().__init__()
-
-        _ = tls
 
         uri = urllib.parse.urlparse(base_url)
         if uri.scheme not in APIClient.supported_schemes:
@@ -80,7 +78,7 @@ class APIClient(requests.Session):
 
         self.timeout = timeout or api.DEFAULT_TIMEOUT
         self.pool_maxsize = num_pools or requests.adapters.DEFAULT_POOLSIZE
-        self.credstore_env = credstore_env or {}
+        self.credstore_env = credstore_env or dict()
 
         self.user_agent = user_agent or f"PodmanPy/{self.version}"
         self.headers.update({"User-Agent": self.user_agent})
@@ -304,7 +302,7 @@ class APIClient(requests.Session):
                 uri,
                 params=params,
                 data=data,
-                headers=(headers or {}),
+                headers=(headers or dict()),
                 timeout=timeout,
                 stream=stream,
             )

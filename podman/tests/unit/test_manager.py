@@ -1,6 +1,5 @@
 import unittest
 
-from podman.domain.manager import Manager
 from podman.domain.pods_manager import PodsManager
 
 

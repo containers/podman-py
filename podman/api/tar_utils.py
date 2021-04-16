@@ -1,39 +1,45 @@
 """Utility functions for working with tarball's."""
-import os
 import pathlib
 import random
 import shutil
-import sys
 import tarfile
 import tempfile
 from fnmatch import fnmatch
 from typing import BinaryIO, List, Optional
 
+import sys
 
-def prepare_dockerignore(anchor: str) -> List[str]:
-    """Read .dockerignore and return exclude list."""
-    file = os.path.join(anchor, ".dockerignore")
-    if not os.path.exists(file):
-        return []
 
-    with open(file, "r") as file:
-        return list(
-            filter(
-                lambda l: len(l) > 0 and not l.startswith("#"),
-                list(line.strip() for line in file.readlines()),
+def prepare_containerignore(anchor: str) -> List[str]:
+    """Return the list of patterns for filenames to exclude.
+
+    Notes:
+       .containerignore takes precedence over .dockerignore.
+    """
+    for filename in (".containerignore", ".dockerignore"):
+        ignore = pathlib.Path(anchor) / filename
+        if not ignore.exists():
+            continue
+
+        with ignore.open() as file:
+            return list(
+                filter(
+                    lambda l: len(l) > 0 and not l.startswith("#"),
+                    list(line.strip() for line in file.readlines()),
+                )
             )
-        )
+    return []
 
 
 def prepare_containerfile(anchor: str, dockerfile: str) -> str:
-    """Ensure that Dockerfile or a proxy Dockerfile is in context_dir.
+    """Ensure that Containerfile, or a proxy Containerfile is in context_dir.
 
     Args:
         anchor: Build context directory
-        dockerfile: Path to Dockerfile
+        dockerfile: Path to Dockerfile/Containerfile
 
     Returns:
-        path to Dockerfile in root of context directory
+        path to Dockerfile/Containerfile in root of context directory
     """
     anchor_path = pathlib.Path(anchor)
     dockerfile_path = pathlib.Path(dockerfile)
