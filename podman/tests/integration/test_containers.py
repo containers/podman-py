@@ -118,7 +118,7 @@ class ContainersIntegrationTest(base.IntegrationTest):
             # See https://github.com/containers/podman/pull/9892 for the service
             #   side fix requires podman >= 3.2
             # processes = [i.strip() for i in report["Processes"][0]]
-            self.assertIn("/usr/bin/top", report["Processes"][0])
+            self.assertIn("/usr/bin/top", report["Processes"][0][-1])
 
             top_ctnr.stop()
             top_ctnr.reload()

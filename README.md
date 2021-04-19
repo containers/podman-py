@@ -1,42 +1,47 @@
 # podman-py [![Build Status](https://api.cirrus-ci.com/github/containers/podman-py.svg)](https://cirrus-ci.com/github/containers/podman-py/master)
 
-This python package is a library of bindings to use the RESTful API for [libpod](https://github.com/containers/podman).
+This python package is a library of bindings to use the RESTful API for [Podman](https://github.com/containers/podman).
 It is currently under development and contributors are welcome!
 
 
 ## Dependencies
 
-* For runtime dependencies, see [requirements.txt](requirements.txt).
-* For testing and development dependencies, see [test-requirements.txt](test-requirements.txt).
+* For runtime dependencies, see [requirements.txt](https://github.com/containers/podman-py/blob/master/requirements.txt).
+* For testing and development dependencies, see [test-requirements.txt](https://github.com/containers/podman-py/blob/master/test-requirements.txt).
 
 ## Example usage
 
 ```python
-
+"""Demonstrate PodmanClient."""
+import json
 from podman import PodmanClient
 
 # Provide a URI path for the libpod service.  In libpod, the URI can be a unix
 # domain socket(UDS) or TCP.  The TCP connection has not been implemented in this
 # package yet.
 
-uri = "unix://localhost/run/podman/podman.sock"
+uri = "unix:///run/user/1000/podman/podman.sock"
 
 with PodmanClient(uri) as client:
-    print("version: ", client.version())
+    version = client.version()
+    print("Release: ", version["Version"])
+    print("Compatible API: ", version["ApiVersion"])
+    print("Podman API: ", version["Components"][0]["Details"]["APIVersion"], "\n")
+
     # get all images
-    images = client.images.list()
-    # print the first one
-    print(images[0])
+    for image in client.images.list():
+        print(image, image.id, "\n")
+
     # find all containers
-    containers = client.containers.list()
-    # assuming there is at least one
-    first_name = containers[0]['Names'][0]
-    # inspect that one
-    container = client.containers.get(first_name)
-    print(container)
-    # available fields
-    print(sorted(container.attrs.keys()))
-    client.images.remove(images.id)
+    for container in client.containers.list():
+        first_name = container['Names'][0]
+        container = client.containers.get(first_name)
+        print(container, container.id, "\n")
+
+        # available fields
+        print(sorted(container.attrs.keys()))
+
+    print(json.dumps(client.df(), indent=4))
 ```
 
 ## Contributing

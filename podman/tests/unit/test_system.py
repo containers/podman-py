@@ -3,6 +3,7 @@ import unittest
 import requests_mock
 
 from podman import PodmanClient, tests
+from podman.domain.system import SystemManager
 
 
 class SystemTestCase(unittest.TestCase):
@@ -49,7 +50,7 @@ class SystemTestCase(unittest.TestCase):
                 "os": "linux",
             }
         }
-        mock.get(tests.BASE_URL + "/libpod/system/info", json=body)
+        mock.get(tests.BASE_URL + "/libpod/info", json=body)
 
         actual = self.client.info()
         self.assertDictEqual(actual, body)

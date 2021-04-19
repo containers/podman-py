@@ -12,8 +12,10 @@ export PODMAN_VERSION ?= "3.2.0"
 
 .PHONY: podman-py
 podman-py:
+	rm dist/* || :
+	pip install wheel
 	PODMAN_VERSION=$(PODMAN_VERSION) \
-	$(PYTHON) setup.py sdist bdist
+	$(PYTHON) setup.py sdist bdist bdist_wheel
 
 .PHONY: lint
 lint:
@@ -34,6 +36,16 @@ unittest:
 integration:
 	coverage run -m unittest discover -s podman/tests/integration
 	coverage report -m --skip-covered --fail-under=80 --omit=./podman/tests/* --omit=.tox/* --omit=/usr/lib/*
+
+.PHONY: upload
+upload:
+	twine upload --verbose -r testpypi dist/*whl dist/*zip
+	# pip install -i https://test.pypi.org/simple/ podman-py
+
+.PHONY: release
+release:
+	twine upload --verbose dist/*whl dist/*zip
+	# pip install podman-py
 
 # .PHONY: install
 HEAD ?= HEAD

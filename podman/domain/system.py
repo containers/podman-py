@@ -37,7 +37,7 @@ class SystemManager:
 
     def info(self, *_, **__) -> Dict[str, Any]:
         """Returns information on Podman service."""
-        response = self.client.get("/system/info")
+        response = self.client.get("/info")
         body = response.json()
 
         if response.status_code == requests.codes.okay:
