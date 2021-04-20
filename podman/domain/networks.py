@@ -14,6 +14,7 @@ from typing import List, Optional, Union
 import requests
 
 from podman.domain.containers import Container
+from podman.domain.containers_manager import ContainersManager
 from podman.domain.manager import PodmanResource
 from podman.errors import APIError
 
@@ -42,7 +43,10 @@ class Network(PodmanResource):
     @property
     def containers(self) -> List[Container]:
         """Returns list of Containers connected to network."""
-        raise NotImplementedError()
+        with suppress(KeyError):
+            container_manager = ContainersManager(client=self.client)
+            return [container_manager.get(ident) for ident in self.attrs["Containers"].keys()]
+        return dict()
 
     @property
     def name(self) -> str:
