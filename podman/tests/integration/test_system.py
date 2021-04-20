@@ -14,34 +14,33 @@
 #
 """system call integration tests"""
 
-from podman import system
-from podman.api_connection import ApiConnection
+from podman import system, PodmanClient
 import podman.tests.integration.base as base
 
 
-class TestSystem(base.IntegrationTest):
+class SystemIntegrationTest(base.IntegrationTest):
     """system call integration test"""
 
     def setUp(self):
         super().setUp()
-        self.api = ApiConnection(self.socket_uri)
-        self.addCleanup(self.api.close)
+        self.client = PodmanClient(base_url=self.socket_uri)
+        self.addCleanup(self.client.close)
 
     def test_info(self):
         """integration: system info call"""
-        output = system.info(self.api)
+        output = self.client.info()
         self.assertTrue('host' in output)
 
     def test_version(self):
         """integration: system version call"""
-        output = system.version(self.api)
+        output = self.client.version()
         self.assertTrue('Platform' in output)
         self.assertTrue('Version' in output)
         self.assertTrue('ApiVersion' in output)
 
     def test_show_disk_usage(self):
         """integration: system disk usage call"""
-        output = system.show_disk_usage(self.api)
+        output = self.client.df()
         self.assertTrue('Images' in output)
         self.assertTrue('Containers' in output)
         self.assertTrue('Volumes' in output)

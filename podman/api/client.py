@@ -71,7 +71,7 @@ class APIClient(requests.Session):
         if uri.scheme == "http+unix":
             self.mount(uri.scheme, UDSAdapter())
 
-        self.version = version or api.API_VERSION
+        self.version = version or api.VERSION
         self.path_prefix = f"/v{self.version}/libpod"
         self.compatible_version = kwargs.get("compatible_version") or api.COMPATIBLE_VERSION
         self.compatible_prefix = f"/v{self.compatible_version}"

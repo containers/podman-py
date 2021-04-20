@@ -27,7 +27,7 @@ class TestPodmanClient(unittest.TestCase):
                 "os": "linux",
             }
         }
-        mock.get(tests.BASE_URL + "/libpod/system/info", json=body)
+        mock.get(tests.BASE_URL + "/libpod/info", json=body)
 
         with PodmanClient(base_url="http+unix://localhost:9999") as client:
             actual = client.info()
