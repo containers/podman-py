@@ -6,10 +6,7 @@ Notes:
 import logging
 from typing import Any, Dict, Tuple, Union, Optional
 
-import requests
-
 from podman.domain.manager import PodmanResource
-from podman.errors import APIError, NotFound
 
 _Timeout = Union[None, float, Tuple[float, float], Tuple[float, None]]
 
@@ -35,33 +32,21 @@ class Pod(PodmanResource):
             signal: To be sent to pod.
 
         Raises:
-            NotFound when pod not found.
-            APIError when service reports an error.
+            NotFound: when pod not found
+            APIError: when service reports an error
         """
         response = self.client.post(f"/pods/{self.id}/kill", params={"signal": signal})
-        if response.status_code == requests.codes.okay:
-            return
-
-        body = response.json()
-        if response.status_code == requests.codes.not_found:
-            raise NotFound(body["cause"], response=response, explanation=body["message"])
-        raise APIError(body["cause"], response=response, explanation=body["message"])
+        response.raise_for_status()
 
     def pause(self) -> None:
         """Pause pod.
 
         Raises:
-            NotFound when pod not found.
-            APIError when service reports an error.
+            NotFound: when pod not found
+            APIError: when service reports an error
         """
         response = self.client.post(f"/pods/{self.id}/pause")
-        if response.status_code == requests.codes.okay:
-            return
-
-        body = response.json()
-        if response.status_code == requests.codes.not_found:
-            raise NotFound(body["cause"], response=response, explanation=body["message"])
-        raise APIError(body["cause"], response=response, explanation=body["message"])
+        response.raise_for_status()
 
     def remove(self, force: Optional[bool] = None) -> None:
         """Delete pod.
@@ -70,66 +55,41 @@ class Pod(PodmanResource):
             force: When True, stop and delete all containers in pod before deleting pod.
 
         Raises:
-            NotFound when pod not found.
-            APIError when service reports an error.
+            NotFound: when pod not found
+            APIError: when service reports an error
         """
-        response = self.client.delete(f"/pods/{self.id}", params={"force": force})
-        if response.status_code == requests.codes.okay:
-            return
+        self.manager.remove(self.id, force=force)
 
-        body = response.json()
-        if response.status_code == requests.codes.not_found:
-            raise NotFound(body["cause"], response=response, explanation=body["message"])
-        raise APIError(body["cause"], response=response, explanation=body["message"])
-
-    def restart(self):
+    def restart(self) -> None:
         """Restart pod.
 
         Raises:
-            NotFound when pod not found.
-            APIError when service reports an error.
+            NotFound: when pod not found
+            APIError: when service reports an error
         """
         response = self.client.post(f"/pods/{self.id}/restart")
-        if response.status_code == requests.codes.okay:
-            return
+        response.raise_for_status()
 
-        body = response.json()
-        if response.status_code == requests.codes.not_found:
-            raise NotFound(body["cause"], response=response, explanation=body["message"])
-        raise APIError(body["cause"], response=response, explanation=body["message"])
-
-    def start(self):
+    def start(self) -> None:
         """Start pod.
 
         Raises:
-            NotFound when pod not found.
-            APIError when service reports an error.
+            NotFound: when pod not found
+            APIError: when service reports an error
         """
         response = self.client.post(f"/pods/{self.id}/start")
-        if response.status_code in (requests.codes.okay, requests.codes.not_modified):
-            return
-
-        body = response.json()
-        if response.status_code == requests.codes.not_found:
-            raise NotFound(body["cause"], response=response, explanation=body["message"])
-        raise APIError(body["cause"], response=response, explanation=body["message"])
+        response.raise_for_status()
 
     def stop(self, timeout: _Timeout = None) -> None:
         """Stop pod.
 
         Raises:
-            NotFound when pod not found.
-            APIError when service reports an error.
+            NotFound: when pod not found
+            APIError: when service reports an error
         """
         params = {"t": timeout}
         response = self.client.post(f"/pods/{self.id}/stop", params=params)
-        if response.status_code in (requests.codes.okay, requests.codes.not_modified):
-            return
-
-        body = response.json()
-        if response.status_code == requests.codes.not_found:
-            raise NotFound(body["cause"], response=response, explanation=body["message"])
-        raise APIError(body["cause"], response=response, explanation=body["message"])
+        response.raise_for_status()
 
     def top(self, **kwargs) -> Dict[str, Any]:
         """Report on running processes in pod.
@@ -138,35 +98,24 @@ class Pod(PodmanResource):
             ps_args (str): Optional arguments passed to ps.
 
         Raises:
-            NotFound when pod not found.
-            APIError when service reports an error.
+            NotFound: when pod not found
+            APIError: when service reports an error
         """
         params = {
             "ps_args": kwargs.get("ps_args"),
             "stream": False,
         }
         response = self.client.get(f"/pods/{self.id}/top", params=params)
-        body = response.json()
+        response.raise_for_status()
 
-        if response.status_code == requests.codes.okay:
-            return body
-
-        if response.status_code == requests.codes.not_found:
-            raise NotFound(body["cause"], response=response, explanation=body["message"])
-        raise APIError(body["cause"], response=response, explanation=body["message"])
+        return response.json()
 
     def unpause(self) -> None:
         """Unpause pod.
 
         Raises:
-            NotFound when pod not found.
-            APIError when service reports an error.
+            NotFound: when pod not found
+            APIError: when service reports an error
         """
         response = self.client.post(f"/pods/{self.id}/unpause")
-        if response.status_code == requests.codes.okay:
-            return
-
-        body = response.json()
-        if response.status_code == requests.codes.not_found:
-            raise NotFound(body["cause"], response=response, explanation=body["message"])
-        raise APIError(body["cause"], response=response, explanation=body["message"])
+        response.raise_for_status()

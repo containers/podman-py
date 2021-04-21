@@ -11,12 +11,9 @@ import logging
 from contextlib import suppress
 from typing import List, Optional, Union
 
-import requests
-
 from podman.domain.containers import Container
 from podman.domain.containers_manager import ContainersManager
 from podman.domain.manager import PodmanResource
-from podman.errors import APIError
 
 logger = logging.getLogger("podman.networks")
 
@@ -80,7 +77,7 @@ class Network(PodmanResource):
             links (List[Union[str, Containers]]): Ignored
 
         Raises:
-            APIError when Podman service reports an error
+            APIError: when Podman service reports an error
         """
         compatible = kwargs.get("compatible", True)
 
@@ -116,11 +113,7 @@ class Network(PodmanResource):
             headers={"Content-type": "application/json"},
             compatible=compatible,
         )
-        if response.status_code == requests.codes.okay:
-            return
-
-        data = response.json()
-        raise APIError(data["cause"], response=response, explanation=data["message"])
+        response.raise_for_status()
 
     def disconnect(self, container: Union[str, Container], **kwargs) -> None:
         """Disconnect given container from this network.
@@ -132,7 +125,7 @@ class Network(PodmanResource):
             force (bool): Force operation
 
         Raises:
-            APIError when Podman service reports an error
+            APIError: when Podman service reports an error
         """
         compatible = kwargs.get("compatible", True)
 
@@ -143,34 +136,18 @@ class Network(PodmanResource):
         response = self.client.post(
             f"/networks/{self.name}/disconnect", data=json.dumps(data), compatible=compatible
         )
-        if response.status_code == requests.codes.okay:
-            return
-
-        data = response.json()
-        raise APIError(data["cause"], response=response, explanation=data["message"])
+        response.raise_for_status()
 
     def remove(self, force: Optional[bool] = None, **kwargs) -> None:
         """Remove this network.
 
         Args:
-            force: Remove network and any associated networks
+            force: Remove network and any associated containers
 
         Keyword Args:
             compatible (bool): Should compatible API be used. Default: True
 
         Raises:
-            APIError when Podman service reports an error
+            APIError: when Podman service reports an error
         """
-        compatible = kwargs.get("compatible", True)
-        response = self.client.delete(
-            f"/networks/{self.name}", params={"force": force}, compatible=compatible
-        )
-
-        if (
-            response.status_code == requests.codes.no_content
-            or response.status_code == requests.codes.okay
-        ):
-            return
-
-        body = response.json()
-        raise APIError(body["cause"], response=response, explanation=body["message"])
+        self.manager.remove(self.name, force=force, **kwargs)

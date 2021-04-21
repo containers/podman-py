@@ -444,6 +444,49 @@ class TestClientImagesManager(unittest.TestCase):
         self.assertEqual(image.id, image_id)
 
     @requests_mock.Mocker()
+    def test_pull_enhanced(self, mock):
+        image_id = "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
+        mock.post(
+            tests.BASE_URL + "/libpod/images/pull" "?reference=quay.io%2Ffedora%3Alatest",
+            json={
+                "error": "",
+                "id": image_id,
+                "images": [image_id],
+                "stream": "",
+            },
+        )
+        mock.get(
+            tests.BASE_URL + "/libpod/images"
+            "/sha256%3A326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/json",
+            json=FIRST_IMAGE,
+        )
+
+        image = self.client.images.pull("quay.io/fedora:latest")
+        self.assertEqual(image.id, image_id)
+
+    @requests_mock.Mocker()
+    def test_pull_platform(self, mock):
+        image_id = "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
+        adapter = mock.post(
+            tests.BASE_URL + "/libpod/images/pull?reference=quay.io%2Ffedora%3Alatest&OS=linux",
+            json={
+                "error": "",
+                "id": image_id,
+                "images": [image_id],
+                "stream": "",
+            },
+        )
+        mock.get(
+            tests.BASE_URL + "/libpod/images"
+            "/sha256%3A326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/json",
+            json=FIRST_IMAGE,
+        )
+
+        image = self.client.images.pull("quay.io/fedora:latest", platform="linux")
+        self.assertEqual(image.id, image_id)
+        self.assertTrue(adapter.called_once)
+
+    @requests_mock.Mocker()
     def test_pull_2x(self, mock):
         image_id = "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
         mock.post(

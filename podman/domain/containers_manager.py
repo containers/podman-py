@@ -1,16 +1,14 @@
 """PodmanResource manager subclassed for Containers."""
 import logging
 import urllib
-from typing import Any, Dict, List, Mapping, Type
-
-import requests
+from typing import Any, Dict, List, Mapping, Type, Union
 
 from podman import api
 from podman.domain.containers import Container
 from podman.domain.containers_create import CreateMixin
 from podman.domain.containers_run import RunMixin
 from podman.domain.manager import Manager, PodmanResource
-from podman.errors import APIError, NotFound
+from podman.errors import APIError
 
 logger = logging.getLogger("podman.containers")
 
@@ -24,7 +22,7 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
 
     def exists(self, key: str) -> bool:
         response = self.client.get(f"/containers/{key}/exists")
-        return response.status_code == requests.codes.no_content
+        return response.ok
 
     # pylint is flagging 'container_id' here vs. 'key' parameter in super.get()
     def get(self, container_id: str) -> Container:  # pylint: disable=arguments-differ
@@ -34,19 +32,13 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
             container_id: Container name or id.
 
         Raises:
-            NotFound: Container does not exist.
-            APIError: Error return by service.
+            NotFound: when Container does not exist
+            APIError: when an error return by service
         """
         container_id = urllib.parse.quote_plus(container_id)
         response = self.client.get(f"/containers/{container_id}/json")
-        body = response.json()
-
-        if response.status_code == requests.codes.okay:
-            return self.prepare_model(attrs=body)
-
-        if response.status_code == requests.codes.not_found:
-            raise NotFound(body["cause"], response=response, explanation=body["message"])
-        raise APIError(body["cause"], response=response, explanation=body["message"])
+        response.raise_for_status()
+        return self.prepare_model(attrs=response.json())
 
     def list(self, **kwargs) -> List[Container]:
         """Report on containers.
@@ -74,7 +66,7 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
             ignore_removed: If True, ignore failures due to missing containers.
 
         Raises:
-            APIError: If service returns an error.
+            APIError: when service returns an error
         """
         params = {
             "all": kwargs.get("all"),
@@ -90,12 +82,9 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
         params["filters"] = api.prepare_filters(params["filters"])
 
         response = self.client.get("/containers/json", params=params)
-        body = response.json()
+        response.raise_for_status()
 
-        if response.status_code != requests.codes.okay:
-            raise APIError(body["cause"], response=response, explanation=body["message"])
-
-        return [self.prepare_model(attrs=i) for i in body]
+        return [self.prepare_model(attrs=i) for i in response.json()]
 
     def prune(self, filters: Mapping[str, str] = None) -> Dict[str, Any]:
         """Delete stopped containers.
@@ -111,20 +100,42 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
                 - SpaceReclaimed (int): Amount of disk space reclaimed in bytes.
 
         Raises:
-            APIError: If service reports an error
+            APIError: when service reports an error
         """
         params = {"filters": api.prepare_filters(filters)}
         response = self.client.post("/containers/prune", params=params)
-        body = response.json()
-
-        if response.status_code != requests.codes.okay:
-            raise APIError(body["cause"], response=response, explanation=body["message"])
+        response.raise_for_status()
 
         results = {"ContainersDeleted": list(), "SpaceReclaimed": 0}
-        for entry in body:
-            if entry.get("error", None) is not None:
+        for entry in response.json():
+            if entry.get("error") is not None:
                 raise APIError(entry["error"], response=response, explanation=entry["error"])
 
             results["ContainersDeleted"].append(entry["Id"])
             results["SpaceReclaimed"] += entry["Size"]
         return results
+
+    def remove(self, container_id: Union[Container, str], **kwargs):
+        """Delete container.
+
+        Args:
+            container_id: identifier of Container to delete.
+
+        Keyword Args:
+            v (bool): Delete associated volumes as well.
+            link (bool): Ignored.
+            force (bool): Kill a running container before deleting.
+
+        Notes:
+            Podman only.
+        """
+        if isinstance(container_id, Container):
+            container_id = container_id.id
+
+        params = {
+            "v": kwargs.get("v"),
+            "force": kwargs.get("force"),
+        }
+
+        response = self.client.delete(f"/containers/{container_id}", params=params)
+        response.raise_for_status()

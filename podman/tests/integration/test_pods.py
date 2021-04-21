@@ -35,6 +35,7 @@ class PodsIntegrationTest(base.IntegrationTest):
                 no_infra=True,
             )
             self.assertEqual(pod_name, pod.name)
+            self.assertTrue(self.client.pods.exists(pod.id))
 
         with self.subTest("Inspect"):
             actual = self.client.pods.get(pod.id)

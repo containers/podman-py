@@ -2,11 +2,9 @@
 import logging
 from typing import Any, Dict, Iterator, List, Optional, Union
 
-import requests
-
 from podman import api
 from podman.domain.manager import PodmanResource
-from podman.errors import APIError, ImageNotFound
+from podman.errors import ImageNotFound
 
 logger = logging.getLogger("podman.images")
 
@@ -39,18 +37,32 @@ class Image(PodmanResource):
         """Returns history of the Image.
 
         Raises:
-            APIError: when service returns an error.
+            APIError: when service returns an error
         """
 
         response = self.client.get(f"/images/{self.id}/history")
-        body = response.json()
+        response.raise_for_status(not_found=ImageNotFound)
+        return response.json()
 
-        if response.status_code == requests.codes.ok:
-            return body
+    def remove(self, **kwargs) -> List[Dict[str, Union[str, int]]]:
+        """Delete image from Podman service.
 
-        if response.status_code == requests.codes.not_found:
-            raise ImageNotFound(body["cause"], response=response, explanation=body["message"])
-        raise APIError(body["cause"], response=response, explanation=body["message"])
+        Keyword Args:
+            force: Delete Image even if in use
+            noprune: Ignored.
+
+        Returns:
+            List[Dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[str, int]]]
+
+        Raises:
+            ImageNotFound: when image does not exist
+            APIError: when service returns an error
+
+        Notes:
+            - Podman only
+            - The dictionaries with keys Errors and ExitCode are added.
+        """
+        return self.manager.remove(self.id, **kwargs)
 
     def save(
         self,
@@ -65,7 +77,7 @@ class Image(PodmanResource):
             named: Ignored.
 
         Raises:
-            APIError: when service returns an error.
+            APIError: when service returns an error
 
         Notes:
             Format is set to docker-archive, this allows load() to import this tarball.
@@ -73,12 +85,8 @@ class Image(PodmanResource):
         response = self.client.get(
             f"/images/{self.id}/get", params={"format": ["docker-archive"]}, stream=True
         )
-
-        if response.status_code == requests.codes.okay:
-            return response.iter_content(chunk_size=chunk_size)
-
-        body = response.json()
-        raise APIError(body["cause"], response=response, explanation=body["message"])
+        response.raise_for_status(not_found=ImageNotFound)
+        return response.iter_content(chunk_size=chunk_size)
 
     def tag(
         self,
@@ -91,22 +99,22 @@ class Image(PodmanResource):
         Args:
             repository: The repository for tagging Image.
             tag: optional tag name.
-            force: Ignored.
+            force: Ignore client errors
 
         Returns:
             True, when operational succeeds.
 
         Raises:
-            ImageNotFound: when service cannot find image.
-            APIError: when service returns an error.
+            ImageNotFound: when service cannot find image
+            APIError: when service returns an error
         """
         params = {"repo": repository, "tag": tag}
         response = self.client.post(f"/images/{self.id}/tag", params=params)
-
-        if response.status_code == requests.codes.created:
+        if response.ok:
             return True
 
-        error = response.json()
-        if response.status_code == requests.codes.not_found:
-            raise ImageNotFound(error["cause"], response=response, explanation=error["message"])
-        raise APIError(error["cause"], response=response, explanation=error["message"])
+        if force and response.status_code <= 500:
+            return False
+
+        response.raise_for_status(not_found=ImageNotFound)
+        return False

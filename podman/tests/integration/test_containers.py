@@ -43,6 +43,7 @@ class ContainersIntegrationTest(base.IntegrationTest):
             self.assertIsNotNone(container.id)
             self.assertIsNotNone(container.name)
             self.assertIsInstance(container.image, Image)
+            self.assertTrue(self.client.containers.exists(container.id))
 
             self.assertIn("quay.io/libpod/alpine:latest", container.image.tags)
 

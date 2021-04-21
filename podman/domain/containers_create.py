@@ -4,13 +4,11 @@ import logging
 from contextlib import suppress
 from typing import Any, Dict, List, MutableMapping, Union
 
-import requests
-
 from podman import api
 from podman.domain.containers import Container
 from podman.domain.images import Image
 from podman.domain.pods import Pod
-from podman.errors import APIError
+from podman.errors import ImageNotFound
 
 logger = logging.getLogger("podman.containers")
 
@@ -210,8 +208,8 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             working_dir (str): Path to the working directory.
 
         Raises:
-            ImageNotFound: When Image not found by Podman service
-            APIError: When Podman service reports an error
+            ImageNotFound: when Image not found by Podman service
+            APIError: when Podman service reports an error
         """
         if isinstance(image, Image):
             image = image.id
@@ -224,12 +222,10 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         response = self.client.post(
             "/containers/create", headers={"content-type": "application/json"}, data=payload
         )
+        response.raise_for_status(not_found=ImageNotFound)
+
         body = response.json()
-
-        if response.status_code == requests.codes.created:
-            return self.get(body["Id"])
-
-        raise APIError(body["cause"], response=response, explanation=body["message"])
+        return self.get(body["Id"])
 
     # pylint: disable=too-many-locals,too-many-statements,too-many-branches
     @staticmethod

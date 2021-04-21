@@ -15,6 +15,7 @@ from podman.domain.pods_manager import PodsManager
 from podman.domain.secrets import SecretsManager
 from podman.domain.system import SystemManager
 from podman.domain.volumes import VolumesManager
+from podman.errors import SwarmNotImplementedError
 from podman.tlsconfig import TLSConfig
 
 logger = logging.getLogger("podman")
@@ -157,7 +158,7 @@ class PodmanClient(AbstractContextManager):
         Raises:
             NotImplemented:
         """
-        raise NotImplementedError("Swarm not supported.")
+        raise SwarmNotImplementedError()
 
     @property
     def containers(self) -> ContainersManager:
@@ -196,7 +197,7 @@ class PodmanClient(AbstractContextManager):
         Raises:
             NotImplemented:
         """
-        raise NotImplementedError("Swarm not supported.")
+        raise SwarmNotImplementedError()
 
     @property
     def secrets(self):
@@ -210,7 +211,7 @@ class PodmanClient(AbstractContextManager):
         Raises:
             NotImplemented:
         """
-        raise NotImplementedError("Swarm not supported.")
+        raise SwarmNotImplementedError()
 
     @property
     def swarm(self):
@@ -219,7 +220,7 @@ class PodmanClient(AbstractContextManager):
         Raises:
             NotImplemented:
         """
-        raise NotImplementedError("Swarm not supported.")
+        raise SwarmNotImplementedError()
 
     def df(self) -> Dict[str, Any]:  # pylint: disable=missing-function-docstring,invalid-name
         return SystemManager(client=self.api).df()

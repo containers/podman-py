@@ -50,9 +50,9 @@ class RunMixin:  # pylint: disable=too-few-public-methods
             Otherwise, an iterator is returned after container has finished
 
         Raises:
-            ContainerError: When Container exists with a non-zero code
-            ImageNotFound: When Image not found by Podman service
-            APIError: When Podman service reports an error
+            ContainerError: when Container exists with a non-zero code
+            ImageNotFound: when Image not found by Podman service
+            APIError: when Podman service reports an error
         """
         if isinstance(image, Image):
             image = image.id

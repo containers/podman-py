@@ -7,7 +7,7 @@ import requests_mock
 from podman import PodmanClient, tests
 from podman.domain.containers import Container
 from podman.domain.containers_manager import ContainersManager
-from podman.errors import NotFound
+from podman.errors import NotFound, ImageNotFound
 
 FIRST_CONTAINER = {
     "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
@@ -191,6 +191,20 @@ class ContainersManagerTestCase(unittest.TestCase):
 
         actual = self.client.containers.create("fedora", "/usr/bin/ls", cpu_count=9999)
         self.assertIsInstance(actual, Container)
+
+    @requests_mock.Mocker()
+    def test_create_404(self, mock):
+        mock.post(
+            tests.BASE_URL + "/libpod/containers/create",
+            status_code=404,
+            json={
+                "cause": "Image not found",
+                "message": "Image not found",
+                "response": 404,
+            },
+        )
+        with self.assertRaises(ImageNotFound):
+            self.client.containers.create("fedora", "/usr/bin/ls", cpu_count=9999)
 
     def test_create_unsupported_key(self):
         with self.assertRaises(TypeError) as e:

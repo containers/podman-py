@@ -3,13 +3,11 @@
 Notes:
     See https://docs.podman.io/en/latest/_static/api.html#tag/secrets
 """
-from typing import List, Optional, Mapping, Any
-
-import requests
+from contextlib import suppress
+from typing import Any, List, Mapping, Optional, Union
 
 from podman.api import APIClient
-from podman.domain.manager import PodmanResource, Manager
-from podman.errors.exceptions import APIError, NotFound
+from podman.domain.manager import Manager, PodmanResource
 
 
 class Secret(PodmanResource):
@@ -25,28 +23,24 @@ class Secret(PodmanResource):
 
     @property
     def name(self) -> str:
-        try:
+        with suppress(KeyError):
             return self.attrs['Spec']['Name']
-        except KeyError:
-            return ""
+        return ""
 
-    def remove(self, all: Optional[bool] = None):  # pylint: disable=redefined-builtin
+    def remove(
+        self,
+        all: Optional[bool] = None,  # pylint: disable=redefined-builtin
+    ):
         """Delete secret.
 
         Args:
             all: When True, delete all secrets.
 
         Raises:
-            NotFound: Secret does not exist.
-            APIError: Error returned by service.
+            NotFound: when Secret does not exist
+            APIError: when error returned by service
         """
-        response = self.client.delete(f"/secrets/{self.id}", params={"all": all})
-
-        if response.status_code == requests.codes.no_content:
-            return
-
-        body = response.json()
-        raise APIError(body["cause"], response=response, explanation=body["message"])
+        self.manager.remove(self.id, all=all)
 
 
 class SecretsManager(Manager):
@@ -64,7 +58,7 @@ class SecretsManager(Manager):
 
     def exists(self, key: str) -> bool:
         response = self.client.get(f"/secrets/{key}/json")
-        return response.status_code == requests.codes.okay
+        return response.ok
 
     # pylint is flagging 'secret_id' here vs. 'key' parameter in super.get()
     def get(self, secret_id: str) -> Secret:  # pylint: disable=arguments-differ
@@ -74,18 +68,12 @@ class SecretsManager(Manager):
             secret_id: Secret name or id.
 
         Raises:
-            NotFound: Secret does not exist.
-            APIError: Error returned by service.
+            NotFound: when Secret does not exist
+            APIError: when error returned by service
         """
         response = self.client.get(f"/secrets/{secret_id}/json")
-        body = response.json()
-
-        if response.status_code == requests.codes.okay:
-            return self.prepare_model(attrs=body)
-
-        if response.status_code == 404:
-            raise NotFound(body["cause"], response=response, explanation=body["message"])
-        raise APIError(body["cause"], response=response, explanation=body["message"])
+        response.raise_for_status()
+        return self.prepare_model(attrs=(response.json()))
 
     def list(self, **kwargs) -> List[Secret]:
         """Report on Secrets.
@@ -94,14 +82,11 @@ class SecretsManager(Manager):
             filters (Dict[str, Any]): Ignored.
 
         Raises:
-            APIError: When error returned by service.
+            APIError: when error returned by service
         """
         response = self.client.get("/secrets/json")
-        body = response.json()
-
-        if response.status_code == requests.codes.okay:
-            return [self.prepare_model(attrs=item) for item in body]
-        raise APIError(body["cause"], response=response, explanation=body["message"])
+        response.raise_for_status()
+        return [self.prepare_model(attrs=item) for item in response.json()]
 
     def create(
         self,
@@ -119,15 +104,38 @@ class SecretsManager(Manager):
             driver: Secret driver.
 
         Raises:
-            APIError when service returns an error.
+            APIError: when service returns an error
         """
         params = {
             "name": name,
             "driver": driver,
         }
         response = self.client.post("/secrets/create", params=params, data=data)
-        body = response.json()
+        response.raise_for_status()
 
-        if response.status_code == requests.codes.okay:
-            return self.get(body["ID"])
-        raise APIError(body["cause"], response=response, explanation=body["message"])
+        body = response.json()
+        return self.get(body["ID"])
+
+    def remove(
+        self,
+        secret_id: Union[Secret, str],
+        all: Optional[bool] = None,  # pylint: disable=redefined-builtin
+    ):
+        """Delete secret.
+
+        Args:
+            secret_id: Identifier of Secret to delete.
+            all: When True, delete all secrets.
+
+        Raises:
+            NotFound: when Secret does not exist
+            APIError: when an error returned by service
+
+        Notes:
+            Podman only.
+        """
+        if isinstance(secret_id, Secret):
+            secret_id = secret_id.id
+
+        response = self.client.delete(f"/secrets/{secret_id}", params={"all": all})
+        response.raise_for_status()

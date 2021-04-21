@@ -84,7 +84,7 @@ class DockerException(Exception):
     """Base class for exception hierarchy.
 
     Notes:
-        * Provided for compatibility.
+        Provided for compatibility.
     """
 
 
@@ -144,3 +144,13 @@ class ContainerError(PodmanError):
 
 class InvalidArgument(PodmanError):
     """Parameter to method/function was not valid."""
+
+
+class SwarmNotImplementedError(NotImplementedError):
+    """Raises on attempted swarm operations."""
+
+    def __init__(self, message: Optional[str] = None):
+        if message is None:
+            super().__init__("Swarm operations are not supported by Podman service.")
+            return
+        super().__init__(message)

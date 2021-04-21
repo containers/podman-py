@@ -3,7 +3,7 @@ import unittest
 import requests_mock
 
 from podman import PodmanClient, tests
-from podman.domain.volumes import Volume
+from podman.domain.volumes import Volume, VolumesManager
 
 FIRST_VOLUME = {
     "CreatedAt": "1985-04-12T23:20:50.52Z",
@@ -33,7 +33,9 @@ class VolumeTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_remove(self, mock):
         adapter = mock.delete(tests.BASE_URL + "/libpod/volumes/dbase?force=True", status_code=204)
-        volume = Volume(attrs=FIRST_VOLUME, client=self.client.api)
+        vol_manager = VolumesManager(self.client.api)
+        volume = vol_manager.prepare_model(attrs=FIRST_VOLUME)
+
         volume.remove(force=True)
         self.assertTrue(adapter.called_once)
 

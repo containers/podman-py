@@ -50,6 +50,7 @@ class NetworksIntegrationTest(base.IntegrationTest):
                 ipam=NetworksIntegrationTest.ipam,
             )
             self.assertEqual(network.name, "integration_test")
+            self.assertTrue(self.client.networks.exists(network.name))
 
         with self.subTest("Inspect Network"):
             network = self.client.networks.get("integration_test")

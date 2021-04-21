@@ -4,6 +4,7 @@ import requests_mock
 
 from podman import PodmanClient, tests
 from podman.domain.pods import Pod
+from podman.domain.pods_manager import PodsManager
 from podman.errors import NotFound
 
 FIRST_POD = {
@@ -108,8 +109,9 @@ class PodTestCase(unittest.TestCase):
                 "Id": "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8",
             },
         )
+        pod_manager = PodsManager(client=self.client.api)
+        pod = pod_manager.prepare_model(attrs=FIRST_POD)
 
-        pod = Pod(attrs=FIRST_POD, client=self.client.api)
         pod.remove(force=True)
         self.assertTrue(adapter.called_once)
 

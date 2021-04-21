@@ -23,7 +23,8 @@ def _api_version(release: str, significant: int = 3) -> str:
     """Return API version removing any additional identifiers from the release version.
 
     Notes:
-        This is a simple lexicographical parsing, no semantics are applied, e.g. semver checking."""
+        This is a simple lexicographical parsing, no semantics are applied, e.g. semver checking.
+    """
     items = re.split(r"\.|-|\+", release)
     parts = items[0:significant]
     return ".".join(parts)
