@@ -12,13 +12,14 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 #
-"""networks calls integration tests"""
-
+"""Network integration tests."""
+import os
+import random
 import unittest
+from contextlib import suppress
 
 import podman.tests.integration.base as base
 from podman import PodmanClient
-from podman.domain.containers import Container
 from podman.domain.ipam import IPAMConfig, IPAMPool
 from podman.errors import NotFound
 
@@ -26,7 +27,7 @@ from podman.errors import NotFound
 class NetworksIntegrationTest(base.IntegrationTest):
     """networks call integration test"""
 
-    pool = IPAMPool(subnet="172.16.0.0/12", iprange="172.16.0.0/16", gateway="172.31.255.254")
+    pool = IPAMPool(subnet="172.16.0.0/16", iprange="172.16.0.0/24", gateway="172.16.0.1")
 
     ipam = IPAMConfig(pool_configs=[pool])
 
@@ -34,6 +35,9 @@ class NetworksIntegrationTest(base.IntegrationTest):
         super().setUp()
         self.client = PodmanClient(base_url=self.socket_uri)
         self.addCleanup(self.client.close)
+
+        with suppress(NotFound):
+            self.client.networks.get("integration_test").remove(force=True)
 
     def test_network_crud(self):
         """integration: networks create and remove calls"""
@@ -63,10 +67,14 @@ class NetworksIntegrationTest(base.IntegrationTest):
             with self.assertRaises(NotFound):
                 self.client.networks.get("integration_test")
 
-    # @unittest.skipIf(os.geteuid() != 0, 'Skipping, not running as root')
-    @unittest.skip("Additionally network tests need to segregate by network")
+    @unittest.skipIf(os.geteuid() != 0, 'Skipping, not running as root')
     def test_network_connect(self):
-        alpine_container = Container()
+        self.alpine_image = self.client.images.pull("quay.io/libpod/alpine", tag="latest")
+
+        random_string = f"{random.getrandbits(160):x}"
+        container = self.client.containers.create(
+            self.alpine_image, command=["echo", random_string]
+        )
 
         with self.subTest("Create Network"):
             network = self.client.networks.create(
@@ -77,10 +85,9 @@ class NetworksIntegrationTest(base.IntegrationTest):
             )
             self.assertEqual(network.name, "integration_test")
 
-        # TODO implement network.containers
         with self.subTest("Connect container to Network"):
             pre_count = network.containers
-            network.connect(container=alpine_container)
+            network.connect(container=container)
             network.reload()
 
             post_count = network.containers
@@ -88,7 +95,7 @@ class NetworksIntegrationTest(base.IntegrationTest):
 
         with self.subTest("Disconnect container from Network"):
             pre_count = network.containers
-            network.disconnect(container=alpine_container)
+            network.disconnect(container=container)
             network.reload()
 
             post_count = network.containers
