@@ -1,13 +1,13 @@
 """APIClient for connecting to Podman service."""
+import json
 import urllib.parse
-from typing import IO, Any, ClassVar, Iterable, List, Mapping, Optional, Tuple, Union
+from typing import IO, Any, ClassVar, Iterable, List, Mapping, Optional, Tuple, Union, Type
 
 import requests
-from requests import Response
 
 from podman import api
 from podman.api.uds import UDSAdapter
-from podman.errors import APIError
+from podman.errors import APIError, NotFound
 from podman.tlsconfig import TLSConfig
 
 _Data = Union[
@@ -22,6 +22,44 @@ _Data = Union[
 
 _Timeout = Union[None, float, Tuple[float, float], Tuple[float, None]]
 """Type alias for request timeout parameter."""
+
+
+class APIResponse:
+    """APIResponse proxy requests.Response objects.
+
+    Override raise_for_status() to implement Podman API binding errors.
+    All other methods and attributes forwarded to original Response.
+    """
+
+    def __init__(self, response: requests.Response):
+        """Initialize APIResponse.
+
+        Args:
+            response: the requests.Response to provide implementation
+        """
+        self._response = response
+
+    def __getattr__(self, item: str):
+        """Forward any query for an attribute not defined in this proxy class to wrapped class."""
+        return getattr(self._response, item)
+
+    def raise_for_status(
+        self, not_found: Type[APIError] = NotFound
+    ) -> None:  # pylint: disable=arguments-differ
+        """Raises exception when Podman service reports one."""
+        if self.status_code < 400:
+            return
+
+        try:
+            body = self.json()
+            cause = body["cause"]
+            message = body["message"]
+        except (json.decoder.JSONDecodeError, KeyError):
+            cause = message = self.text
+
+        if self.status_code == requests.codes.not_found:
+            raise not_found(cause, response=self._response, explanation=message)
+        raise APIError(cause, response=self._response, explanation=message)
 
 
 class APIClient(requests.Session):
@@ -47,7 +85,7 @@ class APIClient(requests.Session):
         """Instantiate APIClient object.
 
         Raises:
-            ValueError: when a parameter is incorrect.
+            ValueError: when a parameter is incorrect
         """
         super().__init__()
 
@@ -91,7 +129,7 @@ class APIClient(requests.Session):
         timeout: _Timeout = None,
         stream: Optional[bool] = False,
         **kwargs,
-    ) -> Response:
+    ) -> APIResponse:
         """HTTP DELETE operation against configured Podman service.
 
         Args:
@@ -105,7 +143,7 @@ class APIClient(requests.Session):
             compatible: Will override the default path prefix with compatible prefix
 
         Raises:
-            APIError: when service returns an Error.
+            APIError: when service returns an error
         """
         return self._request(
             "DELETE",
@@ -125,7 +163,7 @@ class APIClient(requests.Session):
         timeout: _Timeout = None,
         stream: Optional[bool] = False,
         **kwargs,
-    ) -> Response:
+    ) -> APIResponse:
         """HTTP GET operation against configured Podman service.
 
         Args:
@@ -136,11 +174,10 @@ class APIClient(requests.Session):
             stream: Return iterator for content vs reading all content into memory
 
         Keyword Args:
-            compatible: Will override the default path prefix with compatible prefix with
-                compatible prefix
+            compatible: Will override the default path prefix with compatible prefix
 
         Raises:
-            APIError: when service returns an Error.
+            APIError: when service returns an error
         """
         return self._request(
             "GET",
@@ -160,7 +197,7 @@ class APIClient(requests.Session):
         timeout: _Timeout = None,
         stream: Optional[bool] = False,
         **kwargs,
-    ) -> Response:
+    ) -> APIResponse:
         """HTTP HEAD operation against configured Podman service.
 
         Args:
@@ -174,7 +211,7 @@ class APIClient(requests.Session):
             compatible: Will override the default path prefix with compatible prefix
 
         Raises:
-            APIError: when service returns an Error.
+            APIError: when service returns an error
         """
         return self._request(
             "HEAD",
@@ -195,7 +232,7 @@ class APIClient(requests.Session):
         timeout: _Timeout = None,
         stream: Optional[bool] = False,
         **kwargs,
-    ) -> Response:
+    ) -> APIResponse:
         """HTTP POST operation against configured Podman service.
 
         Args:
@@ -210,7 +247,7 @@ class APIClient(requests.Session):
             compatible: Will override the default path prefix with compatible prefix
 
         Raises:
-            APIError: when service returns an Error.
+            APIError: when service returns an error
         """
         return self._request(
             "POST",
@@ -232,7 +269,7 @@ class APIClient(requests.Session):
         timeout: _Timeout = None,
         stream: Optional[bool] = False,
         **kwargs,
-    ) -> Response:
+    ) -> APIResponse:
         """HTTP PUT operation against configured Podman service.
 
         Args:
@@ -247,7 +284,7 @@ class APIClient(requests.Session):
             compatible: Will override the default path prefix with compatible prefix
 
         Raises:
-            APIError: when service returns an Error.
+            APIError: when service returns an error
         """
         return self._request(
             "PUT",
@@ -270,7 +307,7 @@ class APIClient(requests.Session):
         timeout: _Timeout = None,
         stream: Optional[bool] = None,
         **kwargs,
-    ) -> Response:
+    ) -> APIResponse:
         """HTTP operation against configured Podman service.
 
         Args:
@@ -284,7 +321,7 @@ class APIClient(requests.Session):
             compatible: Will override the default path prefix with compatible prefix
 
         Raises:
-            APIError: when service returns an Error.
+            APIError: when service returns an error
         """
         if timeout is None:
             timeout = api.DEFAULT_TIMEOUT
@@ -297,14 +334,16 @@ class APIClient(requests.Session):
         uri = self.base_url + path_prefix + path
 
         try:
-            return self.request(
-                method.upper(),
-                uri,
-                params=params,
-                data=data,
-                headers=(headers or dict()),
-                timeout=timeout,
-                stream=stream,
+            return APIResponse(
+                self.request(
+                    method.upper(),
+                    uri,
+                    params=params,
+                    data=data,
+                    headers=(headers or dict()),
+                    timeout=timeout,
+                    stream=stream,
+                )
             )
         except OSError as e:
             raise APIError(uri, explanation=f"{method.upper()} operation failed") from e

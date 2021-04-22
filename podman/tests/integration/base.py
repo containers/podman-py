@@ -25,10 +25,10 @@ class IntegrationTest(fixtures.TestWithFixtures):
     """Base Integration test case.
 
     Notes:
-        Logging for the Podman service configured here for later capture, this configuration is
-            inherited by other libraries like unittest and requests.
-        Logging output will start with stdout from the Podman service events, followed by
-            results and logging captured by the unittest module test runner.
+        - Logging for the Podman service configured here for later capture, this configuration is
+          inherited by other libraries like unittest and requests.
+        - Logging output will start with stdout from the Podman service events, followed by
+          results and logging captured by the unittest module test runner.
     """
 
     podman: str = None

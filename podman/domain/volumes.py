@@ -1,6 +1,6 @@
 """Model and Manager for Volume resources."""
 import logging
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional, Type, Union
 
 import requests
 
@@ -31,17 +31,9 @@ class Volume(PodmanResource):
             force: When true, force deletion of in-use volume
 
         Raises:
-            APIError when service reports an error
+            APIError: when service reports an error
         """
-        response = self.client.delete(f"/volumes/{self.name}", params={"force": force})
-
-        if response.status_code == requests.codes.no_content:
-            return
-
-        data = response.json()
-        if response.status_code == requests.codes.not_found:
-            raise NotFound(data["cause"], response=response, explanation=data["message"])
-        raise APIError(data["cause"], response=response, explanation=data["message"])
+        self.manager.remove(self.name, force=force)
 
 
 class VolumesManager(Manager):
@@ -63,7 +55,7 @@ class VolumesManager(Manager):
             labels (Dict[str, str]): Labels to apply to volume
 
         Raises:
-            APIError when service reports error
+            APIError: when service reports error
         """
         data = {
             "Driver": kwargs.get("driver"),
@@ -76,16 +68,12 @@ class VolumesManager(Manager):
             data=api.prepare_body(data),
             headers={"Content-Type": "application/json"},
         )
-        data = response.json()
-
-        if response.status_code == requests.codes.created:
-            return self.prepare_model(attrs=data)
-
-        raise APIError(data["cause"], response=response, explanation=data["message"])
+        response.raise_for_status()
+        return self.prepare_model(attrs=(response.json()))
 
     def exists(self, key: str) -> bool:
         response = self.client.get(f"/volumes/{key}/exists")
-        return response.status_code == requests.codes.no_content
+        return response.ok
 
     # pylint is flagging 'volume_id' here vs. 'key' parameter in super.get()
     def get(self, volume_id: str) -> Volume:  # pylint: disable=arguments-differ
@@ -95,21 +83,12 @@ class VolumesManager(Manager):
             volume_id: Volume id or name for which to search
 
         Raises:
-            NotFound if volume could not be found
-            APIError when service reports an error
+            NotFound: when volume could not be found
+            APIError: when service reports an error
         """
-        response = self.client.get(f"/volumes/{volume_id}")
-
-        if response.status_code == requests.codes.not_found:
-            raise NotFound(
-                response.text, response=response, explanation=f"Failed to find volume '{volume_id}'"
-            )
-
-        data = response.json()
-        if response.status_code != requests.codes.okay:
-            raise APIError(data["cause"], response=response, explanation=data["message"])
-
-        return self.prepare_model(attrs=data)
+        response = self.client.get(f"/volumes/{volume_id}/json")
+        response.raise_for_status()
+        return self.prepare_model(attrs=response.json())
 
     def list(self, *_, **kwargs) -> List[Volume]:
         """Report on volumes.
@@ -121,16 +100,13 @@ class VolumesManager(Manager):
                 - name (str): filter by volume's name
         """
         filters = api.prepare_filters(kwargs.get("filters"))
-        response = self.client.get("/volumes", params={"filters": filters})
+        response = self.client.get("/volumes/json", params={"filters": filters})
 
         if response.status_code == requests.codes.not_found:
             return []
+        response.raise_for_status()
 
-        body = response.json()
-        if response.status_code != requests.codes.okay:
-            raise APIError(body["cause"], response=response, explanation=body["message"])
-
-        return [self.prepare_model(i) for i in body]
+        return [self.prepare_model(i) for i in response.json()]
 
     def prune(
         self, filters: Optional[Dict[str, str]] = None  # pylint: disable=unused-argument
@@ -146,7 +122,7 @@ class VolumesManager(Manager):
                 - SpaceReclaimed (int): Amount of disk space reclaimed in bytes.
 
         Raises:
-            APIError when service reports error
+            APIError: when service reports error
         """
         response = self.client.post("/volumes/prune")
         data = response.json()
@@ -167,3 +143,28 @@ class VolumesManager(Manager):
             space_reclaimed += item["Size"]
 
         return {"VolumesDeleted": volumes, "SpaceReclaimed": space_reclaimed}
+
+    def remove(self, name: Union[Volume, str], force: Optional[bool] = None) -> None:
+        """Delete a volume.
+
+        Args:
+            name: Identifier for Volume to be deleted.
+            force: When true, force deletion of in-use volume
+
+        Raises:
+            APIError: when service reports an error
+
+        Notes:
+            Podman only.
+        """
+        if isinstance(name, Volume):
+            name = name.name
+        response = self.client.delete(f"/volumes/{name}", params={"force": force})
+
+        if response.status_code == requests.codes.no_content:
+            return
+
+        data = response.json()
+        if response.status_code == requests.codes.not_found:
+            raise NotFound(data["cause"], response=response, explanation=data["message"])
+        raise APIError(data["cause"], response=response, explanation=data["message"])

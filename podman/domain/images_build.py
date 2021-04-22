@@ -1,5 +1,4 @@
 """Mixin for Image build support."""
-import itertools
 import json
 import logging
 import pathlib
@@ -9,11 +8,11 @@ import shutil
 import tempfile
 from typing import Any, Dict, Iterator, List, Tuple
 
-import requests
+import itertools
 
 from podman import api
 from podman.domain.images import Image
-from podman.errors import APIError, BuildError, PodmanError
+from podman.errors import BuildError, PodmanError, ImageNotFound
 
 logger = logging.getLogger("podman.images")
 
@@ -68,9 +67,9 @@ class BuildMixin:
             second item is the build logs
 
         Raises:
-            BuildError: when there is an error during the build.
-            APIError: when service returns an error.
-            TypeError: when neither path nor fileobj is not specified.
+            BuildError: when there is an error during the build
+            APIError: when service returns an error
+            TypeError: when neither path nor fileobj is not specified
         """
 
         params = self._render_params(kwargs)
@@ -111,9 +110,7 @@ class BuildMixin:
         if hasattr(path, "cleanup"):
             path.cleanup()
 
-        if response.status_code != requests.codes.okay:
-            body = response.json()
-            raise APIError(body["cause"], response=response, explanation=body["message"])
+        response.raise_for_status(not_found=ImageNotFound)
 
         image_id = unknown = None
         marker = re.compile(r"(^[0-9a-f]+)\n$")

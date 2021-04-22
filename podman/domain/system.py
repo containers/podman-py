@@ -2,10 +2,7 @@
 import logging
 from typing import Any, Dict, Optional
 
-import requests
-
 from podman.api.client import APIClient
-from podman.errors import APIError
 
 logger = logging.getLogger("podman.system")
 
@@ -28,22 +25,14 @@ class SystemManager:
             dict: Keyed by resource categories and their data usage.
         """
         response = self.client.get("/system/df")
-        body = response.json()
-
-        if response.status_code == requests.codes.okay:
-            return body
-
-        raise APIError(body["cause"], response=response, explanation=body["message"])
+        response.raise_for_status()
+        return response.json()
 
     def info(self, *_, **__) -> Dict[str, Any]:
         """Returns information on Podman service."""
         response = self.client.get("/info")
-        body = response.json()
-
-        if response.status_code == requests.codes.okay:
-            return body
-
-        raise APIError(body["cause"], response=response, explanation=body["message"])
+        response.raise_for_status()
+        return response.json()
 
     def login(
         self,
@@ -70,9 +59,7 @@ class SystemManager:
     def ping(self) -> bool:
         """Returns True if service responded with OK."""
         response = self.client.head("/_ping")
-        if response.status_code == requests.codes.okay:
-            return True
-        return False
+        return response.ok
 
     def version(self, **kwargs) -> Dict[str, Any]:
         """Get version information from service.
@@ -81,11 +68,9 @@ class SystemManager:
             api_version (bool): When True include API version
         """
         response = self.client.get("/version")
+        response.raise_for_status()
+
         body = response.json()
-
-        if response.status_code == requests.codes.okay:
-            if not kwargs.get("api_version", True):
-                del body["APIVersion"]
-            return body
-
-        raise APIError(body["cause"], response=response, explanation=body["message"])
+        if not kwargs.get("api_version", True):
+            del body["APIVersion"]
+        return body

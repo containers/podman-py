@@ -61,11 +61,11 @@ class RegistryData(PodmanResource):
             True if platform is available
 
         Raises:
-            InvalidArgument: when platform value is not valid.
-            APIError when service reports an error.
+            InvalidArgument: when platform value is not valid
+            APIError: when service reports an error
 
         Note:
-            libpod API does not support variant so it is ignored.
+            Podman API does not support "variant" therefore it is ignored.
         """
         invalid_platform = InvalidArgument(f"'{platform}' is not a valid platform descriptor.")
 

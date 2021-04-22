@@ -84,7 +84,7 @@ class VolumesManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_get(self, mock):
         mock.get(
-            tests.BASE_URL + "/libpod/volumes/dbase",
+            tests.BASE_URL + "/libpod/volumes/dbase/json",
             json=FIRST_VOLUME,
         )
 
@@ -96,7 +96,7 @@ class VolumesManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_get_404(self, mock):
         adapter = mock.get(
-            tests.BASE_URL + "/libpod/volumes/dbase",
+            tests.BASE_URL + "/libpod/volumes/dbase/json",
             text="Not Found",
             status_code=404,
         )
@@ -107,7 +107,7 @@ class VolumesManagerTestCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_list(self, mock):
-        mock.get(tests.BASE_URL + "/libpod/volumes", json=[FIRST_VOLUME, SECOND_VOLUME])
+        mock.get(tests.BASE_URL + "/libpod/volumes/json", json=[FIRST_VOLUME, SECOND_VOLUME])
 
         actual = self.client.volumes.list(filters={"driver": "local"})
         self.assertEqual(len(actual), 2)
@@ -120,7 +120,7 @@ class VolumesManagerTestCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_list_404(self, mock):
-        mock.get(tests.BASE_URL + "/libpod/volumes", text="Not Found", status_code=404)
+        mock.get(tests.BASE_URL + "/libpod/volumes/json", text="Not Found", status_code=404)
 
         actual = self.client.volumes.list()
         self.assertIsInstance(actual, list)

@@ -10,13 +10,11 @@ import logging
 from contextlib import suppress
 from typing import Any, Dict, List, Optional, Type
 
-import requests
-
 import podman.api.http_utils
 from podman import api
 from podman.domain.manager import Manager, PodmanResource
 from podman.domain.networks import Network
-from podman.errors import APIError, NotFound
+from podman.errors import APIError
 
 logger = logging.getLogger("podman.networks")
 
@@ -27,91 +25,6 @@ class NetworksManager(Manager):
     @property
     def resource(self) -> Type[PodmanResource]:
         return Network
-
-    def exists(self, key: str) -> bool:
-        response = self.client.get(f"/networks/{key}/exists")
-        return response.status_code == requests.codes.no_content
-
-    def list(self, **kwargs) -> List[Network]:
-        """Report on networks.
-
-        Keyword Args:
-            names (List[str]): List of names to filter by.
-            ids (List[str]): List of ids to filter by.
-            filters (Mapping[str,str]): Criteria for listing networks.
-                Available filters:
-                - driver="bridge": Matches a network's driver. Only "bridge" is supported.
-                - label=(Union[str, List[str]]): format either "key", "key=value"
-                    or a list of such.
-                - type=(str): Filters networks by type, legal values are:
-                    - "custom"
-                    - "builtin"
-                - plugin=(List[str]]): Matches CNI plugins included in a network,
-                    legal values are (Podman only):
-                        - bridge
-                        - portmap
-                        - firewall
-                        - tuning
-                        - dnsname
-                        - macvlan
-            greedy (bool): Fetch more details for each network individually.
-                You might want this to get the containers attached to them. (ignored)
-
-        Raises:
-            APIError: Error returned by service.
-        """
-        compatible = kwargs.get("compatible", True)
-
-        filters = kwargs.get("filters", dict())
-        filters["name"] = kwargs.get("names")
-        filters["id"] = kwargs.get("ids")
-        filters = api.prepare_filters(filters)
-
-        params = {"filters": filters}
-        path = f"/networks{'' if compatible else '/json'}"
-
-        response = self.client.get(path, params=params, compatible=compatible)
-        body = response.json()
-
-        if response.status_code != requests.codes.okay:
-            raise APIError(body["cause"], response=response, explanation=body["message"])
-
-        return [self.prepare_model(i) for i in body]
-
-    # pylint is flagging 'network_id' here vs. 'key' parameter in super.get()
-    def get(self, network_id: str, *_, **kwargs) -> Network:  # pylint: disable=arguments-differ
-        """Return information for the network_id.
-
-        Args:
-            network_id: Network name or id.
-
-        Keyword Args:
-            compatible (bool): Should compatible API be used. Default: True
-
-        Raises:
-            NotFound: Network does not exist.
-            APIError: Error returned by service.
-
-        Note:
-            The compatible API is used, this allows the server to provide dynamic fields.
-                id is the most important example.
-        """
-        compatible = kwargs.get("compatible", True)
-
-        path = f"/networks/{network_id}" + ("" if compatible else "/json")
-
-        response = self.client.get(path, compatible=compatible)
-        body = response.json()
-
-        if response.status_code != requests.codes.okay:
-            if response.status_code == requests.codes.not_found:
-                raise NotFound(body["cause"], response=response, explanation=body["message"])
-            raise APIError(body["cause"], response=response, explanation=body["message"])
-
-        if not compatible:
-            body = body[0]
-
-        return self.prepare_model(attrs=body)
 
     def create(self, name: str, **kwargs) -> Network:
         """Create a Network.
@@ -134,7 +47,7 @@ class NetworksManager(Manager):
             scope (str): Ignored, always "local".
 
         Raises:
-            APIError when Podman service reports an error
+            APIError: when Podman service reports an error
         """
         data = {
             "DisabledDNS": kwargs.get("disabled_dns"),
@@ -178,12 +91,87 @@ class NetworksManager(Manager):
             data=podman.api.http_utils.prepare_body(data),
             headers={"Content-Type": "application/json"},
         )
-        data = response.json()
+        response.raise_for_status()
 
-        if response.status_code != requests.codes.okay:
-            raise APIError(data["cause"], response=response, explanation=data["message"])
+        return self.get(name, **kwargs)
 
-        return self.get(network_id=name, **kwargs)
+    def exists(self, key: str) -> bool:
+        response = self.client.get(f"/networks/{key}/exists")
+        return response.ok
+
+    # pylint is flagging 'network_id' here vs. 'key' parameter in super.get()
+    def get(self, network_id: str, *_, **kwargs) -> Network:  # pylint: disable=arguments-differ
+        """Return information for the network_id.
+
+        Args:
+            network_id: Network name or id.
+
+        Keyword Args:
+            compatible (bool): Should compatible API be used. Default: True
+
+        Raises:
+            NotFound: when Network does not exist
+            APIError: when error returned by service
+
+        Note:
+            The compatible API is used, this allows the server to provide dynamic fields.
+                id is the most important example.
+        """
+        compatible = kwargs.get("compatible", True)
+
+        path = f"/networks/{network_id}" + ("" if compatible else "/json")
+
+        response = self.client.get(path, compatible=compatible)
+        response.raise_for_status()
+
+        body = response.json()
+        if not compatible:
+            body = body[0]
+
+        return self.prepare_model(attrs=body)
+
+    def list(self, **kwargs) -> List[Network]:
+        """Report on networks.
+
+        Keyword Args:
+            names (List[str]): List of names to filter by.
+            ids (List[str]): List of ids to filter by.
+            filters (Mapping[str,str]): Criteria for listing networks.
+                Available filters:
+                - driver="bridge": Matches a network's driver. Only "bridge" is supported.
+                - label=(Union[str, List[str]]): format either "key", "key=value"
+                    or a list of such.
+                - type=(str): Filters networks by type, legal values are:
+                    - "custom"
+                    - "builtin"
+                - plugin=(List[str]]): Matches CNI plugins included in a network,
+                    legal values are (Podman only):
+                        - bridge
+                        - portmap
+                        - firewall
+                        - tuning
+                        - dnsname
+                        - macvlan
+            greedy (bool): Fetch more details for each network individually.
+                You might want this to get the containers attached to them. (ignored)
+
+        Raises:
+            APIError: when error returned by service
+        """
+        compatible = kwargs.get("compatible", True)
+
+        filters = kwargs.get("filters", dict())
+        filters["name"] = kwargs.get("names")
+        filters["id"] = kwargs.get("ids")
+        filters = api.prepare_filters(filters)
+
+        params = {"filters": filters}
+        path = f"/networks{'' if compatible else '/json'}"
+
+        response = self.client.get(path, params=params, compatible=compatible)
+        response.raise_for_status()
+
+        return [self.prepare_model(i) for i in response.json()]
 
     def prune(self, filters: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
         """Delete unused Networks.
@@ -196,7 +184,7 @@ class NetworksManager(Manager):
             compatible (bool): Should compatible API be used. Default: True
 
         Raises:
-            APIError when service reports error
+            APIError: when service reports error
 
         Notes:
             SpaceReclaimed always reported as 0
@@ -206,11 +194,9 @@ class NetworksManager(Manager):
         response = self.client.post(
             "/networks/prune", filters=api.prepare_filters(filters), compatible=compatible
         )
+        response.raise_for_status()
+
         body = response.json()
-
-        if response.status_code != requests.codes.okay:
-            raise APIError(body["cause"], response=response, explanation=body["message"])
-
         if compatible:
             return body
 
@@ -225,3 +211,28 @@ class NetworksManager(Manager):
             deleted.append(item["Name"])
 
         return {"NetworksDeleted": deleted, "SpaceReclaimed": 0}
+
+    def remove(self, name: [Network, str], force: Optional[bool] = None, **kwargs) -> None:
+        """Remove this network.
+
+        Args:
+            name: Identifier of Network to delete.
+            force: Remove network and any associated containers
+
+        Keyword Args:
+            compatible (bool): Should compatible API be used. Default: True
+
+        Raises:
+            APIError: when Podman service reports an error
+
+        Notes:
+            Podman only.
+        """
+        if isinstance(name, Network):
+            name = name.name
+
+        compatible = kwargs.get("compatible", True)
+        response = self.client.delete(
+            f"/networks/{name}", params={"force": force}, compatible=compatible
+        )
+        response.raise_for_status()

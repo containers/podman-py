@@ -46,6 +46,7 @@ class ImagesIntegrationTest(base.IntegrationTest):
             image = self.client.images.pull("quay.io/libpod/alpine", tag="latest")
             self.assertIsInstance(image, Image)
             self.assertIn("quay.io/libpod/alpine:latest", image.tags)
+            self.assertTrue(self.client.images.exists(image.id))
 
         with self.subTest("Inspect Alpine Image"):
             image = self.client.images.get("quay.io/libpod/alpine")

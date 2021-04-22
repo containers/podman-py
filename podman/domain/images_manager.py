@@ -27,7 +27,7 @@ class ImagesManager(BuildMixin, Manager):
     def exists(self, key: str) -> bool:
         key = urllib.parse.quote_plus(key)
         response = self.client.get(f"/images/{key}/exists")
-        return response.status_code == requests.codes.no_content
+        return response.ok
 
     def list(self, **kwargs) -> List[Image]:
         """Report on images.
@@ -41,7 +41,7 @@ class ImagesManager(BuildMixin, Manager):
                 - label (Union[str, List[str]]): format either "key", "key=value"
 
         Raises:
-            APIError: when service returns an error.
+            APIError: when service returns an error
         """
         params = {
             "all": kwargs.get("all"),
@@ -49,15 +49,11 @@ class ImagesManager(BuildMixin, Manager):
             "filters": api.prepare_filters(kwargs.get("filters")),
         }
         response = self.client.get("/images/json", params=params)
-        body = response.json()
-
         if response.status_code == requests.codes.not_found:
             return []
+        response.raise_for_status()
 
-        if response.status_code != requests.codes.ok:
-            raise APIError(body["cause"], response=response, explanation=body["message"])
-
-        return [self.prepare_model(attrs=i) for i in body]
+        return [self.prepare_model(attrs=i) for i in response.json()]
 
     # pylint is flagging 'name' here vs. 'key' parameter in super.get()
     def get(self, name: str) -> Image:  # pylint: disable=arguments-differ
@@ -67,19 +63,14 @@ class ImagesManager(BuildMixin, Manager):
             name: Image id or name for which to search
 
         Raises:
-            ImageNotFound: when image does not exist.
-            APIError: when service returns an error.
+            ImageNotFound: when image does not exist
+            APIError: when service returns an error
         """
         name = urllib.parse.quote_plus(name)
         response = self.client.get(f"/images/{name}/json")
-        body = response.json()
+        response.raise_for_status(not_found=ImageNotFound)
 
-        if response.status_code == requests.codes.ok:
-            return self.prepare_model(body)
-
-        if response.status_code == requests.codes.not_found:
-            raise ImageNotFound(body["cause"], response=response, explanation=body["message"])
-        raise APIError(body["cause"], response=response, explanation=body["message"])
+        return self.prepare_model(response.json())
 
     def get_registry_data(
         self,
@@ -93,7 +84,7 @@ class ImagesManager(BuildMixin, Manager):
             auth_config: Override configured credentials. Keys username and password are required.
 
         Raises:
-            APIError: when service returns an error.
+            APIError: when service returns an error
         """
         # FIXME populate attrs using auth_config
         image = self.get(name)
@@ -111,7 +102,7 @@ class ImagesManager(BuildMixin, Manager):
             data: Image to be loaded in tarball format.
 
         Raises:
-            APIError: when service returns an error.
+            APIError: when service returns an error
         """
         # TODO fix podman swagger cannot use this header!
         # headers = {"Content-type": "application/x-www-form-urlencoded"}
@@ -119,11 +110,9 @@ class ImagesManager(BuildMixin, Manager):
         response = self.client.post(
             "/images/load", data=data, headers={"Content-type": "application/x-tar"}
         )
+        response.raise_for_status()
+
         body = response.json()
-
-        if response.status_code != requests.codes.ok:
-            raise APIError(body["cause"], response=response, explanation=body["message"])
-
         for item in body["Names"]:
             yield self.get(item)
 
@@ -136,7 +125,7 @@ class ImagesManager(BuildMixin, Manager):
                 - until (str): Delete images older than this timestamp.
 
         Raises:
-            APIError: when service returns an error.
+            APIError: when service returns an error
 
         Note:
             The Untagged key will always be "".
@@ -144,10 +133,7 @@ class ImagesManager(BuildMixin, Manager):
         response = self.client.post(
             "/images/prune", params={"filters": api.prepare_filters(filters)}
         )
-        body = response.json()
-
-        if response.status_code != requests.codes.ok:
-            raise APIError(body["cause"], response=response, explanation=body["message"])
+        response.raise_for_status()
 
         deleted: List[Dict[str, str]] = []
         error: List[str] = []
@@ -202,7 +188,7 @@ class ImagesManager(BuildMixin, Manager):
             tlsVerify (bool): Require TLS verification.
 
         Raises:
-            APIError: when service returns an error.
+            APIError: when service returns an error
         """
         # TODO set X-Registry-Auth
         headers = {
@@ -217,10 +203,7 @@ class ImagesManager(BuildMixin, Manager):
 
         name = urllib.parse.quote_plus(repository)
         response = self.client.post(f"/images/{name}/push", params=params, headers=headers)
-
-        if response.status_code != requests.codes.ok:
-            body = response.json()
-            raise APIError(body["cause"], response=response, explanation=body["message"])
+        response.raise_for_status(not_found=ImageNotFound)
 
         tag_count = 0 if tag is None else 1
         body = [
@@ -262,8 +245,8 @@ class ImagesManager(BuildMixin, Manager):
         """Request Podman service to pull image(s) from repository.
 
         Args:
-            repository: repository to pull from
-            tag: image tag to pull, if None all tags in repository are pulled.
+            repository: Repository to pull from
+            tag: Image tag to pull. Default: "latest".
             all_tags: pull all image tags from repository.
 
         Keyword Args:
@@ -277,10 +260,15 @@ class ImagesManager(BuildMixin, Manager):
             If all_tags is True, return list of Image's rather than Image pulled.
 
         Raises:
-            APIError: when service returns an error.
+            APIError: when service returns an error
         """
         if tag is None or len(tag) == 0:
-            tag = "latest"
+            tokens = repository.split(":")
+            if len(tokens) == 2:
+                repository = tokens[0]
+                tag = tokens[1]
+            else:
+                tag = "latest"
 
         params = {
             "reference": repository,
@@ -293,15 +281,15 @@ class ImagesManager(BuildMixin, Manager):
             params["reference"] = f"{repository}:{tag}"
 
         if "platform" in kwargs:
-            platform = kwargs.get("platform")
-            ospm, arch, variant = platform.split("/")
+            tokens = kwargs.get("platform").split("/")
+            if 1 < len(tokens) > 3:
+                raise ValueError(f'\'{kwargs.get("platform")}\' is not a legal platform.')
 
-            if ospm is not None:
-                params["OS"] = ospm
-            if arch is not None:
-                params["Arch"] = arch
-            if variant is not None:
-                params["Variant"] = variant
+            params["OS"] = tokens[0]
+            if len(tokens) > 1:
+                params["Arch"] = tokens[1]
+            if len(tokens) > 2:
+                params["Variant"] = tokens[2]
 
         if "auth_config" in kwargs:
             username = kwargs["auth_config"].get("username")
@@ -311,10 +299,7 @@ class ImagesManager(BuildMixin, Manager):
             params["credentials"] = f"{username}:{password}"
 
         response = self.client.post("/images/pull", params=params)
-
-        if response.status_code != requests.codes.ok:
-            body = response.json()
-            raise APIError(body["cause"], response=response, explanation=body["error"])
+        response.raise_for_status(not_found=ImageNotFound)
 
         for item in response.iter_lines():
             body = json.loads(item)
@@ -345,7 +330,8 @@ class ImagesManager(BuildMixin, Manager):
             List[Dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[str, int]]]
 
         Raises:
-            APIError: when service returns an error.
+            ImageNotFound: when image does not exist
+            APIError: when service returns an error
 
         Notes:
             The dictionaries with keys Errors and ExitCode are added.
@@ -354,13 +340,9 @@ class ImagesManager(BuildMixin, Manager):
             image = image.id
 
         response = self.client.delete(f"/images/{image}", params={"force": force})
+        response.raise_for_status(not_found=ImageNotFound)
+
         body = response.json()
-
-        if response.status_code != requests.codes.ok:
-            if response.status_code == requests.codes.not_found:
-                raise ImageNotFound(body["cause"], response=response, explanation=body["message"])
-            raise APIError(body["cause"], response=response, explanation=body["message"])
-
         results: List[Dict[str, Union[int, str]]] = []
         for key in ("Deleted", "Untagged", "Errors"):
             if key in body:
@@ -394,8 +376,5 @@ class ImagesManager(BuildMixin, Manager):
         }
 
         response = self.client.get("/images/search", params=params)
-        body = response.json()
-
-        if response.status_code == requests.codes.ok:
-            return body
-        raise APIError(body["cause"], response=response, explanation=body["message"])
+        response.raise_for_status(not_found=ImageNotFound)
+        return response.json()

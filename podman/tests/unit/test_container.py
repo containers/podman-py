@@ -8,6 +8,7 @@ import requests_mock
 
 from podman import PodmanClient, tests
 from podman.domain.containers import Container
+from podman.domain.containers_manager import ContainersManager
 from podman.errors import APIError, NotFound
 
 FIRST_CONTAINER = {
@@ -35,7 +36,8 @@ class ContainersTestCase(unittest.TestCase):
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd?v=True&force=True",
             status_code=204,
         )
-        container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
+        manager = ContainersManager(self.client.api)
+        container = manager.prepare_model(attrs=FIRST_CONTAINER)
         container.remove(v=True, force=True)
         self.assertTrue(adapter.called_once)
 
@@ -334,6 +336,11 @@ class ContainersTestCase(unittest.TestCase):
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/archive"
             "?path=deadbeef",
             status_code=404,
+            json={
+                "cause": "Container not found.",
+                "message": "Container not found.",
+                "response": 404,
+            },
         )
         container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
 

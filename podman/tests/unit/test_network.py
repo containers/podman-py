@@ -4,6 +4,7 @@ import requests_mock
 
 from podman import PodmanClient, tests
 from podman.domain.networks import Network
+from podman.domain.networks_manager import NetworksManager
 
 FIRST_NETWORK = {
     "Name": "podman",
@@ -87,7 +88,8 @@ class NetworkTestCase(unittest.TestCase):
             status_code=204,
             json={"Name": "podman", "Err": None},
         )
-        net = Network(attrs=FIRST_NETWORK, client=self.client.api)
+        net_manager = NetworksManager(client=self.client.api)
+        net = net_manager.prepare_model(attrs=FIRST_NETWORK)
 
         net.remove(force=True)
         self.assertTrue(adapter.called_once)

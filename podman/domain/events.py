@@ -4,11 +4,8 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, Optional, Union
 
-import requests
-
 from podman import api
 from podman.api.client import APIClient
-from podman.errors import APIError
 
 logger = logging.getLogger("podman.events")
 
@@ -50,9 +47,7 @@ class EventsManager:  # pylint: disable=too-few-public-methods
             "until": api.prepare_timestamp(until),
         }
         response = self.client.get("/events", params=params, stream=True)
-        if response.status_code != requests.codes.okay:
-            body = response.json()
-            raise APIError(body["cause"], response=response, explanation=body["message"])
+        response.raise_for_status()
 
         for item in response.iter_lines():
             if decode:

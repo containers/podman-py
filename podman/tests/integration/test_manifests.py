@@ -33,6 +33,7 @@ class ManifestsIntegrationTest(base.IntegrationTest):
         with self.subTest("Create"):
             manifest = self.client.manifests.create(["quay.io/unittest/alpine:latest"])
             self.assertEqual(len(manifest.attrs["manifests"]), 0)
+            self.assertTrue(self.client.manifests.exists(manifest.id))
 
             with self.assertRaises(APIError):
                 self.client.manifests.create(["123456!@#$%^"])

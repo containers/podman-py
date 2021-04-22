@@ -56,8 +56,8 @@ class PodmanResource(ABC):
         """Returns truncated identifier. 'sha256' preserved when included in the id.
 
         Notes:
-            No attempt is made to ensure the returned value is
-                semantically meaningful for all resources.
+            No attempt is made to ensure the returned value is semantically
+            meaningful for all resources.
         """
         if self.id.startswith("sha256:"):
             return self.id[:17]
@@ -81,7 +81,7 @@ class Manager(ABC):
         """Initialize Manager() object.
 
         Args:
-            client: Podman client configured to connect to Podman service.
+            client: APIClient() configured to connect to Podman service.
         """
         super().__init__()
         self.client = client
@@ -90,8 +90,9 @@ class Manager(ABC):
     def exists(self, key: str) -> bool:
         """Returns True if resource exists.
 
-        Note:
-            This method does _not_ provide any mutex mechanism.
+        Notes:
+            - Podman only.
+            - This method does _not_ provide any mutex mechanism.
         """
 
     @abstractmethod

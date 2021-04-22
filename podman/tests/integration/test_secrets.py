@@ -27,6 +27,7 @@ class SecretsIntegrationTest(base.IntegrationTest):
             secret = self.client.secrets.create(f"secret_{random_string}", secret_payload)
             self.assertGreater(len(secret.id), 0)
             self.assertGreater(len(secret.name), 0)
+            self.assertTrue(self.client.secrets.exists(secret.id))
 
         with self.subTest("Inspect"):
             actual = self.client.secrets.get(secret.id)

@@ -4,12 +4,10 @@ import urllib.parse
 from contextlib import suppress
 from typing import List, Optional, Type, Union
 
-import requests
-
 from podman import api
 from podman.domain.images import Image
 from podman.domain.manager import Manager, PodmanResource
-from podman.errors import APIError, ImageNotFound, NotFound
+from podman.errors import ImageNotFound
 
 logger = logging.getLogger("podman.manifests")
 
@@ -20,9 +18,9 @@ class Manifest(PodmanResource):
     @property
     def id(self) -> str:
         """Returns the identifier of the manifest."""
-        with suppress(KeyError, TypeError):
+        with suppress(KeyError, TypeError, IndexError):
             return self.attrs["manifests"][0]["digest"]
-        return ""
+        return self.name
 
     @property
     def name(self) -> str:
@@ -69,8 +67,8 @@ class Manifest(PodmanResource):
             variant (str):
 
         Raises:
-            ImageNotFound: When Image(s) could not be found
-            APIError: When service reports an error
+            ImageNotFound: when Image(s) could not be found
+            APIError: when service reports an error
         """
         params = {
             "all": kwargs.get("all"),
@@ -89,17 +87,13 @@ class Manifest(PodmanResource):
 
         data = api.prepare_body(params)
         response = self.client.post(f"/manifests/{self.quoted_name}/add", data=data)
-
-        if response.status_code == requests.codes.okay:
-            return self.reload()
-
-        body = response.json()
-        if response.status_code == requests.codes.not_found:
-            raise ImageNotFound(body["cause"], response=response, explanation=body["message"])
-        raise APIError(body["cause"], response=response, explanation=body["message"])
+        response.raise_for_status(not_found=ImageNotFound)
+        return self.reload()
 
     def push(
-        self, destination: str, all: Optional[bool] = None  # pylint: disable=redefined-builtin
+        self,
+        destination: str,
+        all: Optional[bool] = None,  # pylint: disable=redefined-builtin
     ) -> None:
         """Push a manifest list or image index to a registry.
 
@@ -108,46 +102,33 @@ class Manifest(PodmanResource):
             all: Push all images.
 
         Raises:
-            NotFound: When the Manifest could not be found
-            APIError: When service reports an error
+            NotFound: when the Manifest could not be found
+            APIError: when service reports an error
         """
         params = {
             "all": all,
             "destination": destination,
         }
         response = self.client.post(f"/manifests/{self.quoted_name}/push", params=params)
-
-        if response.status_code == requests.codes.okay:
-            return
-
-        body = response.json()
-        if response.status_code == requests.codes.not_found:
-            raise NotFound(body["cause"], response=response, explanation=body["message"])
-        raise APIError(body["cause"], response=response, explanation=body["message"])
+        response.raise_for_status()
 
     def remove(self, digest: str) -> None:
         """Remove Image digest from manifest list.
 
         Args:
-            digest: Image digest to be removed. Should a full Image reference be provided
+            digest: Image digest to be removed. Should a full Image reference be provided,
                 the digest will be parsed out.
 
         Raises:
-            ImageNotFound: When the Image could not be found
-            APIError: When service reports an error
+            ImageNotFound: when the Image could not be found
+            APIError: when service reports an error
         """
         if "@" in digest:
             digest = digest.split("@", maxsplit=2)[1]
 
         response = self.client.delete(f"/manifests/{self.quoted_name}", params={"digest": digest})
-
-        if response.status_code == requests.codes.okay:
-            return self.reload()
-
-        body = response.json()
-        if response.status_code == requests.codes.not_found:
-            raise ImageNotFound(body["cause"], response=response, explanation=body["message"])
-        raise APIError(body["cause"], response=response, explanation=body["message"])
+        response.raise_for_status(not_found=ImageNotFound)
+        return self.reload()
 
     def reload(self) -> None:
         """Refresh this object's data from the service."""
@@ -161,11 +142,6 @@ class ManifestsManager(Manager):
     @property
     def resource(self) -> Type[PodmanResource]:
         return Manifest
-
-    def exists(self, key: str) -> bool:
-        key = urllib.parse.quote_plus(key)
-        response = self.client.get(f"/manifests/{key}/exists")
-        return response.status_code == requests.codes.no_content
 
     def create(
         self,
@@ -181,8 +157,8 @@ class ManifestsManager(Manager):
             all: When True, add all contents from images given.
 
         Raises:
-            ValueError: When no names are provided.
-            NotFoundImage: When a given image does not exist.
+            ValueError: when no names are provided
+            NotFoundImage: when a given image does not exist
         """
         if names is None or len(names) == 0:
             raise ValueError("At least one manifest name is required.")
@@ -199,16 +175,17 @@ class ManifestsManager(Manager):
             params["all"] = all
 
         response = self.client.post("/manifests/create", params=params)
+        response.raise_for_status(not_found=ImageNotFound)
+
         body = response.json()
+        manifest = self.get(body["Id"])
+        manifest.attrs["names"] = names
+        return manifest
 
-        if response.status_code == requests.codes.okay:
-            manifest = self.get(body["Id"])
-            manifest.attrs["names"] = names
-            return manifest
-
-        if response.status_code == requests.codes.not_found:
-            raise ImageNotFound(body["cause"], response=response, explanation=body["message"])
-        raise APIError(body["cause"], response=response, explanation=body["message"])
+    def exists(self, key: str) -> bool:
+        key = urllib.parse.quote_plus(key)
+        response = self.client.get(f"/manifests/{key}/exists")
+        return response.ok
 
     def get(self, key: str) -> Manifest:
         """Returns the manifest by name.
@@ -217,24 +194,20 @@ class ManifestsManager(Manager):
             key: Manifest name for which to search
 
         Raises:
-            NotFound: When manifest could not be found.
-            APIError: When service reports an error.
+            NotFound: when manifest could not be found
+            APIError: when service reports an error
 
         Notes:
-            To have Manifest more conform with other PodmanResource's, we use the key that
-                retrieved the Manifest be its name.
+            To have Manifest conform with other PodmanResource's, we use the key that
+            retrieved the Manifest be its name.
         """
         quoted_key = urllib.parse.quote_plus(key)
         response = self.client.get(f"/manifests/{quoted_key}/json")
+        response.raise_for_status()
+
         body = response.json()
-
-        if response.status_code == requests.codes.okay:
-            body["names"] = [key]
-            return self.prepare_model(attrs=body)
-
-        if response.status_code == requests.codes.not_found:
-            raise NotFound(body["cause"], response=response, explanation=body["message"])
-        raise APIError(body["cause"], response=response, explanation=body["message"])
+        body["names"] = [key]
+        return self.prepare_model(attrs=body)
 
     def list(self, **kwargs) -> List[Manifest]:
         """Not Implemented."""

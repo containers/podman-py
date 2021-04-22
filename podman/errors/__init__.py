@@ -2,8 +2,8 @@
 
     Notes:
         'importlib' exceptions are used to differentiate between APIConnection and PodmanClient
-            Errors. Therefore, installing both APIConnection and PodmanClient is not supported.
-            PodmanClient related errors take precedence over APIConnection ones.
+        Errors. Therefore, installing both APIConnection and PodmanClient is not supported.
+        PodmanClient related errors take precedence over APIConnection ones.
 """
 import warnings
 from http.client import HTTPException
@@ -19,6 +19,7 @@ __all__ = [
     'NotFound',
     'NotFoundError',
     'PodmanError',
+    'SwarmNotImplementedError',
 ]
 
 try:
@@ -30,6 +31,7 @@ try:
         InvalidArgument,
         NotFound,
         PodmanError,
+        SwarmNotImplementedError,
     )
 except ImportError:
     pass
