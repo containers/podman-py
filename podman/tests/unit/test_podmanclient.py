@@ -27,11 +27,25 @@ class TestPodmanClient(unittest.TestCase):
                 "os": "linux",
             }
         }
-        mock.get(tests.BASE_URL + "/libpod/info", json=body)
+        adapter = mock.get(tests.LIBPOD_URL + "/info", json=body)
 
-        with PodmanClient(base_url="http+unix://localhost:9999") as client:
+        with PodmanClient(base_url=tests.BASE_SOCK) as client:
             actual = client.info()
         self.assertDictEqual(actual, body)
+        self.assertIn("User-Agent", mock.last_request.headers)
+        self.assertIn(
+            "PodmanPy/", mock.last_request.headers["User-Agent"], mock.last_request.headers
+        )
+
+    def test_swarm(self):
+        with PodmanClient(base_url=tests.BASE_SOCK) as client:
+            with self.assertRaises(NotImplementedError):
+                # concrete property
+                _ = client.swarm
+
+            with self.assertRaises(NotImplementedError):
+                # aliased property
+                _ = client.nodes
 
 
 if __name__ == '__main__':

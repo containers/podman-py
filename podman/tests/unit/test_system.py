@@ -35,7 +35,7 @@ class SystemTestCase(unittest.TestCase):
         }
 
         mock.get(
-            tests.BASE_URL + "/libpod/system/df",
+            tests.LIBPOD_URL + "/system/df",
             json=body,
         )
 
@@ -50,14 +50,14 @@ class SystemTestCase(unittest.TestCase):
                 "os": "linux",
             }
         }
-        mock.get(tests.BASE_URL + "/libpod/info", json=body)
+        mock.get(tests.LIBPOD_URL + "/info", json=body)
 
         actual = self.client.info()
         self.assertDictEqual(actual, body)
 
     @requests_mock.Mocker()
     def test_ping(self, mock):
-        mock.head(tests.BASE_URL + "/libpod/_ping")
+        mock.head(tests.LIBPOD_URL + "/_ping")
         self.assertTrue(self.client.ping())
 
     @requests_mock.Mocker()
@@ -68,7 +68,7 @@ class SystemTestCase(unittest.TestCase):
             "Arch": "amd64",
             "Os": "linux",
         }
-        mock.get(tests.BASE_URL + "/libpod/version", json=body)
+        mock.get(tests.LIBPOD_URL + "/version", json=body)
         self.assertDictEqual(self.client.version(), body)
 
 

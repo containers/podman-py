@@ -32,7 +32,7 @@ class VolumeTestCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_remove(self, mock):
-        adapter = mock.delete(tests.BASE_URL + "/libpod/volumes/dbase?force=True", status_code=204)
+        adapter = mock.delete(tests.LIBPOD_URL + "/volumes/dbase?force=True", status_code=204)
         vol_manager = VolumesManager(self.client.api)
         volume = vol_manager.prepare_model(attrs=FIRST_VOLUME)
 

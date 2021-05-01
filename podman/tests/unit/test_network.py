@@ -84,7 +84,7 @@ class NetworkTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_remove(self, mock):
         adapter = mock.delete(
-            "http+unix://localhost:9999/v1.40/networks/podman",
+            tests.COMPATIBLE_URL + "/networks/podman?force=True",
             status_code=204,
             json={"Name": "podman", "Err": None},
         )
@@ -96,9 +96,7 @@ class NetworkTestCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_connect(self, mock):
-        adapter = mock.post(
-            "http+unix://localhost:9999/v1.40/networks/podman/connect",
-        )
+        adapter = mock.post(tests.COMPATIBLE_URL + "/networks/podman/connect")
         net = Network(attrs=FIRST_NETWORK, client=self.client.api)
 
         net.connect(
@@ -122,9 +120,7 @@ class NetworkTestCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_disconnect(self, mock):
-        adapter = mock.post(
-            "http+unix://localhost:9999/v1.40/networks/podman/disconnect",
-        )
+        adapter = mock.post(tests.COMPATIBLE_URL + "/networks/podman/disconnect")
         net = Network(attrs=FIRST_NETWORK, client=self.client.api)
 
         net.disconnect("podman_ctnr", force=True)

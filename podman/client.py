@@ -3,7 +3,7 @@ import logging
 import os
 import ssl
 from contextlib import AbstractContextManager
-from typing import Any, Dict, Mapping, Optional, Union
+from typing import Any, Dict, Optional
 
 from podman.api.client import APIClient
 from podman.domain.containers_manager import ContainersManager
@@ -15,59 +15,49 @@ from podman.domain.pods_manager import PodsManager
 from podman.domain.secrets import SecretsManager
 from podman.domain.system import SystemManager
 from podman.domain.volumes import VolumesManager
-from podman.errors import SwarmNotImplementedError
 from podman.tlsconfig import TLSConfig
+from podman.api import cached_property
 
 logger = logging.getLogger("podman")
 
 
 class PodmanClient(AbstractContextManager):
-    """Create client connection to Podman service"""
+    """Create client to Podman service.
 
-    def __init__(
-        self,
-        base_url: str = None,
-        version: str = None,
-        timeout: int = 60,
-        tls: Union[bool, TLSConfig] = False,
-        user_agent: str = None,
-        credstore_env: Optional[Mapping[str, str]] = None,
-        use_ssh_client: bool = False,
-        max_pool_size: int = 5,
-    ) -> None:
+    Examples:
+        Format, ssh://<user>@<host>[:port]/run/podman/podman.sock?secure=True
+
+    """
+
+    def __init__(self, *args, **kwargs) -> None:
         """Instantiate PodmanClient object
 
-        Args:
-            base_url: URL to Podman service.
+        Keyword Args:
+            base_url: Full URL to Podman service. Formats:
+                    - http+ssh://<user>@<host>[:port]</run/podman/podman.sock>[?secure=True]
+                    - http+unix://</run/podman/podman.sock>
+                    - tcp://<localhost>[:<port>]
             version: API version to use. Default: auto, use version from server
-            timeout: Timeout for API calls, in seconds. Default: 60
+            timeout: Timeout for API calls, in seconds. Default: socket._GLOBAL_DEFAULT_TIMEOUT.
             tls: Enable TLS connection to service. True uses default options which
                 may be overridden using a TLSConfig object
             user_agent: User agent for service connections. Default: PodmanPy/<Code Version>
             credstore_env: Dict containing environment for credential store
-            use_ssh_client: Use system ssh agent rather than ssh module. Default:False
+            use_ssh_client: Use system ssh agent rather than ssh module. Always True.
             max_pool_size: Number of connections to save in pool
         """
-        if not base_url:
+        super().__init__()
+        api_kwargs = kwargs.copy()
+
+        if "base_url" not in api_kwargs:
             uid = os.geteuid()
             if uid == 0:
                 elements = ["http+unix://", "run", "podman", "podman.sock"]
             else:
                 elements = ["http+unix://", "run", "user", str(uid), "podman", "podman.sock"]
-            base_url = "%2F".join(elements)
-        self.base_url = base_url
+            api_kwargs["base_url"] = os.path.join(elements)  # os.path.join() is correct here...
 
-        _ = use_ssh_client
-
-        self.api = APIClient(
-            base_url=base_url,
-            version=version,
-            timeout=timeout,
-            tls=tls,
-            user_agent=user_agent,
-            num_pools=max_pool_size,
-            credstore_env=credstore_env,
-        )
+        self.api = APIClient(*args, **api_kwargs)
 
     def __enter__(self) -> "PodmanClient":
         return self
@@ -79,13 +69,13 @@ class PodmanClient(AbstractContextManager):
     def from_env(
         cls,
         version: str = "auto",
-        timeout: int = -1,
-        max_pool_size: int = 60,
+        timeout: Optional[int] = None,
+        max_pool_size: Optional[int] = None,
         ssl_version: int = None,
         assert_hostname: bool = False,
         environment: dict = None,
         credstore_env: dict = None,
-        use_ssh_client: bool = False,
+        use_ssh_client: bool = True,
     ) -> "PodmanClient":
         """Returns connection to service using environment variables and parameters.
 
@@ -102,29 +92,25 @@ class PodmanClient(AbstractContextManager):
             assert_hostname: Verify hostname of service
             environment: Dict containing input environment. Default: os.environ
             credstore_env: Dict containing environment for credential store
-            use_ssh_client: Use system ssh agent rather than ssh module. Default:False
+            use_ssh_client: Use system ssh agent rather than ssh module. Always, True.
 
         Returns:
             PodmanClient: used to communicate with Podman service
         """
         # FIXME Should parameters be *args, **kwargs and resolved before calling PodmanClient()?
 
-        env = os.environ
-        if environment is not None:
-            env = environment
-
-        if credstore_env is None:
-            credstore_env = {}
+        environment = environment or os.environ
+        credstore_env = credstore_env or dict()
 
         if version == "auto":
             version = None
 
         tls = False
-        tls_verify = env.get("CONTAINER_TLS_VERIFY") or env.get("DOCKER_TLS_VERIFY")
+        tls_verify = environment.get("CONTAINER_TLS_VERIFY") or environment.get("DOCKER_TLS_VERIFY")
         if tls_verify or ssl_version or assert_hostname:
             cert_path = (
-                env.get("CONTAINER_CERT_PATH")
-                or env.get("DOCKER_CERT_PATH")
+                environment.get("CONTAINER_CERT_PATH")
+                or environment.get("DOCKER_CERT_PATH")
                 or os.path.join(os.path.expanduser("~"), ".config/containers/certs.d")
             )
 
@@ -139,7 +125,7 @@ class PodmanClient(AbstractContextManager):
                 assert_hostname=assert_hostname,
             )
 
-        host = env.get("CONTAINER_HOST") or env.get("DOCKER_HOST") or None
+        host = environment.get("CONTAINER_HOST") or environment.get("DOCKER_HOST") or None
 
         return PodmanClient(
             base_url=host,
@@ -151,79 +137,47 @@ class PodmanClient(AbstractContextManager):
             max_pool_size=max_pool_size,
         )
 
-    @property
-    def configs(self):
-        """Swarm not supported.
-
-        Raises:
-            NotImplemented:
-        """
-        raise SwarmNotImplementedError()
-
-    @property
+    @cached_property
     def containers(self) -> ContainersManager:
-        """Returns object for managing containers running via the Podman service."""
+        """Returns Manager for operations on containers stored by a Podman service."""
         return ContainersManager(client=self.api)
 
-    @property
+    @cached_property
     def images(self) -> ImagesManager:
-        """Returns object for managing images stored via the Podman service."""
+        """Returns Manager for operations on images stored by a Podman service."""
         return ImagesManager(client=self.api)
 
-    @property
+    @cached_property
     def manifests(self) -> ManifestsManager:
-        """Returns object for managing manifests via the Podman service."""
+        """Returns Manager for operations on manifests maintained by a Podman service."""
         return ManifestsManager(client=self.api)
 
-    @property
+    @cached_property
     def networks(self) -> NetworksManager:
-        """Returns object for managing networks created via the Podman service."""
+        """Returns Manager for operations on networks maintained by a Podman service."""
         return NetworksManager(client=self.api)
 
-    @property
+    @cached_property
     def volumes(self) -> VolumesManager:
-        """Returns object for managing volumes maintained via the Podman service."""
+        """Returns Manager for operations on volumes maintained by a Podman service."""
         return VolumesManager(client=self.api)
 
-    @property
+    @cached_property
     def pods(self) -> PodsManager:
-        """Returns object for managing pods created via the Podman service."""
+        """Returns Manager for operations on pods maintained by a Podman service."""
         return PodsManager(client=self.api)
 
-    @property
-    def nodes(self):
-        """Swarm not supported.
-
-        Raises:
-            NotImplemented:
-        """
-        raise SwarmNotImplementedError()
-
-    @property
+    @cached_property
     def secrets(self):
-        """TBD."""
+        """Returns Manager for operations on secrets maintained by a Podman service."""
         return SecretsManager(client=self.api)
 
-    @property
-    def services(self):
-        """Swarm not supported.
-
-        Raises:
-            NotImplemented:
-        """
-        raise SwarmNotImplementedError()
-
-    @property
-    def swarm(self):
-        """Swarm not supported.
-
-        Raises:
-            NotImplemented:
-        """
-        raise SwarmNotImplementedError()
+    @cached_property
+    def system(self):
+        return SystemManager(client=self.api)
 
     def df(self) -> Dict[str, Any]:  # pylint: disable=missing-function-docstring,invalid-name
-        return SystemManager(client=self.api).df()
+        return self.system.df()
 
     df.__doc__ = SystemManager.df.__doc__
 
@@ -233,31 +187,42 @@ class PodmanClient(AbstractContextManager):
     events.__doc__ = EventsManager.list.__doc__
 
     def info(self, *args, **kwargs):  # pylint: disable=missing-function-docstring
-        return SystemManager(client=self.api).info(*args, **kwargs)
+        return self.system.info(*args, **kwargs)
 
     info.__doc__ = SystemManager.info.__doc__
 
     def login(self, *args, **kwargs):  # pylint: disable=missing-function-docstring
-        return SystemManager(client=self.api).login(*args, **kwargs)
+        return self.system.login(*args, **kwargs)
 
     login.__doc__ = SystemManager.login.__doc__
 
     def ping(self) -> bool:  # pylint: disable=missing-function-docstring
-        return SystemManager(client=self.api).ping()
+        return self.system.ping()
 
     ping.__doc__ = SystemManager.ping.__doc__
 
     def version(self, *args, **kwargs):  # pylint: disable=missing-function-docstring
         _ = args
-        return SystemManager(client=self.api).version(**kwargs)
+        return self.system.version(**kwargs)
 
     version.__doc__ = SystemManager.version.__doc__
 
-    def close(self):  # ppylint: disable=missing-function-docstring
-        """Close connection to service."""
+    def close(self):
+        """Release PodmanClient Resources."""
         return self.api.close()
 
-    close.__doc__ = APIClient.close.__doc__
+    @property
+    def swarm(self):
+        """Swarm not supported.
+
+        Raises:
+            NotImplemented:
+        """
+        raise NotImplementedError("Swarm operations are not supported by Podman service.")
+
+    services = swarm
+    configs = swarm
+    nodes = swarm
 
 
 DockerClient = PodmanClient

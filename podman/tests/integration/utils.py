@@ -75,7 +75,7 @@ class PodmanLauncher:
         )
         self.version = str(process.stdout.decode("utf-8")).strip().split()[2]
 
-    def start(self) -> None:
+    def start(self, check_socket=True) -> None:
         """start podman service"""
         logger.info(
             "Launching(%s) %s refid=%s",
@@ -94,6 +94,9 @@ class PodmanLauncher:
 
         self.proc = subprocess.Popen(self.cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         threading.Thread(target=consume_lines, args=[self.proc.stdout, consume]).start()
+
+        if not check_socket:
+            return
 
         # wait for socket to be created
         timeout = time.monotonic() + 30

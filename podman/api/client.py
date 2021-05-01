@@ -4,8 +4,11 @@ import urllib.parse
 from typing import IO, Any, ClassVar, Iterable, List, Mapping, Optional, Tuple, Union, Type
 
 import requests
+from requests.adapters import HTTPAdapter
 
 from podman import api
+from podman.api.ssh import SSHAdapter
+from podman.api.version import __version__
 from podman.api.uds import UDSAdapter
 from podman.errors import APIError, NotFound
 from podman.tlsconfig import TLSConfig
@@ -69,57 +72,103 @@ class APIClient(requests.Session):
     # pylint: disable=arguments-differ
     # pylint: disable=too-many-instance-attributes
 
-    supported_schemes: ClassVar[List[str]] = ("unix", "http+unix")
+    supported_schemes: ClassVar[List[str]] = ("unix", "http+unix", "ssh", "http+ssh", "tcp", "http")
 
     def __init__(
         self,
         base_url: str = None,
         version: Optional[str] = None,
         timeout: Optional[float] = None,
-        tls: Union[TLSConfig, bool] = False,  # pylint: disable=unused-argument
+        tls: Union[TLSConfig, bool] = False,
         user_agent: Optional[str] = None,
         num_pools: Optional[int] = None,
         credstore_env: Optional[Mapping[str, str]] = None,
+        use_ssh_client=True,
+        max_pools_size=None,
         **kwargs,
-    ):
+    ):  # pylint: disable=unused-argument
         """Instantiate APIClient object.
+
+        Args:
+            base_url: Address to use for connecting to Podman service.
+            version: Override version prefix for Podman resource URLs.
+            timeout: Time in seconds to allow for Podman service operation.
+            tls: Configuration for TLS connections.
+            user_agent: Override User-Agent HTTP header.
+            num_pools: The number of connection pools to cache.
+            credstore_env: Environment for storing credentials.
+            use_ssh_client: Use system ssh agent rather than ssh module. Always, True.
+            max_pool_size: Override number of connections pools to maintain.
+                Default: requests.adapters.DEFAULT_POOLSIZE
+
+        Keyword Args:
+            compatible_version: Override version prefix for Compatible resource URLs.
 
         Raises:
             ValueError: when a parameter is incorrect
         """
         super().__init__()
+        self.base_url = self._normalize_url(base_url)
 
-        uri = urllib.parse.urlparse(base_url)
-        if uri.scheme not in APIClient.supported_schemes:
-            raise ValueError(
-                f"The scheme '{uri.scheme}' is not supported, only {APIClient.supported_schemes}"
-            )
+        adapter_kwargs = kwargs.copy()
+        if num_pools is not None:
+            adapter_kwargs["pool_connections"] = num_pools
+        if max_pools_size is not None:
+            adapter_kwargs["pool_maxsize"] = max_pools_size
+        if timeout is not None:
+            adapter_kwargs["timeout"] = timeout
 
-        if uri.scheme == "unix":
-            uri = uri._replace(scheme="http+unix")
+        if self.base_url.scheme == "http+unix":
+            self.mount("http://", UDSAdapter(self.base_url.geturl(), **adapter_kwargs))
+            self.mount("https://", UDSAdapter(self.base_url.geturl(), **adapter_kwargs))
 
-        if uri.netloc == "":
-            uri = uri._replace(netloc=uri.path)._replace(path="")
+        if self.base_url.scheme == "http+ssh":
+            self.mount("http://", SSHAdapter(self.base_url.geturl(), **adapter_kwargs))
+            self.mount("https://", SSHAdapter(self.base_url.geturl(), **adapter_kwargs))
 
-        if "/" in uri.netloc:
-            uri = uri._replace(netloc=urllib.parse.quote_plus(uri.netloc))
-
-        self.base_url = uri.geturl()
-
-        if uri.scheme == "http+unix":
-            self.mount(uri.scheme, UDSAdapter())
+        if self.base_url.scheme == "http":
+            self.mount("http://", HTTPAdapter(**adapter_kwargs))
+            self.mount("https://", HTTPAdapter(**adapter_kwargs))
 
         self.version = version or api.VERSION
-        self.path_prefix = f"/v{self.version}/libpod"
-        self.compatible_version = kwargs.get("compatible_version") or api.COMPATIBLE_VERSION
-        self.compatible_prefix = f"/v{self.compatible_version}"
+        self.path_prefix = f"/v{self.version}/libpod/"
+        self.compatible_version = kwargs.get("compatible_version", api.COMPATIBLE_VERSION)
+        self.compatible_prefix = f"/v{self.compatible_version}/"
 
-        self.timeout = timeout or api.DEFAULT_TIMEOUT
+        self.timeout = timeout
         self.pool_maxsize = num_pools or requests.adapters.DEFAULT_POOLSIZE
         self.credstore_env = credstore_env or dict()
 
-        self.user_agent = user_agent or f"PodmanPy/{self.version}"
+        self.user_agent = (
+            user_agent
+            or f"PodmanPy/{__version__} (API v{self.version}"
+            f"; Compatible v{self.compatible_version})"
+        )
         self.headers.update({"User-Agent": self.user_agent})
+
+    @staticmethod
+    def _normalize_url(base_url: str) -> urllib.parse.ParseResult:
+        uri = urllib.parse.urlparse(base_url)
+        if uri.scheme not in APIClient.supported_schemes:
+            raise ValueError(
+                f"The scheme '{uri.scheme}' must be one of {APIClient.supported_schemes}"
+            )
+
+        # Normalize URL scheme, needs to match up with adapter mounts
+        if uri.scheme == "unix":
+            uri = uri._replace(scheme="http+unix")
+        if uri.scheme == "ssh":
+            uri = uri._replace(scheme="http+ssh")
+        if uri.scheme == "tcp":
+            uri = uri._replace(scheme="http")
+
+        # Normalize URL netloc, needs to match up with transport adapters expectations
+        if uri.netloc == "":
+            uri = uri._replace(netloc=uri.path)._replace(path="")
+        if "/" in uri.netloc:
+            uri = uri._replace(netloc=urllib.parse.quote_plus(uri.netloc))
+
+        return uri
 
     def delete(
         self,
@@ -133,7 +182,7 @@ class APIClient(requests.Session):
         """HTTP DELETE operation against configured Podman service.
 
         Args:
-            path: Relative path to RESTful resource. base_url will be prepended to path.
+            path: Relative path to RESTful resource.
             params: Optional parameters to include with URL.
             headers: Optional headers to include in request.
             timeout: Number of seconds to wait on request, or (connect timeout, read timeout) tuple
@@ -167,7 +216,7 @@ class APIClient(requests.Session):
         """HTTP GET operation against configured Podman service.
 
         Args:
-            path: Relative path to RESTful resource. base_url will be prepended to path.
+            path: Relative path to RESTful resource.
             params: Optional parameters to include with URL.
             headers: Optional headers to include in request.
             timeout: Number of seconds to wait on request, or (connect timeout, read timeout) tuple
@@ -201,7 +250,7 @@ class APIClient(requests.Session):
         """HTTP HEAD operation against configured Podman service.
 
         Args:
-            path: Relative path to RESTful resource. base_url will be prepended to path.
+            path: Relative path to RESTful resource.
             params: Optional parameters to include with URL.
             headers: Optional headers to include in request.
             timeout: Number of seconds to wait on request, or (connect timeout, read timeout) tuple
@@ -236,7 +285,7 @@ class APIClient(requests.Session):
         """HTTP POST operation against configured Podman service.
 
         Args:
-            path: Relative path to RESTful resource. base_url will be prepended to path.
+            path: Relative path to RESTful resource.
             data: HTTP body for operation
             params: Optional parameters to include with URL.
             headers: Optional headers to include in request.
@@ -273,7 +322,7 @@ class APIClient(requests.Session):
         """HTTP PUT operation against configured Podman service.
 
         Args:
-            path: Relative path to RESTful resource. base_url will be prepended to path.
+            path: Relative path to RESTful resource.
             data: HTTP body for operation
             params: Optional parameters to include with URL.
             headers: Optional headers to include in request.
@@ -312,7 +361,7 @@ class APIClient(requests.Session):
 
         Args:
             method: HTTP method to use for request
-            path: Relative path to RESTful resource. base_url will be prepended to path.
+            path: Relative path to RESTful resource.
             params: Optional parameters to include with URL.
             headers: Optional headers to include in request.
             timeout: Number of seconds to wait on request, or (connect timeout, read timeout) tuple
@@ -323,27 +372,39 @@ class APIClient(requests.Session):
         Raises:
             APIError: when service returns an error
         """
-        if timeout is None:
-            timeout = api.DEFAULT_TIMEOUT
-
-        if not path.startswith("/"):
-            path = f"/{path}"
+        # Only set timeout if one is given, lower level APIs will not override None
+        timeout_kw = dict()
+        timeout = timeout or self.timeout
+        if timeout_kw is not None:
+            timeout_kw["timeout"] = timeout
 
         compatible = kwargs.get("compatible", False)
         path_prefix = self.compatible_prefix if compatible else self.path_prefix
-        uri = self.base_url + path_prefix + path
+
+        path = path.lstrip("/")  # leading / makes urljoin crazy...
+
+        # TODO should we have an option for HTTPS support?
+        # Build URL for operation from base_url
+        uri = urllib.parse.ParseResult(
+            "http",
+            self.base_url.netloc,
+            urllib.parse.urljoin(path_prefix, path),
+            self.base_url.params,
+            self.base_url.query,
+            self.base_url.fragment,
+        )
 
         try:
             return APIResponse(
                 self.request(
                     method.upper(),
-                    uri,
+                    uri.geturl(),
                     params=params,
                     data=data,
                     headers=(headers or dict()),
-                    timeout=timeout,
                     stream=stream,
+                    **timeout_kw,
                 )
             )
         except OSError as e:
-            raise APIError(uri, explanation=f"{method.upper()} operation failed") from e
+            raise APIError(uri.geturl(), explanation=f"{method.upper()} operation failed") from e
