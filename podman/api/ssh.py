@@ -64,6 +64,8 @@ class SSHSocket(socket.socket):
         command = [
             "ssh",
             "-N",
+            "-o",
+            "StrictHostKeyChecking no",
             "-L",
             f"{self.local_sock}:{uri.path}",
         ]
