@@ -13,7 +13,7 @@ export PODMAN_VERSION ?= "3.2.0"
 .PHONY: podman-py
 podman-py:
 	rm dist/* || :
-	pip install wheel
+	pip install wheel pyxdg
 	PODMAN_VERSION=$(PODMAN_VERSION) \
 	$(PYTHON) setup.py sdist bdist bdist_wheel
 

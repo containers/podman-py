@@ -8,13 +8,17 @@ from requests.exceptions import HTTPError
 # Break circular import
 if typing.TYPE_CHECKING:
     from podman.domain.containers import Container
+    from podman.api.client import APIResponse
 
 
 class APIError(HTTPError):
     """A wrapper for HTTP errors from the API."""
 
     def __init__(
-        self, message: str, response: Optional[Response] = None, explanation: Optional[str] = None
+        self,
+        message: str,
+        response: Union[Response, "APIResponse", None] = None,
+        explanation: Optional[str] = None,
     ):
         """Create an APIError.
 
@@ -144,13 +148,3 @@ class ContainerError(PodmanError):
 
 class InvalidArgument(PodmanError):
     """Parameter to method/function was not valid."""
-
-
-class SwarmNotImplementedError(NotImplementedError):
-    """Raises on attempted swarm operations."""
-
-    def __init__(self, message: Optional[str] = None):
-        if message is None:
-            super().__init__("Swarm operations are not supported by Podman service.")
-            return
-        super().__init__(message)

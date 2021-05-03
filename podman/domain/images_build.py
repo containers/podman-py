@@ -92,7 +92,10 @@ class BuildMixin:
                 anchor=kwargs["path"], exclude=excludes, gzip=kwargs.get("gzip", False)
             )
 
-        timeout = kwargs.get("timeout", api.DEFAULT_TIMEOUT)
+        post_kwargs = dict()
+        if kwargs.get("timeout"):
+            post_kwargs["timeout"] = float(kwargs.get("timeout"))
+
         response = self.client.post(
             "/build",
             params=params,
@@ -102,7 +105,7 @@ class BuildMixin:
                 # "X-Registry-Config": "TODO",
             },
             stream=True,
-            timeout=timeout,
+            **post_kwargs,
         )
         if hasattr(body, "close"):
             body.close()

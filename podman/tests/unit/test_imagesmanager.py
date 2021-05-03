@@ -38,7 +38,7 @@ SECOND_IMAGE = {
 }
 
 
-class TestClientImagesManager(unittest.TestCase):
+class ImagesManagerTestCase(unittest.TestCase):
     """Test ImagesManager area of concern.
 
     Note:
@@ -64,7 +64,7 @@ class TestClientImagesManager(unittest.TestCase):
     def test_list_empty(self, mock):
         """Unit test Images list()."""
         mock.get(
-            tests.BASE_URL + "/libpod/images/json",
+            tests.LIBPOD_URL + "/images/json",
             text="[]",
         )
 
@@ -75,7 +75,7 @@ class TestClientImagesManager(unittest.TestCase):
     def test_list_1(self, mock):
         """Unit test Images list()."""
         mock.get(
-            tests.BASE_URL + "/libpod/images/json",
+            tests.LIBPOD_URL + "/images/json",
             json=[FIRST_IMAGE],
         )
 
@@ -102,7 +102,7 @@ class TestClientImagesManager(unittest.TestCase):
     def test_list_2(self, mock):
         """Unit test Images list()."""
         mock.get(
-            tests.BASE_URL + "/libpod/images/json",
+            tests.LIBPOD_URL + "/images/json",
             json=[FIRST_IMAGE, SECOND_IMAGE],
         )
 
@@ -123,8 +123,7 @@ class TestClientImagesManager(unittest.TestCase):
     def test_list_filters(self, mock):
         """Unit test filters param for Images list()."""
         mock.get(
-            tests.BASE_URL + "/libpod/images/json"
-            "?filters=%7B%22dangling%22%3A+%5B%22True%22%5D%7D",
+            tests.LIBPOD_URL + "/images/json" "?filters=%7B%22dangling%22%3A+%5B%22True%22%5D%7D",
             json=[FIRST_IMAGE],
         )
 
@@ -137,7 +136,7 @@ class TestClientImagesManager(unittest.TestCase):
     def test_list_all(self, mock):
         """Unit test filters param for Images list()."""
         mock.get(
-            tests.BASE_URL + "/libpod/images/json?all=true",
+            tests.LIBPOD_URL + "/images/json?all=true",
             json=[FIRST_IMAGE],
         )
 
@@ -150,7 +149,7 @@ class TestClientImagesManager(unittest.TestCase):
     def test_prune(self, mock):
         """Unit test Images prune()."""
         mock.post(
-            tests.BASE_URL + "/libpod/images/prune",
+            tests.LIBPOD_URL + "/images/prune",
             json=[
                 {
                     "Id": "326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab",
@@ -174,8 +173,7 @@ class TestClientImagesManager(unittest.TestCase):
     def test_prune_filters(self, mock):
         """Unit test filters param for Images prune()."""
         mock.post(
-            tests.BASE_URL + "/libpod/images/prune"
-            "?filters=%7B%22dangling%22%3A+%5B%22True%22%5D%7D",
+            tests.LIBPOD_URL + "/images/prune" "?filters=%7B%22dangling%22%3A+%5B%22True%22%5D%7D",
             json=[
                 {
                     "Id": "326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab",
@@ -207,7 +205,7 @@ class TestClientImagesManager(unittest.TestCase):
     def test_prune_failure(self, mock):
         """Unit test to report error carried in response body."""
         mock.post(
-            tests.BASE_URL + "/libpod/images/prune",
+            tests.LIBPOD_URL + "/images/prune",
             json=[
                 {
                     "Err": "Test prune failure in response body.",
@@ -222,7 +220,7 @@ class TestClientImagesManager(unittest.TestCase):
     @requests_mock.Mocker()
     def test_get(self, mock):
         mock.get(
-            tests.BASE_URL + "/libpod/images/fedora%3Alatest/json",
+            tests.LIBPOD_URL + "/images/fedora%3Alatest/json",
             json=FIRST_IMAGE,
         )
 
@@ -233,7 +231,7 @@ class TestClientImagesManager(unittest.TestCase):
     @requests_mock.Mocker()
     def test_get_oserror(self, mock):
         mock.get(
-            tests.BASE_URL + "/libpod/images/bad_image/json",
+            tests.LIBPOD_URL + "/images/bad_image/json",
             exc=OSError,
         )
 
@@ -241,13 +239,13 @@ class TestClientImagesManager(unittest.TestCase):
             _ = self.client.images.get("bad_image")
         self.assertEqual(
             str(e.exception),
-            tests.BASE_URL + "/libpod/images/bad_image/json (GET operation failed)",
+            tests.LIBPOD_URL + "/images/bad_image/json (GET operation failed)",
         )
 
     @requests_mock.Mocker()
     def test_get_404(self, mock):
         mock.get(
-            tests.BASE_URL + "/libpod/images/bad_image/json",
+            tests.LIBPOD_URL + "/images/bad_image/json",
             status_code=404,
             json={
                 "cause": "Image not found",
@@ -262,7 +260,7 @@ class TestClientImagesManager(unittest.TestCase):
     @requests_mock.Mocker()
     def test_get_500(self, mock):
         mock.get(
-            tests.BASE_URL + "/libpod/images/bad_image/json",
+            tests.LIBPOD_URL + "/images/bad_image/json",
             status_code=500,
             json={
                 "cause": "Server error",
@@ -277,7 +275,7 @@ class TestClientImagesManager(unittest.TestCase):
     @requests_mock.Mocker()
     def test_remove(self, mock):
         mock.delete(
-            tests.BASE_URL + "/libpod/images/fedora:latest",
+            tests.LIBPOD_URL + "/images/fedora:latest",
             json={
                 "Untagged": ["326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"],
                 "Deleted": [
@@ -308,11 +306,11 @@ class TestClientImagesManager(unittest.TestCase):
     @requests_mock.Mocker()
     def test_load(self, mock):
         mock.post(
-            tests.BASE_URL + "/libpod/images/load",
+            tests.LIBPOD_URL + "/images/load",
             json={"Names": ["quay.io/fedora:latest"]},
         )
         mock.get(
-            tests.BASE_URL + "/libpod/images/quay.io%2Ffedora%3Alatest/json",
+            tests.LIBPOD_URL + "/images/quay.io%2ffedora%3Alatest/json",
             json=FIRST_IMAGE,
         )
 
@@ -328,7 +326,7 @@ class TestClientImagesManager(unittest.TestCase):
     @requests_mock.Mocker()
     def test_search(self, mock):
         mock.get(
-            tests.BASE_URL + "/libpod/images/search?term=fedora&noTrunc=true",
+            tests.LIBPOD_URL + "/images/search?term=fedora&noTrunc=true",
             json=[
                 {
                     "description": "mock term=fedora search",
@@ -348,7 +346,7 @@ class TestClientImagesManager(unittest.TestCase):
     @requests_mock.Mocker()
     def test_search_oserror(self, mock):
         mock.get(
-            tests.BASE_URL + "/libpod/images/search?term=fedora&noTrunc=true",
+            tests.LIBPOD_URL + "/images/search?term=fedora&noTrunc=true",
             exc=OSError,
         )
 
@@ -358,7 +356,7 @@ class TestClientImagesManager(unittest.TestCase):
     @requests_mock.Mocker()
     def test_search_500(self, mock):
         mock.get(
-            tests.BASE_URL + "/libpod/images/search?term=fedora&noTrunc=true",
+            tests.LIBPOD_URL + "/images/search?term=fedora&noTrunc=true",
             status_code=500,
             json={
                 "cause": "Server error",
@@ -373,7 +371,7 @@ class TestClientImagesManager(unittest.TestCase):
     @requests_mock.Mocker()
     def test_search_limit(self, mock):
         mock.get(
-            tests.BASE_URL + "/libpod/images/search?term=fedora&noTrunc=true&limit=5",
+            tests.LIBPOD_URL + "/images/search?term=fedora&noTrunc=true&limit=5",
             json=[
                 {
                     "description": "mock term=fedora search",
@@ -393,7 +391,7 @@ class TestClientImagesManager(unittest.TestCase):
     @requests_mock.Mocker()
     def test_search_filters(self, mock):
         mock.get(
-            tests.BASE_URL + "/libpod/images/search"
+            tests.LIBPOD_URL + "/images/search"
             "?filters=%7B%22stars%22%3A+%5B%225%22%5D%7D&noTrunc=True&term=fedora",
             json=[
                 {
@@ -413,7 +411,7 @@ class TestClientImagesManager(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_push(self, mock):
-        mock.post(tests.BASE_URL + "/libpod/images/quay.io%2Ffedora/push")
+        mock.post(tests.LIBPOD_URL + "/images/quay.io%2ffedora/push")
 
         report = self.client.images.push("quay.io/fedora", "latest")
 
@@ -426,7 +424,7 @@ class TestClientImagesManager(unittest.TestCase):
     def test_pull(self, mock):
         image_id = "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
         mock.post(
-            tests.BASE_URL + "/libpod/images/pull" "?reference=quay.io%2Ffedora%3Alatest",
+            tests.LIBPOD_URL + "/images/pull" "?reference=quay.io%2ffedora%3Alatest",
             json={
                 "error": "",
                 "id": image_id,
@@ -435,7 +433,7 @@ class TestClientImagesManager(unittest.TestCase):
             },
         )
         mock.get(
-            tests.BASE_URL + "/libpod/images"
+            tests.LIBPOD_URL + "/images"
             "/sha256%3A326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/json",
             json=FIRST_IMAGE,
         )
@@ -447,7 +445,7 @@ class TestClientImagesManager(unittest.TestCase):
     def test_pull_enhanced(self, mock):
         image_id = "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
         mock.post(
-            tests.BASE_URL + "/libpod/images/pull" "?reference=quay.io%2Ffedora%3Alatest",
+            tests.LIBPOD_URL + "/images/pull" "?reference=quay.io%2ffedora%3Alatest",
             json={
                 "error": "",
                 "id": image_id,
@@ -456,7 +454,7 @@ class TestClientImagesManager(unittest.TestCase):
             },
         )
         mock.get(
-            tests.BASE_URL + "/libpod/images"
+            tests.LIBPOD_URL + "/images"
             "/sha256%3A326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/json",
             json=FIRST_IMAGE,
         )
@@ -468,7 +466,7 @@ class TestClientImagesManager(unittest.TestCase):
     def test_pull_platform(self, mock):
         image_id = "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
         adapter = mock.post(
-            tests.BASE_URL + "/libpod/images/pull?reference=quay.io%2Ffedora%3Alatest&OS=linux",
+            tests.LIBPOD_URL + "/images/pull?reference=quay.io%2ffedora%3Alatest&OS=linux",
             json={
                 "error": "",
                 "id": image_id,
@@ -477,7 +475,7 @@ class TestClientImagesManager(unittest.TestCase):
             },
         )
         mock.get(
-            tests.BASE_URL + "/libpod/images"
+            tests.LIBPOD_URL + "/images"
             "/sha256%3A326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/json",
             json=FIRST_IMAGE,
         )
@@ -490,7 +488,7 @@ class TestClientImagesManager(unittest.TestCase):
     def test_pull_2x(self, mock):
         image_id = "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
         mock.post(
-            tests.BASE_URL + "/libpod/images/pull" "?reference=quay.io%2Ffedora&allTags=True",
+            tests.LIBPOD_URL + "/images/pull" "?reference=quay.io%2ffedora&allTags=True",
             json={
                 "error": "",
                 "id": image_id,
@@ -502,12 +500,12 @@ class TestClientImagesManager(unittest.TestCase):
             },
         )
         mock.get(
-            tests.BASE_URL + "/libpod/images"
+            tests.LIBPOD_URL + "/images"
             "/sha256%3A326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/json",
             json=FIRST_IMAGE,
         )
         mock.get(
-            tests.BASE_URL + "/libpod/images"
+            tests.LIBPOD_URL + "/images"
             "/c4b16966ecd94ffa910eab4e630e24f259bf34a87e924cd4b1434f267b0e354e/json",
             json=SECOND_IMAGE,
         )

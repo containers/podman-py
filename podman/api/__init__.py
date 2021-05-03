@@ -1,6 +1,7 @@
 """Tools for connecting to a Podman service."""
 import re
 
+from podman.api.cached_property import cached_property
 from podman.api.client import APIClient
 from podman.api.http_utils import prepare_body, prepare_filters
 from podman.api.parse_utils import (
@@ -15,7 +16,6 @@ from podman.api.tar_utils import create_tar, prepare_containerfile, prepare_cont
 
 from . import version
 
-DEFAULT_TIMEOUT: float = 60.0
 DEFAULT_CHUNK_SIZE = 2 * 1024 * 1024
 
 
@@ -36,10 +36,10 @@ COMPATIBLE_VERSION: str = _api_version(version.__compatible_version__, 2)
 # isort: unique-list
 __all__ = [
     'APIClient',
-    'VERSION',
     'COMPATIBLE_VERSION',
     'DEFAULT_CHUNK_SIZE',
-    'DEFAULT_TIMEOUT',
+    'VERSION',
+    'cached_property',
     'create_tar',
     'decode_header',
     'frames',

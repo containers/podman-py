@@ -19,7 +19,6 @@ __all__ = [
     'NotFound',
     'NotFoundError',
     'PodmanError',
-    'SwarmNotImplementedError',
 ]
 
 try:
@@ -31,7 +30,6 @@ try:
         InvalidArgument,
         NotFound,
         PodmanError,
-        SwarmNotImplementedError,
     )
 except ImportError:
     pass

@@ -47,7 +47,7 @@ class ContainersManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_get(self, mock):
         mock.get(
-            tests.BASE_URL + "/libpod/containers"
+            tests.LIBPOD_URL + "/containers"
             "/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
             json=FIRST_CONTAINER,
         )
@@ -62,7 +62,7 @@ class ContainersManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_get_404(self, mock):
         mock.get(
-            tests.BASE_URL + "/libpod/containers"
+            tests.LIBPOD_URL + "/containers"
             "/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
             json={
                 "cause": "Container not found.",
@@ -80,7 +80,7 @@ class ContainersManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_list_empty(self, mock):
         mock.get(
-            tests.BASE_URL + "/libpod/containers/json",
+            tests.LIBPOD_URL + "/containers/json",
             text="[]",
         )
         actual = self.client.containers.list()
@@ -89,7 +89,7 @@ class ContainersManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_list(self, mock):
         mock.get(
-            tests.BASE_URL + "/libpod/containers/json",
+            tests.LIBPOD_URL + "/containers/json",
             json=[FIRST_CONTAINER, SECOND_CONTAINER],
         )
         actual = self.client.containers.list()
@@ -105,7 +105,7 @@ class ContainersManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_list_filtered(self, mock):
         mock.get(
-            tests.BASE_URL + "/libpod/containers/json?"
+            tests.LIBPOD_URL + "/containers/json?"
             "all=True"
             "&filters=%7B"
             "%22before%22%3A"
@@ -133,7 +133,7 @@ class ContainersManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_list_no_filters(self, mock):
         mock.get(
-            tests.BASE_URL + "/libpod/containers/json",
+            tests.LIBPOD_URL + "/containers/json",
             json=[FIRST_CONTAINER, SECOND_CONTAINER],
         )
         actual = self.client.containers.list()
@@ -149,7 +149,7 @@ class ContainersManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_prune(self, mock):
         mock.post(
-            tests.BASE_URL + "/libpod/containers/prune",
+            tests.LIBPOD_URL + "/containers/prune",
             json=[
                 {
                     "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
@@ -176,7 +176,7 @@ class ContainersManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_create(self, mock):
         mock.post(
-            tests.BASE_URL + "/libpod/containers/create",
+            tests.LIBPOD_URL + "/containers/create",
             status_code=201,
             json={
                 "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
@@ -184,7 +184,7 @@ class ContainersManagerTestCase(unittest.TestCase):
             },
         )
         mock.get(
-            tests.BASE_URL + "/libpod/containers"
+            tests.LIBPOD_URL + "/containers"
             "/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
             json=FIRST_CONTAINER,
         )
@@ -195,7 +195,7 @@ class ContainersManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_create_404(self, mock):
         mock.post(
-            tests.BASE_URL + "/libpod/containers/create",
+            tests.LIBPOD_URL + "/containers/create",
             status_code=404,
             json={
                 "cause": "Image not found",
@@ -217,7 +217,7 @@ class ContainersManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_run_detached(self, mock):
         mock.post(
-            tests.BASE_URL + "/libpod/containers/create",
+            tests.LIBPOD_URL + "/containers/create",
             status_code=201,
             json={
                 "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
@@ -225,12 +225,12 @@ class ContainersManagerTestCase(unittest.TestCase):
             },
         )
         mock.post(
-            tests.BASE_URL + "/libpod/containers/"
+            tests.LIBPOD_URL + "/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/start",
             status_code=204,
         )
         mock.get(
-            tests.BASE_URL + "/libpod/containers"
+            tests.LIBPOD_URL + "/containers"
             "/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
             json=FIRST_CONTAINER,
         )
@@ -245,7 +245,7 @@ class ContainersManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_run(self, mock):
         mock.post(
-            tests.BASE_URL + "/libpod/containers/create",
+            tests.LIBPOD_URL + "/containers/create",
             status_code=201,
             json={
                 "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
@@ -253,12 +253,12 @@ class ContainersManagerTestCase(unittest.TestCase):
             },
         )
         mock.post(
-            tests.BASE_URL + "/libpod/containers/"
+            tests.LIBPOD_URL + "/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/start",
             status_code=204,
         )
         mock.get(
-            tests.BASE_URL + "/libpod/containers"
+            tests.LIBPOD_URL + "/containers"
             "/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
             json=FIRST_CONTAINER,
         )

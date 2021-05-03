@@ -35,12 +35,12 @@ class PodsManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_create(self, mock):
         adapter = mock.post(
-            tests.BASE_URL + "/libpod/pods/create",
+            tests.LIBPOD_URL + "/pods/create",
             json={"Id": "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8"},
             status_code=201,
         )
         mock.get(
-            tests.BASE_URL + "/libpod/pods"
+            tests.LIBPOD_URL + "/pods"
             "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/json",
             json=FIRST_POD,
         )
@@ -54,7 +54,7 @@ class PodsManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_get(self, mock):
         mock.get(
-            tests.BASE_URL + "/libpod/pods"
+            tests.LIBPOD_URL + "/pods"
             "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/json",
             json=FIRST_POD,
         )
@@ -69,7 +69,7 @@ class PodsManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_get404(self, mock):
         mock.get(
-            tests.BASE_URL + "/libpod/pods"
+            tests.LIBPOD_URL + "/pods"
             "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/json",
             status_code=404,
             json={
@@ -86,7 +86,7 @@ class PodsManagerTestCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_list(self, mock):
-        mock.get(tests.BASE_URL + "/libpod/pods/json", json=[FIRST_POD, SECOND_POD])
+        mock.get(tests.LIBPOD_URL + "/pods/json", json=[FIRST_POD, SECOND_POD])
 
         actual = self.client.pods.list()
 
@@ -100,7 +100,7 @@ class PodsManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_prune(self, mock):
         adapter = mock.post(
-            tests.BASE_URL + "/libpod/pods/prune",
+            tests.LIBPOD_URL + "/pods/prune",
             json=[
                 {
                     "Err": None,
@@ -144,7 +144,7 @@ class PodsManagerTestCase(unittest.TestCase):
             "Titles": ["UID", "PID", "PPID", "C", "STIME", "TTY", "TIME CMD"],
         }
         mock.get(
-            tests.BASE_URL + "/libpod/pods/stats"
+            tests.LIBPOD_URL + "/pods/stats"
             "?namesOrIDs=c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8",
             json=body,
         )

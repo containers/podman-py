@@ -333,16 +333,12 @@ class Container(PodmanResource):
         Keyword Args:
             timeout (int): Seconds to wait for container to stop before killing container.
         """
-        connection_timeout = api.DEFAULT_TIMEOUT
+        params = {"timeout": kwargs.get("timeout")}
+        post_kwargs = dict()
+        if kwargs.get("timeout"):
+            post_kwargs["timeout"] = float(params["timeout"]) * 1.5
 
-        params = dict()
-        if "timeout" in kwargs:
-            params = {"timeout": kwargs["timeout"]}
-            connection_timeout += float(kwargs["timeout"])
-
-        response = self.client.post(
-            f"/containers/{self.id}/restart", params=params, timeout=connection_timeout
-        )
+        response = self.client.post(f"/containers/{self.id}/restart", params=params, **post_kwargs)
         response.raise_for_status()
 
     def start(self, **kwargs) -> None:
@@ -408,13 +404,11 @@ class Container(PodmanResource):
         """
         params = {"all": kwargs.get("all"), "timeout": kwargs.get("timeout")}
 
-        connection_timeout: float = api.DEFAULT_TIMEOUT
-        if params.get("timeout"):
-            connection_timeout += float(params["timeout"])
+        post_kwargs = dict()
+        if kwargs.get("timeout"):
+            post_kwargs["timeout"] = float(params["timeout"]) * 1.5
 
-        response = self.client.post(
-            f"/containers/{self.id}/stop", params=params, timeout=connection_timeout
-        )
+        response = self.client.post(f"/containers/{self.id}/stop", params=params, **post_kwargs)
         response.raise_for_status()
 
         if response.status_code == requests.codes.no_content:
@@ -474,7 +468,7 @@ class Container(PodmanResource):
         Keyword Args:
             condition (str): Container state on which to release, values:
                 not-running (default), next-exit or removed.
-            timeout (int): Number of seconds to wait for the container to stop.
+            timeout (int): Ignored.
 
         Returns:
             Keys:

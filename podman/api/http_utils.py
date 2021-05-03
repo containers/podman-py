@@ -1,4 +1,4 @@
-"""Utility functions for working with URL's."""
+"""Utility functions for working with URLs."""
 import collections.abc
 import json
 from typing import Dict, List, Mapping, Optional, Union, Any

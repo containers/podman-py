@@ -6,7 +6,7 @@ import requests
 
 from podman import api
 from podman.domain.manager import Manager, PodmanResource
-from podman.errors import APIError, NotFound
+from podman.errors import APIError
 
 logger = logging.getLogger("podman.volumes")
 
@@ -126,9 +126,7 @@ class VolumesManager(Manager):
         """
         response = self.client.post("/volumes/prune")
         data = response.json()
-
-        if response.status_code != requests.codes.okay:
-            raise APIError(data["cause"], response=response, explanation=data["message"])
+        response.raise_for_status()
 
         volumes: List[str] = list()
         space_reclaimed = 0
@@ -160,11 +158,4 @@ class VolumesManager(Manager):
         if isinstance(name, Volume):
             name = name.name
         response = self.client.delete(f"/volumes/{name}", params={"force": force})
-
-        if response.status_code == requests.codes.no_content:
-            return
-
-        data = response.json()
-        if response.status_code == requests.codes.not_found:
-            raise NotFound(data["cause"], response=response, explanation=data["message"])
-        raise APIError(data["cause"], response=response, explanation=data["message"])
+        response.raise_for_status()

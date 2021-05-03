@@ -55,7 +55,7 @@ class TestBuildCase(unittest.TestCase):
 
         with requests_mock.Mocker() as mock:
             mock.post(
-                tests.BASE_URL + "/libpod/build"
+                tests.LIBPOD_URL + "/build"
                 "?t=latest"
                 "&buildargs=%7B%22BUILD_DATE%22%3A+%22January+1%2C+1970%22%7D"
                 "&cpuperiod=10"
@@ -64,7 +64,7 @@ class TestBuildCase(unittest.TestCase):
                 text=buffer.getvalue(),
             )
             mock.get(
-                tests.BASE_URL + "/libpod/images/032b8b2855fc/json",
+                tests.LIBPOD_URL + "/images/032b8b2855fc/json",
                 json={
                     "Id": "032b8b2855fc",
                     "ParentId": "",
@@ -114,7 +114,7 @@ class TestBuildCase(unittest.TestCase):
 
         with requests_mock.Mocker() as mock:
             mock.post(
-                tests.BASE_URL + "/libpod/build",
+                tests.LIBPOD_URL + "/build",
                 text=buffer.getvalue(),
             )
 
@@ -124,13 +124,13 @@ class TestBuildCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_build_no_context(self, mock):
-        mock.post(tests.BASE_URL + "/libpod/images/build")
+        mock.post(tests.LIBPOD_URL + "/images/build")
         with self.assertRaises(TypeError):
             self.client.images.build()
 
     @requests_mock.Mocker()
     def test_build_encoding(self, mock):
-        mock.post(tests.BASE_URL + "/libpod/images/build")
+        mock.post(tests.LIBPOD_URL + "/images/build")
         with self.assertRaises(DockerException):
             self.client.images.build(path="/root", gzip=True, encoding="utf-8")
 

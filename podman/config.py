@@ -1,8 +1,6 @@
 """Read containers.conf file."""
 import os
-import pathlib
 import urllib.parse
-from functools import lru_cache
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -10,6 +8,8 @@ try:
     import toml
 except ImportError:
     import pytoml as toml
+
+from podman.api import cached_property
 
 
 class ServiceConnection:
@@ -36,17 +36,15 @@ class ServiceConnection:
         """Returns identifier for service connection."""
         return self.name
 
-    @property
-    @lru_cache(1)
+    @cached_property
     def url(self) -> urllib.parse.ParseResult:
         """Returns URL for service connection."""
         return urllib.parse.urlparse(self.attrs.get("uri"))
 
-    @property
-    @lru_cache(1)
+    @cached_property
     def identity(self) -> Path:
         """Returns Path to identity file for service connection."""
-        return pathlib.Path(self.attrs.get("identity"))
+        return Path(self.attrs.get("identity"))
 
 
 class PodmanConfig:
@@ -59,7 +57,7 @@ class PodmanConfig:
             home = Path(os.environ.get("XDG_CONFIG_HOME", Path.home()))
             self.path = home / ".config" / "containers" / "containers.conf"
         else:
-            self.path = pathlib.Path(path)
+            self.path = Path(path)
 
         self.attrs = dict()
         if self.path.exists():
@@ -76,12 +74,11 @@ class PodmanConfig:
         return False
 
     @property
-    def id(self):  # pylint: disable=invalid-name
+    def id(self) -> Path:  # pylint: disable=invalid-name
         """Returns Path() of container.conf."""
         return self.path
 
-    @property
-    @lru_cache(1)
+    @cached_property
     def services(self) -> Dict[str, ServiceConnection]:
         """Returns list of service connections."""
         services: Dict[str, ServiceConnection] = dict()
@@ -95,8 +92,7 @@ class PodmanConfig:
 
         return services
 
-    @property
-    @lru_cache(1)
+    @cached_property
     def active_service(self) -> Optional[ServiceConnection]:
         """Returns active connection."""
 

@@ -1,96 +1,177 @@
 """Specialized Transport Adapter for UNIX domain sockets."""
-
+import collections
+import functools
+import http.client
+import logging
 import socket
-from typing import Any, Mapping, Optional, Union
+from typing import Optional, Union
 from urllib.parse import unquote, urlparse
 
-from requests.adapters import HTTPAdapter  # pylint: disable=ungrouped-imports
+from requests.adapters import DEFAULT_POOLBLOCK, DEFAULT_POOLSIZE, DEFAULT_RETRIES, HTTPAdapter
 
 try:
-    from urllib3 import HTTPConnectionPool
-    from urllib3.connection import HTTPConnection
-    from urllib3.util import Timeout
+    import urllib3
 except ImportError:
-    # Attempt to fallback to urllib3 that may be included with requests
-    from requests.packages.urllib3 import HTTPConnectionPool  # pylint: disable=import-error
-    from requests.packages.urllib3.connection import HTTPConnection  # pylint: disable=import-error
-    from requests.packages.urllib3.util import Timeout  # pylint: disable=import-error
+    import requests.packages.urllib3 as urllib3
+
+from .adapter_utils import _key_normalizer
+
+logger = logging.getLogger("podman.uds_adapter")
 
 
-class UDSConnection(HTTPConnection):
-    """Provide an adapter for requests library to connect to UNIX domain sockets."""
+class UDSSocket(socket.socket):
+    """Specialization of socket.socket for a UNIX domain socket."""
+
+    def __init__(self, uds: str):
+        """Initialize UDSSocket.
+
+        Args:
+            uds: Full address of a Podman service UNIX domain socket.
+
+        Examples:
+            UDSSocket("http+unix:///run/podman/podman.sock")
+        """
+        super().__init__(socket.AF_UNIX, socket.SOCK_STREAM)
+        self.uds = uds
+
+    def connect(self, **kwargs):  # pylint: disable=unused-argument
+        """Returns socket for UNIX domain socket."""
+        netloc = unquote(urlparse(self.uds).netloc)
+        super().connect(netloc)
+
+
+class UDSConnection(http.client.HTTPConnection):
+    """Specialization of HTTPConnection to use a UNIX domain sockets."""
 
     def __init__(
         self,
         host: str,
-        timeout: Union[float, Timeout, None] = None,
+        port: int,
+        timeout: Union[float, urllib3.Timeout, None] = None,
+        strict=False,
+        **kwargs,  # pylint: disable=unused-argument
     ):
-        """Instantiate connection to UNIX domain socket for HTTP client."""
-        if isinstance(timeout, Timeout):
-            try:
-                timeout = float(timeout.total)
-            except TypeError:
-                timeout = None
+        """Initialize connection to UNIX domain socket for HTTP client.
 
-        super().__init__("localhost", timeout=timeout)
+        Args:
+            host: Ignored.
+            port: Ignored.
+            timeout: Time to allow for operation.
+            strict: Ignored.
 
-        self.url = host
+        Keyword Args:
+            uds: Full address of a Podman service UNIX domain socket. Required.
+        """
+        connection_kwargs = kwargs.copy()
         self.sock: Optional[socket.socket] = None
-        self.timeout = timeout
 
-    def connect(self):
-        """Returns socket for unix domain socket."""
-        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        if timeout is not None:
+            if isinstance(timeout, urllib3.Timeout):
+                try:
+                    connection_kwargs["timeout"] = float(timeout.total)
+                except TypeError:
+                    pass
+            connection_kwargs["timeout"] = timeout
+
+        self.uds = connection_kwargs.pop("uds")
+        super().__init__(host, **connection_kwargs)
+
+    def connect(self) -> None:
+        """Connect to Podman service via UNIX domain socket."""
+        sock = UDSSocket(self.uds)
         sock.settimeout(self.timeout)
-
-        netloc = unquote(urlparse(self.url).netloc)
-        sock.connect(netloc)
+        sock.connect()
         self.sock = sock
 
-    def __del__(self):
-        """Cleanup connection."""
-        if self.sock:
-            self.sock.close()
+
+class UDSConnectionPool(urllib3.HTTPConnectionPool):
+    """Specialization of HTTPConnectionPool for holding UNIX domain sockets."""
+
+    ConnectionCls = UDSConnection
 
 
-class UDSConnectionPool(HTTPConnectionPool):
-    """Specialization of urllib3 HTTPConnectionPool for UNIX domain sockets."""
+class UDSPoolManager(urllib3.PoolManager):
+    """Specialized PoolManager for tracking UNIX domain socket connections."""
 
-    # pylint: disable=too-few-public-methods
+    # pylint's special handling for namedtuple does not cover this usage
+    # pylint: disable=invalid-name
+    _PoolKey = collections.namedtuple(
+        "_PoolKey", urllib3.poolmanager.PoolKey._fields + ("key_uds",)
+    )
 
-    def __init__(
-        self,
-        host: str,
-        timeout: Optional[Union[float, Timeout]] = None,
-    ) -> None:
-        if isinstance(timeout, float):
-            timeout = Timeout.from_float(timeout)
+    # Map supported schemes to Pool Classes
+    pool_classes_by_scheme = {
+        "http": UDSConnectionPool,
+        "http+ssh": UDSConnectionPool,
+    }
 
-        super().__init__("localhost", timeout=timeout, retries=10)
-        self.host = host
+    # Map supported schemes to Pool Key index generator
+    key_fn_by_scheme = {
+        "http": functools.partial(_key_normalizer, _PoolKey),
+        "http+ssh": functools.partial(_key_normalizer, _PoolKey),
+    }
 
-    def _new_conn(self) -> UDSConnection:
-        return UDSConnection(self.host, self.timeout)
+    def __init__(self, num_pools=10, headers=None, **kwargs):
+        """Initialize UDSPoolManager.
+
+        Args:
+            num_pools: Number of UDS Connection pools to maintain.
+            headers: Additional headers to add to operations.
+        """
+        super().__init__(num_pools, headers, **kwargs)
+        self.pool_classes_by_scheme = UDSPoolManager.pool_classes_by_scheme
+        self.key_fn_by_scheme = UDSPoolManager.key_fn_by_scheme
 
 
 class UDSAdapter(HTTPAdapter):
-    """Specialization of requests transport adapter for unix domain sockets."""
+    """Specialization of requests transport adapter for UNIX domain sockets."""
 
-    # Abstract methods (get_connection) are specialized and pylint cannot walk hierarchy.
-    # pylint: disable=arguments-differ
+    def __init__(
+        self,
+        uds: str,
+        pool_connections=DEFAULT_POOLSIZE,
+        pool_maxsize=DEFAULT_POOLSIZE,
+        max_retries=DEFAULT_RETRIES,
+        pool_block=DEFAULT_POOLBLOCK,
+        **kwargs,
+    ):
+        """Initialize UDSAdapter.
 
-    def __init__(self, *args, **kwargs):
+        Args:
+            uds: Full address of a Podman service UNIX domain socket.
+                Format, http+unix:///run/podman/podman.sock
+            max_retries: The maximum number of retries each connection should attempt.
+            pool_block: Whether the connection pool should block for connections.
+            pool_connections: The number of connection pools to cache.
+            pool_maxsize: The maximum number of connections to save in the pool.
 
-        self.timeout = None
+        Keyword Args:
+            timeout (float):
+
+        Examples:
+            requests.Session.mount(
+                "http://", UDSAdapater("http+unix:///run/user/1000/podman/podman.sock")
+            )
+        """
+        self.poolmanager: Optional[UDSPoolManager] = None
+
+        self._pool_kwargs = {"uds": uds}
+
         if "timeout" in kwargs:
-            self.timeout = kwargs.pop("timeout")
+            self._pool_kwargs["timeout"] = kwargs.get("timeout")
 
-        super().__init__(*args, **kwargs)
+        super().__init__(pool_connections, pool_maxsize, max_retries, pool_block)
 
-    def get_connection(self, host, proxies: Mapping[str, Any] = None) -> UDSConnectionPool:
-        if len(proxies) > 0:
-            uri = urlparse(host)
-            if uri.scheme in proxies:
-                raise ValueError(f"{self.__class__.__name__} does not support proxies.")
+    def init_poolmanager(self, connections, maxsize, block=DEFAULT_POOLBLOCK, **kwargs):
+        """Initialize UDS Pool Manager.
 
-        return UDSConnectionPool(host, timeout=self.timeout)
+        Args:
+            connections: The number of urllib3 connection pools to cache.
+            maxsize: The maximum number of connections to save in the pool.
+            block: Block when no free connections are available.
+        """
+        pool_kwargs = kwargs.copy()
+        pool_kwargs.update(self._pool_kwargs)
+        self.poolmanager = UDSPoolManager(
+            num_pools=connections, maxsize=maxsize, block=block, **pool_kwargs
+        )
