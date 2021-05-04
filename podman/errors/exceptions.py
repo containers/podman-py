@@ -20,7 +20,7 @@ class APIError(HTTPError):
         response: Union[Response, "APIResponse", None] = None,
         explanation: Optional[str] = None,
     ):
-        """Create an APIError.
+        """Initialize APIError.
 
         Args:
             message: Message from service. Default: response.text, may be enhanced or wrapped by
@@ -56,15 +56,15 @@ class APIError(HTTPError):
         return None
 
     def is_error(self) -> bool:
-        """Returns True if an HTTP occurred."""
+        """Returns True when HTTP operation resulted in an error."""
         return self.is_client_error() or self.is_server_error()
 
     def is_client_error(self) -> bool:
-        """Returns True if error occurred in request."""
+        """Returns True when request is incorrect."""
         return 400 <= (self.status_code or 0) < 500
 
     def is_server_error(self) -> bool:
-        """Returns True if error occurred in service."""
+        """Returns True when error occurred in service."""
         return 500 <= (self.status_code or 0) < 600
 
 
@@ -77,11 +77,7 @@ class NotFound(APIError):
 
 
 class ImageNotFound(APIError):
-    """Image not found on Podman service.
-
-    Notes:
-        Compatible name, missing Error suffix.
-    """
+    """Image not found on Podman service."""
 
 
 class DockerException(Exception):
@@ -100,7 +96,7 @@ class BuildError(PodmanError):
     """Error occurred during build operation."""
 
     def __init__(self, reason: str, build_log: Iterable[str]) -> None:
-        """Create BuildError.
+        """Initialize BuildError.
 
         Args:
             reason: describes the error

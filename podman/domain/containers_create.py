@@ -58,6 +58,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 For example,
                     /dev/sda:/dev/xvda:rwm allows the container to have read-write access to the
                     host's /dev/sda via a node named /dev/xvda inside the container.
+
             dns (List[str]): Set custom DNS servers.
             dns_opt (List[str]): Additional options to be added to the container's resolv.conf file.
             dns_search (List[str]): DNS search domains.
@@ -123,7 +124,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             pids_limit (int): Tune a container's pids limit. Set -1 for unlimited.
             platform (str): Platform in the format os[/arch[/variant]]. Only used if the method
                 needs to pull the requested image.
-            ports (Dict[str, Union[int, Tuple[str, int], List[int]): Ports to bind inside
+            ports (Dict[str, Union[int, Tuple[str, int], List[int]]]): Ports to bind inside
                 the container.
 
                 The keys of the dictionary are the ports to bind inside the container, either as an
@@ -135,13 +136,12 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
                 - The port number, as an integer. For example,
                   {'2222/tcp': 3333} will expose port 2222 inside the container as port 3333 on the
-                    host.
-                - None, to assign a random host port. For example,
-                  {'2222/tcp': None}.
+                  host.
+                - None, to assign a random host port. For example, {'2222/tcp': None}.
                 - A tuple of (address, port) if you want to specify the host interface. For example,
                   {'1111/tcp': ('127.0.0.1', 1111)}.
                 - A list of integers, if you want to bind multiple host ports to a single container
-                    port. For example, {'1111/tcp': [1234, 4567]}.
+                  port. For example, {'1111/tcp': [1234, 4567]}.
 
             privileged (bool): Give extended privileges to this container.
             publish_all_ports (bool): Publish all ports to the host.
@@ -153,7 +153,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 - Name: One of on-failure, or always.
                 - MaximumRetryCount: Number of times to restart the container on failure.
 
-                For example:
+                For example,
                     {"Name": "on-failure", "MaximumRetryCount": 5}
 
             runtime (str): Runtime to use with this container.
@@ -172,7 +172,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             tmpfs (Dict[str, str]): Temporary filesystems to mount, as a dictionary mapping a
                 path inside the container to options for that path.
 
-                For example:
+                For example,
 
                     {
                         '/mnt/vol2': '',
@@ -194,7 +194,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             volume_driver (str): The name of a volume driver/plugin.
             volumes (Dict[str, Dict[str, str]]): A dictionary to configure volumes mounted inside
                 the container. The key is either the host path or a volume name, and the value is
-                 a dictionary with the keys:
+                a dictionary with the keys:
 
                 - bind The path to mount the volume inside the container
                 - mode Either rw to mount the volume read/write, or ro to mount it read-only.

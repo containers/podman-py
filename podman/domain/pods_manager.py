@@ -64,16 +64,17 @@ class PodsManager(Manager):
 
         Keyword Args:
             filters (Mapping[str, str]): Criteria for listing pods. Available filters:
+
                 - ctr-ids (List[str]): List of container ids to filter by.
                 - ctr-names (List[str]): List of container names to filter by.
                 - ctr-number (List[int]): list pods with given number of containers.
                 - ctr-status (List[str]): List pods with containers in given state.
-                    Legal values are: "created", "running", "paused",
-                    "stopped", "exited", "unknown"
+                  Legal values are: "created", "running", "paused", "stopped",
+                  "exited", or "unknown"
                 - id (str) - List pod with this id.
                 - name (str) - List pod with this name.
-                - status (List[str]): List pods in given state. Legal values are: "created",
-                    "running", "paused", "stopped", "exited", "unknown"
+                - status (List[str]): List pods in given state. Legal values are:
+                  "created", "running", "paused", "stopped", "exited", or "unknown"
                 - label (List[str]): List pods with given labels.
                 - network (List[str]): List pods associated with given Network Ids (not Names).
 

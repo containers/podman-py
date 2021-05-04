@@ -4,6 +4,8 @@
         'importlib' exceptions are used to differentiate between APIConnection and PodmanClient
         Errors. Therefore, installing both APIConnection and PodmanClient is not supported.
         PodmanClient related errors take precedence over APIConnection ones.
+
+        ApiConnection and associated classes have been deprecated.
 """
 import warnings
 from http.client import HTTPException
@@ -38,8 +40,7 @@ except ImportError:
 class NotFoundError(HTTPException):
     """HTTP request returned a http.HTTPStatus.NOT_FOUND.
 
-    Notes:
-        TODO Delete when APIConnection EOL.
+    Deprecated.
     """
 
     def __init__(self, message, response=None):
@@ -55,34 +56,44 @@ except ImportError:
 
     class ImageNotFound(NotFoundError):
         """HTTP request returned a http.HTTPStatus.NOT_FOUND.
-        Specialized for Image not found.
+
+        Specialized for Image not found. Deprecated.
         """
 
 
 class NetworkNotFound(NotFoundError):
-    """Network request returned a http.HTTPStatus.NOT_FOUND."""
+    """Network request returned a http.HTTPStatus.NOT_FOUND.
+
+    Deprecated.
+    """
 
 
 class ContainerNotFound(NotFoundError):
     """HTTP request returned a http.HTTPStatus.NOT_FOUND.
-    Specialized for Container not found.
+
+    Specialized for Container not found. Deprecated.
     """
 
 
 class PodNotFound(NotFoundError):
     """HTTP request returned a http.HTTPStatus.NOT_FOUND.
-    Specialized for Pod not found.
+
+    Specialized for Pod not found. Deprecated.
     """
 
 
 class ManifestNotFound(NotFoundError):
     """HTTP request returned a http.HTTPStatus.NOT_FOUND.
-    Specialized for Manifest not found.
+
+    Specialized for Manifest not found. Deprecated.
     """
 
 
 class RequestError(HTTPException):
-    """Podman service reported issue with the request"""
+    """Podman service reported issue with the request.
+
+    Deprecated.
+    """
 
     def __init__(self, message, response=None):
         super().__init__(message)
@@ -91,7 +102,10 @@ class RequestError(HTTPException):
 
 
 class InternalServerError(HTTPException):
-    """Podman service reported an internal error."""
+    """Podman service reported an internal error.
+
+    Deprecated.
+    """
 
     def __init__(self, message, response=None):
         super().__init__(message)

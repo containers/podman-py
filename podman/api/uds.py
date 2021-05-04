@@ -105,13 +105,13 @@ class UDSPoolManager(urllib3.PoolManager):
     )
 
     # Map supported schemes to Pool Classes
-    pool_classes_by_scheme = {
+    _pool_classes_by_scheme = {
         "http": UDSConnectionPool,
         "http+ssh": UDSConnectionPool,
     }
 
     # Map supported schemes to Pool Key index generator
-    key_fn_by_scheme = {
+    _key_fn_by_scheme = {
         "http": functools.partial(_key_normalizer, _PoolKey),
         "http+ssh": functools.partial(_key_normalizer, _PoolKey),
     }
@@ -124,8 +124,8 @@ class UDSPoolManager(urllib3.PoolManager):
             headers: Additional headers to add to operations.
         """
         super().__init__(num_pools, headers, **kwargs)
-        self.pool_classes_by_scheme = UDSPoolManager.pool_classes_by_scheme
-        self.key_fn_by_scheme = UDSPoolManager.key_fn_by_scheme
+        self.pool_classes_by_scheme = UDSPoolManager._pool_classes_by_scheme
+        self.key_fn_by_scheme = UDSPoolManager._key_fn_by_scheme
 
 
 class UDSAdapter(HTTPAdapter):
@@ -151,7 +151,7 @@ class UDSAdapter(HTTPAdapter):
             pool_maxsize: The maximum number of connections to save in the pool.
 
         Keyword Args:
-            timeout (float):
+            timeout (float): Time in seconds to wait for response
 
         Examples:
             requests.Session.mount(

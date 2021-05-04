@@ -219,13 +219,13 @@ class SSHPoolManager(urllib3.PoolManager):
     )
 
     # Map supported schemes to Pool Classes
-    pool_classes_by_scheme = {
+    _pool_classes_by_scheme = {
         "http": SSHConnectionPool,
         "http+ssh": SSHConnectionPool,
     }
 
     # Map supported schemes to Pool Key index generator
-    key_fn_by_scheme = {
+    _key_fn_by_scheme = {
         "http": functools.partial(_key_normalizer, _PoolKey),
         "http+ssh": functools.partial(_key_normalizer, _PoolKey),
     }
@@ -238,8 +238,8 @@ class SSHPoolManager(urllib3.PoolManager):
             headers: Additional headers to add to operations.
         """
         super().__init__(num_pools, headers, **kwargs)
-        self.pool_classes_by_scheme = SSHPoolManager.pool_classes_by_scheme
-        self.key_fn_by_scheme = SSHPoolManager.key_fn_by_scheme
+        self.pool_classes_by_scheme = SSHPoolManager._pool_classes_by_scheme
+        self.key_fn_by_scheme = SSHPoolManager._key_fn_by_scheme
 
 
 class SSHAdapter(HTTPAdapter):
