@@ -1,8 +1,9 @@
 """Read containers.conf file."""
-import os
-import urllib.parse
+import urllib
 from pathlib import Path
 from typing import Dict, Optional
+
+import xdg.BaseDirectory
 
 try:
     import toml
@@ -50,12 +51,12 @@ class ServiceConnection:
 class PodmanConfig:
     """PodmanConfig provides a representation of the containers.conf file."""
 
-    def __init__(self, path: str = None):
+    def __init__(self, path: Optional[str] = None):
         """Read Podman configuration from users XDG_CONFIG_HOME."""
 
         if path is None:
-            home = Path(os.environ.get("XDG_CONFIG_HOME", Path.home()))
-            self.path = home / ".config" / "containers" / "containers.conf"
+            home = Path(xdg.BaseDirectory.xdg_config_home)
+            self.path = home / "containers" / "containers.conf"
         else:
             self.path = Path(path)
 
@@ -80,7 +81,13 @@ class PodmanConfig:
 
     @cached_property
     def services(self) -> Dict[str, ServiceConnection]:
-        """Returns list of service connections."""
+        """Returns list of service connections.
+
+        Examples:
+            podman_config = PodmanConfig()
+            address = podman_config.services["testing"]
+            print(f"Testing service address {address}")
+        """
         services: Dict[str, ServiceConnection] = dict()
 
         engine = self.attrs.get("engine")

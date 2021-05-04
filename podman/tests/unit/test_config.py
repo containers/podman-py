@@ -1,9 +1,10 @@
 import unittest
+import urllib.parse
 from pathlib import Path
 from unittest import mock
 from unittest.mock import MagicMock
 
-from podman.config import PodmanConfig
+from podman.domain.config import PodmanConfig
 
 
 class PodmanConfigTestCase(unittest.TestCase):
@@ -43,9 +44,9 @@ class PodmanConfigTestCase(unittest.TestCase):
             config = PodmanConfig("/home/developer/containers.conf")
 
             self.assertEqual(config.active_service.id, "testing")
-            self.assertEqual(
-                config.active_service.url.geturl(), "ssh://qe@localhost:2222/run/podman/podman.sock"
-            )
+
+            expected = urllib.parse.urlparse("ssh://qe@localhost:2222/run/podman/podman.sock")
+            self.assertEqual(config.active_service.url, expected)
             self.assertEqual(config.services["production"].identity, Path("/home/root/.ssh/id_rsa"))
 
             PodmanConfigTestCase.opener.assert_called_with(Path("/home/developer/containers.conf"))

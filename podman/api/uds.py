@@ -9,6 +9,8 @@ from urllib.parse import unquote, urlparse
 
 from requests.adapters import DEFAULT_POOLBLOCK, DEFAULT_POOLSIZE, DEFAULT_RETRIES, HTTPAdapter
 
+from ..errors import APIError
+
 try:
     import urllib3
 except ImportError:
@@ -37,7 +39,10 @@ class UDSSocket(socket.socket):
     def connect(self, **kwargs):  # pylint: disable=unused-argument
         """Returns socket for UNIX domain socket."""
         netloc = unquote(urlparse(self.uds).netloc)
-        super().connect(netloc)
+        try:
+            super().connect(netloc)
+        except Exception as e:
+            raise APIError(f"Unable to make connection to UDS '{netloc}'") from e
 
 
 class UDSConnection(http.client.HTTPConnection):

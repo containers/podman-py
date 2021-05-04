@@ -93,7 +93,6 @@ class ImageTestCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_save(self, mock):
-
         tarball = b'Yet another weird tarball...'
         body = io.BytesIO(tarball)
 
