@@ -1,6 +1,7 @@
 requests>=2.24
 toml>=0.10.2
-urllib3~=1.26.4
-pyxdg~=0.27
+urllib3~=1.24.2
+pyxdg~=0.26
+sphinx
 wheel
 setuptools

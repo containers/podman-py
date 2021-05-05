@@ -24,16 +24,17 @@ logger = logging.getLogger("podman")
 
 
 class PodmanClient(AbstractContextManager):
-    """Create client to Podman service.
+    """Client to connect to a Podman service.
 
     Examples:
+
         with PodmanClient("ssh://root@api.example:22/run/podman/podman.sock?secure=True",
             identity="~alice/.ssh/api_ed25519"
         )
     """
 
     def __init__(self, *args, **kwargs) -> None:
-        """Instantiate PodmanClient object
+        """Initialize PodmanClient.
 
         Keyword Args:
             base_url (str): Full URL to Podman service. See examples.
@@ -95,22 +96,23 @@ class PodmanClient(AbstractContextManager):
         """Returns connection to service using environment variables and parameters.
 
         Environment variables:
-            DOCKER_HOST, CONTAINER_HOST: URL to Podman service
-            DOCKER_TLS_VERIFY, CONTAINER_TLS_VERIFY: Verify host against CA certificate
-            DOCKER_CERT_PATH, CONTAINER_CERT_PATH: Path to TLS certificates for host connection
+
+            - DOCKER_HOST, CONTAINER_HOST: URL to Podman service
+            - DOCKER_TLS_VERIFY, CONTAINER_TLS_VERIFY: Verify host against CA certificate
+            - DOCKER_CERT_PATH, CONTAINER_CERT_PATH: Path to TLS certificates for host connection
 
         Args:
             version: API version to use. Default: auto, use version from server
             timeout: Timeout for API calls, in seconds.
             max_pool_size: Number of connections to save in pool.
-            ssl_version: Ignored. SSH configuration delegated to SSH client configuration.
+            ssl_version: SSH configuration delegated to SSH client configuration. Ignored.
             assert_hostname: Ignored.
             environment: Dict containing input environment. Default: os.environ
             credstore_env: Dict containing environment for credential store
             use_ssh_client: Use system ssh client rather than ssh module. Always, True.
 
         Returns:
-            PodmanClient: used to communicate with Podman service
+            Client used to communicate with a Podman service.
         """
         environment = environment or os.environ
         credstore_env = credstore_env or dict()
@@ -220,4 +222,4 @@ class PodmanClient(AbstractContextManager):
 
 # Aliases to minimize effort to port to PodmanPy
 DockerClient = PodmanClient
-from_env = PodmanClient.from_env  #: :meta hide-value:
+from_env = PodmanClient.from_env

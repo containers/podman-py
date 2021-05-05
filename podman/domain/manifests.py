@@ -180,6 +180,9 @@ class ManifestsManager(Manager):
         body = response.json()
         manifest = self.get(body["Id"])
         manifest.attrs["names"] = names
+
+        if manifest.attrs["manifests"] is None:
+            manifest.attrs["manifests"] = list()
         return manifest
 
     def exists(self, key: str) -> bool:

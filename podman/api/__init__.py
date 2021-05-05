@@ -33,11 +33,17 @@ def _api_version(release: str, significant: int = 3) -> str:
 VERSION: str = _api_version(version.__version__)
 COMPATIBLE_VERSION: str = _api_version(version.__compatible_version__, 2)
 
+try:
+    from typing_extensions import Literal
+except ModuleNotFoundError:
+    from typing import Literal
+
 # isort: unique-list
 __all__ = [
     'APIClient',
     'COMPATIBLE_VERSION',
     'DEFAULT_CHUNK_SIZE',
+    'Literal',
     'VERSION',
     'cached_property',
     'create_tar',

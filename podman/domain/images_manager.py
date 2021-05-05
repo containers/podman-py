@@ -318,7 +318,7 @@ class ImagesManager(BuildMixin, Manager):
         image: Union[Image, str],
         force: Optional[bool] = None,
         noprune: bool = False,  # pylint: disable=unused-argument
-    ) -> List[Dict[str, Union[str, int]]]:
+    ) -> List[Dict[api.Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[str, int]]]:
         """Delete image from Podman service.
 
         Args:
@@ -327,14 +327,11 @@ class ImagesManager(BuildMixin, Manager):
             noprune: Ignored.
 
         Returns:
-            List[Dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[str, int]]]
+            Dictionaries of the images deleted and untagged.
 
         Raises:
             ImageNotFound: when image does not exist
             APIError: when service returns an error
-
-        Notes:
-            The dictionaries with keys Errors and ExitCode are added.
         """
         if isinstance(image, Image):
             image = image.id
@@ -359,9 +356,11 @@ class ImagesManager(BuildMixin, Manager):
 
         Keyword Args:
             filters (Mapping[str, List[str]): Refine results of search. Available filters:
+
                 - is-automated (bool): Image build is automated.
                 - is-official (bool): Image build is owned by product provider.
                 - stars (int): Image has at least this number of stars.
+
             noTrunc (bool): Do not truncate any result string. Default: True.
             limit (int): Maximum number of results.
 

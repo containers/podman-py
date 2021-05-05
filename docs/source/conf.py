@@ -13,6 +13,8 @@
 import os
 import sys
 
+from sphinx.domains.python import PythonDomain
+
 sys.path.insert(0, os.path.abspath('../../..'))
 
 
@@ -48,7 +50,8 @@ exclude_patterns = ['**/api_connection.py']
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+# html_theme = 'alabaster'
+html_theme = 'default'
 html_theme_options = {
     'description': 'A Python library for the Podman service API',
     'fixed_sidebar': True,
@@ -68,7 +71,7 @@ napoleon_numpy_docstring = False
 napoleon_include_init_with_doc = False
 napoleon_include_private_with_doc = False
 napoleon_include_special_with_doc = False
-napoleon_use_admonition_for_examples = True
+napoleon_use_admonition_for_examples = False
 napoleon_use_admonition_for_notes = True
 napoleon_use_admonition_for_references = False
 napoleon_use_ivar = False
@@ -79,11 +82,25 @@ napoleon_type_aliases = None
 napoleon_attr_annotations = True
 
 
+class PatchedPythonDomain(PythonDomain):
+    def resolve_xref(self, env, fromdocname, builder, typ, target, node, contnode):
+        if 'refspecific' in node:
+            del node['refspecific']
+        return super(PatchedPythonDomain, self).resolve_xref(
+            env, fromdocname, builder, typ, target, node, contnode
+        )
+
+
 def skip(app, what, name, obj, would_skip, options):
-    if name in ("ApiConnection", "DockerClient"):
+    # isort: unique-list
+    cls = ['ApiConnection', 'DockerClient', 'DockerException']
+
+    if name in cls:
         return True
+
     return None
 
 
 def setup(app):
     app.connect("autodoc-skip-member", skip)
+    app.add_domain(PatchedPythonDomain, override=True)

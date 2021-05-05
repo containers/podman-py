@@ -135,25 +135,29 @@ class NetworksManager(Manager):
 
         Keyword Args:
             names (List[str]): List of names to filter by.
-            ids (List[str]): List of ids to filter by.
-            filters (Mapping[str,str]): Criteria for listing networks.
-                Available filters:
+            ids (List[str]): List of identifiers to filter by.
+            filters (Mapping[str,str]): Criteria for listing networks. Available filters:
+
                 - driver="bridge": Matches a network's driver. Only "bridge" is supported.
                 - label=(Union[str, List[str]]): format either "key", "key=value"
-                    or a list of such.
+                  or a list of such.
                 - type=(str): Filters networks by type, legal values are:
+
                     - "custom"
                     - "builtin"
-                - plugin=(List[str]]): Matches CNI plugins included in a network,
-                    legal values are (Podman only):
+
+                - plugin=(List[str]]): Matches CNI plugins included in a network, legal
+                  values are (Podman only):
+
                         - bridge
                         - portmap
                         - firewall
                         - tuning
                         - dnsname
                         - macvlan
+
             greedy (bool): Fetch more details for each network individually.
-                You might want this to get the containers attached to them. (ignored)
+                You might want this to get the containers attached to them. Ignored.
 
         Raises:
             APIError: when error returned by service
@@ -173,12 +177,13 @@ class NetworksManager(Manager):
 
         return [self.prepare_model(i) for i in response.json()]
 
-    def prune(self, filters: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+    def prune(
+        self, filters: Optional[Dict[str, Any]] = None, **kwargs
+    ) -> Dict[api.Literal["NetworksDeleted", "SpaceReclaimed"], Any]:
         """Delete unused Networks.
 
         Args:
             filters: Criteria for selecting volumes to delete. Ignored.
-
 
         Keyword Args:
             compatible (bool): Should compatible API be used. Default: True
