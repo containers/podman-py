@@ -50,7 +50,7 @@ class Container(PodmanResource):
         """Returns operational status of container.
 
         Example:
-            'running', 'stopped', 'exited'
+            'running', 'stopped', or 'exited'
         """
         with suppress(KeyError):
             return self.attrs["State"]["Status"]
@@ -79,7 +79,7 @@ class Container(PodmanResource):
         raise NotImplementedError()
 
     def commit(self, repository: str = None, tag: str = None, **kwargs) -> Image:
-        """Save container to given repository using given parameters.
+        """Save container to given repository.
 
         Args:
             repository: Where to save Image
@@ -94,6 +94,7 @@ class Container(PodmanResource):
             message (str): Commit message to include with Image
             pause (bool): Pause the container before committing it
 
+        Notes:
             See https://docs.podman.io/en/latest/_static/api.html#operation/libpodCommitContainer
         """
         params = {
@@ -471,9 +472,8 @@ class Container(PodmanResource):
             timeout (int): Ignored.
 
         Returns:
-            Keys:
-                - StatusCode (int): Container's exit code
-                - Error["Message"] (str): Error message from container
+            Dictionary with keys, StatusCode (int) Container's exit code and
+            Error["Message"] (str) Error message from container.
 
         Raises:
               NotFound: when Container not found

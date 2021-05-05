@@ -13,7 +13,8 @@ export PODMAN_VERSION ?= "3.2.0"
 .PHONY: podman-py
 podman-py:
 	rm dist/* || :
-	pip install wheel pyxdg
+	python -m pip install --user -r requirements.txt
+	python -m pip install --user -r test-requirements.txt
 	PODMAN_VERSION=$(PODMAN_VERSION) \
 	$(PYTHON) setup.py sdist bdist bdist_wheel
 
@@ -47,6 +48,14 @@ release:
 	twine upload --verbose dist/*whl dist/*zip
 	# pip install podman-py
 
+.PHONY: docs
+docs:
+	mkdir -p build/docs/source
+	cp -R docs/source/* build/docs/source
+	sphinx-apidoc -f -o build/docs/source podman podman/tests podman/api_connection.py podman/containers podman/images \
+		podman/manifests podman/networks podman/pods podman/system
+	sphinx-build build/docs/source build/html
+
 # .PHONY: install
 HEAD ?= HEAD
 # install:
@@ -68,7 +77,7 @@ uninstall:
 
 .PHONY: clean
 clean:
-	rm -rf podman_py.egg-info dist
+	rm -rf podman_py.egg-info dist build/docs
 	find . -depth -name __pycache__ -exec rm -rf {} \;
 	find . -depth -name \*.pyc -exec rm -f {} \;
 	$(PYTHON) ./setup.py clean --all

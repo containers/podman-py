@@ -48,7 +48,7 @@ class PodmanLauncher:
         self.log_level = log_level
 
         self.proc = None
-        self.reference_id = hash(time.time_ns())
+        self.reference_id = hash(time.monotonic())
 
         self.cmd: List[str] = []
         if privileged:

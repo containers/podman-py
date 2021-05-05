@@ -102,7 +102,8 @@ class APIClient(requests.Session):
                 Default: requests.adapters.DEFAULT_POOLSIZE
 
         Keyword Args:
-            compatible_version: Override version prefix for Compatible resource URLs.
+            compatible_version (str): Override version prefix for compatible resource URLs.
+            identity (str): Provide SSH key to authenticate SSH connection.
 
         Raises:
             ValueError: when a parameter is incorrect
@@ -122,13 +123,15 @@ class APIClient(requests.Session):
             self.mount("http://", UDSAdapter(self.base_url.geturl(), **adapter_kwargs))
             self.mount("https://", UDSAdapter(self.base_url.geturl(), **adapter_kwargs))
 
-        if self.base_url.scheme == "http+ssh":
+        elif self.base_url.scheme == "http+ssh":
             self.mount("http://", SSHAdapter(self.base_url.geturl(), **adapter_kwargs))
             self.mount("https://", SSHAdapter(self.base_url.geturl(), **adapter_kwargs))
 
-        if self.base_url.scheme == "http":
+        elif self.base_url.scheme == "http":
             self.mount("http://", HTTPAdapter(**adapter_kwargs))
             self.mount("https://", HTTPAdapter(**adapter_kwargs))
+        else:
+            assert False, "APIClient.supported_schemes changed without adding a branch here."
 
         self.version = version or api.VERSION
         self.path_prefix = f"/v{self.version}/libpod/"
@@ -157,9 +160,9 @@ class APIClient(requests.Session):
         # Normalize URL scheme, needs to match up with adapter mounts
         if uri.scheme == "unix":
             uri = uri._replace(scheme="http+unix")
-        if uri.scheme == "ssh":
+        elif uri.scheme == "ssh":
             uri = uri._replace(scheme="http+ssh")
-        if uri.scheme == "tcp":
+        elif uri.scheme == "tcp":
             uri = uri._replace(scheme="http")
 
         # Normalize URL netloc, needs to match up with transport adapters expectations

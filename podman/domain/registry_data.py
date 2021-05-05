@@ -11,39 +11,29 @@ logger = logging.getLogger("podman.images")
 
 
 class RegistryData(PodmanResource):
-    """Registry metadata about Image.
-
-    Attributes:
-        id: identifier for resource
-        short_id: truncated view of id
-    """
+    """Registry metadata about Image."""
 
     def __init__(self, image_name: str, *args, **kwargs) -> None:
         """Initialize RegistryData object.
 
         Args:
             image_name: Name of Image.
+
+        Keyword Args:
+            client (APIClient): Configured connection to a Podman service.
+            collection (Manager): Manager of this category of resource,
+                named `collection` for compatibility
+
         """
         super().__init__(*args, **kwargs)
         self.image_name = image_name
 
-        self.attrs = kwargs.get("attrs", None)
+        self.attrs = kwargs.get("attrs")
         if self.attrs is None:
             self.attrs = self.manager.get(image_name).attrs
 
-    @property
-    def id(self) -> Optional[str]:
-        return self.attrs.get("Id")
-
-    @property
-    def short_id(self):
-        """Returns truncated Image id. 'sha256' preserved when included in id."""
-        if self.id.startswith("sha256:"):
-            return self.id[:17]
-        return self.id[:10]
-
     def pull(self, platform: Optional[str] = None) -> Image:
-        """Returns Image pulled by id.
+        """Returns Image pulled by identifier.
 
         Args:
             platform: Platform for which to pull Image. Default: None (all platforms.)

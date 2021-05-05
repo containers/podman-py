@@ -8,6 +8,11 @@ from podman import api
 from podman.domain.manager import Manager, PodmanResource
 from podman.errors import APIError
 
+try:
+    from typing_extensions import Literal
+except ModuleNotFoundError:
+    from typing import Literal
+
 logger = logging.getLogger("podman.volumes")
 
 
@@ -110,16 +115,11 @@ class VolumesManager(Manager):
 
     def prune(
         self, filters: Optional[Dict[str, str]] = None  # pylint: disable=unused-argument
-    ) -> Dict[str, Any]:
+    ) -> Dict[Literal["VolumesDeleted", "SpaceReclaimed"], Any]:
         """Delete unused volumes.
 
         Args:
             filters: Criteria for selecting volumes to delete. Ignored.
-
-        Returns:
-            Dictionary Keys:
-                - VolumesDeleted (List[str]): List of volume ids deleted.
-                - SpaceReclaimed (int): Amount of disk space reclaimed in bytes.
 
         Raises:
             APIError: when service reports error

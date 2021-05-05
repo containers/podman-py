@@ -1,11 +1,15 @@
 """Client for connecting to Podman service."""
 import logging
 import os
-import ssl
 from contextlib import AbstractContextManager
+from pathlib import Path
 from typing import Any, Dict, Optional
 
+import xdg.BaseDirectory
+
+from podman.api import cached_property
 from podman.api.client import APIClient
+from podman.domain.config import PodmanConfig
 from podman.domain.containers_manager import ContainersManager
 from podman.domain.events import EventsManager
 from podman.domain.images_manager import ImagesManager
@@ -15,8 +19,6 @@ from podman.domain.pods_manager import PodsManager
 from podman.domain.secrets import SecretsManager
 from podman.domain.system import SystemManager
 from podman.domain.volumes import VolumesManager
-from podman.tlsconfig import TLSConfig
-from podman.api import cached_property
 
 logger = logging.getLogger("podman")
 
@@ -25,38 +27,51 @@ class PodmanClient(AbstractContextManager):
     """Create client to Podman service.
 
     Examples:
-        Format, ssh://<user>@<host>[:port]/run/podman/podman.sock?secure=True
-
+        with PodmanClient("ssh://root@api.example:22/run/podman/podman.sock?secure=True",
+            identity="~alice/.ssh/api_ed25519"
+        )
     """
 
     def __init__(self, *args, **kwargs) -> None:
         """Instantiate PodmanClient object
 
         Keyword Args:
-            base_url: Full URL to Podman service. Formats:
-                    - http+ssh://<user>@<host>[:port]</run/podman/podman.sock>[?secure=True]
-                    - http+unix://</run/podman/podman.sock>
-                    - tcp://<localhost>[:<port>]
-            version: API version to use. Default: auto, use version from server
-            timeout: Timeout for API calls, in seconds. Default: socket._GLOBAL_DEFAULT_TIMEOUT.
-            tls: Enable TLS connection to service. True uses default options which
-                may be overridden using a TLSConfig object
-            user_agent: User agent for service connections. Default: PodmanPy/<Code Version>
-            credstore_env: Dict containing environment for credential store
-            use_ssh_client: Use system ssh agent rather than ssh module. Always True.
-            max_pool_size: Number of connections to save in pool
+            base_url (str): Full URL to Podman service. See examples.
+            version (str): API version to use. Default: auto, use version from server
+            timeout (int): Timeout for API calls, in seconds.
+                Default: socket._GLOBAL_DEFAULT_TIMEOUT.
+            tls: Ignored. SSH connection configuration delegated to SSH Host configuration.
+            user_agent (str): User agent for service connections. Default: PodmanPy/<Code Version>
+            credstore_env (Mapping[str, str]): Dict containing environment for credential store
+            use_ssh_client (True): Always shell out to SSH client for
+                SSH Podman service connections.
+            max_pool_size (int): Number of connections to save in pool
+            connection (str): Identifier of connection to use from
+                XDG_CONFIG_HOME/containers/containers.conf
+            identity (str): Provide SSH key to authenticate SSH connection.
+
+        Examples:
+            base_url:
+                - http+ssh://<user>@<host>[:port]</run/podman/podman.sock>[?secure=True]
+                - http+unix://</run/podman/podman.sock>
+                - tcp://<localhost>[:<port>]
         """
         super().__init__()
+        config = PodmanConfig()
+
         api_kwargs = kwargs.copy()
 
-        if "base_url" not in api_kwargs:
-            uid = os.geteuid()
-            if uid == 0:
-                elements = ["http+unix://", "run", "podman", "podman.sock"]
-            else:
-                elements = ["http+unix://", "run", "user", str(uid), "podman", "podman.sock"]
-            api_kwargs["base_url"] = os.path.join(elements)  # os.path.join() is correct here...
+        if "connection" in api_kwargs:
+            connection = config.services[api_kwargs.get("connection")]
+            api_kwargs["base_url"] = connection.url.geturl()
 
+            # Override configured identity, if provided in arguments
+            api_kwargs["identity"] = kwargs.get("identity", str(connection.identity))
+        elif "base_url" not in api_kwargs:
+            path = str(
+                Path(xdg.BaseDirectory.get_runtime_dir(strict=False)) / "podman" / "podman.sock"
+            )
+            api_kwargs["base_url"] = "http+unix://" + path
         self.api = APIClient(*args, **api_kwargs)
 
     def __enter__(self) -> "PodmanClient":
@@ -71,11 +86,11 @@ class PodmanClient(AbstractContextManager):
         version: str = "auto",
         timeout: Optional[int] = None,
         max_pool_size: Optional[int] = None,
-        ssl_version: int = None,
-        assert_hostname: bool = False,
-        environment: dict = None,
-        credstore_env: dict = None,
-        use_ssh_client: bool = True,
+        ssl_version: Optional[int] = None,  # pylint: disable=unused-argument
+        assert_hostname: bool = False,  # pylint: disable=unused-argument
+        environment: Optional[Dict[str, str]] = None,
+        credstore_env: Optional[Dict[str, str]] = None,
+        use_ssh_client: bool = True,  # pylint: disable=unused-argument
     ) -> "PodmanClient":
         """Returns connection to service using environment variables and parameters.
 
@@ -86,44 +101,22 @@ class PodmanClient(AbstractContextManager):
 
         Args:
             version: API version to use. Default: auto, use version from server
-            timeout: Timeout for API calls, in seconds. Default: 60
+            timeout: Timeout for API calls, in seconds.
             max_pool_size: Number of connections to save in pool.
-            ssl_version: Valid SSL version from ssl module
-            assert_hostname: Verify hostname of service
+            ssl_version: Ignored. SSH configuration delegated to SSH client configuration.
+            assert_hostname: Ignored.
             environment: Dict containing input environment. Default: os.environ
             credstore_env: Dict containing environment for credential store
-            use_ssh_client: Use system ssh agent rather than ssh module. Always, True.
+            use_ssh_client: Use system ssh client rather than ssh module. Always, True.
 
         Returns:
             PodmanClient: used to communicate with Podman service
         """
-        # FIXME Should parameters be *args, **kwargs and resolved before calling PodmanClient()?
-
         environment = environment or os.environ
         credstore_env = credstore_env or dict()
 
         if version == "auto":
             version = None
-
-        tls = False
-        tls_verify = environment.get("CONTAINER_TLS_VERIFY") or environment.get("DOCKER_TLS_VERIFY")
-        if tls_verify or ssl_version or assert_hostname:
-            cert_path = (
-                environment.get("CONTAINER_CERT_PATH")
-                or environment.get("DOCKER_CERT_PATH")
-                or os.path.join(os.path.expanduser("~"), ".config/containers/certs.d")
-            )
-
-            tls = TLSConfig(
-                client_cert=(
-                    os.path.join(cert_path, "cert.pem"),
-                    os.path.join(cert_path, "key.pem"),
-                ),
-                ca_cert=os.path.join(cert_path, "ca.pem"),
-                verify=tls_verify,
-                ssl_version=ssl_version or ssl.PROTOCOL_TLSv1_2,
-                assert_hostname=assert_hostname,
-            )
 
         host = environment.get("CONTAINER_HOST") or environment.get("DOCKER_HOST") or None
 
@@ -131,9 +124,8 @@ class PodmanClient(AbstractContextManager):
             base_url=host,
             version=version,
             timeout=timeout,
-            tls=tls,
+            tls=False,
             credstore_env=credstore_env,
-            use_ssh_client=use_ssh_client,
             max_pool_size=max_pool_size,
         )
 
@@ -216,14 +208,16 @@ class PodmanClient(AbstractContextManager):
         """Swarm not supported.
 
         Raises:
-            NotImplemented:
+            NotImplemented: Always, swarm not supported by Podman service
         """
         raise NotImplementedError("Swarm operations are not supported by Podman service.")
 
+    # Aliases to cover all swarm methods
     services = swarm
     configs = swarm
     nodes = swarm
 
 
+# Aliases to minimize effort to port to PodmanPy
 DockerClient = PodmanClient
-from_env = PodmanClient.from_env
+from_env = PodmanClient.from_env  #: :meta hide-value:
