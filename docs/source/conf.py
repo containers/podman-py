@@ -20,12 +20,13 @@ sys.path.insert(0, os.path.abspath('../../..'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'Podman SDK for Python'
-copyright = '2021 Red Hat, Inc'
-author = 'Red Hat'
+project = u'Podman Python SDK'
+copyright = u'2021, Red Hat Inc'
+author = u'Red Hat Inc'
 
 # The full version, including alpha/beta/rc tags
-release = '3.1.2.1'
+version = '3.1.2.1'
+release = version
 
 add_module_names = False
 
@@ -34,7 +35,12 @@ add_module_names = False
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon']
+# isort: unique-list
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.napoleon',
+    'sphinx.ext.viewcode',
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -50,11 +56,31 @@ exclude_patterns = ['**/api_connection.py']
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-# html_theme = 'alabaster'
-html_theme = 'default'
+html_theme = 'alabaster'
+html_favicon = '_static/podman-logo.ico'
 html_theme_options = {
-    'description': 'A Python library for the Podman service API',
-    'fixed_sidebar': True,
+    'description': 'Develop scripted Podman operations',
+    'fixed_sidebar': False,
+    'github_banner': True,
+    'github_repo': 'podman-py',
+    'github_user': 'containers',
+    'logo': "podman-logo.png",
+    'logo_name': True,
+    'show_powered_by': False,
+    'extra_nav_links': {
+        'Report PodmanPy Issue': 'http://github.com/containers/podman-py/issues',
+        'Podman Reference': 'http://docs.podman.io',
+        'Podman on github': 'http://github.com/containers/podman',
+    },
+}
+
+html_sidebars = {
+    '**': [
+        'about.html',
+        'navigation.html',
+        'relations.html',
+        'searchbox.html',
+    ]
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -63,6 +89,12 @@ html_theme_options = {
 html_static_path = ['_static']
 
 #  -- autoclass settings ------------------------------------------------------	s
+autodoc_member_order = "groupwise"
+autodoc_default_options = {
+    'members': True,
+    'inherited-members': True,
+    'show-inheritance': True,
+}
 autoclass_content = "both"
 
 #  -- Napoleon settings ------------------------------------------------------	s

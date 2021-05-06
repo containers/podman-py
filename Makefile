@@ -14,7 +14,6 @@ export PODMAN_VERSION ?= "3.2.0"
 podman-py:
 	rm dist/* || :
 	python -m pip install --user -r requirements.txt
-	python -m pip install --user -r test-requirements.txt
 	PODMAN_VERSION=$(PODMAN_VERSION) \
 	$(PYTHON) setup.py sdist bdist bdist_wheel
 
@@ -24,6 +23,7 @@ lint:
 
 .PHONY: tests
 tests:
+	python -m pip install --user -r test-requirements.txt
 	DEBUG=1 coverage run -m unittest discover -s podman/tests
 	coverage report -m --skip-covered --fail-under=80 --omit=./podman/tests/* --omit=.tox/* \
 	--omit=/usr/lib/* --omit=*/lib/python*
@@ -52,7 +52,9 @@ release:
 docs:
 	mkdir -p build/docs/source
 	cp -R docs/source/* build/docs/source
-	sphinx-apidoc -f -o build/docs/source podman podman/tests podman/api_connection.py podman/containers podman/images \
+	sphinx-apidoc --separate --no-toc --force --templatedir build/docs/source/_templates/apidoc \
+		-o build/docs/source \
+		podman podman/tests podman/api_connection.py podman/containers podman/images \
 		podman/manifests podman/networks podman/pods podman/system
 	sphinx-build build/docs/source build/html
 
@@ -77,7 +79,7 @@ uninstall:
 
 .PHONY: clean
 clean:
-	rm -rf podman_py.egg-info dist build/docs
+	rm -rf podman_py.egg-info dist build/*
 	find . -depth -name __pycache__ -exec rm -rf {} \;
 	find . -depth -name \*.pyc -exec rm -f {} \;
 	$(PYTHON) ./setup.py clean --all

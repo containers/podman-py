@@ -44,23 +44,23 @@ class Image(PodmanResource):
         response.raise_for_status(not_found=ImageNotFound)
         return response.json()
 
-    def remove(self, **kwargs) -> List[Dict[str, Union[str, int]]]:
+    def remove(
+        self, **kwargs
+    ) -> List[Dict[api.Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[str, int]]]:
         """Delete image from Podman service.
+
+        Podman only
 
         Keyword Args:
             force: Delete Image even if in use
             noprune: Ignored.
 
         Returns:
-            List[Dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[str, int]]]
+            Report on which images were deleted and untagged, including any reported errors.
 
         Raises:
             ImageNotFound: when image does not exist
             APIError: when service returns an error
-
-        Notes:
-            - Podman only
-            - The dictionaries with keys Errors and ExitCode are added.
         """
         return self.manager.remove(self.id, **kwargs)
 
@@ -71,6 +71,8 @@ class Image(PodmanResource):
     ) -> Iterator[bytes]:
         """Returns Image as tarball.
 
+        Format is set to docker-archive, this allows load() to import this tarball.
+
         Args:
             chunk_size: If None, data will be streamed in received buffer size.
                 If not None, data will be returned in sized buffers. Default: 2MB
@@ -78,9 +80,6 @@ class Image(PodmanResource):
 
         Raises:
             APIError: when service returns an error
-
-        Notes:
-            Format is set to docker-archive, this allows load() to import this tarball.
         """
         response = self.client.get(
             f"/images/{self.id}/get", params={"format": ["docker-archive"]}, stream=True

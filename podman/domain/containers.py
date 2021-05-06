@@ -93,9 +93,6 @@ class Container(PodmanResource):
             format (str): Format of the image manifest and metadata
             message (str): Commit message to include with Image
             pause (bool): Pause the container before committing it
-
-        Notes:
-            See https://docs.podman.io/en/latest/_static/api.html#operation/libpodCommitContainer
         """
         params = {
             "author": kwargs.get("author"),
