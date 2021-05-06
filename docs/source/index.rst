@@ -1,24 +1,70 @@
+PodmanPy: Python scripting for Podman services
+==============================================
+.. image:: https://img.shields.io/pypi/l/podman-py.svg
+    :target: https://pypi.org/project/podman-py/
 
-.. image:: https://github.com/containers/podman/blob/master/logo/podman-logo.png?raw=true
+.. image:: https://img.shields.io/pypi/wheel/podman-py.svg
+    :target: https://pypi.org/project/podman-py/
 
-What is PodmanPy?
-====================================
+.. image:: https://img.shields.io/pypi/pyversions/podman-py.svg
+    :target: https://pypi.org/project/podman-py/
 
 PodmanPy is a Python3 module that allows you to write Python scripts that access resources
-maintained by a Podman service.
+maintained by a Podman service. It leverages the Podman service RESTful API.
 
-PodmanPy leverages the Podman service RESTful API. Connections via http+ssh://, http+unix:// or
-tcp:// are supported.
+Podman services are addressed using a URL where the scheme signals to the client how to connect to
+service. Supported schemes are: ``http+ssh``, ``http+unix`` or ``tcp``. Formats are the following styles:
 
-.. automodule:: podman
-    :members:
-    :inherited-members:
+ - ``http+ssh://[<login>@]<hostname>[:<port>]/<full filesystem path>``
+
+   - ``http+ssh://alice@api.example:22/run/user/1000/podman/podman.sock``
+   - The scheme ``ssh`` is excepted as an alias
+
+ - ``http+unix://<full filesystem path>``
+
+   - ``http+unix:///run/podman/podman.sock``
+   - The scheme ``unix`` is excepted as an alias
+
+ - ``tcp://<hostname>:<port>``
+
+   - ``tcp://api.example:8888``
+
+Example
+-------
+.. code-block:: python
+   :linenos:
+
+    import podman
+
+    with podman.Client() as client:
+        if client.ping():
+            images = client.images.list()
+            for image in images:
+                print(image.id)
 
 .. toctree::
-    :maxdepth: 2
-    :caption: Contents:
+   :caption: Podman Client
+   :maxdepth: 2
 
-   modules
+   podman.client
+
+.. toctree::
+   :caption: Podman Entities
+   :glob:
+   :hidden:
+
+   podman.domain.containers
+   podman.domain.containers_manager
+   podman.domain.images
+   podman.domain.images_manager
+   podman.domain.events*
+   podman.domain.manifests*
+   podman.domain.networks*
+   podman.domain.pods*
+   podman.domain.secrets*
+   podman.domain.system*
+   podman.domain.volume*
+   podman.errors.exceptions
 
 Indices and tables
 ==================

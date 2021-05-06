@@ -1,3 +1,4 @@
+-r requirements.txt
 black
 coverage
 fixtures~=3.0.0
