@@ -1,8 +1,4 @@
-"""Model and Manager for Secrets resources.
-
-Notes:
-    See https://docs.podman.io/en/latest/_static/api.html#tag/secrets
-"""
+"""Model and Manager for Secrets resources."""
 from contextlib import suppress
 from typing import Any, List, Mapping, Optional, Union
 
@@ -17,12 +13,12 @@ class Secret(PodmanResource):
         return f"<{self.__class__.__name__}: {self.name}>"
 
     @property
-    def id(self) -> str:  # pylint: disable=invalid-name
-        """Returns the identifier for the object."""
+    def id(self):  # pylint: disable=invalid-name
         return self.attrs.get("ID")
 
     @property
-    def name(self) -> str:
+    def name(self):
+        """str: name of the secret."""
         with suppress(KeyError):
             return self.attrs['Spec']['Name']
         return ""
@@ -46,10 +42,13 @@ class Secret(PodmanResource):
 class SecretsManager(Manager):
     """Specialized Manager for Secret resources."""
 
-    resource = Secret
+    @property
+    def resource(self):
+        """Type[Secret]: prepare_model() will create Secret classes."""
+        return Secret
 
     def __init__(self, client: APIClient):
-        """Initiate SecretsManager object.
+        """Initialize SecretsManager object.
 
         Args:
             client: Connection to Podman service.
@@ -123,6 +122,8 @@ class SecretsManager(Manager):
     ):
         """Delete secret.
 
+        Podman only
+
         Args:
             secret_id: Identifier of Secret to delete.
             all: When True, delete all secrets.
@@ -130,9 +131,6 @@ class SecretsManager(Manager):
         Raises:
             NotFound: when Secret does not exist
             APIError: when an error returned by service
-
-        Notes:
-            Podman only.
         """
         if isinstance(secret_id, Secret):
             secret_id = secret_id.id

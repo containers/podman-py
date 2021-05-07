@@ -29,8 +29,7 @@ class PodmanClient(AbstractContextManager):
     Examples:
 
         with PodmanClient("ssh://root@api.example:22/run/podman/podman.sock?secure=True",
-            identity="~alice/.ssh/api_ed25519"
-        )
+            identity="~alice/.ssh/api_ed25519")
     """
 
     def __init__(self, *args, **kwargs) -> None:
@@ -53,6 +52,7 @@ class PodmanClient(AbstractContextManager):
 
         Examples:
             base_url:
+
                 - http+ssh://<user>@<host>[:port]</run/podman/podman.sock>[?secure=True]
                 - http+unix://</run/podman/podman.sock>
                 - tcp://<localhost>[:<port>]
@@ -210,7 +210,7 @@ class PodmanClient(AbstractContextManager):
         """Swarm not supported.
 
         Raises:
-            NotImplemented: Always, swarm not supported by Podman service
+            NotImplemented: Swarm not supported by Podman service
         """
         raise NotImplementedError("Swarm operations are not supported by Podman service.")
 

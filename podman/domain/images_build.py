@@ -63,7 +63,8 @@ class BuildMixin:
             http_proxy (bool) - Inject http proxy environment variables into container (Podman only)
 
         Returns:
-            first item is Image built
+            first item is the podman.domain.images.Image built
+
             second item is the build logs
 
         Raises:
@@ -137,8 +138,7 @@ class BuildMixin:
     def _render_params(kwargs) -> Dict[str, List[Any]]:
         """Map kwargs to query parameters.
 
-        Notes:
-            All unsupported kwargs are silently ignored.
+        All unsupported kwargs are silently ignored.
         """
         if "path" not in kwargs and "fileobj" not in kwargs:
             raise TypeError("Either path or fileobj must be provided.")

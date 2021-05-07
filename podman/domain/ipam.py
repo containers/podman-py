@@ -1,7 +1,6 @@
 """Classes to support Internet Protocol Address Management.
 
-Note:
-    Provided for compatibility
+Provided for compatibility
 """
 from typing import Any, List, Mapping, Optional
 

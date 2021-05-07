@@ -32,7 +32,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 in the form of: [{"Path": "device_path", "Weight": weight}].
             blkio_weight (int): Block IO weight (relative weight), accepts a weight value
                 between 10 and 1000.
-            cap_add (List[str]): Add kernel capabilities. For example, ["SYS_ADMIN", "MKNOD"].
+            cap_add (List[str]): Add kernel capabilities. For example: ["SYS_ADMIN", "MKNOD"]
             cap_drop (List[str]): Drop kernel capabilities.
             cgroup_parent (str): Override the default parent cgroup.
             cpu_count (int): Number of usable CPUs (Windows only).
@@ -55,7 +55,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             devices (List[str): Expose host devices to the container, as a List[str] in the form
                 <path_on_host>:<path_in_container>:<cgroup_permissions>.
 
-                For example,
+                For example:
                     /dev/sda:/dev/xvda:rwm allows the container to have read-write access to the
                     host's /dev/sda via a node named /dev/xvda inside the container.
 
@@ -128,20 +128,22 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 the container.
 
                 The keys of the dictionary are the ports to bind inside the container, either as an
-                    integer or a string in the form port/protocol, where the protocol is either
-                    tcp, udp, or sctp.
+                integer or a string in the form port/protocol, where the protocol is either
+                tcp, udp, or sctp.
 
                 The values of the dictionary are the corresponding ports to open on the host,
-                    which can be either:
+                which can be either:
 
-                - The port number, as an integer. For example,
-                  {'2222/tcp': 3333} will expose port 2222 inside the container as port 3333 on the
-                  host.
-                - None, to assign a random host port. For example, {'2222/tcp': None}.
-                - A tuple of (address, port) if you want to specify the host interface. For example,
-                  {'1111/tcp': ('127.0.0.1', 1111)}.
+                - The port number, as an integer.
+                    For example: {'2222/tcp': 3333} will expose port 2222 inside the container
+                    as port 3333 on the host.
+                - None, to assign a random host port.
+                    For example: {'2222/tcp': None}.
+                - A tuple of (address, port) if you want to specify the host interface.
+                    For example: {'1111/tcp': ('127.0.0.1', 1111)}.
                 - A list of integers, if you want to bind multiple host ports to a single container
-                  port. For example, {'1111/tcp': [1234, 4567]}.
+                    port.
+                    For example: {'1111/tcp': [1234, 4567]}.
 
             privileged (bool): Give extended privileges to this container.
             publish_all_ports (bool): Publish all ports to the host.
@@ -153,8 +155,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 - Name: One of on-failure, or always.
                 - MaximumRetryCount: Number of times to restart the container on failure.
 
-                For example,
-                    {"Name": "on-failure", "MaximumRetryCount": 5}
+                For example: {"Name": "on-failure", "MaximumRetryCount": 5}
 
             runtime (str): Runtime to use with this container.
             security_opt (List[str]): A List[str]ing values to customize labels for MLS systems,
@@ -172,12 +173,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             tmpfs (Dict[str, str]): Temporary filesystems to mount, as a dictionary mapping a
                 path inside the container to options for that path.
 
-                For example,
-
-                    {
-                        '/mnt/vol2': '',
-                        '/mnt/vol1': 'size=3G,uid=1000'
-                    }
+                For example: {'/mnt/vol2': '', '/mnt/vol1': 'size=3G,uid=1000'}
 
             tty (bool): Allocate a pseudo-TTY.
             ulimits (List[Ulimit]): Ulimits to set inside the container.
@@ -196,8 +192,8 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 the container. The key is either the host path or a volume name, and the value is
                 a dictionary with the keys:
 
-                - bind The path to mount the volume inside the container
-                - mode Either rw to mount the volume read/write, or ro to mount it read-only.
+                - bind: The path to mount the volume inside the container
+                - mode: Either rw to mount the volume read/write, or ro to mount it read-only.
 
                 For example:
 

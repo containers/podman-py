@@ -2,7 +2,7 @@
 import json
 import logging
 from datetime import datetime
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union, Iterator
 
 from podman import api
 from podman.api.client import APIClient
@@ -14,7 +14,7 @@ class EventsManager:  # pylint: disable=too-few-public-methods
     """Specialized Manager for Event resources."""
 
     def __init__(self, client: APIClient) -> None:
-        """Initiate EventManager object.
+        """Initialize EventManager object.
 
         Args:
             client: Connection to Podman service.
@@ -27,7 +27,7 @@ class EventsManager:  # pylint: disable=too-few-public-methods
         until: Union[datetime, int, None] = None,
         filters: Optional[Dict[str, Any]] = None,
         decode: bool = False,
-    ):
+    ) -> Iterator[Union[str, Dict[str, Any]]]:
         """Report on networks.
 
         Args:
@@ -38,6 +38,7 @@ class EventsManager:  # pylint: disable=too-few-public-methods
 
         Yields:
             When decode is True, Iterator[Dict[str, Any]]
+
             When decode is False, Iterator[str]
         """
         params = {

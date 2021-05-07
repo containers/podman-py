@@ -9,6 +9,7 @@ import requests
 from requests import Response
 
 from podman import api
+from podman.api import Literal
 from podman.domain.images import Image
 from podman.domain.images_manager import ImagesManager
 from podman.domain.manager import PodmanResource
@@ -21,15 +22,15 @@ class Container(PodmanResource):
     """Details and configuration for a container managed by the Podman service."""
 
     @property
-    def name(self) -> Optional[str]:
-        """Returns container's name."""
+    def name(self):
+        """str: Returns container's name."""
         with suppress(KeyError):
             return self.attrs["Name"].lstrip("/")
         return None
 
     @property
-    def image(self) -> Image:
-        """Returns Image object used to create Container."""
+    def image(self):
+        """podman.domain.images.Image: Returns Image object used to create Container."""
         if "Image" in self.attrs:
             image_id = self.attrs["Image"]
             if ":" in image_id:
@@ -39,26 +40,22 @@ class Container(PodmanResource):
         return Image()
 
     @property
-    def labels(self) -> Dict[str, str]:
-        """Returns labels associated with container."""
+    def labels(self):
+        """dict[str, str]: Returns labels associated with container."""
         with suppress(KeyError):
             return self.attrs["Config"]["Labels"]
         return dict()
 
     @property
-    def status(self) -> str:
-        """Returns operational status of container.
-
-        Example:
-            'running', 'stopped', or 'exited'
-        """
+    def status(self):
+        """Literal["running", "stopped", "exited", "unknown"]: Returns status of container."""
         with suppress(KeyError):
             return self.attrs["State"]["Status"]
         return "unknown"
 
     @property
-    def ports(self) -> Dict[str, int]:
-        """Return ports exposed by container."""
+    def ports(self):
+        """dict[str, int]: Return ports exposed by container."""
         with suppress(KeyError):
             return self.attrs["NetworkSettings"]["Ports"]
         return dict()
@@ -71,11 +68,18 @@ class Container(PodmanResource):
              stderr (bool): Include stderr. Default: True
              stream (bool): Return iterator of string(s) vs single string. Default: False
              logs (bool): Include previous container output. Default: False
+
+        Raises:
+            NotImplementedError: method not implemented.
         """
         raise NotImplementedError()
 
     def attach_socket(self, **kwargs):
-        """TBD."""
+        """Not Implemented.
+
+        Raises:
+            NotImplementedError: method not implemented.
+        """
         raise NotImplementedError()
 
     def commit(self, repository: str = None, tag: str = None, **kwargs) -> Image:
@@ -89,7 +93,7 @@ class Container(PodmanResource):
             author (str): Name of commit author
             changes (List[str]): Instructions to apply during commit
             comment (List[str]): Instructions to apply while committing in Dockerfile format
-            conf (Dict[str, Any]): Ignored.
+            conf (dict[str, Any]): Ignored.
             format (str): Format of the image manifest and metadata
             message (str): Commit message to include with Image
             pause (bool): Pause the container before committing it
@@ -163,6 +167,7 @@ class Container(PodmanResource):
             TBD
 
         Raises:
+            NotImplementedError: method not implemented.
             APIError: when service reports error
         """
         if user is None:
@@ -200,7 +205,7 @@ class Container(PodmanResource):
 
         Returns:
             First item is a raw tar data stream.
-            Second item is a dict containing stat information on the specified path.
+            Second item is a dict containing os.stat() information on the specified path.
         """
         response = self.client.get(f"/containers/{self.id}/archive", params={"path": [path]})
         response.raise_for_status()
@@ -262,16 +267,14 @@ class Container(PodmanResource):
 
         Args:
             path: File to write data into
-            data: Contents to write to file
+            data: Contents to write to file, when None path will be read on client to
+                  build tarfile.
 
         Returns:
             True when successful
 
         Raises:
             APIError: when server reports error
-
-        Notes:
-            If data is None, path will be read on client to build tarfile.
         """
         if path is None:
             raise ValueError("'path' is a required argument.")
@@ -297,11 +300,10 @@ class Container(PodmanResource):
     def rename(self, name: str) -> None:
         """Rename container.
 
+        Container updated in-situ to avoid reload().
+
         Args:
             name: New name for container.
-
-        Note:
-            Container updated in-situ to avoid reload().
         """
         if not name:
             raise ValueError("'name' is a required argument.")
@@ -455,12 +457,12 @@ class Container(PodmanResource):
     def update(self, **kwargs):
         """Update resource configuration of the containers.
 
-        Note:
-            Podman unsupported operation
+        Raises:
+            NotImplementedError: Podman service unsupported operation.
         """
         raise NotImplementedError("Container.update() is not supported by Podman service.")
 
-    def wait(self, **kwargs) -> Dict[str, Any]:
+    def wait(self, **kwargs) -> Dict[Literal["StatusCode", "Error"], Any]:
         """Block until the container enters given state.
 
         Keyword Args:
@@ -469,8 +471,7 @@ class Container(PodmanResource):
             timeout (int): Ignored.
 
         Returns:
-            Dictionary with keys, StatusCode (int) Container's exit code and
-            Error["Message"] (str) Error message from container.
+            "Error" key has a dictionary value with the key "Message".
 
         Raises:
               NotFound: when Container not found

@@ -56,8 +56,7 @@ def _format_string(filters, criteria):
 def prepare_body(body: Mapping[str, Any]) -> str:
     """Returns JSON payload to be uploaded to server.
 
-    Notes:
-        Values of None and empty Iterables are removed, False and zero-values are retained.
+    Values of None and empty Iterables are removed, False and zero-values are retained.
     """
     if body is None:
         return ""
@@ -69,8 +68,7 @@ def prepare_body(body: Mapping[str, Any]) -> str:
 def _filter_values(mapping: Mapping[str, Any]) -> Dict[str, Any]:
     """Returns a canonical dictionary with values == None or empty Iterables removed.
 
-    Notes:
-        Dictionary is walked using recursion.
+    Dictionary is walked using recursion.
     """
     canonical = dict()
     for key, value in mapping.items():

@@ -38,16 +38,14 @@ class RunMixin:  # pylint: disable=too-few-public-methods
             remove: Delete container when the container's processes exit. Default: False.
 
         Keyword Args:
-            See Container.create() for keyword arguments.
+            - See the create() method for keyword arguments.
 
         Returns:
-            When detach is True, return a Container
-
-            If stdout is True, include stdout from container in output
-            If stderr is True, include stderr from container in output
-
-            When stream is True, output from container is returned as a generator
-            Otherwise, an iterator is returned after container has finished
+            - When detach is True, return a Container
+            - If stdout is True, include stdout from container in output
+            - If stderr is True, include stderr from container in output
+            - When stream is True, output from container is returned as a generator
+            - Otherwise, an iterator is returned after container has finished
 
         Raises:
             ContainerError: when Container exists with a non-zero code

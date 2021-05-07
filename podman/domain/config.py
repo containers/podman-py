@@ -33,18 +33,18 @@ class ServiceConnection:
         return False
 
     @property
-    def id(self) -> str:  # pylint: disable=invalid-name
-        """Returns identifier for service connection."""
+    def id(self):  # pylint: disable=invalid-name
+        """str: Returns identifier for service connection."""
         return self.name
 
     @cached_property
-    def url(self) -> urllib.parse.ParseResult:
-        """Returns URL for service connection."""
+    def url(self):
+        """urllib.parse.ParseResult: Returns URL for service connection."""
         return urllib.parse.urlparse(self.attrs.get("uri"))
 
     @cached_property
-    def identity(self) -> Path:
-        """Returns Path to identity file for service connection."""
+    def identity(self):
+        """Path: Returns Path to identity file for service connection."""
         return Path(self.attrs.get("identity"))
 
 
@@ -75,13 +75,13 @@ class PodmanConfig:
         return False
 
     @property
-    def id(self) -> Path:  # pylint: disable=invalid-name
-        """Returns Path() of container.conf."""
+    def id(self):  # pylint: disable=invalid-name
+        """Path: Returns Path() of container.conf."""
         return self.path
 
     @cached_property
-    def services(self) -> Dict[str, ServiceConnection]:
-        """Returns list of service connections.
+    def services(self):
+        """Dict[str, ServiceConnection]: Returns list of service connections.
 
         Examples:
             podman_config = PodmanConfig()
@@ -100,8 +100,8 @@ class PodmanConfig:
         return services
 
     @cached_property
-    def active_service(self) -> Optional[ServiceConnection]:
-        """Returns active connection."""
+    def active_service(self):
+        """Optional[ServiceConnection]: Returns active connection."""
 
         engine = self.attrs.get("engine")
         if engine:

@@ -1,8 +1,4 @@
-"""Model and Manager for Pod resources.
-
-Notes:
-    See https://docs.podman.io/en/latest/_static/api.html#tag/pods
-"""
+"""Model and Manager for Pod resources."""
 import logging
 from typing import Any, Dict, Tuple, Union, Optional
 
@@ -17,12 +13,12 @@ class Pod(PodmanResource):
     """Details and configuration for a pod managed by the Podman service."""
 
     @property
-    def id(self) -> str:  # pylint: disable=invalid-name
+    def id(self):  # pylint: disable=invalid-name
         return self.attrs.get("ID", self.attrs.get("Id"))
 
     @property
-    def name(self) -> str:
-        """Returns name of pod."""
+    def name(self):
+        """str: Returns name of pod."""
         return self.attrs.get("Name")
 
     def kill(self, signal: Union[str, int, None] = None) -> None:

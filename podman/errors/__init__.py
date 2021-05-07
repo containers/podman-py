@@ -1,11 +1,10 @@
-"""errors for Podman API.
+"""Podman API errors Package.
 
-    Notes:
-        'importlib' exceptions are used to differentiate between APIConnection and PodmanClient
-        Errors. Therefore, installing both APIConnection and PodmanClient is not supported.
-        PodmanClient related errors take precedence over APIConnection ones.
+Import exceptions from 'importlib' are used to differentiate between APIConnection
+and PodmanClient errors. Therefore, installing both APIConnection and PodmanClient
+is not supported. PodmanClient related errors take precedence over APIConnection ones.
 
-        ApiConnection and associated classes have been deprecated.
+ApiConnection and associated classes have been deprecated.
 """
 import warnings
 from http.client import HTTPException

@@ -44,6 +44,8 @@ class RegistryData(PodmanResource):
     def has_platform(self, platform: Union[str, Mapping[str, Any]]) -> bool:
         """Returns True if platform is available for Image.
 
+        Podman API does not support "variant" therefore it is ignored.
+
         Args:
             platform: Name as os[/arch[/variant]] or Mapping[str,Any]
 
@@ -53,9 +55,6 @@ class RegistryData(PodmanResource):
         Raises:
             InvalidArgument: when platform value is not valid
             APIError: when service reports an error
-
-        Note:
-            Podman API does not support "variant" therefore it is ignored.
         """
         invalid_platform = InvalidArgument(f"'{platform}' is not a valid platform descriptor.")
 
