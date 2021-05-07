@@ -3,14 +3,15 @@ import io
 import json
 import logging
 import urllib.parse
-from typing import Any, Dict, Generator, Iterator, List, Mapping, Optional, Type, Union
+from typing import Any, Dict, Generator, Iterator, List, Mapping, Optional, Union
 
 import requests
 
 from podman import api
+from podman.api import Literal
 from podman.domain.images import Image
 from podman.domain.images_build import BuildMixin
-from podman.domain.manager import Manager, PodmanResource
+from podman.domain.manager import Manager
 from podman.domain.registry_data import RegistryData
 from podman.errors import APIError, ImageNotFound
 
@@ -21,7 +22,8 @@ class ImagesManager(BuildMixin, Manager):
     """Specialized Manager for Image resources."""
 
     @property
-    def resource(self) -> Type[PodmanResource]:
+    def resource(self):
+        """Type[podman.domain.images.Image]: prepare_model() will create Image classes."""
         return Image
 
     def exists(self, key: str) -> bool:
@@ -37,8 +39,9 @@ class ImagesManager(BuildMixin, Manager):
             all (bool) – Show intermediate image layers. By default, these are filtered out.
             filters (Mapping[str, Union[str, List[str]]) – Filters to be used on the image list.
                 Available filters:
+
                 - dangling (bool)
-                - label (Union[str, List[str]]): format either "key", "key=value"
+                - label (Union[str, List[str]]): format either "key" or "key=value"
 
         Raises:
             APIError: when service returns an error
@@ -79,6 +82,8 @@ class ImagesManager(BuildMixin, Manager):
     ) -> RegistryData:
         """Returns registry data for an image.
 
+        Provided for compatibility
+
         Args:
             name: Image name
             auth_config: Override configured credentials. Keys username and password are required.
@@ -116,19 +121,21 @@ class ImagesManager(BuildMixin, Manager):
         for item in body["Names"]:
             yield self.get(item)
 
-    def prune(self, filters: Optional[Mapping[str, Any]] = None) -> Dict[str, Any]:
+    def prune(
+        self, filters: Optional[Mapping[str, Any]] = None
+    ) -> Dict[Literal["ImagesDeleted", "SpaceReclaimed"], Any]:
         """Delete unused images.
+
+        The Untagged keys will always be "".
 
         Args:
             filters: Qualify Images to prune. Available filters:
+
                 - dangling (bool): when true, only delete unused and untagged images.
                 - until (str): Delete images older than this timestamp.
 
         Raises:
             APIError: when service returns an error
-
-        Note:
-            The Untagged key will always be "".
         """
         response = self.client.post(
             "/images/prune", params={"filters": api.prepare_filters(filters)}
@@ -157,16 +164,11 @@ class ImagesManager(BuildMixin, Manager):
             "SpaceReclaimed": reclaimed,
         }
 
-    def prune_builds(self) -> Dict[str, Any]:
+    def prune_builds(self) -> Dict[Literal["CachesDeleted", "SpaceReclaimed"], Any]:
         """Delete builder cache.
 
-        Returns:
-            (Dict[str, Any]): Information about the operation's result.
-                The ``SpaceReclaimed`` key indicates the amount of bytes of disk space reclaimed.
-
-        Note:
-            Method included to complete API, the operation always returns empty
-                CacheDeleted and zero SpaceReclaimed.
+        Method included to complete API, the operation always returns empty
+            CacheDeleted and zero SpaceReclaimed.
         """
         return {"CachesDeleted": [], "SpaceReclaimed": 0}
 
@@ -318,16 +320,13 @@ class ImagesManager(BuildMixin, Manager):
         image: Union[Image, str],
         force: Optional[bool] = None,
         noprune: bool = False,  # pylint: disable=unused-argument
-    ) -> List[Dict[api.Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[str, int]]]:
+    ) -> List[Dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[str, int]]]:
         """Delete image from Podman service.
 
         Args:
             image: Name or Id of Image to remove
             force: Delete Image even if in use
             noprune: Ignored.
-
-        Returns:
-            Dictionaries of the images deleted and untagged.
 
         Raises:
             ImageNotFound: when image does not exist

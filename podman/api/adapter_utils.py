@@ -10,6 +10,8 @@ def _key_normalizer(key_class: NamedTuple, request_context: Mapping) -> Mapping:
     key for an HTTPS request. If you wish to change this behaviour, provide
     alternate callables to ``key_fn_by_scheme``.
 
+    Copied from urllib3.poolmanager._default_key_normalizer.
+
     Args:
         key_class: The class to use when constructing the key. This should be a namedtuple
             with the scheme and host keys at a minimum.
@@ -17,9 +19,6 @@ def _key_normalizer(key_class: NamedTuple, request_context: Mapping) -> Mapping:
 
     Returns:
         A namedtuple that can be used as a connection pool key.
-
-    Notes:
-        Copied from urllib3.poolmanager._default_key_normalizer.
     """
     # Since we mutate the dictionary, make a copy first
     context = request_context.copy()

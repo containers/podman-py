@@ -1,7 +1,7 @@
 """Base classes for PodmanResources and Manager's."""
 from abc import ABC, abstractmethod
 from collections import abc
-from typing import Any, List, Mapping, Optional, Type, TypeVar, Union
+from typing import Any, List, Mapping, Optional, TypeVar, Union
 
 from podman.api.client import APIClient
 
@@ -47,17 +47,16 @@ class PodmanResource(ABC):
         return hash(f"{self.__class__.__name__}:{self.id}")
 
     @property
-    def id(self) -> str:  # pylint: disable=invalid-name
-        """Returns the identifier for the object."""
+    def id(self):  # pylint: disable=invalid-name
+        """str: Returns the identifier for the object."""
         return self.attrs.get("Id")
 
     @property
-    def short_id(self) -> str:
-        """Returns truncated identifier. 'sha256' preserved when included in the id.
+    def short_id(self):
+        """str: Returns truncated identifier. 'sha256' preserved when included in the id.
 
-        Notes:
-            No attempt is made to ensure the returned value is semantically
-            meaningful for all resources.
+        No attempt is made to ensure the returned value is semantically meaningful
+        for all resources.
         """
         if self.id.startswith("sha256:"):
             return self.id[:17]
@@ -74,8 +73,8 @@ class Manager(ABC):
 
     @property
     @abstractmethod
-    def resource(self) -> Type[PodmanResource]:
-        """Subclass of PodmanResource the factory prepare_model() will create."""
+    def resource(self):
+        """Type[PodmanResource]: Class which the factory method prepare_model() will use."""
 
     def __init__(self, client: APIClient = None) -> None:
         """Initialize Manager() object.
@@ -90,9 +89,10 @@ class Manager(ABC):
     def exists(self, key: str) -> bool:
         """Returns True if resource exists.
 
+        Podman only.
+
         Notes:
-            - Podman only.
-            - This method does _not_ provide any mutex mechanism.
+            This method does _not_ provide any mutex mechanism.
         """
 
     @abstractmethod

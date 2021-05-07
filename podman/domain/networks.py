@@ -1,15 +1,14 @@
 """Model and Manager for Network resources.
 
-Note:
-    By default, most methods in this module uses the Podman compatible API rather than the
-        libpod API as the results are so different.  To use the libpod API add the keyword argument
-        compatible=False to any method call.
-    """
+By default, most methods in this module uses the Podman compatible API rather than the
+libpod API as the results are so different.  To use the libpod API add the keyword argument
+compatible=False to any method call.
+"""
 import hashlib
 import json
 import logging
 from contextlib import suppress
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 from podman.domain.containers import Container
 from podman.domain.containers_manager import ContainersManager
@@ -27,7 +26,7 @@ class Network(PodmanResource):
 
     @property
     def id(self):  # pylint: disable=invalid-name
-        """Returns the identifier of the network."""
+        """str: Returns the identifier of the network."""
         with suppress(KeyError):
             return self.attrs["Id"]
 
@@ -38,16 +37,16 @@ class Network(PodmanResource):
         return None
 
     @property
-    def containers(self) -> List[Container]:
-        """Returns list of Containers connected to network."""
+    def containers(self):
+        """ List[Container]: Returns list of Containers connected to network."""
         with suppress(KeyError):
             container_manager = ContainersManager(client=self.client)
             return [container_manager.get(ident) for ident in self.attrs["Containers"].keys()]
         return dict()
 
     @property
-    def name(self) -> str:
-        """Returns the name of the network."""
+    def name(self):
+        """str: Returns the name of the network."""
         if "Name" in self.attrs:
             return self.attrs["Name"]
 

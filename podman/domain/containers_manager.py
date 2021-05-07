@@ -1,13 +1,13 @@
 """PodmanResource manager subclassed for Containers."""
 import logging
 import urllib
-from typing import Any, Dict, List, Mapping, Type, Union
+from typing import Any, Dict, List, Mapping, Union
 
 from podman import api
 from podman.domain.containers import Container
 from podman.domain.containers_create import CreateMixin
 from podman.domain.containers_run import RunMixin
-from podman.domain.manager import Manager, PodmanResource
+from podman.domain.manager import Manager
 from podman.errors import APIError
 
 logger = logging.getLogger("podman.containers")
@@ -17,7 +17,8 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
     """Specialized Manager for Container resources."""
 
     @property
-    def resource(self) -> Type[PodmanResource]:
+    def resource(self):
+        """Type[Container]: prepare_model() will create Container classes."""
         return Container
 
     def exists(self, key: str) -> bool:
@@ -118,6 +119,8 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
     def remove(self, container_id: Union[Container, str], **kwargs):
         """Delete container.
 
+        Podman only
+
         Args:
             container_id: identifier of Container to delete.
 
@@ -125,9 +128,6 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
             v (bool): Delete associated volumes as well.
             link (bool): Ignored.
             force (bool): Kill a running container before deleting.
-
-        Notes:
-            Podman only.
         """
         if isinstance(container_id, Container):
             container_id = container_id.id

@@ -2,7 +2,7 @@
 import logging
 import urllib.parse
 from contextlib import suppress
-from typing import List, Optional, Type, Union
+from typing import List, Optional, Union
 
 from podman import api
 from podman.domain.images import Image
@@ -16,15 +16,15 @@ class Manifest(PodmanResource):
     """Details and configuration for a manifest managed by the Podman service."""
 
     @property
-    def id(self) -> str:
-        """Returns the identifier of the manifest."""
+    def id(self):
+        """str: Returns the identifier of the manifest."""
         with suppress(KeyError, TypeError, IndexError):
             return self.attrs["manifests"][0]["digest"]
         return self.name
 
     @property
-    def name(self) -> str:
-        """Returns the identifier of the manifest."""
+    def name(self):
+        """str: Returns the identifier of the manifest."""
         try:
             if len(self.names[0]) == 0:
                 raise ValueError("Manifest attribute 'names' is empty.")
@@ -33,22 +33,23 @@ class Manifest(PodmanResource):
             raise ValueError("Manifest attribute 'names' is missing.") from e
 
     @property
-    def quoted_name(self) -> str:
+    def quoted_name(self):
+        """str: name quoted as path parameter."""
         return urllib.parse.quote_plus(self.name)
 
     @property
-    def names(self) -> List[str]:
-        """Returns the identifier of the manifest."""
+    def names(self):
+        """ List[str]: Returns the identifier of the manifest."""
         return self.attrs.get("names")
 
     @property
-    def media_type(self) -> Optional[str]:
-        """Returns the Media/MIME type for this manifest."""
+    def media_type(self):
+        """Optional[str]: Returns the Media/MIME type for this manifest."""
         return self.attrs.get("mediaType")
 
     @property
-    def version(self) -> int:
-        """Returns the schema version type for this manifest."""
+    def version(self):
+        """int: Returns the schema version type for this manifest."""
         return self.attrs.get("schemaVersion")
 
     def add(self, images: List[Union[Image, str]], **kwargs) -> None:
@@ -140,7 +141,8 @@ class ManifestsManager(Manager):
     """Specialized Manager for Manifest resources."""
 
     @property
-    def resource(self) -> Type[PodmanResource]:
+    def resource(self):
+        """Type[Manifest]: prepare_model() will create Manifest classes."""
         return Manifest
 
     def create(
@@ -193,16 +195,18 @@ class ManifestsManager(Manager):
     def get(self, key: str) -> Manifest:
         """Returns the manifest by name.
 
+        To have Manifest conform with other PodmanResource's, we use the key that
+        retrieved the Manifest be its name.
+
+        See https://issues.redhat.com/browse/RUN-1217 for details on refactoring Podman service
+        manifests API.
+
         Args:
             key: Manifest name for which to search
 
         Raises:
             NotFound: when manifest could not be found
             APIError: when service reports an error
-
-        Notes:
-            To have Manifest conform with other PodmanResource's, we use the key that
-            retrieved the Manifest be its name.
         """
         quoted_key = urllib.parse.quote_plus(key)
         response = self.client.get(f"/manifests/{quoted_key}/json")

@@ -1,18 +1,17 @@
 """PodmanResource manager subclassed for Networks.
 
-Note:
-    By default, most methods in this module uses the Podman compatible API rather than the
-        libpod API as the results are so different.  To use the libpod API add the keyword argument
-        compatible=False to any method call.
+By default, most methods in this module uses the Podman compatible API rather than the
+libpod API as the results are so different.  To use the libpod API add the keyword argument
+compatible=False to any method call.
 """
 import ipaddress
 import logging
 from contextlib import suppress
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional
 
 import podman.api.http_utils
 from podman import api
-from podman.domain.manager import Manager, PodmanResource
+from podman.domain.manager import Manager
 from podman.domain.networks import Network
 from podman.errors import APIError
 
@@ -23,7 +22,8 @@ class NetworksManager(Manager):
     """Specialized Manager for Network resources."""
 
     @property
-    def resource(self) -> Type[PodmanResource]:
+    def resource(self):
+        """Type[Network]: prepare_model() will create Network classes."""
         return Network
 
     def create(self, name: str, **kwargs) -> Network:
@@ -182,6 +182,8 @@ class NetworksManager(Manager):
     ) -> Dict[api.Literal["NetworksDeleted", "SpaceReclaimed"], Any]:
         """Delete unused Networks.
 
+        SpaceReclaimed always reported as 0
+
         Args:
             filters: Criteria for selecting volumes to delete. Ignored.
 
@@ -190,9 +192,6 @@ class NetworksManager(Manager):
 
         Raises:
             APIError: when service reports error
-
-        Notes:
-            SpaceReclaimed always reported as 0
         """
         compatible = kwargs.get("compatible", True)
 

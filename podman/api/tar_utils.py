@@ -13,8 +13,7 @@ import sys
 def prepare_containerignore(anchor: str) -> List[str]:
     """Return the list of patterns for filenames to exclude.
 
-    Notes:
-       .containerignore takes precedence over .dockerignore.
+    .containerignore takes precedence over .dockerignore.
     """
     for filename in (".containerignore", ".dockerignore"):
         ignore = pathlib.Path(anchor) / filename

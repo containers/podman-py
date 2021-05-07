@@ -11,7 +11,7 @@ class SystemManager:
     """SystemManager to provide system level information from Podman service."""
 
     def __init__(self, client: APIClient) -> None:
-        """Initiate SystemManager object.
+        """Initialize SystemManager object.
 
         Args:
             client: Connection to Podman service.

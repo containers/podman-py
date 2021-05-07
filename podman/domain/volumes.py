@@ -1,10 +1,11 @@
 """Model and Manager for Volume resources."""
 import logging
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Union
 
 import requests
 
 from podman import api
+from podman.api import Literal
 from podman.domain.manager import Manager, PodmanResource
 from podman.errors import APIError
 
@@ -15,13 +16,12 @@ class Volume(PodmanResource):
     """Details and configuration for an image managed by the Podman service."""
 
     @property
-    def id(self) -> str:
-        """Returns the identifier of the volume."""
+    def id(self):
         return self.name
 
     @property
-    def name(self) -> str:
-        """Returns the name of the volume."""
+    def name(self):
+        """str: Returns the name of the volume."""
         return self.attrs.get("Name")
 
     def remove(self, force: Optional[bool] = None) -> None:
@@ -40,7 +40,8 @@ class VolumesManager(Manager):
     """Specialized Manager for Volume resources."""
 
     @property
-    def resource(self) -> Type[PodmanResource]:
+    def resource(self):
+        """Type[Volume]: prepare_model() will create Volume classes."""
         return Volume
 
     def create(self, name: Optional[str] = None, **kwargs) -> Volume:
@@ -95,6 +96,7 @@ class VolumesManager(Manager):
 
         Keyword Args:
             filters (Dict[str, str]): criteria to filter Volume list
+
                 - driver (str): filter volumes by their driver
                 - label (Dict[str, str]): filter by label and/or value
                 - name (str): filter by volume's name
@@ -110,7 +112,7 @@ class VolumesManager(Manager):
 
     def prune(
         self, filters: Optional[Dict[str, str]] = None  # pylint: disable=unused-argument
-    ) -> Dict[api.Literal["VolumesDeleted", "SpaceReclaimed"], Any]:
+    ) -> Dict[Literal["VolumesDeleted", "SpaceReclaimed"], Any]:
         """Delete unused volumes.
 
         Args:
@@ -140,15 +142,14 @@ class VolumesManager(Manager):
     def remove(self, name: Union[Volume, str], force: Optional[bool] = None) -> None:
         """Delete a volume.
 
+        Podman only.
+
         Args:
             name: Identifier for Volume to be deleted.
             force: When true, force deletion of in-use volume
 
         Raises:
             APIError: when service reports an error
-
-        Notes:
-            Podman only.
         """
         if isinstance(name, Volume):
             name = name.name

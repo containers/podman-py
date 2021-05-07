@@ -57,8 +57,7 @@ def prepare_timestamp(value: Union[datetime, int, None]) -> Optional[int]:
 def prepare_cidr(value: Union[ipaddress.IPv4Network, ipaddress.IPv6Network]) -> (str, str):
     """Returns network address and Base64 encoded netmask from CIDR.
 
-    Notes:
-        The return values are dictated by the Go JSON decoder.
+    The return values are dictated by the Go JSON decoder.
     """
     return str(value.network_address), base64.b64encode(value.netmask.packed).decode("utf-8")
 
@@ -66,8 +65,7 @@ def prepare_cidr(value: Union[ipaddress.IPv4Network, ipaddress.IPv6Network]) -> 
 def frames(response: Response) -> Iterator[bytes]:
     """Returns each frame from multiplexed payload, all results are expected in the payload.
 
-    Notes:
-        The stdout and stderr frames are undifferentiated as they are returned.
+    The stdout and stderr frames are undifferentiated as they are returned.
     """
     length = len(response.content)
     index = 0

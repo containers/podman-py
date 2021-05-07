@@ -12,7 +12,7 @@ if typing.TYPE_CHECKING:
 
 
 class APIError(HTTPError):
-    """A wrapper for HTTP errors from the API."""
+    """Wraps HTTP errors for processing by the API and clients."""
 
     def __init__(
         self,
@@ -49,8 +49,8 @@ class APIError(HTTPError):
         return msg
 
     @property
-    def status_code(self) -> Optional[int]:
-        """HTTP status code from response."""
+    def status_code(self):
+        """Optional[int]: HTTP status code from response."""
         if self.response is not None:
             return self.response.status_code
         return None
@@ -71,8 +71,7 @@ class APIError(HTTPError):
 class NotFound(APIError):
     """Resource not found on Podman service.
 
-    Notes:
-        Compatible name, missing Error suffix.
+    Named for compatibility.
     """
 
 
@@ -83,8 +82,7 @@ class ImageNotFound(APIError):
 class DockerException(Exception):
     """Base class for exception hierarchy.
 
-    Notes:
-        Provided for compatibility.
+    Provided for compatibility.
     """
 
 

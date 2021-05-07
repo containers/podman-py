@@ -36,11 +36,7 @@ add_module_names = False
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 # isort: unique-list
-extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon',
-    'sphinx.ext.viewcode',
-]
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx.ext.viewcode']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -48,7 +44,11 @@ templates_path = ['_templates']
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['**/api_connection.py']
+# isort: unique-list
+exclude_patterns = [
+    'podman.api.*rst',
+    'podman.rst',
+]
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -103,7 +103,7 @@ napoleon_numpy_docstring = False
 napoleon_include_init_with_doc = False
 napoleon_include_private_with_doc = False
 napoleon_include_special_with_doc = False
-napoleon_use_admonition_for_examples = False
+napoleon_use_admonition_for_examples = True
 napoleon_use_admonition_for_notes = True
 napoleon_use_admonition_for_references = False
 napoleon_use_ivar = False

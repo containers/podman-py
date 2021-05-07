@@ -12,15 +12,14 @@ class TLSConfig:
     def __init__(self, *args, **kwargs):
         """Initialize TLSConfig.
 
+        Keywords may be delegated to the SSH client configuration.
+
         Keyword Args:
                 client_cert (tuple of str): Path to client cert, path to client key.
                 ca_cert (str): Path to CA cert file.
                 verify (bool or str): This can be False, or a path to a CA cert file.
                 ssl_version (int): Ignored.
                 assert_hostname (bool): Verify the hostname of the server.
-
-        Notes:
-            Keywords may be delegated to the SSH client configuration.
         """
 
     @staticmethod

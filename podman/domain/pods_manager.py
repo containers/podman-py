@@ -1,14 +1,10 @@
-"""PodmanResource manager subclassed for Networks.
-
-Notes:
-    See https://docs.podman.io/en/latest/_static/api.html#tag/pods
-"""
+"""PodmanResource manager subclassed for Networks."""
 import json
 import logging
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Union
 
 from podman import api
-from podman.domain.manager import Manager, PodmanResource
+from podman.domain.manager import Manager
 from podman.domain.pods import Pod
 from podman.errors import APIError
 
@@ -19,7 +15,8 @@ class PodsManager(Manager):
     """Specialized Manager for Pod resources."""
 
     @property
-    def resource(self) -> Type[PodmanResource]:
+    def resource(self):
+        """Type[Pod]: prepare_model() will create Pod classes."""
         return Pod
 
     def create(self, name: str, **kwargs) -> Pod:

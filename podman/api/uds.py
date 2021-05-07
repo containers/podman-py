@@ -155,8 +155,7 @@ class UDSAdapter(HTTPAdapter):
 
         Examples:
             requests.Session.mount(
-                "http://", UDSAdapater("http+unix:///run/user/1000/podman/podman.sock")
-            )
+                "http://", UDSAdapater("http+unix:///run/user/1000/podman/podman.sock"))
         """
         self.poolmanager: Optional[UDSPoolManager] = None
 

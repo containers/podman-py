@@ -40,8 +40,7 @@ class SSHSocket(socket.socket):
 
         Examples:
             SSHSocket("http+ssh://alice@api.example:2222/run/user/1000/podman/podman.sock",
-                      "~alice/.ssh/api_ed25519"
-            )
+                      "~alice/.ssh/api_ed25519")
         """
         super().__init__(socket.AF_UNIX, socket.SOCK_STREAM)
         self.uri = uri
@@ -130,8 +129,7 @@ class SSHSocket(socket.socket):
     def close(self):
         """Release resources held by SSHSocket.
 
-        Notes:
-            - SSH client is first sent SIGTERM, then a SIGKILL 20 seconds later if needed.
+        The SSH client is first sent SIGTERM, then a SIGKILL 20 seconds later if needed.
         """
         if not self._proc or self._proc.stdin.closed:
             return
