@@ -24,7 +24,7 @@ from podman import PodmanClient
 
 uri = "unix:///run/user/1000/podman/podman.sock"
 
-with PodmanClient(uri) as client:
+with PodmanClient(base_url=uri) as client:
     version = client.version()
     print("Release: ", version["Version"])
     print("Compatible API: ", version["ApiVersion"])

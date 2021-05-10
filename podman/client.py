@@ -28,11 +28,10 @@ class PodmanClient(AbstractContextManager):
 
     Examples:
 
-        with PodmanClient("ssh://root@api.example:22/run/podman/podman.sock?secure=True",
+        with PodmanClient(base_url="ssh://root@api.example:22/run/podman/podman.sock?secure=True",
             identity="~alice/.ssh/api_ed25519")
     """
-
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, **kwargs) -> None:
         """Initialize PodmanClient.
 
         Keyword Args:
@@ -73,7 +72,7 @@ class PodmanClient(AbstractContextManager):
                 Path(xdg.BaseDirectory.get_runtime_dir(strict=False)) / "podman" / "podman.sock"
             )
             api_kwargs["base_url"] = "http+unix://" + path
-        self.api = APIClient(*args, **api_kwargs)
+        self.api = APIClient(**api_kwargs)
 
     def __enter__(self) -> "PodmanClient":
         return self
