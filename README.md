@@ -1,5 +1,5 @@
 # podman-py
-[![Build Status](https://api.cirrus-ci.com/github/containers/podman-py.svg)](https://cirrus-ci.com/github/containers/podman-py/master)
+[![Build Status](https://api.cirrus-ci.com/github/containers/podman-py.svg)](https://cirrus-ci.com/github/containers/podman-py/main)
 [![Bors enabled](https://bors.tech/images/badge_small.svg)](https://app.bors.tech/repositories/23171)
 
 This python package is a library of bindings to use the RESTful API of [Podman](https://github.com/containers/podman).
@@ -8,8 +8,8 @@ It is currently under development and contributors are welcome!
 
 ## Dependencies
 
-* For runtime dependencies, see [requirements.txt](https://github.com/containers/podman-py/blob/master/requirements.txt).
-* For testing and development dependencies, see [test-requirements.txt](https://github.com/containers/podman-py/blob/master/test-requirements.txt).
+* For runtime dependencies, see [requirements.txt](https://github.com/containers/podman-py/blob/main/requirements.txt).
+* For testing and development dependencies, see [test-requirements.txt](https://github.com/containers/podman-py/blob/main/test-requirements.txt).
 
 ## Example usage
 
@@ -48,4 +48,4 @@ with PodmanClient(base_url=uri) as client:
 
 ## Contributing
 
-See [CONTRIBUTING.md](https://github.com/containers/podman-py/blob/master/CONTRIBUTING.md)
+See [CONTRIBUTING.md](https://github.com/containers/podman-py/blob/main/CONTRIBUTING.md)
