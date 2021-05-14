@@ -31,6 +31,7 @@ class PodmanClient(AbstractContextManager):
         with PodmanClient(base_url="ssh://root@api.example:22/run/podman/podman.sock?secure=True",
             identity="~alice/.ssh/api_ed25519")
     """
+
     def __init__(self, **kwargs) -> None:
         """Initialize PodmanClient.
 
