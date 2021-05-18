@@ -1,13 +1,13 @@
-PodmanPy: Python scripting for Podman services
+Podman: Python scripting for Podman services
 ==============================================
-.. image:: https://img.shields.io/pypi/l/podman-py.svg
-    :target: https://pypi.org/project/podman-py/
+.. image:: https://img.shields.io/pypi/l/podman.svg
+    :target: https://pypi.org/project/podman/
 
-.. image:: https://img.shields.io/pypi/wheel/podman-py.svg
-    :target: https://pypi.org/project/podman-py/
+.. image:: https://img.shields.io/pypi/wheel/podman.svg
+    :target: https://pypi.org/project/podman/
 
-.. image:: https://img.shields.io/pypi/pyversions/podman-py.svg
-    :target: https://pypi.org/project/podman-py/
+.. image:: https://img.shields.io/pypi/pyversions/podman.svg
+    :target: https://pypi.org/project/podman/
 
 PodmanPy is a Python3 module that allows you to write Python scripts that access resources
 maintained by a Podman service. It leverages the Podman service RESTful API.

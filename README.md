@@ -1,6 +1,5 @@
 # podman-py
 [![Build Status](https://api.cirrus-ci.com/github/containers/podman-py.svg)](https://cirrus-ci.com/github/containers/podman-py/main)
-[![Bors enabled](https://bors.tech/images/badge_small.svg)](https://app.bors.tech/repositories/23171)
 
 This python package is a library of bindings to use the RESTful API of [Podman](https://github.com/containers/podman).
 It is currently under development and contributors are welcome!

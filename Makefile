@@ -10,8 +10,8 @@ HEAD ?= HEAD
 
 export PODMAN_VERSION ?= "3.2.0"
 
-.PHONY: podman-py
-podman-py:
+.PHONY: podman
+podman:
 	rm dist/* || :
 	python -m pip install --user -r requirements.txt
 	PODMAN_VERSION=$(PODMAN_VERSION) \
@@ -38,15 +38,17 @@ integration:
 	coverage run -m unittest discover -s podman/tests/integration
 	coverage report -m --skip-covered --fail-under=80 --omit=./podman/tests/* --omit=.tox/* --omit=/usr/lib/*
 
-.PHONY: upload
-upload:
-	twine upload --verbose -r testpypi dist/*whl dist/*zip
-	# pip install -i https://test.pypi.org/simple/ podman-py
+.PHONY: test-release
+test-release: SOURCE = $(shell find dist -regex '.*/podman-[0-9][0-9\.]*.tar.gz' -print)
+test-release:
+	twine upload --verbose -r testpypi dist/*whl $(SOURCE)
+	# pip install -i https://test.pypi.org/simple/ podman
 
 .PHONY: release
+release: SOURCE = $(shell find dist -regex '.*/podman-[0-9][0-9\.]*.tar.gz' -print)
 release:
-	twine upload --verbose dist/*whl dist/*zip
-	# pip install podman-py
+	twine upload --verbose dist/*whl $(SOURCE)
+	# pip install podman
 
 .PHONY: docs
 docs:

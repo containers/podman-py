@@ -8,7 +8,7 @@ except ImportError:
             raise NotImplementedError("ApiConnection deprecated, please use PodmanClient().")
 
 
-from podman.api.version import __version__
+from podman.version import __version__
 from podman.client import PodmanClient, from_env
 
 # isort: unique-list
