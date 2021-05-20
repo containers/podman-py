@@ -25,7 +25,7 @@ copyright = u'2021, Red Hat Inc'
 author = u'Red Hat Inc'
 
 # The full version, including alpha/beta/rc tags
-version = '3.1.2.3'
+version = '3.1.2.4'
 release = version
 
 add_module_names = False
