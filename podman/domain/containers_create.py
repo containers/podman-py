@@ -464,7 +464,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             volume = {
                 "Name": key,
                 "Dest": value["bind"],
-                "Options": [value["mode"]],
+                "Options": [value["mode"]] if "mode" in value else [],
             }
             params["volumes"].append(volume)
 
