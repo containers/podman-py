@@ -459,12 +459,12 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 }
             )
 
-        for item in args.pop("volumes", dict()):
+        for item in args.pop("volumes", dict()).items():
             key, value = item
             volume = {
                 "Name": key,
                 "Dest": value["bind"],
-                "Options": [value["mode"]],
+                "Options": [value["mode"]] if "mode" in value else [],
             }
             params["volumes"].append(volume)
 
