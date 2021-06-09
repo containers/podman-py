@@ -15,7 +15,7 @@ cd "$GOPATH/src/github.com/containers/"
 
 systemctl stop podman.socket ||:
 dnf erase podman -y
-git clone --branch master https://github.com/containers/podman.git
+git clone https://github.com/containers/podman.git
 
 cd podman
 make binaries

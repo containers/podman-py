@@ -1,7 +1,7 @@
 ---
 
 env:
-    DEST_BRANCH: "master"
+    DEST_BRANCH: "main"
     GOPATH: "/var/tmp/go"
     GOBIN: "${GOPATH}/bin"
     GOCACHE: "${GOPATH}/cache"
