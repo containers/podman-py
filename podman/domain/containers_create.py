@@ -145,6 +145,8 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                     port.
                     For example: {'1111/tcp': [1234, 4567]}.
 
+                    For example: {'9090': 7878, '10932/tcp': '8781', "8989/tcp": ("127.0.0.1", 9091)}
+
             privileged (bool): Give extended privileges to this container.
             publish_all_ports (bool): Publish all ports to the host.
             read_only (bool): Mount the container's root filesystem as read only.
@@ -321,7 +323,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "oci_runtime": pop("runtime"),
             "oom_score_adj": pop("oom_score_adj"),
             "overlay_volumes": pop("overlay_volumes"),  # TODO document, podman only
-            "pormappings": list(),
+            "portmappings": dict(),
             "privileged": pop("privileged"),
             "procfs_opts": pop("procfs_opts"),  # TODO document, podman only
             "publish_image_ports": pop("publish_all_ports"),
@@ -402,18 +404,20 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 pod = pod.id
             params["pod"] = pod  # TODO document, podman only
 
-        for item in args.pop("ports", list()):
-            container, host = item
-            container_port, protocol = container.split("/")
+        for container, host in args.pop("ports", dict()).items():
+            if "/" in container:
+                container_port, protocol = container.split("/")
+            else:
+                container_port, protocol = container, "tcp"
 
-            port_map = {"container_port": container_port, "protocol": protocol}
+            port_map = {"container_port": int(container_port), "protocol": protocol}
             if host is None:
                 pass
-            elif isinstance(host, int):
-                port_map["host_port"] = host
+            elif isinstance(host, int) or isinstance(host, str) and host.isdigit():
+                port_map["host_port"] = int(host)
             elif isinstance(host, tuple):
                 port_map["host_ip"] = host[0]
-                port_map["host_port"] = host[1]
+                port_map["host_port"] = int(host[1])
             elif isinstance(host, list):
                 raise ValueError(
                     "Podman API does not support multiple port bound to a single host port."
@@ -421,7 +425,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             else:
                 raise ValueError(f"'ports' value  of '{host}' is not supported.")
 
-            params["pormappings"].append(port_map)
+            params["portmappings"].append(port_map)
 
         if "restart_policy" in args:
             params["restart_policy"] = args["restart_policy"].get("Name")
