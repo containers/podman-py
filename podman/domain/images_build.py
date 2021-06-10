@@ -182,7 +182,7 @@ class BuildMixin:
             params["labels"] = json.dumps(kwargs.get("labels"))
 
         if params["dockerfile"] is None:
-            params["dockerfile"] = f".containerfile.{random.getrandbits(160):x}"
+            params["dockerfile"] = f'".containerfile.{random.getrandbits(160):x}"'
 
         # Remove any unset parameters
         return dict(filter(lambda i: i[1] is not None, params.items()))
