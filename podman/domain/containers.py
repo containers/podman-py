@@ -214,7 +214,7 @@ class Container(PodmanResource):
         stat = api.decode_header(stat)
         return response.iter_content(chunk_size=chunk_size), stat
 
-    def inspect(self) -> None:
+    def inspect(self) -> Dict:
         """Inspect a container.
 
         Raises:
