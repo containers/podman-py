@@ -214,6 +214,16 @@ class Container(PodmanResource):
         stat = api.decode_header(stat)
         return response.iter_content(chunk_size=chunk_size), stat
 
+    def inspect(self) -> Dict:
+        """Inspect a container.
+
+        Raises:
+            APIError: when service reports an error
+        """
+        response = self.client.post(f"/containers/{self.id}/json")
+        response.raise_for_status()
+        return response.json()
+
     def kill(self, signal: Union[str, int, None] = None) -> None:
         """Send signal to container.
 
