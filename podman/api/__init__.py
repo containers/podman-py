@@ -33,9 +33,12 @@ VERSION: str = _api_version(version.__version__)
 COMPATIBLE_VERSION: str = _api_version(version.__compatible_version__, 2)
 
 try:
-    from typing_extensions import Literal
-except ModuleNotFoundError:
     from typing import Literal
+except (ImportError, ModuleNotFoundError):
+    try:
+        from typing_extensions import Literal
+    except (ImportError, ModuleNotFoundError):
+        from podman.api.typing_extensions import Literal  # pylint: disable=ungrouped-imports
 
 # isort: unique-list
 __all__ = [
