@@ -359,7 +359,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "version": pop("version"),
             "volumes": list(),
             "volumes_from": pop("volumes_from"),
-            "working_dir": pop("working_dir"),
+            "work_dir": pop("working_dir"),
         }
 
         for item in args.pop("exposed_ports", list()):
