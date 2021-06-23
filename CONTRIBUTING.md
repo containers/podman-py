@@ -58,7 +58,7 @@ tox -e coverage
 ## Where to find other contributors
 
 - For general questions and discussion, please use the IRC #podman channel on
-  irc.freenode.net.
+  irc.libera.chat.
 - For discussions around issues/bugs and features, you can use the
   GitHub [issues](https://github.com/containers/podman-py/issues) and
   [PRs](https://github.com/containers/podman-py/pulls) tracking system.
@@ -69,7 +69,7 @@ tox -e coverage
   installed, run `tox -e black` to see what changes will be made. You can use
   `tox -e black-format` to update the code formatting prior to committing.
 - Pass pylint
-  - exceptions are possible but you will need to make a good argument
+  - exceptions are possible, but you will need to make a good argument
 - use spaces not tabs for indentation
 - This is open source software. Consider the people who will read your code,
   and make it look nice for them. It's sort of like driving a car: Perhaps
