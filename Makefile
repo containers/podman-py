@@ -5,7 +5,7 @@ export GOPROXY=https://proxy.golang.org
 PYTHON ?= $(shell command -v python3 2>/dev/null || command -v python)
 DESTDIR ?= /
 DESTDIR ?=
-EPOCH_TEST_COMMIT ?= $(shell git merge-base $${DEST_BRANCH:-master} HEAD)
+EPOCH_TEST_COMMIT ?= $(shell git merge-base $${DEST_BRANCH:-main} HEAD)
 HEAD ?= HEAD
 
 export PODMAN_VERSION ?= "3.2.0"

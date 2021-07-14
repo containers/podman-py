@@ -145,7 +145,8 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                     port.
                     For example: {'1111/tcp': [1234, 4567]}.
 
-                    For example: {'9090': 7878, '10932/tcp': '8781', "8989/tcp": ("127.0.0.1", 9091)}
+                    For example: {'9090': 7878, '10932/tcp': '8781',
+                                  "8989/tcp": ("127.0.0.1", 9091)}
 
             privileged (bool): Give extended privileges to this container.
             publish_all_ports (bool): Publish all ports to the host.
