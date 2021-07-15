@@ -324,7 +324,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "oci_runtime": pop("runtime"),
             "oom_score_adj": pop("oom_score_adj"),
             "overlay_volumes": pop("overlay_volumes"),  # TODO document, podman only
-            "portmappings": dict(),
+            "portmappings": list(),
             "privileged": pop("privileged"),
             "procfs_opts": pop("procfs_opts"),  # TODO document, podman only
             "publish_image_ports": pop("publish_all_ports"),
