@@ -220,7 +220,7 @@ class Container(PodmanResource):
         Raises:
             APIError: when service reports an error
         """
-        response = self.client.post(f"/containers/{self.id}/json")
+        response = self.client.get(f"/containers/{self.id}/json")
         response.raise_for_status()
         return response.json()
 
