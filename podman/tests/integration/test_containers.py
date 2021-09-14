@@ -99,7 +99,7 @@ class ContainersIntegrationTest(base.IntegrationTest):
             self.assertIsInstance(logs_iter, Iterator)
 
             logs = list(logs_iter)
-            self.assertIn(random_string.encode("utf-8"), logs)
+            self.assertIn((random_string + "\n").encode("utf-8"), logs)
 
         with self.subTest("Delete Container"):
             container.remove()
