@@ -50,9 +50,6 @@ meta_task:
     alias: meta
     name: "VM img. keepalive"
 
-    # see bors.toml
-    skip: $CIRRUS_BRANCH =~ ".*\.tmp"
-
     container: &smallcontainer
         image: "quay.io/libpod/imgts:$IMAGE_SUFFIX"
         cpu: 1
@@ -81,9 +78,6 @@ gating_task:
     # for proper setting of EPOCH_TEST_COMMIT value, required by validation tools.
     only_if: $CIRRUS_PR != ""
 
-    # see bors.toml
-    skip: $CIRRUS_BRANCH =~ ".*\.tmp"
-
     # Runs within Cirrus's "community cluster"
     container:
         image: "$FEDORA_CONTAINER_FQIN"
@@ -104,9 +98,6 @@ test_task:
     name: "Test on $FEDORA_NAME"
     alias: test
 
-    # see bors.toml
-    skip: $CIRRUS_BRANCH =~ ".*\.tmp"
-
     depends_on:
         - gating
 
@@ -119,9 +110,6 @@ latest_task:
     name: "Test Podman main on $FEDORA_NAME"
     alias: latest
     allow_failures: true
-
-    # see bors.toml
-    skip: $CIRRUS_BRANCH =~ ".*\.tmp"
 
     depends_on:
         - gating
@@ -141,9 +129,6 @@ latest_task:
 success_task:
     name: "Total Success"
     alias: success
-
-    # see bors.toml
-    skip: $CIRRUS_BRANCH =~ ".*\.tmp"
 
     # N/B: ALL tasks must be listed here, minus their '_task' suffix.
     depends_on:
