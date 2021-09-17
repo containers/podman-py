@@ -49,8 +49,8 @@ class ImageTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_history(self, mock):
         adapter = mock.get(
-            tests.LIBPOD_URL + "/images"
-            "/326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/history",
+            tests.LIBPOD_URL
+            + "/images/326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/history",
             json=[
                 {
                     "Id": "326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab",
@@ -74,8 +74,8 @@ class ImageTestCase(unittest.TestCase):
         update["Containers"] = 0
 
         adapter = mock.get(
-            tests.LIBPOD_URL + "/images"
-            "/326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/json",
+            tests.LIBPOD_URL
+            + "/images/326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/json",
             [
                 {"json": FIRST_IMAGE},
                 {"json": update},
@@ -97,8 +97,8 @@ class ImageTestCase(unittest.TestCase):
         body = io.BytesIO(tarball)
 
         adapter = mock.get(
-            tests.LIBPOD_URL + "/images/"
-            "326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/get",
+            tests.LIBPOD_URL
+            + "/images/326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/get",
             body=body,
         )
         image = Image(attrs=FIRST_IMAGE, client=self.client.api)

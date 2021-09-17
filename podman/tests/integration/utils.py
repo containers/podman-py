@@ -18,8 +18,9 @@ import os
 import shutil
 import subprocess
 import threading
-import time
 from typing import List, Optional
+
+import time
 
 import podman.tests.errors as errors
 

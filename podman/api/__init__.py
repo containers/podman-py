@@ -13,7 +13,6 @@ from podman.api.parse_utils import (
     stream_frames,
 )
 from podman.api.tar_utils import create_tar, prepare_containerfile, prepare_containerignore
-
 from .. import version
 
 DEFAULT_CHUNK_SIZE = 2 * 1024 * 1024

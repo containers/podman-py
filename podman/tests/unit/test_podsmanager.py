@@ -40,8 +40,8 @@ class PodsManagerTestCase(unittest.TestCase):
             status_code=201,
         )
         mock.get(
-            tests.LIBPOD_URL + "/pods"
-            "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/json",
+            tests.LIBPOD_URL
+            + "/pods/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/json",
             json=FIRST_POD,
         )
 
@@ -54,8 +54,8 @@ class PodsManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_get(self, mock):
         mock.get(
-            tests.LIBPOD_URL + "/pods"
-            "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/json",
+            tests.LIBPOD_URL
+            + "/pods/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/json",
             json=FIRST_POD,
         )
 
@@ -69,14 +69,16 @@ class PodsManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_get404(self, mock):
         mock.get(
-            tests.LIBPOD_URL + "/pods"
-            "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/json",
+            tests.LIBPOD_URL
+            + "/pods/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/json",
             status_code=404,
             json={
                 "cause": "no such pod",
-                "message": "no pod with name or ID "
-                "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8"
-                " found: no such pod",
+                "message": (
+                    "no pod with name or ID "
+                    "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8"
+                    " found: no such pod"
+                ),
                 "response": 404,
             },
         )
@@ -144,7 +146,8 @@ class PodsManagerTestCase(unittest.TestCase):
             "Titles": ["UID", "PID", "PPID", "C", "STIME", "TTY", "TIME CMD"],
         }
         mock.get(
-            tests.LIBPOD_URL + "/pods/stats"
+            tests.LIBPOD_URL
+            + "/pods/stats"
             "?namesOrIDs=c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8",
             json=body,
         )

@@ -46,8 +46,8 @@ class RegistryDataTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_init(self, mock):
         mock.get(
-            tests.LIBPOD_URL + "/images/"
-            "326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/json",
+            tests.LIBPOD_URL
+            + "/images/326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/json",
             json=FIRST_IMAGE,
         )
         actual = RegistryData(

@@ -8,16 +8,17 @@ FIXME: Remove file when supported Python >= 3.8
 
 import abc
 import collections
-import contextlib
-import sys
-import typing
 import collections.abc as collections_abc
+import contextlib
 import operator
+import typing
 
 # These are used by Protocol implementation
 # We use internal typing helpers here, but this significantly reduces
 # code duplication. (Also this is only until Protocol is in typing.)
 from typing import Generic, Callable, TypeVar, Tuple
+
+import sys
 
 # After PEP 560, internal typing API was substantially reworked.
 # This is especially important for Protocol class which uses internal APIs
@@ -185,7 +186,6 @@ HAVE_PROTOCOLS = sys.version_info[:3] != (3, 5, 0)
 if HAVE_PROTOCOLS:
     __all__.extend(['Protocol', 'runtime', 'runtime_checkable'])
 
-
 # TODO
 if hasattr(typing, 'NoReturn'):
     NoReturn = typing.NoReturn
@@ -252,7 +252,6 @@ T_co = typing.TypeVar('T_co', covariant=True)  # Any type covariant containers.
 V_co = typing.TypeVar('V_co', covariant=True)  # Any type covariant containers.
 VT_co = typing.TypeVar('VT_co', covariant=True)  # Value type covariant containers.
 T_contra = typing.TypeVar('T_contra', contravariant=True)  # Ditto contravariant.
-
 
 if hasattr(typing, 'ClassVar'):
     ClassVar = typing.ClassVar
@@ -815,7 +814,7 @@ class _ExtensionsGenericMeta(GenericMeta):
             if self.__origin__ is not None:
                 if sys._getframe(1).f_globals['__name__'] not in ['abc', 'functools']:
                     raise TypeError(
-                        "Parameterized generics cannot be used with class " "or instance checks"
+                        "Parameterized generics cannot be used with class or instance checks"
                     )
                 return False
         if not self.__extra__:
@@ -976,7 +975,6 @@ class AsyncContextManager(typing.Generic[T_co]):
 __all__.append('AsyncContextManager')
 """
     )
-
 
 if hasattr(typing, 'DefaultDict'):
     DefaultDict = typing.DefaultDict
@@ -1149,7 +1147,6 @@ elif hasattr(collections, 'ChainMap'):
 
     __all__.append('ChainMap')
 
-
 if _define_guard('AsyncGenerator'):
 
     class AsyncGenerator(
@@ -1196,7 +1193,6 @@ if hasattr(typing, 'Text'):
     Text = typing.Text
 else:
     Text = str
-
 
 if hasattr(typing, 'TYPE_CHECKING'):
     TYPE_CHECKING = typing.TYPE_CHECKING
@@ -1335,8 +1331,7 @@ elif HAVE_PROTOCOLS and not PEP_560:
                         gvarset = set(gvars)
                         if not tvarset <= gvarset:
                             raise TypeError(
-                                "Some type variables (%s) "
-                                "are not listed in %s[%s]"
+                                "Some type variables (%s) are not listed in %s[%s]"
                                 % (
                                     ", ".join(str(t) for t in tvars if t not in gvarset),
                                     "Generic"
@@ -1396,7 +1391,7 @@ elif HAVE_PROTOCOLS and not PEP_560:
                         and base.__origin__ is Generic
                     ):
                         raise TypeError(
-                            'Protocols can only inherit from other' ' protocols, got %r' % base
+                            'Protocols can only inherit from other protocols, got %r' % base
                         )
 
                 cls.__init__ = _no_init
@@ -1451,7 +1446,7 @@ elif HAVE_PROTOCOLS and not PEP_560:
             if self.__origin__ is not None:
                 if sys._getframe(1).f_globals['__name__'] not in ['abc', 'functools']:
                     raise TypeError(
-                        "Parameterized generics cannot be used with class " "or instance checks"
+                        "Parameterized generics cannot be used with class or instance checks"
                     )
                 return False
             if self.__dict__.get('_is_protocol', None) and not self.__dict__.get(
@@ -1460,14 +1455,14 @@ elif HAVE_PROTOCOLS and not PEP_560:
                 if sys._getframe(1).f_globals['__name__'] in ['abc', 'functools', 'typing']:
                     return False
                 raise TypeError(
-                    "Instance and class checks can only be used with" " @runtime protocols"
+                    "Instance and class checks can only be used with @runtime protocols"
                 )
             if self.__dict__.get('_is_runtime_protocol', None) and not _is_callable_members_only(
                 self
             ):
                 if sys._getframe(1).f_globals['__name__'] in ['abc', 'functools', 'typing']:
                     return super(GenericMeta, self).__subclasscheck__(cls)
-                raise TypeError("Protocols with non-method members" " don't support issubclass()")
+                raise TypeError("Protocols with non-method members don't support issubclass()")
             return super(GenericMeta, self).__subclasscheck__(cls)
 
         if not OLD_GENERICS:
@@ -1547,7 +1542,7 @@ elif HAVE_PROTOCOLS and not PEP_560:
         def __new__(cls, *args, **kwds):
             if _gorg(cls) is Protocol:
                 raise TypeError(
-                    "Type Protocol cannot be instantiated; " "it can be used only as a base class"
+                    "Type Protocol cannot be instantiated; it can be used only as a base class"
                 )
             if OLD_GENERICS:
                 return _generic_new(_next_in_mro(cls), cls, *args, **kwds)
@@ -1626,7 +1621,7 @@ elif PEP_560:
         def __new__(cls, *args, **kwds):
             if cls is Protocol:
                 raise TypeError(
-                    "Type Protocol cannot be instantiated; " "it can only be used as a base class"
+                    "Type Protocol cannot be instantiated; it can only be used as a base class"
                 )
             return super().__new__(cls)
 
@@ -1692,8 +1687,9 @@ elif PEP_560:
                         s_vars = ', '.join(str(t) for t in tvars if t not in gvarset)
                         s_args = ', '.join(str(g) for g in gvars)
                         raise TypeError(
-                            "Some type variables ({}) are"
-                            " not listed in {}[{}]".format(s_vars, the_base, s_args)
+                            "Some type variables ({}) are not listed in {}[{}]".format(
+                                s_vars, the_base, s_args
+                            )
                         )
                     tvars = gvars
             cls.__parameters__ = tuple(tvars)
@@ -1710,14 +1706,12 @@ elif PEP_560:
                     if sys._getframe(2).f_globals['__name__'] in ['abc', 'functools']:
                         return NotImplemented
                     raise TypeError(
-                        "Instance and class checks can only be used with" " @runtime protocols"
+                        "Instance and class checks can only be used with @runtime protocols"
                     )
                 if not _is_callable_members_only(cls):
                     if sys._getframe(2).f_globals['__name__'] in ['abc', 'functools']:
                         return NotImplemented
-                    raise TypeError(
-                        "Protocols with non-method members" " don't support issubclass()"
-                    )
+                    raise TypeError("Protocols with non-method members don't support issubclass()")
                 if not isinstance(other, type):
                     # Same error as for issubclass(1, int)
                     raise TypeError('issubclass() arg 1 must be a class')
@@ -1756,7 +1750,7 @@ elif PEP_560:
                     and base._is_protocol
                 ):
                     raise TypeError(
-                        'Protocols can only inherit from other' ' protocols, got %r' % base
+                        'Protocols can only inherit from other protocols, got %r' % base
                     )
             cls.__init__ = _no_init
 
@@ -1775,7 +1769,7 @@ elif HAVE_PROTOCOLS:
         """
         if not isinstance(cls, _ProtocolMeta) or not cls._is_protocol:
             raise TypeError(
-                '@runtime_checkable can be only applied to protocol classes,' ' got %r' % cls
+                '@runtime_checkable can be only applied to protocol classes, got %r' % cls
             )
         cls._is_runtime_protocol = True
         return cls
@@ -1784,7 +1778,6 @@ elif HAVE_PROTOCOLS:
 if HAVE_PROTOCOLS:
     # Exists for backwards compatibility.
     runtime = runtime_checkable
-
 
 if hasattr(typing, 'SupportsIndex'):
     SupportsIndex = typing.SupportsIndex
@@ -1841,7 +1834,7 @@ else:
             )
         else:
             raise TypeError(
-                "TypedDict.__new__() missing 1 required positional " "argument: '_typename'"
+                "TypedDict.__new__() missing 1 required positional argument: '_typename'"
             )
         if args:
             try:
@@ -1867,7 +1860,7 @@ else:
         if fields is None:
             fields = kwargs
         elif kwargs:
-            raise TypeError("TypedDict takes either a dict or keyword arguments," " but not both")
+            raise TypeError("TypedDict takes either a dict or keyword arguments, but not both")
 
         ns = {'__annotations__': dict(fields)}
         try:
@@ -1879,7 +1872,7 @@ else:
         return _TypedDictMeta(typename, (), ns, total=total)
 
     _typeddict_new.__text_signature__ = (
-        '($cls, _typename, _fields=None,' ' /, *, total=True, **kwargs)'
+        '($cls, _typename, _fields=None, /, *, total=True, **kwargs)'
     )
 
     class _TypedDictMeta(type):
@@ -1956,7 +1949,6 @@ else:
         The class syntax is only supported in Python 3.6+, while two other
         syntax forms work for Python 2.7 and 3.2+
         """
-
 
 # Python 3.9+ has PEP 593 (Annotated and modified get_type_hints)
 if hasattr(typing, 'Annotated'):
@@ -2156,7 +2148,7 @@ elif HAVE_ANNOTATED:
             """Return the class used to create instance of this type."""
             if self.__origin__ is None:
                 raise TypeError(
-                    "Cannot get the underlying type of a " "non-specialized Annotated type."
+                    "Cannot get the underlying type of a non-specialized Annotated type."
                 )
             tree = self._subs_tree()
             while isinstance(tree, tuple) and tree[0] is Annotated:
@@ -2595,7 +2587,6 @@ else:
 
 # Inherits from list as a workaround for Callable checks in Python < 3.9.2.
 class _ConcatenateGenericAlias(list):
-
     # Trick Generic into looking into this for __parameters__.
     if PEP_560:
         __class__ = _GenericAlias
@@ -2649,7 +2640,7 @@ def _concatenate_getitem(self, parameters):
     if not isinstance(parameters, tuple):
         parameters = (parameters,)
     if not isinstance(parameters[-1], ParamSpec):
-        raise TypeError("The last parameter to Concatenate should be a " "ParamSpec variable.")
+        raise TypeError("The last parameter to Concatenate should be a ParamSpec variable.")
     msg = "Concatenate[arg, ...]: each arg must be a type."
     parameters = tuple(typing._type_check(p, msg) for p in parameters)
     return _ConcatenateGenericAlias(self, parameters)

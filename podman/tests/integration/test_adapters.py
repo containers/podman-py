@@ -1,5 +1,4 @@
 import getpass
-import os
 import unittest
 
 import time

@@ -36,8 +36,8 @@ class PodTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_kill(self, mock):
         adapter = mock.post(
-            tests.LIBPOD_URL + "/pods"
-            "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/kill",
+            tests.LIBPOD_URL
+            + "/pods/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/kill",
             json={
                 "Errs": [],
                 "Id": "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8",
@@ -51,8 +51,8 @@ class PodTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_kill_404(self, mock):
         adapter = mock.post(
-            tests.LIBPOD_URL + "/pods"
-            "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/kill",
+            tests.LIBPOD_URL
+            + "/pods/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/kill",
             status_code=404,
             json={
                 "cause": "no such pod",
@@ -69,8 +69,8 @@ class PodTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_pause(self, mock):
         adapter = mock.post(
-            tests.LIBPOD_URL + "/pods"
-            "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/pause",
+            tests.LIBPOD_URL
+            + "/pods/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/pause",
             json={
                 "Errs": [],
                 "Id": "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8",
@@ -84,8 +84,8 @@ class PodTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_pause_404(self, mock):
         adapter = mock.post(
-            tests.LIBPOD_URL + "/pods"
-            "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/pause",
+            tests.LIBPOD_URL
+            + "/pods/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/pause",
             status_code=404,
             json={
                 "cause": "no such pod",
@@ -102,8 +102,8 @@ class PodTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_remove(self, mock):
         adapter = mock.delete(
-            tests.LIBPOD_URL + "/pods/"
-            "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8?force=True",
+            tests.LIBPOD_URL
+            + "/pods/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8?force=True",
             json={
                 "Errs": [],
                 "Id": "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8",
@@ -118,8 +118,8 @@ class PodTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_restart(self, mock):
         adapter = mock.post(
-            tests.LIBPOD_URL + "/pods"
-            "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/restart",
+            tests.LIBPOD_URL
+            + "/pods/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/restart",
             json={
                 "Errs": [],
                 "Id": "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8",
@@ -133,8 +133,8 @@ class PodTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_start(self, mock):
         adapter = mock.post(
-            tests.LIBPOD_URL + "/pods"
-            "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/start",
+            tests.LIBPOD_URL
+            + "/pods/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/start",
             json={
                 "Errs": [],
                 "Id": "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8",
@@ -148,8 +148,8 @@ class PodTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_stop(self, mock):
         adapter = mock.post(
-            tests.LIBPOD_URL + "/pods"
-            "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/stop?t=70.0",
+            tests.LIBPOD_URL
+            + "/pods/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/stop?t=70.0",
             json={
                 "Errs": [],
                 "Id": "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8",
@@ -180,7 +180,8 @@ class PodTestCase(unittest.TestCase):
             "Titles": ["UID", "PID", "PPID", "C", "STIME", "TTY", "TIME CMD"],
         }
         adapter = mock.get(
-            tests.LIBPOD_URL + "/pods"
+            tests.LIBPOD_URL
+            + "/pods"
             "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/top"
             "?ps_args=aux&stream=False",
             json=body,
@@ -194,8 +195,8 @@ class PodTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_unpause(self, mock):
         adapter = mock.post(
-            tests.LIBPOD_URL + "/pods"
-            "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/unpause",
+            tests.LIBPOD_URL
+            + "/pods/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/unpause",
             json={
                 "Errs": [],
                 "Id": "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8",

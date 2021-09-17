@@ -3,7 +3,6 @@ import unittest
 import requests_mock
 
 from podman import PodmanClient, tests
-from podman.domain.system import SystemManager
 
 
 class SystemTestCase(unittest.TestCase):
