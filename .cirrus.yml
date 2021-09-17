@@ -92,8 +92,10 @@ gating_task:
 
     timeout_in: 20m
 
+    env:
+        PATH: ${PATH}:${GOPATH}/bin
+
     script:
-        - export PATH="$PATH:$GOPATH/bin"
         - make
         - go get github.com/vbatts/git-validation
         - make validate
@@ -109,9 +111,29 @@ test_task:
         - gating
 
     script:
-        - "$SCRIPT_BASE/latest_podman.sh"
-        - "$SCRIPT_BASE/test.sh"
+        - ${SCRIPT_BASE}/enable_ssh.sh
+        - ${SCRIPT_BASE}/enable_podman.sh
+        - ${SCRIPT_BASE}/test.sh
 
+latest_task:
+    name: "Test Podman main on $FEDORA_NAME"
+    alias: latest
+    allow_failures: true
+
+    # see bors.toml
+    skip: $CIRRUS_BRANCH =~ ".*\.tmp"
+
+    depends_on:
+        - gating
+
+    env:
+        PATH: ${PATH}:${GOPATH}/bin
+
+    script:
+        - ${SCRIPT_BASE}/enable_ssh.sh
+        - ${SCRIPT_BASE}/build_podman.sh
+        - ${SCRIPT_BASE}/enable_podman.sh
+        - ${SCRIPT_BASE}/test.sh
 
 # Status aggregator for all tests.  This task simply ensures a defined
 # set of tasks all passed, and allows confirming that based on the status
@@ -128,6 +150,7 @@ success_task:
         - meta
         - gating
         - test
+        - latest
     container: *smallcontainer
     clone_script: *noop
     script: *noop
