@@ -8,10 +8,10 @@ from requests.adapters import HTTPAdapter
 
 from podman import api
 from podman.api.ssh import SSHAdapter
-from podman.version import __version__
 from podman.api.uds import UDSAdapter
 from podman.errors import APIError, NotFound
 from podman.tlsconfig import TLSConfig
+from podman.version import __version__
 
 _Data = Union[
     None,
@@ -142,10 +142,8 @@ class APIClient(requests.Session):
         self.pool_maxsize = num_pools or requests.adapters.DEFAULT_POOLSIZE
         self.credstore_env = credstore_env or dict()
 
-        self.user_agent = (
-            user_agent
-            or f"PodmanPy/{__version__} (API v{self.version}"
-            f"; Compatible v{self.compatible_version})"
+        self.user_agent = user_agent or (
+            f"PodmanPy/{__version__} (API v{self.version}; Compatible v{self.compatible_version})"
         )
         self.headers.update({"User-Agent": self.user_agent})
 

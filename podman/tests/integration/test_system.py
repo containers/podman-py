@@ -14,8 +14,8 @@
 #
 """system call integration tests"""
 
-from podman import system, PodmanClient
 import podman.tests.integration.base as base
+from podman import PodmanClient
 
 
 class SystemIntegrationTest(base.IntegrationTest):

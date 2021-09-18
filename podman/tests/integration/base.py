@@ -14,10 +14,12 @@
 #
 """Base integration test code"""
 import logging
+import os
 import shutil
 import uuid
-import os
+
 import fixtures
+
 import podman.tests.integration.utils as utils
 
 

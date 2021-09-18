@@ -47,8 +47,8 @@ class ContainersManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_get(self, mock):
         mock.get(
-            tests.LIBPOD_URL + "/containers"
-            "/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
+            tests.LIBPOD_URL
+            + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
             json=FIRST_CONTAINER,
         )
 
@@ -62,8 +62,8 @@ class ContainersManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_get_404(self, mock):
         mock.get(
-            tests.LIBPOD_URL + "/containers"
-            "/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
+            tests.LIBPOD_URL
+            + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
             json={
                 "cause": "Container not found.",
                 "message": "Container not found.",
@@ -105,7 +105,8 @@ class ContainersManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_list_filtered(self, mock):
         mock.get(
-            tests.LIBPOD_URL + "/containers/json?"
+            tests.LIBPOD_URL
+            + "/containers/json?"
             "all=True"
             "&filters=%7B"
             "%22before%22%3A"
@@ -184,8 +185,8 @@ class ContainersManagerTestCase(unittest.TestCase):
             },
         )
         mock.get(
-            tests.LIBPOD_URL + "/containers"
-            "/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
+            tests.LIBPOD_URL
+            + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
             json=FIRST_CONTAINER,
         )
 
@@ -225,13 +226,13 @@ class ContainersManagerTestCase(unittest.TestCase):
             },
         )
         mock.post(
-            tests.LIBPOD_URL + "/containers/"
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/start",
+            tests.LIBPOD_URL
+            + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/start",
             status_code=204,
         )
         mock.get(
-            tests.LIBPOD_URL + "/containers"
-            "/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
+            tests.LIBPOD_URL
+            + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
             json=FIRST_CONTAINER,
         )
 
@@ -253,13 +254,13 @@ class ContainersManagerTestCase(unittest.TestCase):
             },
         )
         mock.post(
-            tests.LIBPOD_URL + "/containers/"
-            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/start",
+            tests.LIBPOD_URL
+            + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/start",
             status_code=204,
         )
         mock.get(
-            tests.LIBPOD_URL + "/containers"
-            "/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
+            tests.LIBPOD_URL
+            + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
             json=FIRST_CONTAINER,
         )
 

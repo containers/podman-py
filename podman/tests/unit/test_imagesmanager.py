@@ -5,8 +5,8 @@ from collections import Iterable
 import requests_mock
 
 from podman import PodmanClient, tests
-from podman.domain.images_manager import ImagesManager
 from podman.domain.images import Image
+from podman.domain.images_manager import ImagesManager
 from podman.errors import APIError, ImageNotFound
 
 FIRST_IMAGE = {
@@ -123,7 +123,7 @@ class ImagesManagerTestCase(unittest.TestCase):
     def test_list_filters(self, mock):
         """Unit test filters param for Images list()."""
         mock.get(
-            tests.LIBPOD_URL + "/images/json" "?filters=%7B%22dangling%22%3A+%5B%22True%22%5D%7D",
+            tests.LIBPOD_URL + "/images/json?filters=%7B%22dangling%22%3A+%5B%22True%22%5D%7D",
             json=[FIRST_IMAGE],
         )
 
@@ -173,7 +173,7 @@ class ImagesManagerTestCase(unittest.TestCase):
     def test_prune_filters(self, mock):
         """Unit test filters param for Images prune()."""
         mock.post(
-            tests.LIBPOD_URL + "/images/prune" "?filters=%7B%22dangling%22%3A+%5B%22True%22%5D%7D",
+            tests.LIBPOD_URL + "/images/prune?filters=%7B%22dangling%22%3A+%5B%22True%22%5D%7D",
             json=[
                 {
                     "Id": "326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab",
@@ -391,8 +391,8 @@ class ImagesManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_search_filters(self, mock):
         mock.get(
-            tests.LIBPOD_URL + "/images/search"
-            "?filters=%7B%22stars%22%3A+%5B%225%22%5D%7D&noTrunc=True&term=fedora",
+            tests.LIBPOD_URL
+            + "/images/search?filters=%7B%22stars%22%3A+%5B%225%22%5D%7D&noTrunc=True&term=fedora",
             json=[
                 {
                     "description": "mock term=fedora search",
@@ -424,7 +424,7 @@ class ImagesManagerTestCase(unittest.TestCase):
     def test_pull(self, mock):
         image_id = "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
         mock.post(
-            tests.LIBPOD_URL + "/images/pull" "?reference=quay.io%2ffedora%3Alatest",
+            tests.LIBPOD_URL + "/images/pull?reference=quay.io%2ffedora%3Alatest",
             json={
                 "error": "",
                 "id": image_id,
@@ -433,7 +433,8 @@ class ImagesManagerTestCase(unittest.TestCase):
             },
         )
         mock.get(
-            tests.LIBPOD_URL + "/images"
+            tests.LIBPOD_URL
+            + "/images"
             "/sha256%3A326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/json",
             json=FIRST_IMAGE,
         )
@@ -445,7 +446,7 @@ class ImagesManagerTestCase(unittest.TestCase):
     def test_pull_enhanced(self, mock):
         image_id = "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
         mock.post(
-            tests.LIBPOD_URL + "/images/pull" "?reference=quay.io%2ffedora%3Alatest",
+            tests.LIBPOD_URL + "/images/pull?reference=quay.io%2ffedora%3Alatest",
             json={
                 "error": "",
                 "id": image_id,
@@ -454,7 +455,8 @@ class ImagesManagerTestCase(unittest.TestCase):
             },
         )
         mock.get(
-            tests.LIBPOD_URL + "/images"
+            tests.LIBPOD_URL
+            + "/images"
             "/sha256%3A326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/json",
             json=FIRST_IMAGE,
         )
@@ -475,7 +477,8 @@ class ImagesManagerTestCase(unittest.TestCase):
             },
         )
         mock.get(
-            tests.LIBPOD_URL + "/images"
+            tests.LIBPOD_URL
+            + "/images"
             "/sha256%3A326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/json",
             json=FIRST_IMAGE,
         )
@@ -488,7 +491,7 @@ class ImagesManagerTestCase(unittest.TestCase):
     def test_pull_2x(self, mock):
         image_id = "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
         mock.post(
-            tests.LIBPOD_URL + "/images/pull" "?reference=quay.io%2ffedora&allTags=True",
+            tests.LIBPOD_URL + "/images/pull?reference=quay.io%2ffedora&allTags=True",
             json={
                 "error": "",
                 "id": image_id,
@@ -500,13 +503,14 @@ class ImagesManagerTestCase(unittest.TestCase):
             },
         )
         mock.get(
-            tests.LIBPOD_URL + "/images"
+            tests.LIBPOD_URL
+            + "/images"
             "/sha256%3A326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/json",
             json=FIRST_IMAGE,
         )
         mock.get(
-            tests.LIBPOD_URL + "/images"
-            "/c4b16966ecd94ffa910eab4e630e24f259bf34a87e924cd4b1434f267b0e354e/json",
+            tests.LIBPOD_URL
+            + "/images/c4b16966ecd94ffa910eab4e630e24f259bf34a87e924cd4b1434f267b0e354e/json",
             json=SECOND_IMAGE,
         )
 
