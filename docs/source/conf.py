@@ -25,7 +25,7 @@ copyright = u'2021, Red Hat Inc'
 author = u'Red Hat Inc'
 
 # The full version, including alpha/beta/rc tags
-version = '3.1.2.5'
+version = '3.2.1.0'
 release = version
 
 add_module_names = False
@@ -35,6 +35,9 @@ add_module_names = False
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
+# sphinx.ext.autodoc: Include documentation from docstrings
+# sphinx.ext.napoleon: Support for NumPy and Google style docstrings
+# sphinx.ext.viewcode: Add links to highlighted source code
 # isort: unique-list
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx.ext.viewcode']
 
@@ -68,9 +71,9 @@ html_theme_options = {
     'logo_name': True,
     'show_powered_by': False,
     'extra_nav_links': {
-        'Report PodmanPy Issue': 'http://github.com/containers/podman-py/issues',
-        'Podman Reference': 'http://docs.podman.io',
-        'Podman on github': 'http://github.com/containers/podman',
+        'Report PodmanPy Issue': 'https://github.com/containers/podman-py/issues',
+        'Podman Reference': 'https://docs.podman.io',
+        'Podman on github': 'https://github.com/containers/podman',
     },
 }
 
