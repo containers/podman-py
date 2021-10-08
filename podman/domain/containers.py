@@ -33,8 +33,6 @@ class Container(PodmanResource):
         """podman.domain.images.Image: Returns Image object used to create Container."""
         if "Image" in self.attrs:
             image_id = self.attrs["Image"]
-            if ":" in image_id:
-                image_id = image_id.split(":")[1]
 
             return ImagesManager(client=self.client).get(image_id)
         return Image()
