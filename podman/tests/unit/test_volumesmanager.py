@@ -68,7 +68,7 @@ class VolumesManagerTestCase(unittest.TestCase):
             adapter.last_request.json(),
             {
                 "Name": "dbase",
-                "Labels": {
+                "Label": {
                     "BackupRequired": True,
                 },
             },

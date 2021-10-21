@@ -60,7 +60,7 @@ class VolumesManager(Manager):
         """
         data = {
             "Driver": kwargs.get("driver"),
-            "Labels": kwargs.get("labels"),
+            "Label": kwargs.get("labels"),
             "Name": name,
             "Options": kwargs.get("driver_opts"),
         }
