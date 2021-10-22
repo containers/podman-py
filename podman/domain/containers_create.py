@@ -367,8 +367,8 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             port, protocol = item.split("/")
             params["expose"][int(port)] = protocol
 
-        for ip, hostname in args.pop("extra_hosts", dict()).items():
-            params["hostadd"].append(f"{ip}:{hostname}")
+        for hostname, ip in args.pop("extra_hosts", dict()).items():
+            params["hostadd"].append(f"{hostname}:{ip}")
 
         if "log_config" in args:
             params["log_configuration"]["driver"] = args["log_config"].get("Type")
