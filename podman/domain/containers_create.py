@@ -220,12 +220,12 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 a dictionary with the keys:
 
                 - bind: The path to mount the volume inside the container
-                - mode: Either rw to mount the volume read/write, or ro to mount it read-only.
+                - options: Options are options that the named volume will be mounted with
 
                 For example:
 
-                    {'/home/user1/': {'bind': '/mnt/vol2', 'mode': 'rw'},
-                     '/var/www': {'bind': '/mnt/vol1', 'mode': 'ro'}}
+                    {'/home/user1/': {'bind': '/mnt/vol2', 'options': ['rw']},
+                     '/var/www': {'bind': '/mnt/vol1', 'options': ['ro', 'noexec']}}
 
             volumes_from (List[str]): List of container names or IDs to get volumes from.
             working_dir (str): Path to the working directory.
@@ -539,7 +539,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             volume = {
                 "Name": key,
                 "Dest": value["bind"],
-                "Options": [value["mode"]] if "mode" in value else [],
+                "Options": value["options"] if type(value.get("options")) is list else [],
             }
             params["volumes"].append(volume)
 
