@@ -62,8 +62,13 @@ class ManifestsIntegrationTest(base.IntegrationTest):
 
     def test_create_409(self):
         """Test that invalid Image names are caught and not corrupt storage."""
-        with self.assertRaises(APIError):
-            self.client.manifests.create(["InvalidManifestName"])
+        manifest_name = "InvalidManifestName"
+        try:
+            with self.assertRaises(APIError):
+                self.client.manifests.create([manifest_name])
+        finally:
+            if self.client.images.exists(manifest_name):
+                self.client.images.remove(manifest_name, force=True)
 
 
 if __name__ == '__main__':
