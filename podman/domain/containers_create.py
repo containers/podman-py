@@ -302,7 +302,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "expose": dict(),
             "groups": pop("group_add"),
             "healthconfig": pop("healthcheck"),
-            "hostadd": pop("extra_hosts"),
+            "hostadd": list(),
             "hostname": pop("hostname"),
             "httpproxy": pop("use_config_proxy"),
             "idmappings": pop("idmappings"),  # TODO document, podman only
@@ -366,6 +366,9 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         for item in args.pop("exposed_ports", list()):
             port, protocol = item.split("/")
             params["expose"][int(port)] = protocol
+
+        for ip, hostname in args.pop("extra_hosts", dict()).items():
+            params["hostadd"].append(f"{ip}:{hostname}")
 
         if "log_config" in args:
             params["log_configuration"]["driver"] = args["log_config"].get("Type")
