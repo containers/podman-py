@@ -16,112 +16,110 @@ class PodsIntegrationTest(base.IntegrationTest):
         self.addCleanup(self.client.close)
 
         self.alpine_image = self.client.images.pull("quay.io/libpod/alpine", tag="latest")
+        self.pod_name = f"pod_{random.getrandbits(160):x}"
 
         # TODO should this use podman binary instead?
         for container in self.client.containers.list():
             container.remove(force=True)
 
+    def tearDown(self):
+        if self.client.pods.exists(self.pod_name):
+            self.client.pods.remove(self.pod_name)
+
     def test_pod_crud(self):
         """Test Pod CRUD."""
+        with self.subTest("Create no_infra"):
+            pod = self.client.pods.create(
+                self.pod_name,
+                labels={
+                    "unittest": "true",
+                },
+                no_infra=True,
+            )
+            self.assertEqual(self.pod_name, pod.name)
+            self.assertTrue(self.client.pods.exists(pod.id))
 
-        pod_name = f"pod_{random.getrandbits(160):x}"
+        with self.subTest("Inspect"):
+            actual = self.client.pods.get(pod.id)
+            self.assertEqual(actual.name, pod.name)
+            self.assertNotIn("Containers", actual.attrs)
 
-        try:
-            with self.subTest("Create no_infra"):
-                pod = self.client.pods.create(
-                    pod_name,
-                    labels={
-                        "unittest": "true",
-                    },
-                    no_infra=True,
-                )
-                self.assertEqual(pod_name, pod.name)
-                self.assertTrue(self.client.pods.exists(pod.id))
+        with self.subTest("Exists"):
+            self.assertTrue(self.client.pods.exists(self.pod_name))
 
-            with self.subTest("Inspect"):
-                actual = self.client.pods.get(pod.id)
-                self.assertEqual(actual.name, pod.name)
-                self.assertNotIn("Containers", actual.attrs)
+        # TODO Need method for deterministic prune...
+        # with self.subTest("Prune"):
+        # report = self.client.pods.prune()
+        # self.assertIn("PodsDeleted", report)
+        # self.assertIn(actual.id, report["PodsDeleted"])
+        #
+        # with self.assertRaises(NotFound):
+        #     pod.reload()
+        #
+        # For now, delete pod explicitly
+        with self.subTest("Delete"):
+            pod.remove(force=True)
+            with self.assertRaises(NotFound):
+                pod.reload()
 
-            with self.subTest("Exists"):
-                self.assertTrue(self.client.pods.exists(pod_name))
+        with self.subTest("Create with infra"):
+            pod = self.client.pods.create(
+                self.pod_name,
+                labels={
+                    "unittest": "true",
+                },
+            )
+            self.assertEqual(self.pod_name, pod.name)
 
-            # TODO Need method for deterministic prune...
-            # with self.subTest("Prune"):
-            # report = self.client.pods.prune()
-            # self.assertIn("PodsDeleted", report)
-            # self.assertIn(actual.id, report["PodsDeleted"])
-            #
-            # with self.assertRaises(NotFound):
-            #     pod.reload()
-            #
-            # For now, delete pod explicitly
-            with self.subTest("Delete"):
-                pod.remove(force=True)
-                with self.assertRaises(NotFound):
-                    pod.reload()
+        with self.subTest("Inspect"):
+            actual = self.client.pods.get(pod.id)
+            self.assertEqual(actual.name, pod.name)
+            self.assertIn("Containers", actual.attrs)
 
-            with self.subTest("Create with infra"):
-                pod = self.client.pods.create(
-                    pod_name,
-                    labels={
-                        "unittest": "true",
-                    },
-                )
-                self.assertEqual(pod_name, pod.name)
+        with self.subTest("Stop/Start"):
+            actual.stop()
+            actual.start()
 
-            with self.subTest("Inspect"):
-                actual = self.client.pods.get(pod.id)
-                self.assertEqual(actual.name, pod.name)
-                self.assertIn("Containers", actual.attrs)
+        with self.subTest("Restart"):
+            actual.restart()
 
-            with self.subTest("Stop/Start"):
-                actual.stop()
-                actual.start()
+        with self.subTest("Pause/Unpause"):
+            actual.pause()
+            actual.reload()
+            self.assertEqual(actual.attrs["State"], "Paused")
 
-            with self.subTest("Restart"):
-                actual.restart()
+            actual.unpause()
+            actual.reload()
+            self.assertEqual(actual.attrs["State"], "Running")
 
-            with self.subTest("Pause/Unpause"):
-                actual.pause()
-                actual.reload()
-                self.assertEqual(actual.attrs["State"], "Paused")
+        with self.subTest("Add container"):
+            container = self.client.containers.create(self.alpine_image, command=["ls"], pod=actual)
+            actual = self.client.pods.get(pod.id)
 
-                actual.unpause()
-                actual.reload()
-                self.assertEqual(actual.attrs["State"], "Running")
+            ids = {c["Id"] for c in actual.attrs["Containers"]}
+            self.assertIn(container.id, ids)
 
-            with self.subTest("Add container"):
-                container = self.client.containers.create(self.alpine_image, command=["ls"], pod=actual)
-                actual = self.client.pods.get(pod.id)
+        with self.subTest("Ps"):
+            procs = actual.top()
 
-                ids = {c["Id"] for c in actual.attrs["Containers"]}
-                self.assertIn(container.id, ids)
+            self.assertGreater(len(procs["Processes"]), 0)
+            self.assertGreater(len(procs["Titles"]), 0)
 
-            with self.subTest("Ps"):
-                procs = actual.top()
+        with self.subTest("List"):
+            pods = self.client.pods.list()
+            self.assertGreaterEqual(len(pods), 1)
 
-                self.assertGreater(len(procs["Processes"]), 0)
-                self.assertGreater(len(procs["Titles"]), 0)
+            ids = {p.id for p in pods}
+            self.assertIn(actual.id, ids)
 
-            with self.subTest("List"):
-                pods = self.client.pods.list()
-                self.assertGreaterEqual(len(pods), 1)
+        with self.subTest("Stats"):
+            report = self.client.pods.stats(all=True)
+            self.assertGreaterEqual(len(report), 1)
 
-                ids = {p.id for p in pods}
-                self.assertIn(actual.id, ids)
-
-            with self.subTest("Stats"):
-                report = self.client.pods.stats(all=True)
-                self.assertGreaterEqual(len(report), 1)
-
-            with self.subTest("Delete"):
-                pod.remove(force=True)
-                with self.assertRaises(NotFound):
-                    pod.reload()
-        finally:
-            if self.client.pods.exists(pod_name):
-                self.client.pods.remove(pod_name)
+        with self.subTest("Delete"):
+            pod.remove(force=True)
+            with self.assertRaises(NotFound):
+                pod.reload()
 
 
 if __name__ == '__main__':
