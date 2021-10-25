@@ -17,8 +17,12 @@ class ManifestsIntegrationTest(base.IntegrationTest):
         self.addCleanup(self.client.close)
 
         self.alpine_image = self.client.images.pull("quay.io/libpod/alpine", tag="latest")
+        self.invalid_manifest_name = "InvalidManifestName"
 
     def tearDown(self) -> None:
+        if self.client.images.exists(self.invalid_manifest_name):
+            self.client.images.remove(self.invalid_manifest_name, force=True)
+
         self.client.images.remove(self.alpine_image, force=True)
         with suppress(ImageNotFound):
             self.client.images.remove("quay.io/unittest/alpine:latest", force=True)
@@ -63,7 +67,7 @@ class ManifestsIntegrationTest(base.IntegrationTest):
     def test_create_409(self):
         """Test that invalid Image names are caught and not corrupt storage."""
         with self.assertRaises(APIError):
-            self.client.manifests.create(["InvalidManifestName"])
+            self.client.manifests.create([self.invalid_manifest_name])
 
 
 if __name__ == '__main__':

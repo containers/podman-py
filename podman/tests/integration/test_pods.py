@@ -16,25 +16,27 @@ class PodsIntegrationTest(base.IntegrationTest):
         self.addCleanup(self.client.close)
 
         self.alpine_image = self.client.images.pull("quay.io/libpod/alpine", tag="latest")
+        self.pod_name = f"pod_{random.getrandbits(160):x}"
 
         # TODO should this use podman binary instead?
         for container in self.client.containers.list():
             container.remove(force=True)
 
+    def tearDown(self):
+        if self.client.pods.exists(self.pod_name):
+            self.client.pods.remove(self.pod_name)
+
     def test_pod_crud(self):
         """Test Pod CRUD."""
-
-        pod_name = f"pod_{random.getrandbits(160):x}"
-
         with self.subTest("Create no_infra"):
             pod = self.client.pods.create(
-                pod_name,
+                self.pod_name,
                 labels={
                     "unittest": "true",
                 },
                 no_infra=True,
             )
-            self.assertEqual(pod_name, pod.name)
+            self.assertEqual(self.pod_name, pod.name)
             self.assertTrue(self.client.pods.exists(pod.id))
 
         with self.subTest("Inspect"):
@@ -43,7 +45,7 @@ class PodsIntegrationTest(base.IntegrationTest):
             self.assertNotIn("Containers", actual.attrs)
 
         with self.subTest("Exists"):
-            self.assertTrue(self.client.pods.exists(pod_name))
+            self.assertTrue(self.client.pods.exists(self.pod_name))
 
         # TODO Need method for deterministic prune...
         # with self.subTest("Prune"):
@@ -62,12 +64,12 @@ class PodsIntegrationTest(base.IntegrationTest):
 
         with self.subTest("Create with infra"):
             pod = self.client.pods.create(
-                pod_name,
+                self.pod_name,
                 labels={
                     "unittest": "true",
                 },
             )
-            self.assertEqual(pod_name, pod.name)
+            self.assertEqual(self.pod_name, pod.name)
 
         with self.subTest("Inspect"):
             actual = self.client.pods.get(pod.id)
