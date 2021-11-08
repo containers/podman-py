@@ -25,7 +25,10 @@ class Container(PodmanResource):
     def name(self):
         """str: Returns container's name."""
         with suppress(KeyError):
-            return self.attrs["Name"].lstrip("/")
+            if 'Name' in self.attrs:
+                return self.attrs["Name"].lstrip("/")
+            else:
+                return self.attrs["Names"][0].lstrip("/")
         return None
 
     @property
