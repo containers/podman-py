@@ -1,6 +1,7 @@
 """Mixin to provide Container create() method."""
 import copy
 import logging
+import warnings
 from contextlib import suppress
 from typing import Any, Dict, List, MutableMapping, Union
 
@@ -52,7 +53,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             device_read_iops: Limit read rate (IO per second) from a device.
             device_write_bps: Limit write rate (bytes per second) from a device.
             device_write_iops: Limit write rate (IO per second) from a device.
-            devices (List[str): Expose host devices to the container, as a List[str] in the form
+            devices (List[str]): Expose host devices to the container, as a List[str] in the form
                 <path_on_host>:<path_in_container>:<cgroup_permissions>.
 
                 For example:
@@ -264,7 +265,6 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 "device_requests",  # FIXME In addition to device Major/Minor include path
                 "device_write_bps",  # FIXME In addition to device Major/Minor include path
                 "device_write_iops",  # FIXME In addition to device Major/Minor include path
-                "devices",  # FIXME In addition to device Major/Minor include path
                 "domainname",
                 "network_disabled",  # FIXME Where to map for Podman API?
                 "storage_opt",  # FIXME Where to map for Podman API?
@@ -293,6 +293,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "command": args.pop("command", args.pop("cmd", None)),
             "conmon_pid_file": pop("conmon_pid_file"),  # TODO document, podman only
             "containerCreateCommand": pop("containerCreateCommand"),  # TODO document, podman only
+            "devices": list(),
             "dns_options": pop("dns_opt"),
             "dns_search": pop("dns_search"),
             "dns_server": pop("dns"),
@@ -362,6 +363,18 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "volumes_from": pop("volumes_from"),
             "work_dir": pop("working_dir"),
         }
+
+        # FIXME In addition to device Major/Minor include path
+        # this is temporary solution, allowing passing devices (without options)
+        devices = args.pop("devices", list())
+        if devices:
+            warnings.warn('Exposing devices is under construction. No path in container nor cgroup permissions are supported. Device is exposed in unchanged form.', FutureWarning)
+            for device in devices:
+                params["devices"].append(
+                    {
+                        "path": device.split(":")[0]
+                    }
+                )
 
         for item in args.pop("exposed_ports", list()):
             port, protocol = item.split("/")
