@@ -2,6 +2,7 @@ import base64
 import io
 import json
 import unittest
+
 try:
     # Python >= 3.10
     from collections.abc import Iterable

@@ -2,6 +2,7 @@ import io
 import random
 import tarfile
 import unittest
+
 try:
     # Python >= 3.10
     from collections.abc import Iterator

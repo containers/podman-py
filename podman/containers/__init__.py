@@ -4,7 +4,7 @@
 import json
 from http import HTTPStatus
 
-import podman.errors as errors
+from podman import errors
 
 
 def attach(api, name):
@@ -15,10 +15,10 @@ def attach(api, name):
 def changes(api, name):
     """Get files added, deleted or modified in a container"""
     try:
-        response = api.get('/containers/{}/changes'.format(api.quote(name)))
-        return json.loads(str(response.read(), 'utf-8'))
+        response = api.get(f'/containers/{api.quote(name)}/changes')
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.ContainerNotFound)
+    return json.loads(str(response.read(), 'utf-8'))
 
 
 def checkpoint(
@@ -31,7 +31,7 @@ def checkpoint(
     tcp_established=None,
 ):
     """Copy tar of files into a container"""
-    path = '/containers/{}/checkpoint'.format(api.quote(name))
+    path = f'/containers/{api.quote(name)}/checkpoint'
     params = {}
     if export_image is not None:
         params['export'] = export_image
@@ -45,29 +45,29 @@ def checkpoint(
         params['tcpEstablished'] = tcp_established
     try:
         response = api.post(path, params=params, headers={'content-type': 'application/json'})
-        return response.read()
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.ContainerNotFound)
+    return response.read()
 
 
 def copy(api, name, file_path, pause_container=None):
     """Copy tar of files into a container"""
-    path = '/containers/{}/copy'.format(api.quote(name))
+    path = f'/containers/{api.quote(name)}/copy'
     params = {'path': file_path}
     if pause_container is not None:
         params['pause'] = pause_container
     try:
         response = api.post(path, params=params, headers={'content-type': 'application/json'})
         response.read()
-        return True
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.ContainerNotFound)
+    return True
 
 
 def container_exists(api, name):
     """Check if container exists"""
     try:
-        api.get("/containers/{}/exists".format(api.quote(name)))
+        api.get(f"/containers/{api.quote(name)}/exists")
         return True
     except errors.NotFoundError:
         return False
@@ -87,27 +87,27 @@ def create(api, container_data):
             headers={'content-type': 'application/json'},
         )
         response.read()
-        return response.status == HTTPStatus.CREATED
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.ContainerNotFound)
+    return response.status == HTTPStatus.CREATED
 
 
 def export(api, name):
     """Container export"""
     try:
-        response = api.get("/containers/{}/export".format(api.quote(name)))
-        return response.read()
+        response = api.get(f"/containers/{api.quote(name)}/export")
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.ContainerNotFound)
+    return response.read()
 
 
 def healthcheck(api, name):
     """Execute container healthcheck"""
     try:
-        response = api.get('/containers/{}/healthcheck'.format(api.quote(name)))
-        return json.loads(str(response.read(), 'utf-8'))
+        response = api.get(f'/containers/{api.quote(name)}/healthcheck')
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.ContainerNotFound)
+    return json.loads(str(response.read(), 'utf-8'))
 
 
 def init(api, name):
@@ -116,11 +116,11 @@ def init(api, name):
     Returns true if successful, false if already done
     """
     try:
-        response = api.post('/containers/{}/init'.format(api.quote(name)))
+        response = api.post(f'/containers/{api.quote(name)}/init')
         response.read()
-        return response.status == HTTPStatus.NO_CONTENT
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.ContainerNotFound)
+    return response.status == HTTPStatus.NO_CONTENT
 
 
 def inspect(api, name):
@@ -128,15 +128,15 @@ def inspect(api, name):
     Name may also be a container ID.
     """
     try:
-        response = api.get('/containers/{}/json'.format(api.quote(name)))
-        return json.loads(str(response.read(), 'utf-8'))
+        response = api.get(f'/containers/{api.quote(name)}/json')
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.ContainerNotFound)
+    return json.loads(str(response.read(), 'utf-8'))
 
 
 def kill(api, name, signal=None):
     """kill named/identified container"""
-    path = "/containers/{}/kill".format(api.quote(name))
+    path = f"/containers/{api.quote(name)}/kill"
     params = {}
     if signal is not None:
         params = {'signal': signal}
@@ -145,9 +145,9 @@ def kill(api, name, signal=None):
         response = api.post(path, params=params, headers={'content-type': 'application/json'})
         # returns an empty bytes object
         response.read()
-        return True
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.ContainerNotFound)
+    return True
 
 
 def list_containers(api, all_=None, filters=None, limit=None, size=None, sync=None):
@@ -175,28 +175,28 @@ def logs(api, name, follow=None, since=None, stderr=None, tail=None, timestamps=
 
 def mount(api, name):
     """Mount container to the filesystem"""
-    path = "/containers/{}/mount".format(api.quote(name))
+    path = f"/containers/{api.quote(name)}/mount"
     try:
         response = api.post(path, headers={'content-type': 'application/json'})
-        return json.loads(str(response.read(), "utf-8"))
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.ContainerNotFound)
+    return json.loads(str(response.read(), "utf-8"))
 
 
 def pause(api, name):
     """Pause a container"""
-    path = "/containers/{}/pause".format(api.quote(name))
+    path = f"/containers/{api.quote(name)}/pause"
     try:
         response = api.post(path, headers={'content-type': 'application/json'})
         response.read()
-        return response.status == HTTPStatus.NO_CONTENT
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.ContainerNotFound)
+    return response.status == HTTPStatus.NO_CONTENT
 
 
 def prune(api, name, filters=None):
     """Remove stopped containers"""
-    path = "/containers/{}/prune".format(api.quote(name))
+    path = f"/containers/{api.quote(name)}/prune"
     params = {}
     if filters is not None:
         params['filters'] = filters
@@ -206,7 +206,7 @@ def prune(api, name, filters=None):
 
 def remove(api, name, force=None, delete_volumes=None):
     """Delete container"""
-    path = "/containers/{}".format(api.quote(name))
+    path = f"/containers/{api.quote(name)}"
     params = {}
     if force is not None:
         params['force'] = force
@@ -217,34 +217,34 @@ def remove(api, name, force=None, delete_volumes=None):
         response = api.delete(path, params)
         # returns an empty bytes object
         response.read()
-        return True
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.ContainerNotFound)
+    return True
 
 
 def resize(api, name, height, width):
     """Resize container tty"""
-    path = "/containers/{}/resize".format(api.quote(name))
+    path = f"/containers/{api.quote(name)}/resize"
     params = {'h': height, 'w': width}
     try:
         response = api.post(path, params=params, headers={'content-type': 'application/json'})
-        return json.loads(str(response.read(), 'utf-8'))
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.ContainerNotFound)
+    return json.loads(str(response.read(), 'utf-8'))
 
 
 def restart(api, name, timeout=None):
     """Restart container"""
-    path = "/containers/{}/restart".format(api.quote(name))
+    path = f"/containers/{api.quote(name)}/restart"
     params = {}
     if timeout is not None:
         params['t'] = timeout
     try:
         response = api.post(path, params=params, headers={'content-type': 'application/json'})
         response.read()
-        return response.status == HTTPStatus.NO_CONTENT
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.ContainerNotFound)
+    return response.status == HTTPStatus.NO_CONTENT
 
 
 def restore(
@@ -260,7 +260,7 @@ def restore(
     tcp_established=None,
 ):
     """Restore container"""
-    path = "/containers/{}/restore".format(api.quote(name))
+    path = f"/containers/{api.quote(name)}/restore"
     params = {}
     if ignore_root_fs is not None:
         params['ignoreRootFS'] = ignore_root_fs
@@ -280,10 +280,10 @@ def restore(
         params['tcpEstablished'] = tcp_established
     try:
         response = api.post(path, params=params, headers={'content-type': 'application/json'})
-        # TODO(mwhahaha): handle returned tarball better
-        return response.read()
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.ContainerNotFound)
+    # TODO(mwhahaha): handle returned tarball better
+    return response.read()
 
 
 def show_mounted(api):
@@ -294,16 +294,16 @@ def show_mounted(api):
 
 def start(api, name, detach_keys=None):
     """Start container"""
-    path = "/containers/{}/start".format(api.quote(name))
+    path = f"/containers/{api.quote(name)}/start"
     params = {}
     if detach_keys is not None:
         params['detachKeys'] = detach_keys
     try:
         response = api.post(path, params=params, headers={'content-type': 'application/json'})
         response.read()
-        return response.status == HTTPStatus.NO_CONTENT
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.ContainerNotFound)
+    return response.status == HTTPStatus.NO_CONTENT
 
 
 def stats(api, containers=None, stream=True):
@@ -319,23 +319,23 @@ def stats(api, containers=None, stream=True):
         response = api.get(path, params=params)
         if stream:
             return response
-        return json.loads(str(response.read(), 'utf-8'))
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.ContainerNotFound)
+    return json.loads(str(response.read(), 'utf-8'))
 
 
 def stop(api, name, timeout=None):
     """Stop container"""
-    path = "/containers/{}/stop".format(api.quote(name))
+    path = f"/containers/{api.quote(name)}/stop"
     params = {}
     if timeout is not None:
         params['t'] = timeout
     try:
         response = api.post(path, params=params, headers={'content-type': 'application/json'})
         response.read()
-        return response.status == HTTPStatus.NO_CONTENT
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.ContainerNotFound)
+    return response.status == HTTPStatus.NO_CONTENT
 
 
 def top(api, name, ps_args=None, stream=True):
@@ -343,7 +343,7 @@ def top(api, name, ps_args=None, stream=True):
 
     When stream is set to true, the raw HTTPResponse is returned.
     """
-    path = "/containers/{}/top".format(api.quote(name))
+    path = f"/containers/{api.quote(name)}/top"
     params = {'stream': stream}
     if ps_args is not None:
         params['ps_args'] = ps_args
@@ -351,44 +351,44 @@ def top(api, name, ps_args=None, stream=True):
         response = api.get(path, params=params)
         if stream:
             return response
-        return json.loads(str(response.read(), 'utf-8'))
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.ContainerNotFound)
+    return json.loads(str(response.read(), 'utf-8'))
 
 
 def unmount(api, name):
     """Unmount container"""
-    path = "/containers/{}/unmount".format(api.quote(name))
+    path = f"/containers/{api.quote(name)}/unmount"
     try:
         response = api.post(path, headers={'content-type': 'application/json'})
         response.read()
-        return response.status == HTTPStatus.NO_CONTENT
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.ContainerNotFound)
+    return response.status == HTTPStatus.NO_CONTENT
 
 
 def unpause(api, name):
     """Unpause container"""
-    path = "/containers/{}/unpause".format(api.quote(name))
+    path = f"/containers/{api.quote(name)}/unpause"
     try:
         response = api.post(path, headers={'content-type': 'application/json'})
         response.read()
-        return response.status == HTTPStatus.NO_CONTENT
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.ContainerNotFound)
+    return response.status == HTTPStatus.NO_CONTENT
 
 
 def wait(api, name, condition=None):
     """Wait for a container state"""
-    path = "/containers/{}/wait".format(api.quote(name))
+    path = f"/containers/{api.quote(name)}/wait"
     params = {}
     if condition is not None:
         params['condition'] = condition
     try:
         response = api.post(path, params=params, headers={'content-type': 'application/json'})
-        return json.loads(str(response.read(), 'utf-8'))
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.ContainerNotFound)
+    return json.loads(str(response.read(), 'utf-8'))
 
 
 __all__ = [

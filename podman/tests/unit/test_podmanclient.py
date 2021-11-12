@@ -89,7 +89,7 @@ class PodmanClientTestCase(unittest.TestCase):
 
             # Build path to support tests running as root or a user
             expected = Path(xdg.BaseDirectory.xdg_config_home) / "containers" / "containers.conf"
-            PodmanClientTestCase.opener.assert_called_with(expected)
+            PodmanClientTestCase.opener.assert_called_with(expected, encoding="utf-8")
 
     def test_connect_404(self):
         with mock.patch.multiple(Path, open=self.mocked_open, exists=MagicMock(return_value=True)):
@@ -110,7 +110,7 @@ class PodmanClientTestCase(unittest.TestCase):
 
             # Build path to support tests running as root or a user
             expected = Path(xdg.BaseDirectory.xdg_config_home) / "containers" / "containers.conf"
-            PodmanClientTestCase.opener.assert_called_with(expected)
+            PodmanClientTestCase.opener.assert_called_with(expected, encoding="utf-8")
 
 
 if __name__ == '__main__':

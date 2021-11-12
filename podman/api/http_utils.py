@@ -10,7 +10,7 @@ def prepare_filters(filters: Union[str, List[str], Mapping[str, str]]) -> Option
     if filters is None or len(filters) == 0:
         return None
 
-    criteria: Dict[str, List[str]] = dict()
+    criteria: Dict[str, List[str]] = {}
     if isinstance(filters, str):
         _format_string(filters, criteria)
     elif isinstance(filters, collections.abc.Mapping):
@@ -70,7 +70,7 @@ def _filter_values(mapping: Mapping[str, Any]) -> Dict[str, Any]:
 
     Dictionary is walked using recursion.
     """
-    canonical = dict()
+    canonical = {}
     for key, value in mapping.items():
         # quick filter if possible...
         if value is None or (isinstance(value, collections.abc.Sized) and len(value) <= 0):
@@ -84,7 +84,7 @@ def _filter_values(mapping: Mapping[str, Any]) -> Dict[str, Any]:
         else:
             proposal = value
 
-        if proposal not in (None, str(), list(), dict()):
+        if proposal not in (None, str(), [], {}):
             canonical[key] = proposal
 
     return canonical

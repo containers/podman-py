@@ -59,7 +59,7 @@ class ImagesManager(BuildMixin, Manager):
         return [self.prepare_model(attrs=i) for i in response.json()]
 
     # pylint is flagging 'name' here vs. 'key' parameter in super.get()
-    def get(self, name: str) -> Image:  # pylint: disable=arguments-differ
+    def get(self, name: str) -> Image:  # pylint: disable=arguments-differ,arguments-renamed
         """Returns an image by name or id.
 
         Args:

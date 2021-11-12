@@ -33,7 +33,10 @@ class ContainersIntegrationTest(base.IntegrationTest):
             )
             self.containers.append(proper_container)
             formatted_hosts = [f"{hosts}:{ip}" for hosts, ip in extra_hosts.items()]
-            self.assertEqual(proper_container.attrs.get('HostConfig', dict()).get('ExtraHosts', list()), formatted_hosts)
+            self.assertEqual(
+                proper_container.attrs.get('HostConfig', dict()).get('ExtraHosts', list()),
+                formatted_hosts,
+            )
 
         with self.subTest("Check extra hosts in running container"):
             proper_container.start()
@@ -51,7 +54,7 @@ class ContainersIntegrationTest(base.IntegrationTest):
             {'value': '1234b', 'expected_value': 1234},
             {'value': '123k', 'expected_value': 123 * 1024},
             {'value': '44m', 'expected_value': 44 * 1024 * 1024},
-            {'value': '2g', 'expected_value': 2 * 1024 * 1024 * 1024}
+            {'value': '2g', 'expected_value': 2 * 1024 * 1024 * 1024},
         ]
 
         for test in memory_limit_tests:
@@ -59,7 +62,10 @@ class ContainersIntegrationTest(base.IntegrationTest):
                 self.alpine_image, **{parameter_name: test['value']}
             )
             self.containers.append(container)
-            self.assertEqual(container.attrs.get('HostConfig', dict()).get(host_config_name), test['expected_value'])
+            self.assertEqual(
+                container.attrs.get('HostConfig', dict()).get(host_config_name),
+                test['expected_value'],
+            )
 
     def test_container_kernel_memory(self):
         """Test passing kernel memory"""

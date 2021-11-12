@@ -15,7 +15,7 @@
 """pod provides the pod operations for a Podman service"""
 import json
 
-import podman.errors as errors
+from podman import errors
 
 
 def create(api, name, pod):
@@ -24,7 +24,7 @@ def create(api, name, pod):
         data = json.dumps(pod)
     else:
         data = pod
-    path = '/pods/create?name={}'.format(api.quote(name))
+    path = f'/pods/create?name={api.quote(name)}'
     response = api.post(path, params=data, headers={'content-type': 'application/json'})
     return json.loads(str(response.read(), 'utf-8'))
 
@@ -32,19 +32,19 @@ def create(api, name, pod):
 def exists(api, name):
     """inspect a pod"""
     try:
-        api.get('/pods/{}/exists'.format(api.quote(name)))
-        return True
+        api.get(f'/pods/{api.quote(name)}/exists')
     except errors.NotFoundError:
         return False
+    return True
 
 
 def inspect(api, name):
     """inspect a pod"""
     try:
-        response = api.get('/pods/{}/json'.format(api.quote(name)))
-        return json.loads(str(response.read(), 'utf-8'))
+        response = api.get(f'/pods/{api.quote(name)}/json')
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.PodNotFound)
+    return json.loads(str(response.read(), 'utf-8'))
 
 
 def kill(api, name, signal=None):
@@ -53,10 +53,10 @@ def kill(api, name, signal=None):
     if signal:
         data['signal'] = signal
     try:
-        response = api.post('/pods/{}/kill'.format(api.quote(name)), data)
-        return json.loads(str(response.read(), 'utf-8'))
+        response = api.post(f'/pods/{api.quote(name)}/kill', data)
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.PodNotFound)
+    return json.loads(str(response.read(), 'utf-8'))
 
 
 def list_pods(api, filters=None):
@@ -76,17 +76,17 @@ def list_processes(api, name, stream=None, ps_args=None):
         params['stream'] = stream
     if ps_args:
         params['ps_args'] = ps_args
-    response = api.get('/pods/{}/top'.format(api.quote(name)), params)
+    response = api.get(f'/pods/{api.quote(name)}/top', params)
     return json.loads(str(response.read(), 'utf-8'))
 
 
 def pause(api, name):
     """pause a pod"""
     try:
-        response = api.post('/pods/{}/pause'.format(api.quote(name)))
-        return json.loads(str(response.read(), 'utf-8'))
+        response = api.post(f'/pods/{api.quote(name)}/pause')
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.PodNotFound)
+    return json.loads(str(response.read(), 'utf-8'))
 
 
 def prune(api):
@@ -98,33 +98,33 @@ def prune(api):
 def remove(api, name, force=None):
     """Remove named/identified image from Podman storage."""
     params = {}
-    path = '/pods/{}'.format(api.quote(name))
+    path = f'/pods/{api.quote(name)}'
     if force is not None:
         params = {'force': force}
     try:
         response = api.delete(path, params)
-        return json.loads(str(response.read(), 'utf-8'))
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.PodNotFound)
+    return json.loads(str(response.read(), 'utf-8'))
 
 
 def restart(api, name):
     """restart a pod"""
     try:
-        response = api.post('/pods/{}/restart'.format(api.quote(name)))
-        return json.loads(str(response.read(), 'utf-8'))
+        response = api.post(f'/pods/{api.quote(name)}/restart')
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.PodNotFound)
+    return json.loads(str(response.read(), 'utf-8'))
 
 
 def start(api, name):
     """start a pod"""
     try:
-        response = api.post('/pods/{}/start'.format(api.quote(name)))
-        return json.loads(str(response.read(), 'utf-8'))
-        # TODO(mwhahaha): handle 304 warning
+        response = api.post(f'/pods/{api.quote(name)}/start')
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.PodNotFound)
+    # TODO(mwhahaha): handle 304 warning
+    return json.loads(str(response.read(), 'utf-8'))
 
 
 def stats(api, all_pods=True, pods=None):
@@ -134,28 +134,28 @@ def stats(api, all_pods=True, pods=None):
         params['namesOrIDs'] = pods
     try:
         response = api.post('/pods/stats', params)
-        return json.loads(str(response.read(), 'utf-8'))
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.PodNotFound)
+    return json.loads(str(response.read(), 'utf-8'))
 
 
 def stop(api, name):
     """stop a pod"""
     try:
-        response = api.post('/pods/{}/stop'.format(api.quote(name)))
-        return json.loads(str(response.read(), 'utf-8'))
-        # TODO(mwhahaha): handle 304 warning
+        response = api.post(f'/pods/{api.quote(name)}/stop')
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.PodNotFound)
+    # TODO(mwhahaha): handle 304 warning
+    return json.loads(str(response.read(), 'utf-8'))
 
 
 def unpause(api, name):
     """unpause a pod"""
     try:
-        response = api.post('/pods/{}/unpause'.format(api.quote(name)))
-        return json.loads(str(response.read(), 'utf-8'))
+        response = api.post(f'/pods/{api.quote(name)}/unpause')
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.PodNotFound)
+    return json.loads(str(response.read(), 'utf-8'))
 
 
 __all__ = [

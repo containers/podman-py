@@ -33,7 +33,7 @@ class PodmanResource(ABC):
         self.client = client
         self.manager = collection
 
-        self.attrs = dict()
+        self.attrs = {}
         if attrs is not None:
             self.attrs.update(attrs)
 
@@ -104,7 +104,7 @@ class Manager(ABC):
         """Returns list of resources."""
 
     def prepare_model(self, attrs: Union[PodmanResource, Mapping[str, Any]]) -> PodmanResourceType:
-        """ Create a model from a set of attributes. """
+        """Create a model from a set of attributes."""
 
         # Refresh existing PodmanResource.
         if isinstance(attrs, PodmanResource):

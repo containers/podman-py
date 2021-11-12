@@ -8,10 +8,10 @@ from contextlib import AbstractContextManager
 from http import HTTPStatus
 from http.client import HTTPConnection
 
-import podman.containers as containers
-import podman.errors as errors
-import podman.images as images
-import podman.system as system
+from podman import containers
+from podman import errors
+from podman import images
+from podman import system
 
 
 class ApiConnection(HTTPConnection, AbstractContextManager):
@@ -29,7 +29,7 @@ class ApiConnection(HTTPConnection, AbstractContextManager):
         uri = urllib.parse.urlparse(url)
         if uri.scheme not in supported_schemes:
             raise ValueError(
-                "The scheme '{}' is not supported, only {}".format(uri.scheme, supported_schemes)
+                f"The scheme '{uri.scheme}' is not supported, only {supported_schemes}"
             )
         self.uri = uri
         self.base = base
@@ -42,7 +42,7 @@ class ApiConnection(HTTPConnection, AbstractContextManager):
             sock.connect(self.uri.path)
             self.sock = sock
         else:
-            raise NotImplementedError("Scheme {} not yet implemented".format(self.uri.scheme))
+            raise NotImplementedError(f"Scheme {self.uri.scheme} not yet implemented")
 
     def delete(self, path, params=None):
         """Basic DELETE wrapper for requests
@@ -105,7 +105,7 @@ class ApiConnection(HTTPConnection, AbstractContextManager):
             pass
         elif HTTPStatus.NOT_FOUND == response.status:
             raise errors.NotFoundError(
-                "Request {}:{} failed: {}".format(
+                "Request {}:{} failed: {}".format(  # pylint: disable=consider-using-f-string
                     method,
                     url,
                     HTTPStatus.NOT_FOUND.description or HTTPStatus.NOT_FOUND.phrase,
@@ -117,10 +117,10 @@ class ApiConnection(HTTPConnection, AbstractContextManager):
             and response.status < HTTPStatus.INTERNAL_SERVER_ERROR
         ):
             raise errors.RequestError(
-                "Request {}:{} failed: {}".format(
+                "Request {}:{} failed: {}".format(  # pylint: disable=consider-using-f-string
                     method,
                     url,
-                    response.reason or "Response Status Code {}".format(response.status),
+                    response.reason or f"Response Status Code {response.status}",
                 ),
                 response,
             )
@@ -134,7 +134,7 @@ class ApiConnection(HTTPConnection, AbstractContextManager):
                     or HTTPStatus.INTERNAL_SERVER_ERROR.phrase
                 )
             raise errors.InternalServerError(
-                "Request {}:{} failed: {}".format(method, url, error_message),
+                f"Request {method}:{url} failed: {error_message}",
                 response,
             )
         return response

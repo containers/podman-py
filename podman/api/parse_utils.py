@@ -32,7 +32,7 @@ def parse_repository(name: str) -> Tuple[str, Optional[str]]:
 def decode_header(value: Optional[str]) -> Dict[str, Any]:
     """Decode a base64 JSON header value."""
     if value is None:
-        return dict()
+        return {}
 
     value = base64.b64decode(value)
     text = value.decode("utf-8")
