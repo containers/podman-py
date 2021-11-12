@@ -23,8 +23,8 @@ def prepare_containerignore(anchor: str) -> List[str]:
         with ignore.open() as file:
             return list(
                 filter(
-                    lambda l: len(l) > 0 and not l.startswith("#"),
-                    list(line.strip() for line in file.readlines()),
+                    lambda l: l and not l.startswith("#"),
+                    (line.strip() for line in file.readlines()),
                 )
             )
     return []
@@ -102,7 +102,7 @@ def create_tar(
         name = pathlib.Path(name)
 
     if exclude is None:
-        exclude = list()
+        exclude = []
     else:
         exclude = exclude.copy()
 
@@ -123,7 +123,7 @@ def _exclude_matcher(path: str, exclude: List[str]) -> bool:
     Note:
         FIXME Not compatible, support !, **, etc
     """
-    if len(exclude) == 0:
+    if not exclude:
         return False
 
     for pattern in exclude:
