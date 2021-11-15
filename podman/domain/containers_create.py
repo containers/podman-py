@@ -1,6 +1,7 @@
 """Mixin to provide Container create() method."""
 import copy
 import logging
+import re
 from contextlib import suppress
 from typing import Any, Dict, List, MutableMapping, Union
 
@@ -280,6 +281,39 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         def pop(k):
             return args.pop(k, None)
 
+        def to_bytes(size: Union[int, str, None]) -> Union[int, None]:
+            """
+            Converts str or int to bytes.
+            Input can be in the following forms :
+            0) None - e.g. None -> returns None
+            1) int - e.g. 100 == 100 bytes
+            2) str - e.g. '100' == 100 bytes
+            3) str with suffix - available suffixes:
+               b | B - bytes
+               k | K = kilobytes
+               m | M = megabytes
+               g | G = gigabytes
+               e.g. '100m' == 104857600 bytes
+            """
+            size_type = type(size)
+            if size is None:
+                return size
+            elif size_type is int:
+                return size
+            elif size_type is str:
+                try:
+                    return int(size)
+                except ValueError:
+                    mapping = {'b': 0, 'k': 1, 'm': 2, 'g': 3}
+                    mapping_regex = ''.join(mapping.keys())
+                    search = re.search(rf'^(\d+)([{mapping_regex}])$', size.lower())
+                    if search:
+                        return int(search.group(1)) * (1024 ** mapping[search.group(2)])
+                    else:
+                        raise TypeError(f"Passed string size {size} should be in format \\d+[bBkKmMgG] (e.g. '100m')")
+            else:
+                raise TypeError(f"Passed size {size} should be a type of unicode, str or int (found : {size_type})")
+
         # Transform keywords into parameters
         params = {
             "aliases": pop("aliases"),  # TODO document, podman only
@@ -340,7 +374,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "seccomp_profile_path": pop("seccomp_profile_path"),  # TODO document, podman only
             "secrets": pop("secrets"),  # TODO document, podman only
             "selinux_opts": pop("security_opt"),
-            "shm_size": pop("shm_size"),
+            "shm_size": to_bytes(pop("shm_size")),
             "static_ip": pop("static_ip"),  # TODO document, podman only
             "static_ipv6": pop("static_ipv6"),  # TODO document, podman only
             "static_mac": pop("mac_address"),
@@ -450,10 +484,10 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
         params["resource_limits"]["memory"] = dict()
         params["resource_limits"]["memory"]["disableOOMKiller"] = args.pop("oom_kill_disable", None)
-        params["resource_limits"]["memory"]["kernel"] = args.pop("kernel_memory", None)
+        params["resource_limits"]["memory"]["kernel"] = to_bytes(args.pop("kernel_memory", None))
         params["resource_limits"]["memory"]["kernelTCP"] = args.pop("kernel_memory_tcp", None)
-        params["resource_limits"]["memory"]["limit"] = args.pop("mem_limit", None)
-        params["resource_limits"]["memory"]["reservation"] = args.pop("mem_reservation", None)
+        params["resource_limits"]["memory"]["limit"] = to_bytes(args.pop("mem_limit", None))
+        params["resource_limits"]["memory"]["reservation"] = to_bytes(args.pop("mem_reservation", None))
         params["resource_limits"]["memory"]["swap"] = args.pop("memswap_limit", None)
         params["resource_limits"]["memory"]["swappiness"] = args.pop("mem_swappiness", None)
         params["resource_limits"]["memory"]["useHierarchy"] = args.pop("mem_use_hierarchy", None)
