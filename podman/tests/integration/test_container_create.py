@@ -43,6 +43,40 @@ class ContainersIntegrationTest(base.IntegrationTest):
             for hosts_entry in formatted_hosts:
                 self.assertIn(hosts_entry, logs)
 
+    def _test_memory_limit(self, parameter_name, host_config_name):
+        """Base for tests which checks memory limits"""
+        memory_limit_tests = [
+            {'value': 1000, 'expected_value': 1000},
+            {'value': '1000', 'expected_value': 1000},
+            {'value': '1234b', 'expected_value': 1234},
+            {'value': '123k', 'expected_value': 123 * 1024},
+            {'value': '44m', 'expected_value': 44 * 1024 * 1024},
+            {'value': '2g', 'expected_value': 2 * 1024 * 1024 * 1024}
+        ]
+
+        for test in memory_limit_tests:
+            container = self.client.containers.create(
+                self.alpine_image, **{parameter_name: test['value']}
+            )
+            self.containers.append(container)
+            self.assertEqual(container.attrs.get('HostConfig', dict()).get(host_config_name), test['expected_value'])
+
+    def test_container_kernel_memory(self):
+        """Test passing kernel memory"""
+        self._test_memory_limit('kernel_memory', 'KernelMemory')
+
+    def test_container_mem_limit(self):
+        """Test passing memory limit"""
+        self._test_memory_limit('mem_limit', 'Memory')
+
+    def test_container_mem_reservation(self):
+        """Test passing memory reservation"""
+        self._test_memory_limit('mem_reservation', 'MemoryReservation')
+
+    def test_container_shm_size(self):
+        """Test passing shared memory size"""
+        self._test_memory_limit('shm_size', 'ShmSize')
+
 
 if __name__ == '__main__':
     unittest.main()
