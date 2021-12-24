@@ -44,7 +44,7 @@ def prepare_containerfile(anchor: str, dockerfile: str) -> str:
     dockerfile_path = pathlib.Path(dockerfile)
 
     if dockerfile_path.parent.samefile(anchor_path):
-        return dockerfile
+        return dockerfile_path.name
 
     proxy_path = anchor_path / f".containerfile.{random.getrandbits(160):x}"
     shutil.copy2(dockerfile_path, proxy_path, follow_symlinks=False)
