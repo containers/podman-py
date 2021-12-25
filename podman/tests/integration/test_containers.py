@@ -2,7 +2,12 @@ import io
 import random
 import tarfile
 import unittest
-from collections import Iterator
+try:
+    # Python >= 3.10
+    from collections.abc import Iterator
+except:
+    # Python < 3.10
+    from collections import Iterator
 
 import podman.tests.integration.base as base
 from podman import PodmanClient
