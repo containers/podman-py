@@ -2,6 +2,6 @@
 black
 coverage
 fixtures~=3.0.0
-nose
+pytest
 pylint
 requests-mock
