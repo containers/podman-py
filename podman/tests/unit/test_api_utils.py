@@ -49,17 +49,17 @@ class TestUtilsCase(unittest.TestCase):
     @patch.object(pathlib.Path, "exists", return_value=True)
     def test_containerignore_read(self, patch_exists):
         data = r"""# unittest
-        
+
         #Ignore the logs directory
         logs/
-        
+
         #Ignoring the password file
         passwords.txt
-        
+
         #Ignoring git and cache folders
         .git
         .cache
-        
+
         #Ignoring all the markdown and class files
         *.md
         **/*.class
