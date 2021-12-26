@@ -65,7 +65,7 @@ class TestUtilsCase(unittest.TestCase):
         **/*.class
         """
 
-        with mock.patch("io.open", mock_open(read_data=data)):
+        with mock.patch("pathlib.Path.open", mock_open(read_data=data)):
             actual = api.prepare_containerignore(".")
 
         self.assertListEqual(
@@ -79,7 +79,7 @@ class TestUtilsCase(unittest.TestCase):
         """
 
         patch_exists.return_value = True
-        with mock.patch("io.open", mock_open(read_data=data)):
+        with mock.patch("pathlib.Path.open", mock_open(read_data=data)):
             actual = api.prepare_containerignore(".")
 
         self.assertListEqual(actual, [])
