@@ -86,9 +86,16 @@ class TestUtilsCase(unittest.TestCase):
         patch_exists.assert_called_once_with()
 
     @mock.patch("pathlib.Path.parent", autospec=True)
-    def test_containerfile(self, mock_parent):
+    def test_containerfile_1(self, mock_parent):
         mock_parent.samefile.return_value = True
         actual = api.prepare_containerfile("/work", "/work/Dockerfile")
+        self.assertEqual(actual, "Dockerfile")
+        mock_parent.samefile.assert_called()
+
+    @mock.patch("pathlib.Path.parent", autospec=True)
+    def test_containerfile_2(self, mock_parent):
+        mock_parent.samefile.return_value = True
+        actual = api.prepare_containerfile(".", "Dockerfile")
         self.assertEqual(actual, "Dockerfile")
         mock_parent.samefile.assert_called()
 
