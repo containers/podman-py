@@ -36,7 +36,7 @@ class BuildMixin:
             encoding (str) – The encoding for a stream. Set to gzip for compressing (ignored)
             pull (bool) – Downloads any updates to the FROM image in Dockerfile
             forcerm (bool) – Always remove intermediate containers, even after unsuccessful builds
-            dockerfile (str) – path within the build context to the Dockerfile
+            dockerfile (str) – full path to the Dockerfile / Containerfile
             buildargs (Mapping[str,str) – A dictionary of build arguments
             container_limits (Dict[str, Union[int,str]]) –
                 A dictionary of limits applied to each container created by the build process.
