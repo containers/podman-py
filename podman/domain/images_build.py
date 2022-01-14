@@ -36,7 +36,7 @@ class BuildMixin:
             encoding (str) – The encoding for a stream. Set to gzip for compressing (ignored)
             pull (bool) – Downloads any updates to the FROM image in Dockerfile
             forcerm (bool) – Always remove intermediate containers, even after unsuccessful builds
-            dockerfile (str) – path within the build context to the Dockerfile
+            dockerfile (str) – full path to the Dockerfile / Containerfile
             buildargs (Mapping[str,str) – A dictionary of build arguments
             container_limits (Dict[str, Union[int,str]]) –
                 A dictionary of limits applied to each container created by the build process.
@@ -85,8 +85,9 @@ class BuildMixin:
                 shutil.copyfileobj(kwargs["fileobj"], file)
             body = api.create_tar(anchor=path.name, gzip=kwargs.get("gzip", False))
         elif "path" in kwargs:
+            filename = pathlib.Path(kwargs["path"]) / params["dockerfile"]
             # The Dockerfile will be copied into the context_dir if needed
-            params["dockerfile"] = api.prepare_containerfile(kwargs["path"], params["dockerfile"])
+            params["dockerfile"] = api.prepare_containerfile(kwargs["path"], str(filename))
 
             excludes = api.prepare_containerignore(kwargs["path"])
             body = api.create_tar(
