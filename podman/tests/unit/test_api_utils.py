@@ -49,23 +49,23 @@ class TestUtilsCase(unittest.TestCase):
     @patch.object(pathlib.Path, "exists", return_value=True)
     def test_containerignore_read(self, patch_exists):
         data = r"""# unittest
-        
+
         #Ignore the logs directory
         logs/
-        
+
         #Ignoring the password file
         passwords.txt
-        
+
         #Ignoring git and cache folders
         .git
         .cache
-        
+
         #Ignoring all the markdown and class files
         *.md
         **/*.class
         """
 
-        with mock.patch("io.open", mock_open(read_data=data)):
+        with mock.patch("pathlib.Path.open", mock_open(read_data=data)):
             actual = api.prepare_containerignore(".")
 
         self.assertListEqual(
@@ -79,7 +79,7 @@ class TestUtilsCase(unittest.TestCase):
         """
 
         patch_exists.return_value = True
-        with mock.patch("io.open", mock_open(read_data=data)):
+        with mock.patch("pathlib.Path.open", mock_open(read_data=data)):
             actual = api.prepare_containerignore(".")
 
         self.assertListEqual(actual, [])

@@ -1,5 +1,10 @@
 import unittest
-from collections import Iterator
+try:
+    # Python >= 3.10
+    from collections.abc import Iterator
+except:
+    # Python < 3.10
+    from collections import Iterator
 from unittest.mock import patch, DEFAULT
 
 import requests_mock

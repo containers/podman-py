@@ -1,6 +1,11 @@
 import types
 import unittest
-from collections import Iterable
+try:
+    # Python >= 3.10
+    from collections.abc import Iterable
+except:
+    # Python < 3.10
+    from collections import Iterable
 
 import requests_mock
 
