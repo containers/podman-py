@@ -91,8 +91,7 @@ gating_task:
 
     script:
         - make
-        - go get github.com/vbatts/git-validation
-        - make validate
+        - make lint
 
 test_task:
     name: "Test on $FEDORA_NAME"
