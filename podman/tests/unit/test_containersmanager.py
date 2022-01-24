@@ -242,7 +242,9 @@ class ContainersManagerTestCase(unittest.TestCase):
             json=FIRST_CONTAINER,
         )
 
-        with patch.multiple(Container, logs=DEFAULT, wait=DEFAULT, autospec=True) as mock_container:
+        with patch.multiple(
+            Container, logs=DEFAULT, wait=DEFAULT, autospec=True
+        ) as mock_container:
             mock_container["logs"].return_value = []
             mock_container["wait"].return_value = {"StatusCode": 0}
 
@@ -275,7 +277,9 @@ class ContainersManagerTestCase(unittest.TestCase):
             b"This is a unittest - line 2",
         )
 
-        with patch.multiple(Container, logs=DEFAULT, wait=DEFAULT, autospec=True) as mock_container:
+        with patch.multiple(
+            Container, logs=DEFAULT, wait=DEFAULT, autospec=True
+        ) as mock_container:
             mock_container["wait"].return_value = {"StatusCode": 0}
 
             with self.subTest("Results not streamed"):

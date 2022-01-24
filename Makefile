@@ -56,8 +56,7 @@ docs:
 	cp -R docs/source/* build/docs/source
 	sphinx-apidoc --separate --no-toc --force --templatedir build/docs/source/_templates/apidoc \
 		-o build/docs/source \
-		podman podman/tests podman/api_connection.py podman/containers podman/images \
-		podman/manifests podman/networks podman/pods podman/system
+		podman podman/tests
 	sphinx-build build/docs/source build/html
 
 # .PHONY: install
