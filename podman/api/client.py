@@ -72,7 +72,14 @@ class APIClient(requests.Session):
     # pylint: disable=arguments-differ
     # pylint: disable=too-many-instance-attributes
 
-    supported_schemes: ClassVar[List[str]] = ("unix", "http+unix", "ssh", "http+ssh", "tcp", "http")
+    supported_schemes: ClassVar[List[str]] = (
+        "unix",
+        "http+unix",
+        "ssh",
+        "http+ssh",
+        "tcp",
+        "http",
+    )
 
     def __init__(
         self,

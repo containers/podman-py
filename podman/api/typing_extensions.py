@@ -884,6 +884,7 @@ elif _geqv_defined:
                 return collections.deque(*args, **kwds)
             return _generic_new(collections.deque, cls, *args, **kwds)
 
+
 else:
 
     class Deque(
@@ -910,6 +911,7 @@ elif hasattr(contextlib, 'AbstractContextManager'):
         extra=contextlib.AbstractContextManager,
     ):
         __slots__ = ()
+
 
 else:
 
@@ -992,6 +994,7 @@ elif _geqv_defined:
                 return collections.defaultdict(*args, **kwds)
             return _generic_new(collections.defaultdict, cls, *args, **kwds)
 
+
 else:
 
     class DefaultDict(
@@ -1028,6 +1031,7 @@ elif _geqv_defined:
             if _geqv(cls, OrderedDict):
                 return collections.OrderedDict(*args, **kwds)
             return _generic_new(collections.OrderedDict, cls, *args, **kwds)
+
 
 else:
 
@@ -1069,6 +1073,7 @@ elif (3, 5, 0) <= sys.version_info[:3] <= (3, 5, 1):
                 return collections.Counter(*args, **kwds)
             return _generic_new(collections.Counter, cls, *args, **kwds)
 
+
 elif _geqv_defined:
 
     class Counter(
@@ -1084,6 +1089,7 @@ elif _geqv_defined:
             if _geqv(cls, Counter):
                 return collections.Counter(*args, **kwds)
             return _generic_new(collections.Counter, cls, *args, **kwds)
+
 
 else:
 
@@ -1311,7 +1317,10 @@ elif HAVE_PROTOCOLS and not PEP_560:
                     for base in bases:
                         if base is Generic:
                             raise TypeError("Cannot inherit from plain Generic")
-                        if isinstance(base, GenericMeta) and base.__origin__ in (Generic, Protocol):
+                        if isinstance(base, GenericMeta) and base.__origin__ in (
+                            Generic,
+                            Protocol,
+                        ):
                             if gvars is not None:
                                 raise TypeError(
                                     "Cannot inherit from Generic[...] or"
@@ -1344,7 +1353,9 @@ elif HAVE_PROTOCOLS and not PEP_560:
                     bases = tuple(b for b in bases if b is not Generic)
                 namespace.update({'__origin__': origin, '__extra__': extra})
                 self = super(GenericMeta, cls).__new__(cls, name, bases, namespace, _root=True)
-                super(GenericMeta, self).__setattr__('_gorg', self if not origin else _gorg(origin))
+                super(GenericMeta, self).__setattr__(
+                    '_gorg', self if not origin else _gorg(origin)
+                )
                 self.__parameters__ = tvars
                 self.__args__ = (
                     tuple(
@@ -1468,7 +1479,9 @@ elif HAVE_PROTOCOLS and not PEP_560:
                 if not isinstance(params, tuple):
                     params = (params,)
                 if not params and _gorg(self) is not Tuple:
-                    raise TypeError("Parameter list to %s[...] cannot be empty" % self.__qualname__)
+                    raise TypeError(
+                        "Parameter list to %s[...] cannot be empty" % self.__qualname__
+                    )
                 msg = "Parameters to generic types must be types."
                 params = tuple(_type_check(p, msg) for p in params)
                 if self in (Generic, Protocol):
@@ -2095,6 +2108,7 @@ elif PEP_560:
             return hint
         return {k: _strip_annotations(t) for k, t in hint.items()}
 
+
 elif HAVE_ANNOTATED:
 
     def _is_dunder(name):
@@ -2329,6 +2343,7 @@ elif sys.version_info[:2] >= (3, 9):
         It's invalid when used anywhere except as in the example above.
         """
         raise TypeError("{} is not subscriptable".format(self))
+
 
 elif sys.version_info[:2] >= (3, 7):
 
@@ -2657,6 +2672,7 @@ elif sys.version_info[:2] >= (3, 9):
         """
         return _concatenate_getitem(self, parameters)
 
+
 elif sys.version_info[:2] >= (3, 7):
 
     class _ConcatenateForm(typing._SpecialForm, _root=True):
@@ -2804,6 +2820,7 @@ elif sys.version_info[:2] >= (3, 9):
         """
         item = typing._type_check(parameters, '{} accepts only single type.'.format(self))
         return _GenericAlias(self, (item,))
+
 
 elif sys.version_info[:2] >= (3, 7):
 
