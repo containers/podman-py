@@ -26,7 +26,9 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
         return response.ok
 
     # pylint is flagging 'container_id' here vs. 'key' parameter in super.get()
-    def get(self, container_id: str) -> Container:  # pylint: disable=arguments-differ
+    def get(
+        self, container_id: str
+    ) -> Container:  # pylint: disable=arguments-differ,arguments-renamed
         """Get container by name or id.
 
         Args:
@@ -71,7 +73,7 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
         """
         params = {
             "all": kwargs.get("all"),
-            "filters": kwargs.get("filters", dict()),
+            "filters": kwargs.get("filters", {}),
             "limit": kwargs.get("limit"),
         }
         if "before" in kwargs:
@@ -107,7 +109,7 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
         response = self.client.post("/containers/prune", params=params)
         response.raise_for_status()
 
-        results = {"ContainersDeleted": list(), "SpaceReclaimed": 0}
+        results = {"ContainersDeleted": [], "SpaceReclaimed": 0}
         for entry in response.json():
             if entry.get("error") is not None:
                 raise APIError(entry["error"], response=response, explanation=entry["error"])

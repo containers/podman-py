@@ -15,7 +15,7 @@
 """network provides the network operations for a Podman service"""
 import json
 
-import podman.errors as errors
+from podman import errors
 
 
 def create(api, name, network):
@@ -24,7 +24,7 @@ def create(api, name, network):
         data = json.dumps(network)
     else:
         data = network
-    path = '/networks/create?name={}'.format(api.quote(name))
+    path = f'/networks/create?name={api.quote(name)}'
     response = api.post(path, params=data, headers={'content-type': 'application/json'})
     return json.loads(str(response.read(), 'utf-8'))
 
@@ -32,10 +32,10 @@ def create(api, name, network):
 def inspect(api, name):
     """inspect a network"""
     try:
-        response = api.get('/networks/{}/json'.format(api.quote(name)))
-        return json.loads(str(response.read(), 'utf-8'))
+        response = api.get(f'/networks/{api.quote(name)}/json')
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.NetworkNotFound)
+    return json.loads(str(response.read(), 'utf-8'))
 
 
 def list_networks(api, filters=None):
@@ -50,14 +50,14 @@ def list_networks(api, filters=None):
 def remove(api, name, force=None):
     """remove a named network"""
     params = {}
-    path = '/networks/{}'.format(api.quote(name))
+    path = f'/networks/{api.quote(name)}'
     if force is not None:
         params = {'force': force}
     try:
         response = api.delete(path, params)
-        return json.loads(str(response.read(), 'utf-8'))
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.NetworkNotFound)
+    return json.loads(str(response.read(), 'utf-8'))
 
 
 def prune(api):

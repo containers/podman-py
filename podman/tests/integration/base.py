@@ -20,7 +20,7 @@ import uuid
 
 import fixtures
 
-import podman.tests.integration.utils as utils
+from podman.tests.integration import utils
 
 
 class IntegrationTest(fixtures.TestWithFixtures):

@@ -1,5 +1,6 @@
 import types
 import unittest
+
 try:
     # Python >= 3.10
     from collections.abc import Iterable

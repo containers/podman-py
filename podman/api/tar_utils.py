@@ -20,7 +20,7 @@ def prepare_containerignore(anchor: str) -> List[str]:
         if not ignore.exists():
             continue
 
-        with ignore.open() as file:
+        with ignore.open(encoding='utf-8') as file:
             return list(
                 filter(
                     lambda l: l and not l.startswith("#"),
@@ -97,7 +97,9 @@ def create_tar(
         return info
 
     if name is None:
-        name = tempfile.NamedTemporaryFile(prefix="podman_context", suffix=".tar")
+        name = tempfile.NamedTemporaryFile(
+            prefix="podman_context", suffix=".tar"
+        )  # pylint: disable=consider-using-with
     else:
         name = pathlib.Path(name)
 
@@ -114,7 +116,7 @@ def create_tar(
     with tarfile.open(name.name, mode) as tar:
         tar.add(anchor, arcname="", recursive=True, filter=add_filter)
 
-    return open(name.name, "rb")
+    return open(name.name, "rb")  # pylint: disable=consider-using-with
 
 
 def _exclude_matcher(path: str, exclude: List[str]) -> bool:

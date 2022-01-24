@@ -39,7 +39,7 @@ class Manifest(PodmanResource):
 
     @property
     def names(self):
-        """ List[str]: Returns the identifier of the manifest."""
+        """List[str]: Returns the identifier of the manifest."""
         return self.attrs.get("names")
 
     @property
@@ -76,7 +76,7 @@ class Manifest(PodmanResource):
             "annotation": kwargs.get("annotation"),
             "arch": kwargs.get("arch"),
             "features": kwargs.get("features"),
-            "images": list(),
+            "images": [],
             "os": kwargs.get("os"),
             "os_version": kwargs.get("os_version"),
             "variant": kwargs.get("variant"),
@@ -167,7 +167,7 @@ class ManifestsManager(Manager):
 
         params = {"name": names}
         if images is not None:
-            params["image"] = list()
+            params["image"] = []
             for item in images:
                 if isinstance(item, Image):
                     item = item.attrs["RepoTags"][0]
@@ -184,7 +184,7 @@ class ManifestsManager(Manager):
         manifest.attrs["names"] = names
 
         if manifest.attrs["manifests"] is None:
-            manifest.attrs["manifests"] = list()
+            manifest.attrs["manifests"] = []
         return manifest
 
     def exists(self, key: str) -> bool:

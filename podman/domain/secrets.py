@@ -60,7 +60,7 @@ class SecretsManager(Manager):
         return response.ok
 
     # pylint is flagging 'secret_id' here vs. 'key' parameter in super.get()
-    def get(self, secret_id: str) -> Secret:  # pylint: disable=arguments-differ
+    def get(self, secret_id: str) -> Secret:  # pylint: disable=arguments-differ,arguments-renamed
         """Return information for Secret by name or id.
 
         Args:

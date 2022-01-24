@@ -164,7 +164,7 @@ class NetworksManager(Manager):
         """
         compatible = kwargs.get("compatible", True)
 
-        filters = kwargs.get("filters", dict())
+        filters = kwargs.get("filters", {})
         filters["name"] = kwargs.get("names")
         filters["id"] = kwargs.get("ids")
         filters = api.prepare_filters(filters)
@@ -204,7 +204,7 @@ class NetworksManager(Manager):
         if compatible:
             return body
 
-        deleted: List[str] = list()
+        deleted: List[str] = []
         for item in body:
             if item["Error"] is not None:
                 raise APIError(

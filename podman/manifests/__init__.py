@@ -16,17 +16,17 @@
 import json
 from http import HTTPStatus
 
-import podman.errors as errors
+from podman import errors
 
 
 def add(api, name, manifest):
     """Add image to a manifest list"""
-    path = '/manifests/{}/add'.format(api.quote(name))
+    path = f'/manifests/{api.quote(name)}/add'
     try:
         response = api.post(path, params=manifest, headers={'content-type': 'application/json'})
-        return response.status == HTTPStatus.OK
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.ManifestNotFound)
+    return response.status == HTTPStatus.OK
 
 
 def create(api, name, image=None, all_contents=None):
@@ -39,18 +39,18 @@ def create(api, name, image=None, all_contents=None):
     path = '/manifests/create'
     try:
         response = api.post(path, params=params)
-        return response.status == HTTPStatus.OK
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.ManifestNotFound)
+    return response.status == HTTPStatus.OK
 
 
 def inspect(api, name):
     """inspect a manifest"""
     try:
-        response = api.get('/manifests/{}/json'.format(api.quote(name)))
-        return json.loads(str(response.read(), 'utf-8'))
+        response = api.get(f'/manifests/{api.quote(name)}/json')
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.ManifestNotFound)
+    return json.loads(str(response.read(), 'utf-8'))
 
 
 def push(api, name, destination, all_images=None):
@@ -59,10 +59,10 @@ def push(api, name, destination, all_images=None):
     if all_images:
         params['all'] = all_images
     try:
-        response = api.post('/manifests/{}/push'.format(api.quote(name)), params=params)
-        return response.status == HTTPStatus.OK
+        response = api.post(f'/manifests/{api.quote(name)}/push', params=params)
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.ManifestNotFound)
+    return response.status == HTTPStatus.OK
 
 
 def remove(api, name, digest=None):
@@ -70,12 +70,12 @@ def remove(api, name, digest=None):
     params = {}
     if digest:
         params['digest'] = digest
-    path = '/manifests/{}'.format(api.quote(name))
+    path = f'/manifests/{api.quote(name)}'
     try:
         response = api.delete(path, params)
-        return response.status == HTTPStatus.OK
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response, errors.ManifestNotFound)
+    return response.status == HTTPStatus.OK
 
 
 __all__ = [

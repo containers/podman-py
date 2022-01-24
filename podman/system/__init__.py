@@ -3,7 +3,7 @@ import json
 import logging
 from http import HTTPStatus
 
-import podman.errors as errors
+from podman import errors
 
 
 def version(api, verify_version=False):
@@ -23,9 +23,9 @@ def get_info(api):
     """Returns information on the system and libpod configuration"""
     try:
         response = api.get("/info")
-        return json.loads(str(response.read(), 'utf-8'))
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response)
+    return json.loads(str(response.read(), 'utf-8'))
 
 
 # this **looks** a lot like the above but is not equivalent - at all !
@@ -45,9 +45,9 @@ def show_disk_usage(api):
     """
     try:
         response = api.get("/system/df")
-        return json.loads(str(response.read(), 'utf-8'))
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response)
+    return json.loads(str(response.read(), 'utf-8'))
 
 
 def _report_not_found(e, response):

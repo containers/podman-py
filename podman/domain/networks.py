@@ -38,11 +38,11 @@ class Network(PodmanResource):
 
     @property
     def containers(self):
-        """ List[Container]: Returns list of Containers connected to network."""
+        """List[Container]: Returns list of Containers connected to network."""
         with suppress(KeyError):
             container_manager = ContainersManager(client=self.client)
             return [container_manager.get(ident) for ident in self.attrs["Containers"].keys()]
-        return dict()
+        return {}
 
     @property
     def name(self):

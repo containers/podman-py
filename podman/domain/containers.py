@@ -27,8 +27,7 @@ class Container(PodmanResource):
         with suppress(KeyError):
             if 'Name' in self.attrs:
                 return self.attrs["Name"].lstrip("/")
-            else:
-                return self.attrs["Names"][0].lstrip("/")
+            return self.attrs["Names"][0].lstrip("/")
         return None
 
     @property
@@ -45,7 +44,7 @@ class Container(PodmanResource):
         """dict[str, str]: Returns labels associated with container."""
         with suppress(KeyError):
             return self.attrs["Config"]["Labels"]
-        return dict()
+        return {}
 
     @property
     def status(self):
@@ -59,7 +58,7 @@ class Container(PodmanResource):
         """dict[str, int]: Return ports exposed by container."""
         with suppress(KeyError):
             return self.attrs["NetworkSettings"]["Ports"]
-        return dict()
+        return {}
 
     def attach(self, **kwargs) -> Union[str, Iterator[str]]:
         """Attach to container's tty.
@@ -345,7 +344,7 @@ class Container(PodmanResource):
             timeout (int): Seconds to wait for container to stop before killing container.
         """
         params = {"timeout": kwargs.get("timeout")}
-        post_kwargs = dict()
+        post_kwargs = {}
         if kwargs.get("timeout"):
             post_kwargs["timeout"] = float(params["timeout"]) * 1.5
 
@@ -415,7 +414,7 @@ class Container(PodmanResource):
         """
         params = {"all": kwargs.get("all"), "timeout": kwargs.get("timeout")}
 
-        post_kwargs = dict()
+        post_kwargs = {}
         if kwargs.get("timeout"):
             post_kwargs["timeout"] = float(params["timeout"]) * 1.5
 

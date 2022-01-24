@@ -78,10 +78,10 @@ class BuildMixin:
         body = None
         path = None
         if "fileobj" in kwargs:
-            path = tempfile.TemporaryDirectory()
+            path = tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
             filename = pathlib.Path(path.name) / params["dockerfile"]
 
-            with open(filename, "w") as file:
+            with open(filename, "w", encoding='utf-8') as file:
                 shutil.copyfileobj(kwargs["fileobj"], file)
             body = api.create_tar(anchor=path.name, gzip=kwargs.get("gzip", False))
         elif "path" in kwargs:
@@ -94,7 +94,7 @@ class BuildMixin:
                 anchor=kwargs["path"], exclude=excludes, gzip=kwargs.get("gzip", False)
             )
 
-        post_kwargs = dict()
+        post_kwargs = {}
         if kwargs.get("timeout"):
             post_kwargs["timeout"] = float(kwargs.get("timeout"))
 

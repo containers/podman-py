@@ -53,8 +53,8 @@ class IPAMConfig(dict):
         super().__init__()
         self.update(
             {
-                "Config": pool_configs or list(),
+                "Config": pool_configs or [],
                 "Driver": driver,
-                "Options": options or dict(),
+                "Options": options or {},
             }
         )

@@ -2,7 +2,7 @@
 import json
 from http import HTTPStatus
 
-import podman.errors as errors
+from podman import errors
 
 
 def list_images(api):
@@ -16,32 +16,32 @@ def inspect(api, name):
     Name may also be an image ID.
     """
     try:
-        response = api.get("/images/{}/json".format(api.quote(name)))
-        return json.loads(str(response.read(), "utf-8"))
+        response = api.get(f"/images/{api.quote(name)}/json")
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response)
+    return json.loads(str(response.read(), "utf-8"))
 
 
 def image_exists(api, name):
     """Checks if an image exists in the local store"""
     try:
-        api.get("/images/{}/exists".format(api.quote(name)))
-        return True
+        api.get(f"/images/{api.quote(name)}/exists")
     except errors.NotFoundError:
         return False
+    return True
 
 
 def remove(api, name, force=None):
     """Remove named/identified image from Podman storage."""
     params = {}
-    path = "/images/{}".format(api.quote(name))
+    path = f"/images/{api.quote(name)}"
     if force is not None:
         params = {"force": force}
     try:
         response = api.delete(path, params)
-        return json.loads(str(response.read(), "utf-8"))
     except errors.NotFoundError as e:
         api.raise_not_found(e, e.response)
+    return json.loads(str(response.read(), "utf-8"))
 
 
 def tag_image(api, name, repo, tag):
@@ -53,19 +53,19 @@ def tag_image(api, name, repo, tag):
     """
     data = {"repo": repo, "tag": tag}
     try:
-        response = api.post("/images/{}/tag".format(api.quote(name)), data)
-        return response.status == HTTPStatus.CREATED
+        response = api.post(f"/images/{api.quote(name)}/tag", data)
     except errors.NotFoundError as e:
         api.raise_image_not_found(e, e.response)
+    return response.status == HTTPStatus.CREATED
 
 
 def history(api, name):
     """get image history"""
     try:
-        response = api.get("/images/{}/history".format(api.quote(name)))
-        return json.loads(str(response.read(), "utf-8"))
+        response = api.get(f"/images/{api.quote(name)}/history")
     except errors.NotFoundError as e:
         api.raise_image_not_found(e, e.response)
+    return json.loads(str(response.read(), "utf-8"))
 
 
 __all__ = [
