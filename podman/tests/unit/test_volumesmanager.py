@@ -38,11 +38,7 @@ class VolumesManagerTestCase(unittest.TestCase):
         super().setUp()
 
         self.client = PodmanClient(base_url=tests.BASE_SOCK)
-
-    def tearDown(self) -> None:
-        super().tearDown()
-
-        self.client.close()
+        self.addCleanup(self.client.close)
 
     def test_podmanclient(self):
         manager = self.client.volumes

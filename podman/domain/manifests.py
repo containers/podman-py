@@ -2,7 +2,7 @@
 import logging
 import urllib.parse
 from contextlib import suppress
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from podman import api
 from podman.domain.images import Image
@@ -17,20 +17,18 @@ class Manifest(PodmanResource):
 
     @property
     def id(self):
-        """str: Returns the identifier of the manifest."""
+        """str: Returns the identifier of the manifest list."""
         with suppress(KeyError, TypeError, IndexError):
-            return self.attrs["manifests"][0]["digest"]
+            digest = self.attrs["manifests"][0]["digest"]
+            if digest.startswith("sha256:"):
+                return digest[7:]
+            return digest
         return self.name
 
     @property
     def name(self):
-        """str: Returns the identifier of the manifest."""
-        try:
-            if len(self.names[0]) == 0:
-                raise ValueError("Manifest attribute 'names' is empty.")
-            return self.names[0]
-        except (TypeError, IndexError) as e:
-            raise ValueError("Manifest attribute 'names' is missing.") from e
+        """str: Returns the human-formatted identifier of the manifest list."""
+        return self.attrs.get("names")
 
     @property
     def quoted_name(self):
@@ -40,7 +38,7 @@ class Manifest(PodmanResource):
     @property
     def names(self):
         """List[str]: Returns the identifier of the manifest."""
-        return self.attrs.get("names")
+        return self.name
 
     @property
     def media_type(self):
@@ -71,7 +69,7 @@ class Manifest(PodmanResource):
             ImageNotFound: when Image(s) could not be found
             APIError: when service reports an error
         """
-        params = {
+        data = {
             "all": kwargs.get("all"),
             "annotation": kwargs.get("annotation"),
             "arch": kwargs.get("arch"),
@@ -80,14 +78,15 @@ class Manifest(PodmanResource):
             "os": kwargs.get("os"),
             "os_version": kwargs.get("os_version"),
             "variant": kwargs.get("variant"),
+            "operation": "update",
         }
         for item in images:
             if isinstance(item, Image):
                 item = item.attrs["RepoTags"][0]
-            params["images"].append(item)
+            data["images"].append(item)
 
-        data = api.prepare_body(params)
-        response = self.client.post(f"/manifests/{self.quoted_name}/add", data=data)
+        data = api.prepare_body(data)
+        response = self.client.put(f"/manifests/{self.quoted_name}", data=data)
         response.raise_for_status(not_found=ImageNotFound)
         return self.reload()
 
@@ -127,7 +126,10 @@ class Manifest(PodmanResource):
         if "@" in digest:
             digest = digest.split("@", maxsplit=2)[1]
 
-        response = self.client.delete(f"/manifests/{self.quoted_name}", params={"digest": digest})
+        data = {"operation": "remove", "images": [digest]}
+        data = api.prepare_body(data)
+
+        response = self.client.put(f"/manifests/{self.quoted_name}", data=data)
         response.raise_for_status(not_found=ImageNotFound)
         return self.reload()
 
@@ -147,14 +149,14 @@ class ManifestsManager(Manager):
 
     def create(
         self,
-        names: List[str],
+        name: str,
         images: Optional[List[Union[Image, str]]] = None,
         all: Optional[bool] = None,  # pylint: disable=redefined-builtin
     ) -> Manifest:
         """Create a Manifest.
 
         Args:
-            names: Identifiers to be added to the manifest. There must be at least one.
+            name: Name of manifest list.
             images: Images or Image identifiers to be included in the manifest.
             all: When True, add all contents from images given.
 
@@ -162,26 +164,24 @@ class ManifestsManager(Manager):
             ValueError: when no names are provided
             NotFoundImage: when a given image does not exist
         """
-        if names is None or len(names) == 0:
-            raise ValueError("At least one manifest name is required.")
-
-        params = {"name": names}
+        params: Dict[str, Any] = {}
         if images is not None:
-            params["image"] = []
+            params["images"] = []
             for item in images:
                 if isinstance(item, Image):
                     item = item.attrs["RepoTags"][0]
-                params["image"].append(item)
+                params["images"].append(item)
 
         if all is not None:
             params["all"] = all
 
-        response = self.client.post("/manifests/create", params=params)
+        name_quoted = urllib.parse.quote_plus(name)
+        response = self.client.post(f"/manifests/{name_quoted}", params=params)
         response.raise_for_status(not_found=ImageNotFound)
 
         body = response.json()
         manifest = self.get(body["Id"])
-        manifest.attrs["names"] = names
+        manifest.attrs["names"] = name
 
         if manifest.attrs["manifests"] is None:
             manifest.attrs["manifests"] = []
@@ -198,9 +198,6 @@ class ManifestsManager(Manager):
         To have Manifest conform with other PodmanResource's, we use the key that
         retrieved the Manifest be its name.
 
-        See https://issues.redhat.com/browse/RUN-1217 for details on refactoring Podman service
-        manifests API.
-
         Args:
             key: Manifest name for which to search
 
@@ -213,10 +210,23 @@ class ManifestsManager(Manager):
         response.raise_for_status()
 
         body = response.json()
-        body["names"] = [key]
+        if "names" not in body:
+            body["names"] = key
         return self.prepare_model(attrs=body)
 
     def list(self, **kwargs) -> List[Manifest]:
         """Not Implemented."""
 
         raise NotImplementedError("Podman service currently does not support listing manifests.")
+
+    def remove(self, name: Union[Manifest, str]) -> Dict[str, Any]:
+        """Delete the manifest list from the Podman service."""
+        if isinstance(name, Manifest):
+            name = name.name
+
+        response = self.client.delete(f"/manifests/{name}")
+        response.raise_for_status(not_found=ImageNotFound)
+
+        body = response.json()
+        body["ExitCode"] = response.status_code
+        return body

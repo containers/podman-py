@@ -1,8 +1,10 @@
-"""Model and Manager for Network resources.
+"""Model for Network resources.
 
-By default, most methods in this module uses the Podman compatible API rather than the
-libpod API as the results are so different.  To use the libpod API add the keyword argument
-compatible=False to any method call.
+Example:
+
+    with PodmanClient(base_url="unix:///run/user/1000/podman/podman.sock") as client:
+        net = client.networks.get("db_network")
+            print(net.name, "\n")
 """
 import hashlib
 import json
@@ -42,11 +44,12 @@ class Network(PodmanResource):
         with suppress(KeyError):
             container_manager = ContainersManager(client=self.client)
             return [container_manager.get(ident) for ident in self.attrs["Containers"].keys()]
-        return {}
+        return []
 
     @property
     def name(self):
         """str: Returns the name of the network."""
+
         if "Name" in self.attrs:
             return self.attrs["Name"]
 
@@ -68,7 +71,6 @@ class Network(PodmanResource):
 
         Keyword Args:
             aliases (List[str]): Aliases to add for this endpoint
-            compatible (bool): Should compatible API be used. Default: True
             driver_opt (Dict[str, Any]): Options to provide to network driver
             ipv4_address (str): IPv4 address for given Container on this network
             ipv6_address (str): IPv6 address for given Container on this network
@@ -78,8 +80,6 @@ class Network(PodmanResource):
         Raises:
             APIError: when Podman service reports an error
         """
-        compatible = kwargs.get("compatible", True)
-
         if isinstance(container, Container):
             container = container.id
 
@@ -110,7 +110,6 @@ class Network(PodmanResource):
             f"/networks/{self.name}/connect",
             data=json.dumps(data),
             headers={"Content-type": "application/json"},
-            compatible=compatible,
         )
         response.raise_for_status()
 
@@ -126,15 +125,11 @@ class Network(PodmanResource):
         Raises:
             APIError: when Podman service reports an error
         """
-        compatible = kwargs.get("compatible", True)
-
         if isinstance(container, Container):
             container = container.id
 
         data = {"Container": container, "Force": kwargs.get("force")}
-        response = self.client.post(
-            f"/networks/{self.name}/disconnect", data=json.dumps(data), compatible=compatible
-        )
+        response = self.client.post(f"/networks/{self.name}/disconnect", data=json.dumps(data))
         response.raise_for_status()
 
     def remove(self, force: Optional[bool] = None, **kwargs) -> None:
@@ -142,9 +137,6 @@ class Network(PodmanResource):
 
         Args:
             force: Remove network and any associated containers
-
-        Keyword Args:
-            compatible (bool): Should compatible API be used. Default: True
 
         Raises:
             APIError: when Podman service reports an error

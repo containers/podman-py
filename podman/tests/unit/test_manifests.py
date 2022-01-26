@@ -1,7 +1,7 @@
 import unittest
 
 from podman import PodmanClient, tests
-from podman.domain.manifests import ManifestsManager, Manifest
+from podman.domain.manifests import Manifest, ManifestsManager
 
 
 class ManifestTestCase(unittest.TestCase):
@@ -9,11 +9,7 @@ class ManifestTestCase(unittest.TestCase):
         super().setUp()
 
         self.client = PodmanClient(base_url=tests.BASE_SOCK)
-
-    def tearDown(self) -> None:
-        super().tearDown()
-
-        self.client.close()
+        self.addCleanup(self.client.close)
 
     def test_podmanclient(self):
         manager = self.client.manifests
@@ -24,13 +20,8 @@ class ManifestTestCase(unittest.TestCase):
             self.client.manifests.list()
 
     def test_name(self):
-        with self.assertRaises(ValueError):
-            manifest = Manifest(attrs={"names": ""})
-            _ = manifest.name
-
-        with self.assertRaises(ValueError):
-            manifest = Manifest()
-            _ = manifest.name
+        manifest = Manifest()
+        self.assertIsNone(manifest.name)
 
 
 if __name__ == '__main__':

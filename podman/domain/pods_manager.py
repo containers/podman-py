@@ -94,9 +94,7 @@ class PodsManager(Manager):
         Raises:
             APIError: when service reports error
         """
-        response = self.client.post(
-            "/pods/prune", params={"filters": api.prepare_filters(filters)}
-        )
+        response = self.client.post("/pods/prune", params={"filters": api.prepare_filters(filters)})
         response.raise_for_status()
 
         deleted: List[str] = []

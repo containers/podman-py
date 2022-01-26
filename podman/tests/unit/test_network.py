@@ -28,29 +28,29 @@ FIRST_NETWORK = {
     "Labels": {},
 }
 
-FIRST_NETWORK_LIBPOD = [
-    {
-        "cniVersion": "0.4.0",
-        "name": "podman",
-        "plugins": [
-            {
-                "bridge": "cni-podman0",
-                "hairpinMode": True,
-                "ipMasq": True,
-                "ipam": {
-                    "ranges": [[{"gateway": "10.88.0.1", "subnet": "10.88.0.0/16"}]],
-                    "routes": [{"dst": "0.0.0.0/0"}],
-                    "type": "host-local",
-                },
-                "isGateway": True,
-                "type": "bridge",
+FIRST_NETWORK_LIBPOD = {
+    "name": "podman",
+    "id": "2f259bab93aaaaa2542ba43ef33eb990d0999ee1b9924b557b7be53c0b7a1bb9",
+    "driver": "bridge",
+    "network_interface": "libpod_veth0",
+    "created": "2022-01-28T09:18:37.491308364-07:00",
+    "subnets": [
+        {
+            "subnet": "10.11.12.0/24",
+            "gateway": "10.11.12.1",
+            "lease_range": {
+                "start_ip": "10.11.12.1",
+                "end_ip": "10.11.12.63",
             },
-            {"capabilities": {"portMappings": True}, "type": "portmap"},
-            {"type": "firewall"},
-            {"type": "tuning"},
-        ],
-    }
-]
+        }
+    ],
+    "ipv6_enabled": False,
+    "internal": False,
+    "dns_enabled": False,
+    "labels": {},
+    "options": {},
+    "ipam_options": {},
+}
 
 
 class NetworkTestCase(unittest.TestCase):
@@ -58,11 +58,7 @@ class NetworkTestCase(unittest.TestCase):
         super().setUp()
 
         self.client = PodmanClient(base_url=tests.BASE_SOCK)
-
-    def tearDown(self) -> None:
-        super().tearDown()
-
-        self.client.close()
+        self.addCleanup(self.client.close)
 
     def test_id(self):
         expected = {"Id": "1cf06390-709d-4ffa-a054-c3083abe367c"}
@@ -84,7 +80,7 @@ class NetworkTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_remove(self, mock):
         adapter = mock.delete(
-            tests.COMPATIBLE_URL + "/networks/podman?force=True",
+            tests.LIBPOD_URL + "/networks/podman?force=True",
             status_code=204,
             json={"Name": "podman", "Err": None},
         )
@@ -96,7 +92,7 @@ class NetworkTestCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_connect(self, mock):
-        adapter = mock.post(tests.COMPATIBLE_URL + "/networks/podman/connect")
+        adapter = mock.post(tests.LIBPOD_URL + "/networks/podman/connect")
         net = Network(attrs=FIRST_NETWORK, client=self.client.api)
 
         net.connect(
@@ -120,7 +116,7 @@ class NetworkTestCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_disconnect(self, mock):
-        adapter = mock.post(tests.COMPATIBLE_URL + "/networks/podman/disconnect")
+        adapter = mock.post(tests.LIBPOD_URL + "/networks/podman/disconnect")
         net = Network(attrs=FIRST_NETWORK, client=self.client.api)
 
         net.disconnect("podman_ctnr", force=True)

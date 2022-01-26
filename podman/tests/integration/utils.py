@@ -18,6 +18,7 @@ import os
 import shutil
 import subprocess
 import threading
+from contextlib import suppress
 from typing import List, Optional
 
 import time
@@ -36,7 +37,7 @@ class PodmanLauncher:
         podman_path: Optional[str] = None,
         timeout: int = 0,
         privileged: bool = False,
-        log_level: int = logging.WARNING,
+        log_level: str = "WARNING",
     ) -> None:
         """create a launcher and build podman command"""
         podman_exe: str = podman_path
@@ -57,7 +58,10 @@ class PodmanLauncher:
 
         self.cmd.append(podman_exe)
 
-        self.cmd.append(f"--log-level={logging.getLevelName(log_level).lower()}")
+        logger.setLevel(logging.getLevelName(log_level))
+
+        # Map from python to go logging levels, FYI trace level breaks cirrus logging
+        self.cmd.append(f"--log-level={log_level.lower()}")
 
         if os.environ.get("container") == "oci":
             self.cmd.append("--storage-driver=vfs")
@@ -120,5 +124,8 @@ class PodmanLauncher:
             self.proc.kill()
             return_code = self.proc.wait()
         self.proc = None
+
+        with suppress(FileNotFoundError):
+            os.remove(self.socket_file)
 
         logger.info("Command return Code: %d refid=%s", return_code, self.reference_id)
