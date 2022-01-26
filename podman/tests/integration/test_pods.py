@@ -18,13 +18,13 @@ class PodsIntegrationTest(base.IntegrationTest):
         self.alpine_image = self.client.images.pull("quay.io/libpod/alpine", tag="latest")
         self.pod_name = f"pod_{random.getrandbits(160):x}"
 
-        # TODO should this use podman binary instead?
         for container in self.client.containers.list():
             container.remove(force=True)
 
     def tearDown(self):
         if self.client.pods.exists(self.pod_name):
             self.client.pods.remove(self.pod_name)
+        super().tearDown()
 
     def test_pod_crud(self):
         """Test Pod CRUD."""
@@ -62,6 +62,9 @@ class PodsIntegrationTest(base.IntegrationTest):
             with self.assertRaises(NotFound):
                 pod.reload()
 
+    def test_pod_crud_infra(self):
+        """Test Pod CRUD with infra container."""
+
         with self.subTest("Create with infra"):
             pod = self.client.pods.create(
                 self.pod_name,
@@ -75,22 +78,7 @@ class PodsIntegrationTest(base.IntegrationTest):
             actual = self.client.pods.get(pod.id)
             self.assertEqual(actual.name, pod.name)
             self.assertIn("Containers", actual.attrs)
-
-        with self.subTest("Stop/Start"):
-            actual.stop()
-            actual.start()
-
-        with self.subTest("Restart"):
-            actual.restart()
-
-        with self.subTest("Pause/Unpause"):
-            actual.pause()
-            actual.reload()
-            self.assertEqual(actual.attrs["State"], "Paused")
-
-            actual.unpause()
-            actual.reload()
-            self.assertEqual(actual.attrs["State"], "Running")
+            self.assertEqual(actual.attrs["State"], "Created")
 
         with self.subTest("Add container"):
             container = self.client.containers.create(self.alpine_image, command=["ls"], pod=actual)
@@ -99,12 +87,6 @@ class PodsIntegrationTest(base.IntegrationTest):
             ids = {c["Id"] for c in actual.attrs["Containers"]}
             self.assertIn(container.id, ids)
 
-        with self.subTest("Ps"):
-            procs = actual.top()
-
-            self.assertGreater(len(procs["Processes"]), 0)
-            self.assertGreater(len(procs["Titles"]), 0)
-
         with self.subTest("List"):
             pods = self.client.pods.list()
             self.assertGreaterEqual(len(pods), 1)
@@ -112,14 +94,63 @@ class PodsIntegrationTest(base.IntegrationTest):
             ids = {p.id for p in pods}
             self.assertIn(actual.id, ids)
 
-        with self.subTest("Stats"):
-            report = self.client.pods.stats(all=True)
-            self.assertGreaterEqual(len(report), 1)
-
         with self.subTest("Delete"):
             pod.remove(force=True)
             with self.assertRaises(NotFound):
                 pod.reload()
+
+    def test_ps(self):
+        pod = self.client.pods.create(
+            self.pod_name,
+            labels={
+                "unittest": "true",
+            },
+            no_infra=True,
+        )
+        self.assertTrue(self.client.pods.exists(pod.id))
+        self.client.containers.create(
+            self.alpine_image, command=["top"], detach=True, tty=True, pod=pod
+        )
+        pod.start()
+        pod.reload()
+
+        with self.subTest("top"):
+            # this is the API top call not the
+            # top command running in the container
+            procs = pod.top()
+
+            self.assertGreater(len(procs["Processes"]), 0)
+            self.assertGreater(len(procs["Titles"]), 0)
+
+        with self.subTest("stats"):
+            report = self.client.pods.stats(all=True)
+            self.assertGreaterEqual(len(report), 1)
+
+        with self.subTest("Stop/Start"):
+            pod.stop()
+            pod.reload()
+            self.assertIn(pod.attrs["State"], ("Stopped", "Exited"))
+
+            pod.start()
+            pod.reload()
+            self.assertEqual(pod.attrs["State"], "Running")
+
+        with self.subTest("Restart"):
+            pod.stop()
+            pod.restart()
+            pod.reload()
+            self.assertEqual(pod.attrs["State"], "Running")
+
+        with self.subTest("Pause/Unpause"):
+            pod.pause()
+            pod.reload()
+            self.assertEqual(pod.attrs["State"], "Paused")
+
+            pod.unpause()
+            pod.reload()
+            self.assertEqual(pod.attrs["State"], "Running")
+
+        pod.stop()
 
 
 if __name__ == '__main__':

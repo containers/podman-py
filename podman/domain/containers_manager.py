@@ -25,10 +25,7 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
         response = self.client.get(f"/containers/{key}/exists")
         return response.ok
 
-    # pylint is flagging 'container_id' here vs. 'key' parameter in super.get()
-    def get(
-        self, container_id: str
-    ) -> Container:  # pylint: disable=arguments-differ,arguments-renamed
+    def get(self, key: str) -> Container:
         """Get container by name or id.
 
         Args:
@@ -38,7 +35,7 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
             NotFound: when Container does not exist
             APIError: when an error return by service
         """
-        container_id = urllib.parse.quote_plus(container_id)
+        container_id = urllib.parse.quote_plus(key)
         response = self.client.get(f"/containers/{container_id}/json")
         response.raise_for_status()
         return self.prepare_model(attrs=response.json())

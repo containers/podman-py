@@ -1,7 +1,9 @@
+# Any changes should be copied into pyproject.toml
 -r requirements.txt
 black
 coverage
 fixtures~=3.0.0
-pytest
 pylint
+pytest
 requests-mock
+tox

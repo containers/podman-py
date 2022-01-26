@@ -37,24 +37,22 @@ class IntegrationTest(fixtures.TestWithFixtures):
 
     @classmethod
     def setUpClass(cls) -> None:
+        super(fixtures.TestWithFixtures, cls).setUpClass()
+
         command = os.environ.get("PODMAN_BINARY", "podman")
         if shutil.which(command) is None:
             raise AssertionError(f"'{command}' not found.")
         IntegrationTest.podman = command
 
-        # For testing, lock in logging configuration
-        if "DEBUG" in os.environ:
-            logging.basicConfig(level=logging.DEBUG)
-        else:
-            logging.basicConfig(level=logging.INFO)
+        # This log_level is for our python code
+        log_level = os.environ.get("PODMAN_LOG_LEVEL", "INFO")
+        log_level = logging.getLevelName(log_level)
+        logging.basicConfig(level=log_level)
 
     def setUp(self):
         super().setUp()
 
-        # This is the log_level to pass to podman service
-        self.log_level = logging.WARNING
-        if "DEBUG" in os.environ:
-            self.log_level = logging.DEBUG
+        self.log_level = os.environ.get("PODMAN_LOG_LEVEL", "INFO")
 
         self.test_dir = self.useFixture(fixtures.TempDir()).path
         self.socket_file = os.path.join(self.test_dir, uuid.uuid4().hex)

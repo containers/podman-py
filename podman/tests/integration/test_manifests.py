@@ -25,23 +25,25 @@ class ManifestsIntegrationTest(base.IntegrationTest):
 
         self.client.images.remove(self.alpine_image, force=True)
         with suppress(ImageNotFound):
-            self.client.images.remove("quay.io/unittest/alpine:latest", force=True)
+            self.client.images.remove("localhost/unittest/alpine", force=True)
 
     def test_manifest_crud(self):
         """Test Manifest CRUD."""
 
         self.assertFalse(
-            self.client.manifests.exists("quay.io/unittest/alpine:latest"),
+            self.client.manifests.exists("localhost/unittest/alpine"),
             "Image store is corrupt from previous run",
         )
 
         with self.subTest("Create"):
-            manifest = self.client.manifests.create(["quay.io/unittest/alpine:latest"])
-            self.assertEqual(len(manifest.attrs["manifests"]), 0)
-            self.assertTrue(self.client.manifests.exists(manifest.id))
+            manifest = self.client.manifests.create(
+                "localhost/unittest/alpine", ["quay.io/libpod/alpine:latest"]
+            )
+            self.assertEqual(len(manifest.attrs["manifests"]), 1, manifest.attrs)
+            self.assertTrue(self.client.manifests.exists(manifest.names), manifest.id)
 
             with self.assertRaises(APIError):
-                self.client.manifests.create(["123456!@#$%^"])
+                self.client.manifests.create("123456!@#$%^")
 
         with self.subTest("Add"):
             manifest.add([self.alpine_image])
@@ -54,11 +56,13 @@ class ManifestsIntegrationTest(base.IntegrationTest):
             )
 
         with self.subTest("Inspect"):
-            actual = self.client.manifests.get("quay.io/unittest/alpine:latest")
+            actual = self.client.manifests.get("quay.io/libpod/alpine:latest")
             self.assertEqual(actual.id, manifest.id)
 
             actual = self.client.manifests.get(manifest.name)
             self.assertEqual(actual.id, manifest.id)
+
+            self.assertEqual(actual.version, 2)
 
         with self.subTest("Remove digest"):
             manifest.remove(self.alpine_image.attrs["RepoDigests"][0])
@@ -67,7 +71,7 @@ class ManifestsIntegrationTest(base.IntegrationTest):
     def test_create_409(self):
         """Test that invalid Image names are caught and not corrupt storage."""
         with self.assertRaises(APIError):
-            self.client.manifests.create([self.invalid_manifest_name])
+            self.client.manifests.create(self.invalid_manifest_name)
 
 
 if __name__ == '__main__':

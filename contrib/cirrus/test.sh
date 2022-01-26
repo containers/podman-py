@@ -2,6 +2,4 @@
 
 set -eo pipefail
 
-
-
 make tests

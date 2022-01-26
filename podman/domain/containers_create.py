@@ -310,8 +310,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                     if search:
                         return int(search.group(1)) * (1024 ** mapping[search.group(2)])
                     raise TypeError(
-                        f"Passed string size {size} should be in format\\d+[bBkKmMgG] (e.g."
-                        " '100m')"
+                        f"Passed string size {size} should be in format\\d+[bBkKmMgG] (e.g. '100m')"
                     ) from bad_size
             else:
                 raise TypeError(
@@ -415,9 +414,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             if "Config" in args["log_config"]:
                 params["log_configuration"]["path"] = args["log_config"]["Config"].get("path")
                 params["log_configuration"]["size"] = args["log_config"]["Config"].get("size")
-                params["log_configuration"]["options"] = args["log_config"]["Config"].get(
-                    "options"
-                )
+                params["log_configuration"]["options"] = args["log_config"]["Config"].get("options")
             args.pop("log_config")
 
         for item in args.pop("mounts", []):

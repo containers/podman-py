@@ -8,25 +8,23 @@ DESTDIR ?=
 EPOCH_TEST_COMMIT ?= $(shell git merge-base $${DEST_BRANCH:-main} HEAD)
 HEAD ?= HEAD
 
-export PODMAN_VERSION ?= "3.2.0"
+export PODMAN_VERSION ?= "4.0.0"
 
 .PHONY: podman
 podman:
 	rm dist/* || :
-	python -m pip install --user -r requirements.txt
+	$(PYTHON) -m pip install --user -r requirements.txt
 	PODMAN_VERSION=$(PODMAN_VERSION) \
 	$(PYTHON) setup.py sdist bdist bdist_wheel
 
 .PHONY: lint
-lint:
-	$(PYTHON) -m pylint podman || exit $$(($$? % 4));
+lint: tox
+	$(PYTHON) -m tox -e black,pylint
 
 .PHONY: tests
-tests:
-	python -m pip install --user -r test-requirements.txt
-	DEBUG=1 coverage run -m unittest discover -s podman/tests
-	coverage report -m --skip-covered --fail-under=80 --omit=./podman/tests/* --omit=.tox/* \
-	--omit=/usr/lib/* --omit=*/lib/python*
+tests: tox
+	# see tox.ini for environment variable settings
+	$(PYTHON) -m tox -e pylint,coverage,py36,py38,py39,py310
 
 .PHONY: unittest
 unittest:
@@ -37,6 +35,12 @@ unittest:
 integration:
 	coverage run -m unittest discover -s podman/tests/integration
 	coverage report -m --skip-covered --fail-under=80 --omit=./podman/tests/* --omit=.tox/* --omit=/usr/lib/*
+
+.PHONY: tox
+tox:
+	-dnf install -y python3 python3.6 python3.8 python3.9
+	# ensure tox is available. It will take care of other testing requirements
+	$(PYTHON) -m pip install --user tox
 
 .PHONY: test-release
 test-release: SOURCE = $(shell find dist -regex '.*/podman-[0-9][0-9\.]*.tar.gz' -print)
