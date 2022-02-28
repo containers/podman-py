@@ -27,17 +27,21 @@ from podman.errors import NotFound
 class NetworksIntegrationTest(base.IntegrationTest):
     """networks call integration test"""
 
-    pool = IPAMPool(subnet="172.16.0.0/16", iprange="172.16.0.0/24", gateway="172.16.0.1")
+    pool = IPAMPool(subnet="10.11.13.0/24", iprange="10.11.13.0/26", gateway="10.11.13.1")
 
     ipam = IPAMConfig(pool_configs=[pool])
 
     def setUp(self):
         super().setUp()
+
         self.client = PodmanClient(base_url=self.socket_uri)
         self.addCleanup(self.client.close)
 
+    def tearDown(self):
         with suppress(NotFound):
             self.client.networks.get("integration_test").remove(force=True)
+
+        super().tearDown()
 
     def test_network_crud(self):
         """integration: networks create and remove calls"""
@@ -45,8 +49,7 @@ class NetworksIntegrationTest(base.IntegrationTest):
         with self.subTest("Create Network"):
             network = self.client.networks.create(
                 "integration_test",
-                disabled_dns=True,
-                enable_ipv6=False,
+                dns_enabled=False,
                 ipam=NetworksIntegrationTest.ipam,
             )
             self.assertEqual(network.name, "integration_test")
@@ -68,7 +71,7 @@ class NetworksIntegrationTest(base.IntegrationTest):
             with self.assertRaises(NotFound):
                 self.client.networks.get("integration_test")
 
-    @unittest.skipIf(os.geteuid() != 0, 'Skipping, not running as root')
+    @unittest.skip("Skipping, libpod endpoint does not report container count")
     def test_network_connect(self):
         self.alpine_image = self.client.images.pull("quay.io/libpod/alpine", tag="latest")
 

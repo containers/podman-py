@@ -47,9 +47,7 @@ class PodmanConfigTestCase(unittest.TestCase):
 
             expected = urllib.parse.urlparse("ssh://qe@localhost:2222/run/podman/podman.sock")
             self.assertEqual(config.active_service.url, expected)
-            self.assertEqual(
-                config.services["production"].identity, Path("/home/root/.ssh/id_rsa")
-            )
+            self.assertEqual(config.services["production"].identity, Path("/home/root/.ssh/id_rsa"))
 
             PodmanConfigTestCase.opener.assert_called_with(
                 Path("/home/developer/containers.conf"), encoding='utf-8'

@@ -67,10 +67,6 @@ class ContainersIntegrationTest(base.IntegrationTest):
                 test['expected_value'],
             )
 
-    def test_container_kernel_memory(self):
-        """Test passing kernel memory"""
-        self._test_memory_limit('kernel_memory', 'KernelMemory')
-
     def test_container_mem_limit(self):
         """Test passing memory limit"""
         self._test_memory_limit('mem_limit', 'Memory')

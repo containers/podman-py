@@ -61,6 +61,7 @@ test_task:
 
     script:
         - ${SCRIPT_BASE}/enable_ssh.sh
+        - ${SCRIPT_BASE}/build_podman.sh
         - ${SCRIPT_BASE}/enable_podman.sh
         - ${SCRIPT_BASE}/test.sh
 

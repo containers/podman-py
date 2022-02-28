@@ -27,6 +27,7 @@ class ImagesManager(BuildMixin, Manager):
         return Image
 
     def exists(self, key: str) -> bool:
+        """Return true when image exists."""
         key = urllib.parse.quote_plus(key)
         response = self.client.get(f"/images/{key}/exists")
         return response.ok

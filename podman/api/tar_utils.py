@@ -84,7 +84,7 @@ def create_tar(
             return None
 
         # Workaround https://bugs.python.org/issue32713. Fixed in Python 3.7
-        if info.mtime < 0 or info.mtime > 8 ** 11 - 1:
+        if info.mtime < 0 or info.mtime > 8**11 - 1:
             info.mtime = int(info.mtime)
 
         # do not leak client information to service
@@ -97,9 +97,8 @@ def create_tar(
         return info
 
     if name is None:
-        name = tempfile.NamedTemporaryFile(
-            prefix="podman_context", suffix=".tar"
-        )  # pylint: disable=consider-using-with
+        # pylint: disable=consider-using-with
+        name = tempfile.NamedTemporaryFile(prefix="podman_context", suffix=".tar")
     else:
         name = pathlib.Path(name)
 
