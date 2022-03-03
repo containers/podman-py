@@ -250,6 +250,7 @@ class Container(PodmanResource):
             until (Union[datetime, int]): Show logs that occurred before the given
                 datetime or integer epoch (in seconds)
         """
+        stream = bool(kwargs.get("stream", False))
         params = {
             "follow": kwargs.get("follow", kwargs.get("stream", None)),
             "since": api.prepare_timestamp(kwargs.get("since")),
@@ -260,10 +261,10 @@ class Container(PodmanResource):
             "until": api.prepare_timestamp(kwargs.get("until")),
         }
 
-        response = self.client.get(f"/containers/{self.id}/logs", params=params)
+        response = self.client.get(f"/containers/{self.id}/logs", stream=stream, params=params)
         response.raise_for_status()
 
-        if bool(kwargs.get("stream", False)):
+        if stream:
             return api.stream_frames(response)
         return api.frames(response)
 
