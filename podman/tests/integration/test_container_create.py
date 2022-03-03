@@ -62,9 +62,7 @@ class ContainersIntegrationTest(base.IntegrationTest):
             if set_mem_limit:
                 parameters['mem_limit'] = test['expected_value'] - 100
 
-            container = self.client.containers.create(
-                self.alpine_image, **parameters
-            )
+            container = self.client.containers.create(self.alpine_image, **parameters)
             self.containers.append(container)
             self.assertEqual(
                 container.attrs.get('HostConfig', dict()).get(host_config_name),
