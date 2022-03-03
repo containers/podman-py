@@ -492,7 +492,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "kernelTCP": args.pop("kernel_memory_tcp", None),
             "limit": to_bytes(args.pop("mem_limit", None)),
             "reservation": to_bytes(args.pop("mem_reservation", None)),
-            "swap": args.pop("memswap_limit", None),
+            "swap": to_bytes(args.pop("memswap_limit", None)),
             "swappiness": args.pop("mem_swappiness", None),
             "useHierarchy": args.pop("mem_use_hierarchy", None),
         }
