@@ -58,10 +58,9 @@ class ContainersIntegrationTest(base.IntegrationTest):
         ]
 
         for test in memory_limit_tests:
+            parameters = {parameter_name: test['value']}
             if set_mem_limit:
-                parameters = {parameter_name: test['value'], 'mem_limit': test['expected_value'] - 100}
-            else:
-                parameters = {parameter_name: test['value']}
+                parameters['mem_limit'] = test['expected_value'] - 100
 
             container = self.client.containers.create(
                 self.alpine_image, **parameters
