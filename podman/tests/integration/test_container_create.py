@@ -46,7 +46,7 @@ class ContainersIntegrationTest(base.IntegrationTest):
             for hosts_entry in formatted_hosts:
                 self.assertIn(hosts_entry, logs)
 
-    def _test_memory_limit(self, parameter_name, host_config_name):
+    def _test_memory_limit(self, parameter_name, host_config_name, set_mem_limit=False):
         """Base for tests which checks memory limits"""
         memory_limit_tests = [
             {'value': 1000, 'expected_value': 1000},
@@ -58,9 +58,11 @@ class ContainersIntegrationTest(base.IntegrationTest):
         ]
 
         for test in memory_limit_tests:
-            container = self.client.containers.create(
-                self.alpine_image, **{parameter_name: test['value']}
-            )
+            parameters = {parameter_name: test['value']}
+            if set_mem_limit:
+                parameters['mem_limit'] = test['expected_value'] - 100
+
+            container = self.client.containers.create(self.alpine_image, **parameters)
             self.containers.append(container)
             self.assertEqual(
                 container.attrs.get('HostConfig', dict()).get(host_config_name),
@@ -70,6 +72,10 @@ class ContainersIntegrationTest(base.IntegrationTest):
     def test_container_mem_limit(self):
         """Test passing memory limit"""
         self._test_memory_limit('mem_limit', 'Memory')
+
+    def test_container_memswap_limit(self):
+        """Test passing memory swap limit"""
+        self._test_memory_limit('memswap_limit', 'MemorySwap', set_mem_limit=True)
 
     def test_container_mem_reservation(self):
         """Test passing memory reservation"""
