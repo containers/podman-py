@@ -92,6 +92,4 @@ def _filter_values(mapping: Mapping[str, Any]) -> Dict[str, Any]:
 
 
 def encode_auth_header(auth_config: Dict[str, str]) -> str:
-    return base64.b64encode(
-        json.dumps(auth_config).encode('utf-8')
-    )
+    return base64.b64encode(json.dumps(auth_config).encode('utf-8'))
