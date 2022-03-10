@@ -9,6 +9,7 @@ import requests
 
 from podman import api
 from podman.api import Literal
+from podman.api.http_utils import encode_auth_header
 from podman.domain.images import Image
 from podman.domain.images_build import BuildMixin
 from podman.domain.manager import Manager
@@ -193,10 +194,13 @@ class ImagesManager(BuildMixin, Manager):
         Raises:
             APIError: when service returns an error
         """
-        # TODO set X-Registry-Auth
+        auth_config: Optional[Dict[str, str]] = kwargs.get("auth_config")
+
         headers = {
             # A base64url-encoded auth configuration
-            "X-Registry-Auth": ""
+            "X-Registry-Auth": encode_auth_header(auth_config)
+            if auth_config
+            else ""
         }
 
         params = {

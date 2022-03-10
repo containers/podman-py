@@ -1,4 +1,5 @@
 """Utility functions for working with URLs."""
+import base64
 import collections.abc
 import json
 from typing import Dict, List, Mapping, Optional, Union, Any
@@ -88,3 +89,7 @@ def _filter_values(mapping: Mapping[str, Any]) -> Dict[str, Any]:
             canonical[key] = proposal
 
     return canonical
+
+
+def encode_auth_header(auth_config: Dict[str, str]) -> str:
+    return base64.b64encode(json.dumps(auth_config).encode('utf-8'))
