@@ -63,6 +63,10 @@ docs:
 		podman podman/tests
 	sphinx-build build/docs/source build/html
 
+.PHONY: rpm
+rpm: ## Build rpm packages
+	rpkg local
+
 # .PHONY: install
 HEAD ?= HEAD
 # install:
