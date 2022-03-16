@@ -92,7 +92,7 @@ class Container(PodmanResource):
         Keyword Args:
             author (str): Name of commit author
             changes (List[str]): Instructions to apply during commit
-            comment (List[str]): Instructions to apply while committing in Dockerfile format
+            comment (str): Commit message to include with Image, overrides keyword message
             conf (dict[str, Any]): Ignored.
             format (str): Format of the image manifest and metadata
             message (str): Commit message to include with Image
@@ -101,7 +101,7 @@ class Container(PodmanResource):
         params = {
             "author": kwargs.get("author"),
             "changes": kwargs.get("changes"),
-            "comment": kwargs.get("comment"),
+            "comment": kwargs.get("comment", kwargs.get("message")),
             "container": self.id,
             "format": kwargs.get("format"),
             "pause": kwargs.get("pause"),
@@ -112,7 +112,7 @@ class Container(PodmanResource):
         response.raise_for_status()
 
         body = response.json()
-        return ImagesManager(client=self.client).get(body["ID"])
+        return ImagesManager(client=self.client).get(body["Id"])
 
     def diff(self) -> List[Dict[str, int]]:
         """Report changes of a container's filesystem.

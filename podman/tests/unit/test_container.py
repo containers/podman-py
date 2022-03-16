@@ -306,7 +306,7 @@ class ContainersTestCase(unittest.TestCase):
             "&container=87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd&format=docker"
             "&pause=True&repo=quay.local&tag=unittest",
             status_code=201,
-            json={"ID": "d2459aad75354ddc9b5b23f863786e279637125af6ba4d4a83f881866b3c903f"},
+            json={"Id": "d2459aad75354ddc9b5b23f863786e279637125af6ba4d4a83f881866b3c903f"},
         )
         get_adapter = mock.get(
             tests.LIBPOD_URL

@@ -146,6 +146,17 @@ class ContainersIntegrationTest(base.IntegrationTest):
             with self.assertRaises(NotFound):
                 self.client.containers.get(top_ctnr.id)
 
+    def test_container_commit(self):
+        """Commit new image."""
+        busybox = self.client.images.pull("quay.io/libpod/busybox", tag="latest")
+        container = self.client.containers.create(
+            busybox, command=["echo", f"{random.getrandbits(160):x}"]
+        )
+
+        image = container.commit(repository="busybox.local", tag="unittest")
+        self.assertIn("localhost/busybox.local:unittest", image.attrs["RepoTags"])
+        busybox.remove(force=True)
+
 
 if __name__ == '__main__':
     unittest.main()
