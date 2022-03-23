@@ -103,8 +103,8 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 Mount object.
             name (str): The name for this container.
             nano_cpus (int):  CPU quota in units of 1e-9 CPUs.
-            networks (Dict[str, Dict[str, Union[str, List[str]]): Container networks.
-                Container will be connected to networks at creation time.
+            networks (Dict[str, Dict[str, Union[str, List[str]]):
+                Networks which will be connected to container during container creation
                 Values of the network configuration can be :
                      - string
                      - list of strings (e.g. Aliases)
