@@ -103,9 +103,11 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 Mount object.
             name (str): The name for this container.
             nano_cpus (int):  CPU quota in units of 1e-9 CPUs.
-            network (str): Name of the network this container will be connected to at creation time.
-                You can connect to additional networks using Network.connect.
-                Incompatible with network_mode.
+            networks (Dict[str, Dict[str, Union[str, List[str]]):
+                Networks which will be connected to container during container creation
+                Values of the network configuration can be :
+                     - string
+                     - list of strings (e.g. Aliases)
             network_disabled (bool): Disable networking.
             network_mode (str): One of:
 
@@ -320,7 +322,6 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
         # Transform keywords into parameters
         params = {
-            "aliases": pop("aliases"),  # TODO document, podman only
             "annotations": pop("annotations"),  # TODO document, podman only
             "apparmor_profile": pop("apparmor_profile"),  # TODO document, podman only
             "cap_add": pop("cap_add"),
@@ -358,6 +359,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "name": pop("name"),
             "namespace": pop("namespace"),  # TODO What is this for?
             "network_options": pop("network_options"),  # TODO document, podman only
+            "networks": pop("networks"),
             "no_new_privileges": pop("no_new_privileges"),  # TODO document, podman only
             "oci_runtime": pop("runtime"),
             "oom_score_adj": pop("oom_score_adj"),
@@ -379,8 +381,6 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "secrets": pop("secrets"),  # TODO document, podman only
             "selinux_opts": pop("security_opt"),
             "shm_size": to_bytes(pop("shm_size")),
-            "static_ip": pop("static_ip"),  # TODO document, podman only
-            "static_ipv6": pop("static_ipv6"),  # TODO document, podman only
             "static_mac": pop("mac_address"),
             "stdin": pop("stdin_open"),
             "stop_signal": pop("stop_signal"),
