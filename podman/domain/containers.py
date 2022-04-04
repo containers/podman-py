@@ -124,6 +124,7 @@ class Container(PodmanResource):
         response.raise_for_status()
         return response.json()
 
+    # pylint: disable=too-many-arguments,unused-argument
     def exec_run(
         self,
         cmd: Union[str, List[str]],
@@ -139,9 +140,7 @@ class Container(PodmanResource):
         environment: Union[Mapping[str, str], List[str]] = None,
         workdir: str = None,
         demux: bool = False,
-    ) -> Tuple[
-        Optional[int], Union[Iterator[bytes], Any, Tuple[bytes, bytes]]
-    ]:  # pylint: disable=too-many-arguments,unused-argument
+    ) -> Tuple[Optional[int], Union[Iterator[bytes], Any, Tuple[bytes, bytes]]]:
         """Run given command inside container and return results.
 
         Args:

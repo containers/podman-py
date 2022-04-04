@@ -248,7 +248,7 @@ class ImagesManager(BuildMixin, Manager):
     # pylint: disable=too-many-locals,too-many-branches
     def pull(
         self, repository: str, tag: Optional[str] = None, all_tags: bool = False, **kwargs
-    ) -> Union[Image, List[Image]]:
+    ) -> Union[Image, List[Image], Iterator[str]]:
         """Request Podman service to pull image(s) from repository.
 
         Args:
@@ -262,8 +262,11 @@ class ImagesManager(BuildMixin, Manager):
                 keys to be valid.
             platform (str) – Platform in the format os[/arch[/variant]]
             tls_verify (bool) - Require TLS verification. Default: True.
+            stream (bool) - When True, the pull progress will be published as received.
+                Default: False.
 
         Returns:
+            When stream is True, return a generator publishing the service pull progress.
             If all_tags is True, return list of Image's rather than Image pulled.
 
         Raises:
@@ -305,19 +308,23 @@ class ImagesManager(BuildMixin, Manager):
                 raise ValueError("'auth_config' requires keys 'username' and 'password'")
             params["credentials"] = f"{username}:{password}"
 
-        response = self.client.post("/images/pull", params=params)
+        stream = kwargs.get("stream", False)
+        response = self.client.post("/images/pull", params=params, stream=stream)
         response.raise_for_status(not_found=ImageNotFound)
 
+        if stream:
+            return response.iter_lines()
+
         for item in response.iter_lines():
-            body = json.loads(item)
-            if all_tags and "images" in body:
+            obj = json.loads(item)
+            if all_tags and "images" in obj:
                 images: List[Image] = []
-                for name in body["images"]:
+                for name in obj["images"]:
                     images.append(self.get(name))
                 return images
 
-            if "id" in body:
-                return self.get(body["id"])
+            if "id" in obj:
+                return self.get(obj["id"])
         return self.resource()
 
     def remove(
