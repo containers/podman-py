@@ -70,11 +70,15 @@ tox -e coverage
   `tox -e black-format` to update the code formatting prior to committing.
 - Pass pylint
   - exceptions are possible, but you will need to make a good argument
-- use spaces not tabs for indentation
+- Use spaces not tabs for indentation
 - This is open source software. Consider the people who will read your code,
   and make it look nice for them. It's sort of like driving a car: Perhaps
   you love doing donuts when you're alone, but with passengers the goal is to
   make the ride as smooth as possible.
+- Use Google style python [docstrings](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings)
+    - A general exception is made for kwargs where we use the Sphinx extension of adding a section
+      "Keyword Arguments" and documenting the accepted keyword arguments, their type and usage.
+      Example: kwarg1 (int): Description of kwarg1
 
 Again thank you for your interest and participation.
 Jhon Honce `<jhonce at redhat dot com>`
