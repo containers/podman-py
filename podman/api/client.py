@@ -1,7 +1,7 @@
 """APIClient for connecting to Podman service."""
 import json
 import urllib.parse
-from typing import IO, Any, ClassVar, Iterable, List, Mapping, Optional, Tuple, Union, Type
+from typing import Any, ClassVar, IO, Iterable, List, Mapping, Optional, Tuple, Type, Union
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -46,9 +46,7 @@ class APIResponse:
         """Forward any query for an attribute not defined in this proxy class to wrapped class."""
         return getattr(self._response, item)
 
-    def raise_for_status(
-        self, not_found: Type[APIError] = NotFound
-    ) -> None:  # pylint: disable=arguments-differ
+    def raise_for_status(self, not_found: Type[APIError] = NotFound) -> None:
         """Raises exception when Podman service reports one."""
         if self.status_code < 400:
             return
@@ -69,8 +67,7 @@ class APIClient(requests.Session):
     """Client for Podman service API."""
 
     # Abstract methods (delete,get,head,post) are specialized and pylint cannot walk hierarchy.
-    # pylint: disable=arguments-differ
-    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes,arguments-differ,arguments-renamed
 
     supported_schemes: ClassVar[List[str]] = (
         "unix",
