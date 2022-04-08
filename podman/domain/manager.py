@@ -5,8 +5,8 @@ from typing import Any, List, Mapping, Optional, TypeVar, Union
 
 from podman.api.client import APIClient
 
-# Methods use this Type when a sub-class of PodmanResource is expected.
-PodmanResourceType = TypeVar("PodmanResourceType", bound="PodmanResource")
+# Methods use this Type when a subclass of PodmanResource is expected.
+PodmanResourceType: TypeVar = TypeVar("PodmanResourceType", bound="PodmanResource")
 
 
 class PodmanResource(ABC):
