@@ -9,6 +9,7 @@ import requests
 
 from podman import api
 from podman.api import Literal
+from podman.api.http_utils import encode_auth_header
 from podman.domain.images import Image
 from podman.domain.images_build import BuildMixin
 from podman.domain.manager import Manager
@@ -27,6 +28,7 @@ class ImagesManager(BuildMixin, Manager):
         return Image
 
     def exists(self, key: str) -> bool:
+        """Return true when image exists."""
         key = urllib.parse.quote_plus(key)
         response = self.client.get(f"/images/{key}/exists")
         return response.ok
@@ -59,7 +61,7 @@ class ImagesManager(BuildMixin, Manager):
         return [self.prepare_model(attrs=i) for i in response.json()]
 
     # pylint is flagging 'name' here vs. 'key' parameter in super.get()
-    def get(self, name: str) -> Image:  # pylint: disable=arguments-differ
+    def get(self, name: str) -> Image:  # pylint: disable=arguments-differ,arguments-renamed
         """Returns an image by name or id.
 
         Args:
@@ -192,10 +194,13 @@ class ImagesManager(BuildMixin, Manager):
         Raises:
             APIError: when service returns an error
         """
-        # TODO set X-Registry-Auth
+        auth_config: Optional[Dict[str, str]] = kwargs.get("auth_config")
+
         headers = {
             # A base64url-encoded auth configuration
-            "X-Registry-Auth": ""
+            "X-Registry-Auth": encode_auth_header(auth_config)
+            if auth_config
+            else ""
         }
 
         params = {
@@ -243,7 +248,7 @@ class ImagesManager(BuildMixin, Manager):
     # pylint: disable=too-many-locals,too-many-branches
     def pull(
         self, repository: str, tag: Optional[str] = None, all_tags: bool = False, **kwargs
-    ) -> Union[Image, List[Image]]:
+    ) -> Union[Image, List[Image], Iterator[str]]:
         """Request Podman service to pull image(s) from repository.
 
         Args:
@@ -257,8 +262,11 @@ class ImagesManager(BuildMixin, Manager):
                 keys to be valid.
             platform (str) – Platform in the format os[/arch[/variant]]
             tls_verify (bool) - Require TLS verification. Default: True.
+            stream (bool) - When True, the pull progress will be published as received.
+                Default: False.
 
         Returns:
+            When stream is True, return a generator publishing the service pull progress.
             If all_tags is True, return list of Image's rather than Image pulled.
 
         Raises:
@@ -300,19 +308,23 @@ class ImagesManager(BuildMixin, Manager):
                 raise ValueError("'auth_config' requires keys 'username' and 'password'")
             params["credentials"] = f"{username}:{password}"
 
-        response = self.client.post("/images/pull", params=params)
+        stream = kwargs.get("stream", False)
+        response = self.client.post("/images/pull", params=params, stream=stream)
         response.raise_for_status(not_found=ImageNotFound)
 
+        if stream:
+            return response.iter_lines()
+
         for item in response.iter_lines():
-            body = json.loads(item)
-            if all_tags and "images" in body:
+            obj = json.loads(item)
+            if all_tags and "images" in obj:
                 images: List[Image] = []
-                for name in body["images"]:
+                for name in obj["images"]:
                     images.append(self.get(name))
                 return images
 
-            if "id" in body:
-                return self.get(body["id"])
+            if "id" in obj:
+                return self.get(obj["id"])
         return self.resource()
 
     def remove(

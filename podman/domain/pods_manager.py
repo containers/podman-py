@@ -27,7 +27,7 @@ class PodsManager(Manager):
                 https://docs.podman.io/en/latest/_static/api.html#operation/CreatePod] for
                 complete list of keywords.
         """
-        data = dict() if kwargs is None else kwargs.copy()
+        data = {} if kwargs is None else kwargs.copy()
         data["name"] = name
 
         response = self.client.post("/pods/create", data=json.dumps(data))
@@ -42,7 +42,7 @@ class PodsManager(Manager):
         return response.ok
 
     # pylint is flagging 'pod_id' here vs. 'key' parameter in super.get()
-    def get(self, pod_id: str) -> Pod:  # pylint: disable=arguments-differ
+    def get(self, pod_id: str) -> Pod:  # pylint: disable=arguments-differ,arguments-renamed
         """Return information for Pod by name or id.
 
         Args:
@@ -97,7 +97,7 @@ class PodsManager(Manager):
         response = self.client.post("/pods/prune", params={"filters": api.prepare_filters(filters)})
         response.raise_for_status()
 
-        deleted: List[str] = list()
+        deleted: List[str] = []
         for item in response.json():
             if item["Err"] is not None:
                 raise APIError(

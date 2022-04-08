@@ -1,5 +1,11 @@
 import unittest
-from collections import Iterator
+
+try:
+    # Python >= 3.10
+    from collections.abc import Iterator
+except:
+    # Python < 3.10
+    from collections import Iterator
 from unittest.mock import patch, DEFAULT
 
 import requests_mock
@@ -237,7 +243,7 @@ class ContainersManagerTestCase(unittest.TestCase):
         )
 
         with patch.multiple(Container, logs=DEFAULT, wait=DEFAULT, autospec=True) as mock_container:
-            mock_container["logs"].return_value = list()
+            mock_container["logs"].return_value = []
             mock_container["wait"].return_value = {"StatusCode": 0}
 
             actual = self.client.containers.run("fedora", "/usr/bin/ls", detach=True)

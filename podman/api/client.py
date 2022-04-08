@@ -1,7 +1,7 @@
 """APIClient for connecting to Podman service."""
 import json
 import urllib.parse
-from typing import IO, Any, ClassVar, Iterable, List, Mapping, Optional, Tuple, Union, Type
+from typing import Any, ClassVar, IO, Iterable, List, Mapping, Optional, Tuple, Type, Union
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -46,9 +46,7 @@ class APIResponse:
         """Forward any query for an attribute not defined in this proxy class to wrapped class."""
         return getattr(self._response, item)
 
-    def raise_for_status(
-        self, not_found: Type[APIError] = NotFound
-    ) -> None:  # pylint: disable=arguments-differ
+    def raise_for_status(self, not_found: Type[APIError] = NotFound) -> None:
         """Raises exception when Podman service reports one."""
         if self.status_code < 400:
             return
@@ -69,10 +67,16 @@ class APIClient(requests.Session):
     """Client for Podman service API."""
 
     # Abstract methods (delete,get,head,post) are specialized and pylint cannot walk hierarchy.
-    # pylint: disable=arguments-differ
-    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes,arguments-differ,arguments-renamed
 
-    supported_schemes: ClassVar[List[str]] = ("unix", "http+unix", "ssh", "http+ssh", "tcp", "http")
+    supported_schemes: ClassVar[List[str]] = (
+        "unix",
+        "http+unix",
+        "ssh",
+        "http+ssh",
+        "tcp",
+        "http",
+    )
 
     def __init__(
         self,
@@ -140,7 +144,7 @@ class APIClient(requests.Session):
 
         self.timeout = timeout
         self.pool_maxsize = num_pools or requests.adapters.DEFAULT_POOLSIZE
-        self.credstore_env = credstore_env or dict()
+        self.credstore_env = credstore_env or {}
 
         self.user_agent = user_agent or (
             f"PodmanPy/{__version__} (API v{self.version}; Compatible v{self.compatible_version})"
@@ -374,7 +378,7 @@ class APIClient(requests.Session):
             APIError: when service returns an error
         """
         # Only set timeout if one is given, lower level APIs will not override None
-        timeout_kw = dict()
+        timeout_kw = {}
         timeout = timeout or self.timeout
         if timeout_kw is not None:
             timeout_kw["timeout"] = timeout
@@ -402,7 +406,7 @@ class APIClient(requests.Session):
                     uri.geturl(),
                     params=params,
                     data=data,
-                    headers=(headers or dict()),
+                    headers=(headers or {}),
                     stream=stream,
                     **timeout_kw,
                 )

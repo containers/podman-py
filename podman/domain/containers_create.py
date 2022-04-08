@@ -1,6 +1,7 @@
 """Mixin to provide Container create() method."""
 import copy
 import logging
+import re
 import warnings
 from contextlib import suppress
 from typing import Any, Dict, List, MutableMapping, Union
@@ -103,9 +104,11 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 Mount object.
             name (str): The name for this container.
             nano_cpus (int):  CPU quota in units of 1e-9 CPUs.
-            network (str): Name of the network this container will be connected to at creation time.
-                You can connect to additional networks using Network.connect.
-                Incompatible with network_mode.
+            networks (Dict[str, Dict[str, Union[str, List[str]]):
+                Networks which will be connected to container during container creation
+                Values of the network configuration can be :
+                     - string
+                     - list of strings (e.g. Aliases)
             network_disabled (bool): Disable networking.
             network_mode (str): One of:
 
@@ -280,9 +283,45 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         def pop(k):
             return args.pop(k, None)
 
+        def to_bytes(size: Union[int, str, None]) -> Union[int, None]:
+            """
+            Converts str or int to bytes.
+            Input can be in the following forms :
+            0) None - e.g. None -> returns None
+            1) int - e.g. 100 == 100 bytes
+            2) str - e.g. '100' == 100 bytes
+            3) str with suffix - available suffixes:
+               b | B - bytes
+               k | K = kilobytes
+               m | M = megabytes
+               g | G = gigabytes
+               e.g. '100m' == 104857600 bytes
+            """
+            size_type = type(size)
+            if size is None:
+                return size
+            if size_type is int:
+                return size
+            if size_type is str:
+                try:
+                    return int(size)
+                except ValueError as bad_size:
+                    mapping = {'b': 0, 'k': 1, 'm': 2, 'g': 3}
+                    mapping_regex = ''.join(mapping.keys())
+                    search = re.search(rf'^(\d+)([{mapping_regex}])$', size.lower())
+                    if search:
+                        return int(search.group(1)) * (1024 ** mapping[search.group(2)])
+                    raise TypeError(
+                        f"Passed string size {size} should be in format\\d+[bBkKmMgG] (e.g. '100m')"
+                    ) from bad_size
+            else:
+                raise TypeError(
+                    f"Passed size {size} should be a type of unicode, str "
+                    f"or int (found : {size_type})"
+                )
+
         # Transform keywords into parameters
         params = {
-            "aliases": pop("aliases"),  # TODO document, podman only
             "annotations": pop("annotations"),  # TODO document, podman only
             "apparmor_profile": pop("apparmor_profile"),  # TODO document, podman only
             "cap_add": pop("cap_add"),
@@ -300,10 +339,10 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "entrypoint": pop("entrypoint"),
             "env": pop("environment"),
             "env_host": pop("env_host"),  # TODO document, podman only
-            "expose": dict(),
+            "expose": {},
             "groups": pop("group_add"),
             "healthconfig": pop("healthcheck"),
-            "hostadd": list(),
+            "hostadd": [],
             "hostname": pop("hostname"),
             "httpproxy": pop("use_config_proxy"),
             "idmappings": pop("idmappings"),  # TODO document, podman only
@@ -314,26 +353,27 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "init_path": pop("init_path"),
             "isolation": pop("isolation"),
             "labels": pop("labels"),
-            "log_configuration": dict(),
+            "log_configuration": {},
             "lxc_config": pop("lxc_config"),
             "mask": pop("masked_paths"),
-            "mounts": list(),
+            "mounts": [],
             "name": pop("name"),
             "namespace": pop("namespace"),  # TODO What is this for?
             "network_options": pop("network_options"),  # TODO document, podman only
+            "networks": pop("networks"),
             "no_new_privileges": pop("no_new_privileges"),  # TODO document, podman only
             "oci_runtime": pop("runtime"),
             "oom_score_adj": pop("oom_score_adj"),
             "overlay_volumes": pop("overlay_volumes"),  # TODO document, podman only
-            "portmappings": list(),
+            "portmappings": [],
             "privileged": pop("privileged"),
             "procfs_opts": pop("procfs_opts"),  # TODO document, podman only
             "publish_image_ports": pop("publish_all_ports"),
-            "r_limits": list(),
+            "r_limits": [],
             "raw_image_name": pop("raw_image_name"),  # TODO document, podman only
             "read_only_filesystem": pop("read_only"),
             "remove": args.pop("remove", args.pop("auto_remove", None)),
-            "resource_limits": dict(),
+            "resource_limits": {},
             "rootfs": pop("rootfs"),
             "rootfs_propagation": pop("rootfs_propagation"),
             "sdnotifyMode": pop("sdnotifyMode"),  # TODO document, podman only
@@ -341,9 +381,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "seccomp_profile_path": pop("seccomp_profile_path"),  # TODO document, podman only
             "secrets": pop("secrets"),  # TODO document, podman only
             "selinux_opts": pop("security_opt"),
-            "shm_size": pop("shm_size"),
-            "static_ip": pop("static_ip"),  # TODO document, podman only
-            "static_ipv6": pop("static_ipv6"),  # TODO document, podman only
+            "shm_size": to_bytes(pop("shm_size")),
             "static_mac": pop("mac_address"),
             "stdin": pop("stdin_open"),
             "stop_signal": pop("stop_signal"),
@@ -359,7 +397,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "use_image_resolve_conf": pop("use_image_resolve_conf"),  # TODO document, podman only
             "user": pop("user"),
             "version": pop("version"),
-            "volumes": list(),
+            "volumes": [],
             "volumes_from": pop("volumes_from"),
             "work_dir": pop("working_dir"),
         }
@@ -376,11 +414,11 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                     }
                 )
 
-        for item in args.pop("exposed_ports", list()):
+        for item in args.pop("exposed_ports", []):
             port, protocol = item.split("/")
             params["expose"][int(port)] = protocol
 
-        for hostname, ip in args.pop("extra_hosts", dict()).items():
+        for hostname, ip in args.pop("extra_hosts", {}).items():
             params["hostadd"].append(f"{hostname}:{ip}")
 
         if "log_config" in args:
@@ -392,7 +430,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 params["log_configuration"]["options"] = args["log_config"]["Config"].get("options")
             args.pop("log_config")
 
-        for item in args.pop("mounts", list()):
+        for item in args.pop("mounts", []):
             mount_point = {
                 "destination": item.get("target"),
                 "options": [],
@@ -400,7 +438,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 "type": item.get("type"),
             }
 
-            options = list()
+            options = []
             if "read_only" in item:
                 options.append("ro")
             if "consistency" in item:
@@ -421,7 +459,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 pod = pod.id
             params["pod"] = pod  # TODO document, podman only
 
-        for container, host in args.pop("ports", dict()).items():
+        for container, host in args.pop("ports", {}).items():
             if "/" in container:
                 container_port, protocol = container.split("/")
             else:
@@ -449,29 +487,30 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             params["restart_tries"] = args["restart_policy"].get("MaximumRetryCount")
             args.pop("restart_policy")
 
-        params["resource_limits"]["pids"] = dict()
-        params["resource_limits"]["pids"]["limit"] = args.pop("pids_limit", None)
+        params["resource_limits"]["pids"] = {"limit": args.pop("pids_limit", None)}
 
-        params["resource_limits"]["cpu"] = dict()
-        params["resource_limits"]["cpu"]["cpus"] = args.pop("cpuset_cpus", None)
-        params["resource_limits"]["cpu"]["mems"] = args.pop("cpuset_mems", None)
-        params["resource_limits"]["cpu"]["period"] = args.pop("cpu_period", None)
-        params["resource_limits"]["cpu"]["quota"] = args.pop("cpu_quota", None)
-        params["resource_limits"]["cpu"]["realtimePeriod"] = args.pop("cpu_rt_period", None)
-        params["resource_limits"]["cpu"]["realtimeRuntime"] = args.pop("cpu_rt_runtime", None)
-        params["resource_limits"]["cpu"]["shares"] = args.pop("cpu_shares", None)
+        params["resource_limits"]["cpu"] = {
+            "cpus": args.pop("cpuset_cpus", None),
+            "mems": args.pop("cpuset_mems", None),
+            "period": args.pop("cpu_period", None),
+            "quota": args.pop("cpu_quota", None),
+            "realtimePeriod": args.pop("cpu_rt_period", None),
+            "realtimeRuntime": args.pop("cpu_rt_runtime", None),
+            "shares": args.pop("cpu_shares", None),
+        }
 
-        params["resource_limits"]["memory"] = dict()
-        params["resource_limits"]["memory"]["disableOOMKiller"] = args.pop("oom_kill_disable", None)
-        params["resource_limits"]["memory"]["kernel"] = args.pop("kernel_memory", None)
-        params["resource_limits"]["memory"]["kernelTCP"] = args.pop("kernel_memory_tcp", None)
-        params["resource_limits"]["memory"]["limit"] = args.pop("mem_limit", None)
-        params["resource_limits"]["memory"]["reservation"] = args.pop("mem_reservation", None)
-        params["resource_limits"]["memory"]["swap"] = args.pop("memswap_limit", None)
-        params["resource_limits"]["memory"]["swappiness"] = args.pop("mem_swappiness", None)
-        params["resource_limits"]["memory"]["useHierarchy"] = args.pop("mem_use_hierarchy", None)
+        params["resource_limits"]["memory"] = {
+            "disableOOMKiller": args.pop("oom_kill_disable", None),
+            "kernel": to_bytes(args.pop("kernel_memory", None)),
+            "kernelTCP": args.pop("kernel_memory_tcp", None),
+            "limit": to_bytes(args.pop("mem_limit", None)),
+            "reservation": to_bytes(args.pop("mem_reservation", None)),
+            "swap": to_bytes(args.pop("memswap_limit", None)),
+            "swappiness": args.pop("mem_swappiness", None),
+            "useHierarchy": args.pop("mem_use_hierarchy", None),
+        }
 
-        for item in args.pop("ulimits", list()):
+        for item in args.pop("ulimits", []):
             params["r_limits"].append(
                 {
                     "type": item["Name"],
@@ -480,7 +519,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 }
             )
 
-        for item in args.pop("volumes", dict()).items():
+        for item in args.pop("volumes", {}).items():
             key, value = item
             volume = {
                 "Name": key,

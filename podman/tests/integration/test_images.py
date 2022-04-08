@@ -14,13 +14,18 @@
 #
 """Images integration tests."""
 import io
+import queue
 import tarfile
+import threading
+import types
 import unittest
+from contextlib import suppress
+from datetime import datetime, timedelta
 
 import podman.tests.integration.base as base
 from podman import PodmanClient
 from podman.domain.images import Image
-from podman.errors import ImageNotFound, APIError
+from podman.errors import APIError, ImageNotFound
 
 
 # @unittest.skipIf(os.geteuid() != 0, 'Skipping, not running as root')
@@ -124,3 +129,7 @@ class ImagesIntegrationTest(base.IntegrationTest):
         image, stream = self.client.images.build(fileobj=buffer)
         self.assertIsNotNone(image)
         self.assertIsNotNone(image.id)
+
+    def test_pull_stream(self):
+        generator = self.client.images.pull("ubi8", tag="latest", stream=True)
+        self.assertIsInstance(generator, types.GeneratorType)

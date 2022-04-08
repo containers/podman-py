@@ -115,7 +115,7 @@ class PodmanClient(AbstractContextManager):
             Client used to communicate with a Podman service.
         """
         environment = environment or os.environ
-        credstore_env = credstore_env or dict()
+        credstore_env = credstore_env or {}
 
         if version == "auto":
             version = None

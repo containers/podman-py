@@ -49,7 +49,9 @@ class PodmanConfigTestCase(unittest.TestCase):
             self.assertEqual(config.active_service.url, expected)
             self.assertEqual(config.services["production"].identity, Path("/home/root/.ssh/id_rsa"))
 
-            PodmanConfigTestCase.opener.assert_called_with(Path("/home/developer/containers.conf"))
+            PodmanConfigTestCase.opener.assert_called_with(
+                Path("/home/developer/containers.conf"), encoding='utf-8'
+            )
 
 
 if __name__ == '__main__':

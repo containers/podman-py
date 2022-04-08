@@ -60,9 +60,9 @@ class PodmanConfig:
         else:
             self.path = Path(path)
 
-        self.attrs = dict()
+        self.attrs = {}
         if self.path.exists():
-            with self.path.open() as file:
+            with self.path.open(encoding='utf-8') as file:
                 buffer = file.read()
             self.attrs = toml.loads(buffer)
 
@@ -88,7 +88,7 @@ class PodmanConfig:
             address = podman_config.services["testing"]
             print(f"Testing service address {address}")
         """
-        services: Dict[str, ServiceConnection] = dict()
+        services: Dict[str, ServiceConnection] = {}
 
         engine = self.attrs.get("engine")
         if engine:

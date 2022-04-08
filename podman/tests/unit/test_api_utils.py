@@ -49,23 +49,23 @@ class TestUtilsCase(unittest.TestCase):
     @patch.object(pathlib.Path, "exists", return_value=True)
     def test_containerignore_read(self, patch_exists):
         data = r"""# unittest
-        
+
         #Ignore the logs directory
         logs/
-        
+
         #Ignoring the password file
         passwords.txt
-        
+
         #Ignoring git and cache folders
         .git
         .cache
-        
+
         #Ignoring all the markdown and class files
         *.md
         **/*.class
         """
 
-        with mock.patch("io.open", mock_open(read_data=data)):
+        with mock.patch("pathlib.Path.open", mock_open(read_data=data)):
             actual = api.prepare_containerignore(".")
 
         self.assertListEqual(
@@ -79,20 +79,25 @@ class TestUtilsCase(unittest.TestCase):
         """
 
         patch_exists.return_value = True
-        with mock.patch("io.open", mock_open(read_data=data)):
+        with mock.patch("pathlib.Path.open", mock_open(read_data=data)):
             actual = api.prepare_containerignore(".")
 
         self.assertListEqual(actual, [])
         patch_exists.assert_called_once_with()
 
-    @mock.patch("pathlib.Path", autospec=True)
-    def test_containerfile(self, mock_path):
-        mock_parent = mock_path.parent.return_value = Mock()
+    @mock.patch("pathlib.Path.parent", autospec=True)
+    def test_containerfile_1(self, mock_parent):
         mock_parent.samefile.return_value = True
-
         actual = api.prepare_containerfile("/work", "/work/Dockerfile")
-        self.assertEqual(actual, "/work/Dockerfile")
-        mock_path.assert_called()
+        self.assertEqual(actual, "Dockerfile")
+        mock_parent.samefile.assert_called()
+
+    @mock.patch("pathlib.Path.parent", autospec=True)
+    def test_containerfile_2(self, mock_parent):
+        mock_parent.samefile.return_value = True
+        actual = api.prepare_containerfile(".", "Dockerfile")
+        self.assertEqual(actual, "Dockerfile")
+        mock_parent.samefile.assert_called()
 
     @mock.patch("shutil.copy2")
     def test_containerfile_copy(self, mock_copy):

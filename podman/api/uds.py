@@ -7,14 +7,14 @@ import socket
 from typing import Optional, Union
 from urllib.parse import unquote, urlparse
 
-from requests.adapters import DEFAULT_POOLBLOCK, DEFAULT_POOLSIZE, DEFAULT_RETRIES, HTTPAdapter
-
-from ..errors import APIError
-
 try:
     import urllib3
 except ImportError:
-    import requests.packages.urllib3 as urllib3
+    from requests.packages import urllib3
+
+from requests.adapters import DEFAULT_POOLBLOCK, DEFAULT_POOLSIZE, DEFAULT_RETRIES, HTTPAdapter
+
+from ..errors import APIError
 
 from .adapter_utils import _key_normalizer
 

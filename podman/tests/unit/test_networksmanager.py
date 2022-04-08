@@ -3,7 +3,6 @@ import unittest
 import requests_mock
 
 from podman import PodmanClient, tests
-from podman.domain.ipam import IPAMConfig, IPAMPool
 from podman.domain.networks import Network
 from podman.domain.networks_manager import NetworksManager
 
@@ -51,53 +50,53 @@ SECOND_NETWORK = {
     "Labels": {},
 }
 
-FIRST_NETWORK_LIBPOD = [
-    {
-        "cniVersion": "0.4.0",
-        "name": "podman",
-        "plugins": [
-            {
-                "bridge": "cni-podman0",
-                "hairpinMode": True,
-                "ipMasq": True,
-                "ipam": {
-                    "ranges": [[{"gateway": "10.88.0.1", "subnet": "10.88.0.0/16"}]],
-                    "routes": [{"dst": "0.0.0.0/0"}],
-                    "type": "host-local",
-                },
-                "isGateway": True,
-                "type": "bridge",
+FIRST_NETWORK_LIBPOD = {
+    "name": "podman",
+    "id": "2f259bab93aaaaa2542ba43ef33eb990d0999ee1b9924b557b7be53c0b7a1bb9",
+    "driver": "bridge",
+    "network_interface": "libpod_veth0",
+    "created": "2022-01-28T09:18:37.491308364-07:00",
+    "subnets": [
+        {
+            "subnet": "10.11.12.0/24",
+            "gateway": "10.11.12.1",
+            "lease_range": {
+                "start_ip": "10.11.12.1",
+                "end_ip": "10.11.12.63",
             },
-            {"capabilities": {"portMappings": True}, "type": "portmap"},
-            {"type": "firewall"},
-            {"type": "tuning"},
-        ],
-    }
-]
+        }
+    ],
+    "ipv6_enabled": False,
+    "internal": False,
+    "dns_enabled": False,
+    "labels": {},
+    "options": {},
+    "ipam_options": {},
+}
 
-SECOND_NETWORK_LIBPOD = [
-    {
-        "cniVersion": "0.4.0",
-        "name": "database",
-        "plugins": [
-            {
-                "bridge": "cni-podman0",
-                "hairpinMode": True,
-                "ipMasq": True,
-                "ipam": {
-                    "ranges": [[{"gateway": "10.88.0.1", "subnet": "10.88.0.0/16"}]],
-                    "routes": [{"dst": "0.0.0.0/0"}],
-                    "type": "host-local",
-                },
-                "isGateway": True,
-                "type": "bridge",
+SECOND_NETWORK_LIBPOD = {
+    "name": "database",
+    "id": "3549b0028b75d981cdda2e573e9cb49dedc200185876df299f912b79f69dabd8",
+    "created": "2021-03-01T09:18:37.491308364-07:00",
+    "driver": "bridge",
+    "network_interface": "libpod_veth1",
+    "subnets": [
+        {
+            "subnet": "10.11.12.0/24",
+            "gateway": "10.11.12.1",
+            "lease_range": {
+                "start_ip": "10.11.12.1",
+                "end_ip": "10.11.12.63",
             },
-            {"capabilities": {"portMappings": True}, "type": "portmap"},
-            {"type": "firewall"},
-            {"type": "tuning"},
-        ],
-    }
-]
+        }
+    ],
+    "ipv6_enabled": False,
+    "internal": False,
+    "dns_enabled": False,
+    "labels": {},
+    "options": {},
+    "ipam_options": {},
+}
 
 
 class NetworksManagerTestCase(unittest.TestCase):
@@ -112,11 +111,7 @@ class NetworksManagerTestCase(unittest.TestCase):
         super().setUp()
 
         self.client = PodmanClient(base_url=tests.BASE_SOCK)
-
-    def tearDown(self) -> None:
-        super().tearDown()
-
-        self.client.close()
+        self.addCleanup(self.client.close)
 
     def test_podmanclient(self):
         manager = self.client.networks
@@ -124,10 +119,7 @@ class NetworksManagerTestCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_get(self, mock):
-        mock.get(
-            tests.COMPATIBLE_URL + "/networks/podman",
-            json=FIRST_NETWORK,
-        )
+        mock.get(tests.LIBPOD_URL + "/networks/podman", json=FIRST_NETWORK)
 
         actual = self.client.networks.get("podman")
         self.assertIsInstance(actual, Network)
@@ -136,46 +128,13 @@ class NetworksManagerTestCase(unittest.TestCase):
         )
 
     @requests_mock.Mocker()
-    def test_get_libpod(self, mock):
-        mock.get(
-            tests.LIBPOD_URL + "/networks/podman/json",
-            json=FIRST_NETWORK_LIBPOD,
-        )
-
-        actual = self.client.networks.get("podman", compatible=False)
-        self.assertIsInstance(actual, Network)
-        self.assertEqual(actual.attrs["name"], "podman")
-
-    @requests_mock.Mocker()
-    def test_list(self, mock):
-        mock.get(
-            tests.COMPATIBLE_URL + "/networks",
-            json=[FIRST_NETWORK, SECOND_NETWORK],
-        )
-
-        actual = self.client.networks.list()
-        self.assertEqual(len(actual), 2)
-
-        self.assertIsInstance(actual[0], Network)
-        self.assertEqual(
-            actual[0].id, "2f259bab93aaaaa2542ba43ef33eb990d0999ee1b9924b557b7be53c0b7a1bb9"
-        )
-        self.assertEqual(actual[0].attrs["Name"], "podman")
-
-        self.assertIsInstance(actual[1], Network)
-        self.assertEqual(
-            actual[1].id, "3549b0028b75d981cdda2e573e9cb49dedc200185876df299f912b79f69dabd8"
-        )
-        self.assertEqual(actual[1].name, "database")
-
-    @requests_mock.Mocker()
     def test_list_libpod(self, mock):
         mock.get(
             tests.LIBPOD_URL + "/networks/json",
-            json=FIRST_NETWORK_LIBPOD + SECOND_NETWORK_LIBPOD,
+            json=[FIRST_NETWORK_LIBPOD, SECOND_NETWORK_LIBPOD],
         )
 
-        actual = self.client.networks.list(compatible=False)
+        actual = self.client.networks.list()
         self.assertEqual(len(actual), 2)
 
         self.assertIsInstance(actual[0], Network)
@@ -191,67 +150,32 @@ class NetworksManagerTestCase(unittest.TestCase):
         self.assertEqual(actual[1].name, "database")
 
     @requests_mock.Mocker()
-    def test_create(self, mock):
-        adapter = mock.post(
-            tests.LIBPOD_URL + "/networks/create?name=podman",
-            json={
-                "Filename": "/home/developer/.config/cni/net.d/podman.conflist",
-            },
-        )
-        mock.get(
-            tests.COMPATIBLE_URL + "/networks/podman",
-            json=FIRST_NETWORK,
-        )
+    def test_create_libpod(self, mock):
+        adapter = mock.post(tests.LIBPOD_URL + "/networks/create", json=FIRST_NETWORK_LIBPOD)
 
-        pool = IPAMPool(subnet="172.16.0.0/12", iprange="172.16.0.0/16", gateway="172.31.255.254")
-        ipam = IPAMConfig(pool_configs=[pool])
-
-        network = self.client.networks.create(
-            "podman", disabled_dns=True, enable_ipv6=False, ipam=ipam
-        )
+        network = self.client.networks.create("podman", dns_enabled=True, enable_ipv6=True)
         self.assertIsInstance(network, Network)
 
         self.assertEqual(adapter.call_count, 1)
         self.assertDictEqual(
             adapter.last_request.json(),
             {
-                'DisabledDNS': True,
-                'Gateway': '172.31.255.254',
-                'IPv6': False,
-                'Range': {'IP': '172.16.0.0', 'Mask': "//8AAA=="},
-                'Subnet': {'IP': '172.16.0.0', 'Mask': "//AAAA=="},
+                "name": "podman",
+                "ipv6_enabled": True,
+                "dns_enabled": True,
             },
         )
-
-        self.assertEqual(network.name, "podman")
 
     @requests_mock.Mocker()
     def test_create_defaults(self, mock):
-        adapter = mock.post(
-            tests.LIBPOD_URL + "/networks/create?name=podman",
-            json={
-                "Filename": "/home/developer/.config/cni/net.d/podman.conflist",
-            },
-        )
-        mock.get(
-            tests.COMPATIBLE_URL + "/networks/podman",
-            json=FIRST_NETWORK,
-        )
+        adapter = mock.post(tests.LIBPOD_URL + "/networks/create", json=FIRST_NETWORK_LIBPOD)
 
         network = self.client.networks.create("podman")
         self.assertEqual(adapter.call_count, 1)
-        self.assertEqual(network.name, "podman")
-        self.assertEqual(len(adapter.last_request.json()), 0)
-
-    @requests_mock.Mocker()
-    def test_prune(self, mock):
-        mock.post(
-            tests.COMPATIBLE_URL + "/networks/prune",
-            json={"NetworksDeleted": ["podman", "database"]},
+        self.assertDictEqual(
+            adapter.last_request.json(),
+            {"name": "podman"},
         )
-
-        actual = self.client.networks.prune()
-        self.assertListEqual(actual["NetworksDeleted"], ["podman", "database"])
 
     @requests_mock.Mocker()
     def test_prune_libpod(self, mock):
@@ -263,7 +187,7 @@ class NetworksManagerTestCase(unittest.TestCase):
             ],
         )
 
-        actual = self.client.networks.prune(compatible=False)
+        actual = self.client.networks.prune()
         self.assertListEqual(actual["NetworksDeleted"], ["podman", "database"])
 
 

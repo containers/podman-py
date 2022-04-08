@@ -1,6 +1,6 @@
 """Model and Manager for Pod resources."""
 import logging
-from typing import Any, Dict, Tuple, Union, Optional
+from typing import Any, Dict, Optional, Tuple, Union
 
 from podman.domain.manager import PodmanResource
 
@@ -104,6 +104,8 @@ class Pod(PodmanResource):
         response = self.client.get(f"/pods/{self.id}/top", params=params)
         response.raise_for_status()
 
+        if len(response.text) == 0:
+            return {"Processes": [], "Titles": []}
         return response.json()
 
     def unpause(self) -> None:

@@ -20,7 +20,7 @@ class Image(PodmanResource):
         """dict[str, str]: Return labels associated with Image."""
         image_labels = self.attrs.get("Labels")
         if image_labels is None or len(image_labels) == 0:
-            return dict()
+            return {}
 
         return image_labels
 
@@ -29,7 +29,7 @@ class Image(PodmanResource):
         """list[str]: Return tags from Image."""
         repo_tags = self.attrs.get("RepoTags")
         if repo_tags is None or len(repo_tags) == 0:
-            return list()
+            return []
 
         return [tag for tag in repo_tags if tag != "<none>:<none>"]
 

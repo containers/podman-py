@@ -2,7 +2,13 @@ import io
 import random
 import tarfile
 import unittest
-from collections import Iterator
+
+try:
+    # Python >= 3.10
+    from collections.abc import Iterator
+except:
+    # Python < 3.10
+    from collections import Iterator
 
 import podman.tests.integration.base as base
 from podman import PodmanClient
@@ -99,9 +105,7 @@ class ContainersIntegrationTest(base.IntegrationTest):
             self.assertIsInstance(logs_iter, Iterator)
 
             logs = list(logs_iter)
-            self.assertIn(random_string.encode("utf-8"), logs)
-            # podman 4.0 API support...
-            # self.assertIn((random_string + "\n").encode("utf-8"), logs)
+            self.assertIn((random_string + "\n").encode("utf-8"), logs)
 
         with self.subTest("Delete Container"):
             container.remove()
@@ -141,6 +145,17 @@ class ContainersIntegrationTest(base.IntegrationTest):
 
             with self.assertRaises(NotFound):
                 self.client.containers.get(top_ctnr.id)
+
+    def test_container_commit(self):
+        """Commit new image."""
+        busybox = self.client.images.pull("quay.io/libpod/busybox", tag="latest")
+        container = self.client.containers.create(
+            busybox, command=["echo", f"{random.getrandbits(160):x}"]
+        )
+
+        image = container.commit(repository="busybox.local", tag="unittest")
+        self.assertIn("localhost/busybox.local:unittest", image.attrs["RepoTags"])
+        busybox.remove(force=True)
 
 
 if __name__ == '__main__':

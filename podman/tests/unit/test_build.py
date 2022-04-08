@@ -1,7 +1,13 @@
 import io
 import json
 import unittest
-from collections import Iterable
+
+try:
+    # Python >= 3.10
+    from collections.abc import Iterable
+except:
+    # Python < 3.10
+    from collections import Iterable
 from unittest.mock import patch
 
 import requests_mock

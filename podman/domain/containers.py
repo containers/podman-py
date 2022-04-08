@@ -27,8 +27,7 @@ class Container(PodmanResource):
         with suppress(KeyError):
             if 'Name' in self.attrs:
                 return self.attrs["Name"].lstrip("/")
-            else:
-                return self.attrs["Names"][0].lstrip("/")
+            return self.attrs["Names"][0].lstrip("/")
         return None
 
     @property
@@ -45,7 +44,7 @@ class Container(PodmanResource):
         """dict[str, str]: Returns labels associated with container."""
         with suppress(KeyError):
             return self.attrs["Config"]["Labels"]
-        return dict()
+        return {}
 
     @property
     def status(self):
@@ -59,7 +58,7 @@ class Container(PodmanResource):
         """dict[str, int]: Return ports exposed by container."""
         with suppress(KeyError):
             return self.attrs["NetworkSettings"]["Ports"]
-        return dict()
+        return {}
 
     def attach(self, **kwargs) -> Union[str, Iterator[str]]:
         """Attach to container's tty.
@@ -93,7 +92,7 @@ class Container(PodmanResource):
         Keyword Args:
             author (str): Name of commit author
             changes (List[str]): Instructions to apply during commit
-            comment (List[str]): Instructions to apply while committing in Dockerfile format
+            comment (str): Commit message to include with Image, overrides keyword message
             conf (dict[str, Any]): Ignored.
             format (str): Format of the image manifest and metadata
             message (str): Commit message to include with Image
@@ -102,7 +101,7 @@ class Container(PodmanResource):
         params = {
             "author": kwargs.get("author"),
             "changes": kwargs.get("changes"),
-            "comment": kwargs.get("comment"),
+            "comment": kwargs.get("comment", kwargs.get("message")),
             "container": self.id,
             "format": kwargs.get("format"),
             "pause": kwargs.get("pause"),
@@ -113,7 +112,7 @@ class Container(PodmanResource):
         response.raise_for_status()
 
         body = response.json()
-        return ImagesManager(client=self.client).get(body["ID"])
+        return ImagesManager(client=self.client).get(body["Id"])
 
     def diff(self) -> List[Dict[str, int]]:
         """Report changes of a container's filesystem.
@@ -125,6 +124,7 @@ class Container(PodmanResource):
         response.raise_for_status()
         return response.json()
 
+    # pylint: disable=too-many-arguments,unused-argument
     def exec_run(
         self,
         cmd: Union[str, List[str]],
@@ -140,9 +140,7 @@ class Container(PodmanResource):
         environment: Union[Mapping[str, str], List[str]] = None,
         workdir: str = None,
         demux: bool = False,
-    ) -> Tuple[
-        Optional[int], Union[Iterator[bytes], Any, Tuple[bytes, bytes]]
-    ]:  # pylint: disable=too-many-arguments,unused-argument
+    ) -> Tuple[Optional[int], Union[Iterator[bytes], Any, Tuple[bytes, bytes]]]:
         """Run given command inside container and return results.
 
         Args:
@@ -251,6 +249,7 @@ class Container(PodmanResource):
             until (Union[datetime, int]): Show logs that occurred before the given
                 datetime or integer epoch (in seconds)
         """
+        stream = bool(kwargs.get("stream", False))
         params = {
             "follow": kwargs.get("follow", kwargs.get("stream", None)),
             "since": api.prepare_timestamp(kwargs.get("since")),
@@ -261,10 +260,10 @@ class Container(PodmanResource):
             "until": api.prepare_timestamp(kwargs.get("until")),
         }
 
-        response = self.client.get(f"/containers/{self.id}/logs", params=params)
+        response = self.client.get(f"/containers/{self.id}/logs", stream=stream, params=params)
         response.raise_for_status()
 
-        if bool(kwargs.get("stream", False)):
+        if stream:
             return api.stream_frames(response)
         return api.frames(response)
 
@@ -345,7 +344,7 @@ class Container(PodmanResource):
             timeout (int): Seconds to wait for container to stop before killing container.
         """
         params = {"timeout": kwargs.get("timeout")}
-        post_kwargs = dict()
+        post_kwargs = {}
         if kwargs.get("timeout"):
             post_kwargs["timeout"] = float(params["timeout"]) * 1.5
 
@@ -415,7 +414,7 @@ class Container(PodmanResource):
         """
         params = {"all": kwargs.get("all"), "timeout": kwargs.get("timeout")}
 
-        post_kwargs = dict()
+        post_kwargs = {}
         if kwargs.get("timeout"):
             post_kwargs["timeout"] = float(params["timeout"]) * 1.5
 

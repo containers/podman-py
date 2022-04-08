@@ -16,12 +16,13 @@ from typing import Optional, Union
 
 import time
 import xdg.BaseDirectory
-from requests.adapters import DEFAULT_POOLBLOCK, DEFAULT_RETRIES, HTTPAdapter
 
 try:
     import urllib3
 except ImportError:
-    import requests.packages.urllib3 as urllib3
+    from requests.packages import urllib3
+
+from requests.adapters import DEFAULT_POOLBLOCK, DEFAULT_RETRIES, HTTPAdapter
 
 from .adapter_utils import _key_normalizer
 
@@ -74,7 +75,7 @@ class SSHSocket(socket.socket):
             command += ["-i", str(path)]
 
         command += [f"ssh://{uri.netloc}"]
-        self._proc = subprocess.Popen(
+        self._proc = subprocess.Popen(  # pylint: disable=consider-using-with
             command,
             shell=False,
             stdout=subprocess.PIPE,

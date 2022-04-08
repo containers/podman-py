@@ -1,18 +1,10 @@
-import setuptools
-
 import fnmatch
+
+import setuptools
 from setuptools import find_packages
 from setuptools.command.build_py import build_py as build_py_orig
 
 excluded = [
-    "podman/api_connection.py",
-    "podman/containers/*",
-    "podman/images/*",
-    "podman/manifests/*",
-    "podman/networks/*",
-    "podman/pods/*",
-    "podman/system/*",
-    "podman/system/*",
     "podman/tests/*",
 ]
 

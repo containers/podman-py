@@ -77,7 +77,7 @@ class VolumesManager(Manager):
         return response.ok
 
     # pylint is flagging 'volume_id' here vs. 'key' parameter in super.get()
-    def get(self, volume_id: str) -> Volume:  # pylint: disable=arguments-differ
+    def get(self, volume_id: str) -> Volume:  # pylint: disable=arguments-differ,arguments-renamed
         """Returns and volume by name or id.
 
         Args:
@@ -125,7 +125,7 @@ class VolumesManager(Manager):
         data = response.json()
         response.raise_for_status()
 
-        volumes: List[str] = list()
+        volumes: List[str] = []
         space_reclaimed = 0
         for item in data:
             if "Err" in item:

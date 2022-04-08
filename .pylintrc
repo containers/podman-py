@@ -11,7 +11,9 @@ ignore=CVS,docs
 
 # Add files or directories matching the regex patterns to the blacklist. The
 # regex matches against base names, not paths.
-ignore-patterns=test_.*
+# ignore-patterns=test_.*
+
+ignore-paths=^podman/tests/.*$
 
 # Python code to execute, usually for sys.path manipulation such as
 # pygtk.require().
@@ -142,7 +144,10 @@ disable=print-statement,
         comprehension-escape,
         no-self-use,
         no-member, # PyCQA/pylint#3157
-        too-many-public-methods # tests can have many members
+        too-many-public-methods, # tests can have many members
+        fixme, # don't warn on fixme stuff
+        duplicate-code, # current CI version doesn't honor the minimum for some reason
+        bad-option-value # needed until pylint version is increased to a version with it
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -378,6 +383,7 @@ function-naming-style=snake_case
 good-names=c,
            e,
            i,
+           ip,
            j,
            k,
            r,
@@ -444,7 +450,7 @@ ignore-docstrings=yes
 ignore-imports=no
 
 # Minimum lines number of a similarity.
-min-similarity-lines=4
+min-similarity-lines=10
 
 
 [VARIABLES]

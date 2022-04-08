@@ -20,11 +20,11 @@ def prepare_containerignore(anchor: str) -> List[str]:
         if not ignore.exists():
             continue
 
-        with ignore.open() as file:
+        with ignore.open(encoding='utf-8') as file:
             return list(
                 filter(
-                    lambda l: len(l) > 0 and not l.startswith("#"),
-                    list(line.strip() for line in file.readlines()),
+                    lambda l: l and not l.startswith("#"),
+                    (line.strip() for line in file.readlines()),
                 )
             )
     return []
@@ -44,7 +44,7 @@ def prepare_containerfile(anchor: str, dockerfile: str) -> str:
     dockerfile_path = pathlib.Path(dockerfile)
 
     if dockerfile_path.parent.samefile(anchor_path):
-        return dockerfile
+        return dockerfile_path.name
 
     proxy_path = anchor_path / f".containerfile.{random.getrandbits(160):x}"
     shutil.copy2(dockerfile_path, proxy_path, follow_symlinks=False)
@@ -84,7 +84,7 @@ def create_tar(
             return None
 
         # Workaround https://bugs.python.org/issue32713. Fixed in Python 3.7
-        if info.mtime < 0 or info.mtime > 8 ** 11 - 1:
+        if info.mtime < 0 or info.mtime > 8**11 - 1:
             info.mtime = int(info.mtime)
 
         # do not leak client information to service
@@ -97,12 +97,13 @@ def create_tar(
         return info
 
     if name is None:
+        # pylint: disable=consider-using-with
         name = tempfile.NamedTemporaryFile(prefix="podman_context", suffix=".tar")
     else:
         name = pathlib.Path(name)
 
     if exclude is None:
-        exclude = list()
+        exclude = []
     else:
         exclude = exclude.copy()
 
@@ -114,7 +115,7 @@ def create_tar(
     with tarfile.open(name.name, mode) as tar:
         tar.add(anchor, arcname="", recursive=True, filter=add_filter)
 
-    return open(name.name, "rb")
+    return open(name.name, "rb")  # pylint: disable=consider-using-with
 
 
 def _exclude_matcher(path: str, exclude: List[str]) -> bool:
@@ -123,7 +124,7 @@ def _exclude_matcher(path: str, exclude: List[str]) -> bool:
     Note:
         FIXME Not compatible, support !, **, etc
     """
-    if len(exclude) == 0:
+    if not exclude:
         return False
 
     for pattern in exclude:

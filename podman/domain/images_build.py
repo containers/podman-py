@@ -36,7 +36,7 @@ class BuildMixin:
             encoding (str) – The encoding for a stream. Set to gzip for compressing (ignored)
             pull (bool) – Downloads any updates to the FROM image in Dockerfile
             forcerm (bool) – Always remove intermediate containers, even after unsuccessful builds
-            dockerfile (str) – path within the build context to the Dockerfile
+            dockerfile (str) – full path to the Dockerfile / Containerfile
             buildargs (Mapping[str,str) – A dictionary of build arguments
             container_limits (Dict[str, Union[int,str]]) –
                 A dictionary of limits applied to each container created by the build process.
@@ -78,22 +78,23 @@ class BuildMixin:
         body = None
         path = None
         if "fileobj" in kwargs:
-            path = tempfile.TemporaryDirectory()
+            path = tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
             filename = pathlib.Path(path.name) / params["dockerfile"]
 
-            with open(filename, "w") as file:
+            with open(filename, "w", encoding='utf-8') as file:
                 shutil.copyfileobj(kwargs["fileobj"], file)
             body = api.create_tar(anchor=path.name, gzip=kwargs.get("gzip", False))
         elif "path" in kwargs:
+            filename = pathlib.Path(kwargs["path"]) / params["dockerfile"]
             # The Dockerfile will be copied into the context_dir if needed
-            params["dockerfile"] = api.prepare_containerfile(kwargs["path"], params["dockerfile"])
+            params["dockerfile"] = api.prepare_containerfile(kwargs["path"], str(filename))
 
             excludes = api.prepare_containerignore(kwargs["path"])
             body = api.create_tar(
                 anchor=kwargs["path"], exclude=excludes, gzip=kwargs.get("gzip", False)
             )
 
-        post_kwargs = dict()
+        post_kwargs = {}
         if kwargs.get("timeout"):
             post_kwargs["timeout"] = float(kwargs.get("timeout"))
 
