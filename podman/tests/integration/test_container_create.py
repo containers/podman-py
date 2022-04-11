@@ -1,8 +1,9 @@
 import unittest
 
+import re
+
 import podman.tests.integration.base as base
 from podman import PodmanClient
-
 
 # @unittest.skipIf(os.geteuid() != 0, 'Skipping, not running as root')
 
@@ -84,6 +85,55 @@ class ContainersIntegrationTest(base.IntegrationTest):
     def test_container_shm_size(self):
         """Test passing shared memory size"""
         self._test_memory_limit('shm_size', 'ShmSize')
+
+    def test_container_mounts(self):
+        """Test passing mounts"""
+        with self.subTest("Check bind mount"):
+            mount = {
+                "type": "bind",
+                "source": "/etc/hosts",
+                "target": "/test",
+                "read_only": True,
+                "relabel": "Z",
+            }
+            container = self.client.containers.create(
+                self.alpine_image, command=["cat", "/test"], mounts=[mount]
+            )
+            self.containers.append(container)
+            self.assertIn(
+                f"{mount['source']}:{mount['target']}:ro,Z,rprivate,rbind",
+                container.attrs.get('HostConfig', {}).get('Binds', list()),
+            )
+
+            # check if container can be started and exits with EC == 0
+            container.start()
+            container.wait()
+
+            self.assertEqual(container.attrs.get('State', dict()).get('ExitCode', 256), 0)
+
+        with self.subTest("Check tmpfs mount"):
+            mount = {"type": "tmpfs", "source": "tmpfs", "target": "/test", "size": "456k"}
+            container = self.client.containers.create(
+                self.alpine_image, command=["df", "-h"], mounts=[mount]
+            )
+            self.containers.append(container)
+            self.assertEqual(
+                container.attrs.get('HostConfig', {}).get('Tmpfs', {}).get(mount['target']),
+                f"size={mount['size']},rw,rprivate,nosuid,nodev,tmpcopyup",
+            )
+
+            container.start()
+            container.wait()
+
+            logs = b"\n".join(container.logs()).decode()
+
+            self.assertTrue(
+                re.search(
+                    rf"{mount['size'].replace('k', '.0K')}.*?{mount['target']}",
+                    logs,
+                    flags=re.MULTILINE,
+                )
+            )
 
 
 if __name__ == '__main__':

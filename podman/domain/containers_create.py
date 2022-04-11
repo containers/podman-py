@@ -101,6 +101,27 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             mounts (List[Mount]): Specification for mounts to be added to the container. More
                 powerful alternative to volumes. Each item in the list is expected to be a
                 Mount object.
+                For example :
+                 [
+                    {
+                        "type": "bind",
+                        "source": "/a/b/c1",
+                        "target" "/d1",
+                        "read_only": True,
+                        "relabel": "Z"
+                    },
+                    {
+                        "type": "tmpfs",
+                        "source": "tmpfs", # If this was not passed, the regular directory
+                                           # would be created rather than tmpfs mount !!!
+                                           # as this will cause to have invalid entry
+                                           # in /proc/self/mountinfo
+                        "target" "/d2",
+                        "size": "100k",
+                        "chown": True
+                    }
+                ]
+
             name (str): The name for this container.
             nano_cpus (int):  CPU quota in units of 1e-9 CPUs.
             networks (Dict[str, Dict[str, Union[str, List[str]]):
@@ -425,17 +446,24 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 "type": item.get("type"),
             }
 
+            # some names are different for podman-py vs REST API due to compatibility with docker
+            # some (e.g. chown) despite listed in podman-run documentation fails with error
+            names_dict = {"read_only": "ro", "chown": "U"}
+
             options = []
-            if "read_only" in item:
-                options.append("ro")
-            if "consistency" in item:
-                options.append(f"consistency={item['consistency']}")
-            if "mode" in item:
-                options.append(f"mode={item['mode']}")
-            if "propagation" in item:
-                options.append(item["propagation"])
-            if "size" in item:
-                options.append(f"size={item['size']}")
+            simple_options = ["propagation", "relabel"]
+            bool_options = ["read_only", "U", "chown"]
+            regular_options = ["consistency", "mode", "size"]
+
+            for k, v in item.items():
+                option_name = names_dict.get(k, k)
+                if k in bool_options and v is True:
+                    options.append(option_name)
+                elif k in regular_options:
+                    options.append(f'{option_name}={v}')
+                elif k in simple_options:
+                    options.append(v)
+
             mount_point["options"] = options
 
             params["mounts"].append(mount_point)
