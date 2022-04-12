@@ -280,6 +280,15 @@ class ImagesManager(BuildMixin, Manager):
             else:
                 tag = "latest"
 
+        auth_config: Optional[Dict[str, str]] = kwargs.get("auth_config")
+
+        headers = {
+            # A base64url-encoded auth configuration
+            "X-Registry-Auth": encode_auth_header(auth_config)
+            if auth_config
+            else ""
+        }
+
         params = {
             "reference": repository,
             "tlsVerify": kwargs.get("tls_verify"),
@@ -301,15 +310,8 @@ class ImagesManager(BuildMixin, Manager):
             if len(tokens) > 2:
                 params["Variant"] = tokens[2]
 
-        if "auth_config" in kwargs:
-            username = kwargs["auth_config"].get("username")
-            password = kwargs["auth_config"].get("password")
-            if username is None or password is None:
-                raise ValueError("'auth_config' requires keys 'username' and 'password'")
-            params["credentials"] = f"{username}:{password}"
-
         stream = kwargs.get("stream", False)
-        response = self.client.post("/images/pull", params=params, stream=stream)
+        response = self.client.post("/images/pull", params=params, stream=stream, headers=headers)
         response.raise_for_status(not_found=ImageNotFound)
 
         if stream:
