@@ -208,7 +208,8 @@ class ImagesManager(BuildMixin, Manager):
             "tlsVerify": kwargs.get("tlsVerify"),
         }
 
-        name = urllib.parse.quote_plus(repository)
+        name = f'{repository}:{tag}' if tag else repository
+        name = urllib.parse.quote_plus(name)
         response = self.client.post(f"/images/{name}/push", params=params, headers=headers)
         response.raise_for_status(not_found=ImageNotFound)
 
