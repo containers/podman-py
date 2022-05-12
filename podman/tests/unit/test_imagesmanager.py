@@ -417,7 +417,7 @@ class ImagesManagerTestCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_push(self, mock):
-        mock.post(tests.LIBPOD_URL + "/images/quay.io%2ffedora/push")
+        mock.post(tests.LIBPOD_URL + "/images/quay.io%2Ffedora%3Alatest/push")
 
         report = self.client.images.push("quay.io/fedora", "latest")
 
