@@ -165,9 +165,9 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                     For example: {'2222/tcp': None}.
                 - A tuple of (address, port) if you want to specify the host interface.
                     For example: {'1111/tcp': ('127.0.0.1', 1111)}.
-                - A list of integers, if you want to bind multiple host ports to a single container
-                    port.
-                    For example: {'1111/tcp': [1234, 4567]}.
+                - A list of integers or tuples of (address, port), if you want to bind
+                  multiple host ports to a single container port.
+                    For example: {'1111/tcp': [1234, ("127.0.0.1", 4567)]}.
 
                     For example: {'9090': 7878, '10932/tcp': '8781',
                                   "8989/tcp": ("127.0.0.1", 9091)}
@@ -489,9 +489,21 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 port_map["host_ip"] = host[0]
                 port_map["host_port"] = int(host[1])
             elif isinstance(host, list):
-                raise ValueError(
-                    "Podman API does not support multiple port bound to a single host port."
-                )
+                for host_list in host:
+                    port_map = {"container_port": int(container_port), "protocol": protocol}
+                    if (
+                        isinstance(host_list, int)
+                        or isinstance(host_list, str)
+                        and host_list.isdigit()
+                    ):
+                        port_map["host_port"] = int(host_list)
+                    elif isinstance(host_list, tuple):
+                        port_map["host_ip"] = host_list[0]
+                        port_map["host_port"] = int(host_list[1])
+                    else:
+                        raise ValueError(f"'ports' value  of '{host_list}' is not supported.")
+                    params["portmappings"].append(port_map)
+                continue
             else:
                 raise ValueError(f"'ports' value  of '{host}' is not supported.")
 

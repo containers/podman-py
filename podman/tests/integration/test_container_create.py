@@ -70,6 +70,53 @@ class ContainersIntegrationTest(base.IntegrationTest):
                 test['expected_value'],
             )
 
+    def test_container_ports(self):
+        """Test ports binding"""
+        port_tests = {
+            '97/tcp': '43',
+            '2/udp': ('127.0.0.1', '939'),
+            '11123/tcp': [[('127.0.0.1', '11123'), ('127.0.0.1', '112')], ['1123', '159']],
+        }
+        for container_port, host_port in port_tests.items():
+            if isinstance(host_port, str) or isinstance(host_port, tuple):
+                self._test_container_ports(container_port, host_port)
+            else:
+                for port_option in host_port:
+                    self._test_container_ports(container_port, port_option)
+
+    def _test_container_ports(self, container_port, host_port):
+        """ "Base for tests to check port binding is configured correctly"""
+
+        def __get_expected_value(container_p, host_p):
+            """Generate the expected value based on the input"""
+            if isinstance(host_p, str):
+                return {container_p: [{'HostIp': '', 'HostPort': host_p}]}
+            elif isinstance(host_p, tuple):
+                return {container_p: [{'HostIp': host_p[0], 'HostPort': host_p[1]}]}
+            else:
+                host_ports = []
+                for host_port in host_p:
+                    if isinstance(host_port, tuple):
+                        host_ports.append({'HostIp': host_port[0], 'HostPort': host_port[1]})
+                    elif isinstance(host_port, str):
+                        host_ports.append({'HostIp': '', 'HostPort': host_port})
+                return {container_p: host_ports}
+
+        expected_value = __get_expected_value(container_port, host_port)
+        container = self.client.containers.create(
+            self.alpine_image, ports={container_port: host_port}
+        )
+        self.containers.append(container)
+
+        self.assertTrue(
+            all(
+                [
+                    x in expected_value
+                    for x in container.attrs.get('HostConfig', dict()).get('PortBindings')
+                ]
+            )
+        )
+
     def test_container_mem_limit(self):
         """Test passing memory limit"""
         self._test_memory_limit('mem_limit', 'Memory')
