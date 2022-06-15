@@ -59,7 +59,7 @@ Requires: python%{python3_pkgversion}-requests
 %else
 BuildRequires: pyproject-rpm-macros
 %endif
-%if 0%{?fedora} <= 35
+%if 0%{?fedora} <= 35 && ! 0%{?rhel}
 BuildRequires: python%{python3_pkgversion}-toml
 Requires: python%{python3_pkgversion}-toml
 %endif
