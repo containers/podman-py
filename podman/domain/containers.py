@@ -43,6 +43,8 @@ class Container(PodmanResource):
     def labels(self):
         """dict[str, str]: Returns labels associated with container."""
         with suppress(KeyError):
+            if "Labels" in self.attrs:
+                return self.attrs["Labels"]
             return self.attrs["Config"]["Labels"]
         return {}
 
