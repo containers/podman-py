@@ -71,7 +71,7 @@ class ContainersIntegrationTest(base.IntegrationTest):
             proper_container.start()
             proper_container.wait()
             logs = b"\n".join(proper_container.logs()).decode()
-            formatted_hosts = [f"{ip} {hosts}" for hosts, ip in extra_hosts.items()]
+            formatted_hosts = [f"{ip}\t{hosts}" for hosts, ip in extra_hosts.items()]
             for hosts_entry in formatted_hosts:
                 self.assertIn(hosts_entry, logs)
 
