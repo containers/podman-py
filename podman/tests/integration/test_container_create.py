@@ -24,6 +24,34 @@ class ContainersIntegrationTest(base.IntegrationTest):
         for container in self.containers:
             container.remove(force=True)
 
+    def test_container_volume_mount(self):
+        with self.subTest("Check volume mount"):
+            volumes = {
+                'test_bind_1': {'bind': '/mnt/vol1', 'mode': 'rw'},
+                'test_bind_2': {'bind': '/mnt/vol2', 'extended_mode': ['ro', 'noexec']},
+                'test_bind_3': {'bind': '/mnt/vol3', 'extended_mode': ['noexec'], 'mode': 'rw'},
+            }
+            container = self.client.containers.create(self.alpine_image, volumes=volumes)
+            container_mounts = container.attrs.get('Mounts', {})
+            self.assertEqual(len(container_mounts), len(volumes))
+
+            for mount in container_mounts:
+                name = mount.get('Name')
+                self.assertIn(name, volumes)
+                test_mount = volumes.get(name)
+                test_mode = test_mount.get('mode', '')
+                test_extended_mode = test_mount.get('extended_mode', [])
+                # check RO/RW
+                if 'ro' in test_mode or 'ro' in test_extended_mode:
+                    self.assertEqual(mount.get('RW'), False)
+
+                if 'rw' in test_mode or 'rw' in test_extended_mode:
+                    self.assertEqual(mount.get('RW'), True)
+
+                other_options = [o for o in test_extended_mode if o not in ['ro', 'rw']]
+                for o in other_options:
+                    self.assertIn(o, mount.get('Options'))
+
     def test_container_extra_hosts(self):
         """Test Container Extra hosts"""
         extra_hosts = {"host1 host3": "127.0.0.2", "host2": "127.0.0.3"}

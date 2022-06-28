@@ -215,17 +215,26 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             version (str): The version of the API to use. Set to auto to automatically detect
                 the server's version. Default: 3.0.0
             volume_driver (str): The name of a volume driver/plugin.
-            volumes (Dict[str, Dict[str, str]]): A dictionary to configure volumes mounted inside
-                the container. The key is either the host path or a volume name, and the value is
+            volumes (Dict[str, Dict[str, Union[str, list]]]): A dictionary to configure
+                volumes mounted inside the container.
+                The key is either the host path or a volume name, and the value is
                 a dictionary with the keys:
 
                 - bind: The path to mount the volume inside the container
                 - mode: Either rw to mount the volume read/write, or ro to mount it read-only.
+                        Kept for docker-py compatibility
+                - extended_mode: List of options passed to volume mount.
 
                 For example:
 
-                    {'/home/user1/': {'bind': '/mnt/vol2', 'mode': 'rw'},
-                     '/var/www': {'bind': '/mnt/vol1', 'mode': 'ro'}}
+                    {
+                        'test_bind_1':
+                            {'bind': '/mnt/vol1', 'mode': 'rw'},
+                        'test_bind_2':
+                            {'bind': '/mnt/vol2', 'extended_mode': ['ro', 'noexec']},
+                         'test_bind_3':
+                            {'bind': '/mnt/vol3', 'extended_mode': ['noexec'], 'mode': 'rw'}
+                    }
 
             volumes_from (List[str]): List of container names or IDs to get volumes from.
             working_dir (str): Path to the working directory.
@@ -548,11 +557,18 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
         for item in args.pop("volumes", {}).items():
             key, value = item
-            volume = {
-                "Name": key,
-                "Dest": value["bind"],
-                "Options": [value["mode"]] if "mode" in value else [],
-            }
+            extended_mode = value.get('extended_mode', [])
+            if not isinstance(extended_mode, list):
+                raise ValueError("'extended_mode' value should be a list")
+
+            options = extended_mode
+            mode = value.get('mode')
+            if mode is not None:
+                if not isinstance(mode, str):
+                    raise ValueError("'mode' value should be a str")
+                options.append(mode)
+
+            volume = {"Name": key, "Dest": value["bind"], "Options": options}
             params["volumes"].append(volume)
 
         if "cgroupns" in args:
