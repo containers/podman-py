@@ -478,8 +478,9 @@ class Container(PodmanResource):
         """Block until the container enters given state.
 
         Keyword Args:
-            condition (str): Container state on which to release, values:
-                not-running (default), next-exit or removed.
+            condition (Union[str, List[str]]): Container state on which to release.
+                One or more of: "configured", "created", "running", "stopped",
+                "paused", "exited", "removing", "stopping".
             timeout (int): Ignored.
 
         Returns:
