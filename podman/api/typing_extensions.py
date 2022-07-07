@@ -984,7 +984,6 @@ elif _geqv_defined:
         metaclass=_ExtensionsGenericMeta,
         extra=collections.defaultdict,
     ):
-
         __slots__ = ()
 
         def __new__(cls, *args, **kwds):
@@ -1000,7 +999,6 @@ else:
         metaclass=_ExtensionsGenericMeta,
         extra=collections.defaultdict,
     ):
-
         __slots__ = ()
 
         def __new__(cls, *args, **kwds):
@@ -1021,7 +1019,6 @@ elif _geqv_defined:
         metaclass=_ExtensionsGenericMeta,
         extra=collections.OrderedDict,
     ):
-
         __slots__ = ()
 
         def __new__(cls, *args, **kwds):
@@ -1037,7 +1034,6 @@ else:
         metaclass=_ExtensionsGenericMeta,
         extra=collections.OrderedDict,
     ):
-
         __slots__ = ()
 
         def __new__(cls, *args, **kwds):
@@ -1061,7 +1057,6 @@ elif (3, 5, 0) <= sys.version_info[:3] <= (3, 5, 1):
     class Counter(
         collections.Counter, typing.Dict[T, int], metaclass=_CounterMeta, extra=collections.Counter
     ):
-
         __slots__ = ()
 
         def __new__(cls, *args, **kwds):
@@ -1077,7 +1072,6 @@ elif _geqv_defined:
         metaclass=_ExtensionsGenericMeta,
         extra=collections.Counter,
     ):
-
         __slots__ = ()
 
         def __new__(cls, *args, **kwds):
@@ -1093,7 +1087,6 @@ else:
         metaclass=_ExtensionsGenericMeta,
         extra=collections.Counter,
     ):
-
         __slots__ = ()
 
         def __new__(cls, *args, **kwds):
@@ -1115,7 +1108,6 @@ elif hasattr(collections, 'ChainMap'):
             metaclass=_ExtensionsGenericMeta,
             extra=collections.ChainMap,
         ):
-
             __slots__ = ()
 
             def __new__(cls, *args, **kwds):
@@ -1131,7 +1123,6 @@ elif hasattr(collections, 'ChainMap'):
             metaclass=_ExtensionsGenericMeta,
             extra=collections.ChainMap,
         ):
-
             __slots__ = ()
 
             def __new__(cls, *args, **kwds):
@@ -2473,7 +2464,6 @@ else:
 if hasattr(typing, 'ParamSpec'):
     ParamSpec = typing.ParamSpec
 else:
-
     # Inherits from list as a workaround for Callable checks in Python < 3.9.2.
     class ParamSpec(list):
         """Parameter specification variable.
