@@ -65,9 +65,11 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             dns_search (List[str]): DNS search domains.
             domainname (Union[str, List[str]]): Set custom DNS search domains.
             entrypoint (Union[str, List[str]]): The entrypoint for the container.
-            environment (Union[Dict[str, str], List[str]): Environment variables to set inside
-                the container, as a dictionary or a List[str] in the format
-                ["SOMEVARIABLE=xxx", "SOMEOTHERVARIABLE=xyz"].
+            environment (Dict[str, str]): Environment variables to set inside
+                the container, as a dictionary.
+
+                For example: {"SOMEVARIABLE"="xxx", "SOMEOTHERVARIABLE"="xyz"}
+
             extra_hosts (Dict[str, str]): Additional hostnames to resolve inside the container,
                 as a mapping of hostname to IP address.
             group_add (List[str]): List of additional group names and/or IDs that the container
