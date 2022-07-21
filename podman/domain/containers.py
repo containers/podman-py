@@ -2,6 +2,7 @@
 import io
 import json
 import logging
+import shlex
 from contextlib import suppress
 from typing import Any, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Tuple, Union
 
@@ -133,7 +134,7 @@ class Container(PodmanResource):
         stdout: bool = True,
         stderr: bool = True,
         stdin: bool = False,
-        tty: bool = False,
+        tty: bool = True,
         privileged: bool = False,
         user=None,
         detach: bool = False,
@@ -165,16 +166,42 @@ class Container(PodmanResource):
             demux: Return stdout and stderr separately
 
         Returns:
-            TBD
+            First item is the command response code
+            Second item is the requests response content
 
         Raises:
             NotImplementedError: method not implemented.
             APIError: when service reports error
         """
-        if user is None:
-            user = "root"
-
-        raise NotImplementedError()
+        # pylint: disable-msg=too-many-locals
+        user = user or "root"
+        if isinstance(environment, dict):
+            environment = [f"{k}={v}" for k, v in environment.items()]
+        data = {
+            "AttachStderr": stderr,
+            "AttachStdin": stdin,
+            "AttachStdout": stdout,
+            "Cmd": cmd if isinstance(cmd, list) else shlex.split(cmd),
+            # "DetachKeys": detach,  # This is something else
+            "Env": environment,
+            "Privileged": privileged,
+            "Tty": tty,
+            "User": user,
+            "WorkingDir": workdir,
+        }
+        # create the exec instance
+        response = self.client.post(f"/containers/{self.name}/exec", data=json.dumps(data))
+        response.raise_for_status()
+        exec_id = response.json()['Id']
+        # start the exec instance, this will store command output
+        start_resp = self.client.post(
+            f"/exec/{exec_id}/start", data=json.dumps({"Detach": detach, "Tty": tty})
+        )
+        start_resp.raise_for_status()
+        # get and return exec information
+        response = self.client.get(f"/exec/{exec_id}/json")
+        response.raise_for_status()
+        return response.json().get('ExitCode'), start_resp.content
 
     def export(self, chunk_size: int = api.DEFAULT_CHUNK_SIZE) -> Iterator[bytes]:
         """Download container's filesystem contents as a tar archive.
