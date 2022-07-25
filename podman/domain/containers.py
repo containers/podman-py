@@ -419,7 +419,7 @@ class Container(PodmanResource):
 
         with io.StringIO() as buffer:
             for entry in response.text:
-                buffer.writer(json.dumps(entry) + "\n")
+                buffer.write(json.dumps(entry) + "\n")
             return buffer.getvalue()
 
     @staticmethod
