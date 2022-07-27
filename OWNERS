@@ -1,8 +1,10 @@
 approvers:
   - baude
+  - cdoern
   - edsantiago
   - giuseppe
   - jwhonce
+  - lsm5
   - Luap99
   - mheon
   - mwhahaha
@@ -13,9 +15,11 @@ approvers:
 reviewers:
   - ashley-cui
   - baude
+  - cdoern
   - edsantiago
   - giuseppe
   - jwhonce
+  - lsm5
   - Luap99
   - mheon
   - mwhahaha
