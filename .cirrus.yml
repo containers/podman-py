@@ -90,7 +90,7 @@ meta_task:
     name: "VM img. keepalive"
 
     container: &smallcontainer
-        image: "quay.io/libpod/imgts:$IMAGE_SUFFIX"
+        image: "quay.io/libpod/imgts:latest"
         cpu: 1
         memory: 1
 
