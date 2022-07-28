@@ -16,6 +16,7 @@
 
 import podman.tests.integration.base as base
 from podman import PodmanClient
+from podman.errors import APIError
 
 
 class SystemIntegrationTest(base.IntegrationTest):
@@ -44,3 +45,15 @@ class SystemIntegrationTest(base.IntegrationTest):
         self.assertTrue('Images' in output)
         self.assertTrue('Containers' in output)
         self.assertTrue('Volumes' in output)
+
+    def test_login(self):
+        """integration: system login call"""
+        # here, we just test the sanity of the endpoint
+        # confirming that we get through to podman, and get tcp rejected.
+        with self.assertRaises(APIError) as e:
+            next(
+                self.client.login(
+                    "fake_user", "fake_password", "fake_email@fake_domain.test", "fake_registry"
+                )
+            )
+        self.assertIn("lookup fake_registry: no such host", e.exception.explanation)
