@@ -984,7 +984,6 @@ elif _geqv_defined:
         metaclass=_ExtensionsGenericMeta,
         extra=collections.defaultdict,
     ):
-
         __slots__ = ()
 
         def __new__(cls, *args, **kwds):
@@ -1000,7 +999,6 @@ else:
         metaclass=_ExtensionsGenericMeta,
         extra=collections.defaultdict,
     ):
-
         __slots__ = ()
 
         def __new__(cls, *args, **kwds):
@@ -1021,7 +1019,6 @@ elif _geqv_defined:
         metaclass=_ExtensionsGenericMeta,
         extra=collections.OrderedDict,
     ):
-
         __slots__ = ()
 
         def __new__(cls, *args, **kwds):
@@ -1037,7 +1034,6 @@ else:
         metaclass=_ExtensionsGenericMeta,
         extra=collections.OrderedDict,
     ):
-
         __slots__ = ()
 
         def __new__(cls, *args, **kwds):
@@ -1544,7 +1540,6 @@ elif HAVE_PROTOCOLS and not PEP_560:
         Protocol.__doc__ = Protocol.__doc__.format(
             bases="Protocol, Generic[T]" if OLD_GENERICS else "Protocol[T]"
         )
-
 
 elif PEP_560:
     from typing import _type_check, _GenericAlias, _collect_type_vars  # noqa
