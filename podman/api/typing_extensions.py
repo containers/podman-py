@@ -1115,7 +1115,6 @@ elif hasattr(collections, 'ChainMap'):
             metaclass=_ExtensionsGenericMeta,
             extra=collections.ChainMap,
         ):
-
             __slots__ = ()
 
             def __new__(cls, *args, **kwds):
@@ -1131,7 +1130,6 @@ elif hasattr(collections, 'ChainMap'):
             metaclass=_ExtensionsGenericMeta,
             extra=collections.ChainMap,
         ):
-
             __slots__ = ()
 
             def __new__(cls, *args, **kwds):
@@ -2473,7 +2471,6 @@ else:
 if hasattr(typing, 'ParamSpec'):
     ParamSpec = typing.ParamSpec
 else:
-
     # Inherits from list as a workaround for Callable checks in Python < 3.9.2.
     class ParamSpec(list):
         """Parameter specification variable.
