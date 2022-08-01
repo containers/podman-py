@@ -1061,7 +1061,6 @@ elif (3, 5, 0) <= sys.version_info[:3] <= (3, 5, 1):
     class Counter(
         collections.Counter, typing.Dict[T, int], metaclass=_CounterMeta, extra=collections.Counter
     ):
-
         __slots__ = ()
 
         def __new__(cls, *args, **kwds):
@@ -1077,7 +1076,6 @@ elif _geqv_defined:
         metaclass=_ExtensionsGenericMeta,
         extra=collections.Counter,
     ):
-
         __slots__ = ()
 
         def __new__(cls, *args, **kwds):
@@ -1093,7 +1091,6 @@ else:
         metaclass=_ExtensionsGenericMeta,
         extra=collections.Counter,
     ):
-
         __slots__ = ()
 
         def __new__(cls, *args, **kwds):
