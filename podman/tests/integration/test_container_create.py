@@ -135,6 +135,24 @@ class ContainersIntegrationTest(base.IntegrationTest):
                 )
             )
 
+    def test_container_devices(self):
+        devices = ["/dev/null:/dev/foo", "/dev/zero:/dev/bar"]
+        container = self.client.containers.create(self.alpine_image, devices=devices)
+        self.containers.append(container)
+
+        container_devices = container.attrs.get('HostConfig', {}).get('Devices', [])
+        for device in devices:
+            path_on_host, path_in_container = device.split(':', 1)
+            self.assertTrue(
+                any(
+                    [
+                        c.get('PathOnHost') == path_on_host
+                        and c.get('PathInContainer') == path_in_container
+                        for c in container_devices
+                    ]
+                )
+            )
+
 
 if __name__ == '__main__':
     unittest.main()

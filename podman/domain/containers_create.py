@@ -2,7 +2,6 @@
 import copy
 import logging
 import re
-import warnings
 from contextlib import suppress
 from typing import Any, Dict, List, MutableMapping, Union
 
@@ -353,7 +352,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "command": args.pop("command", args.pop("cmd", None)),
             "conmon_pid_file": pop("conmon_pid_file"),  # TODO document, podman only
             "containerCreateCommand": pop("containerCreateCommand"),  # TODO document, podman only
-            "devices": list(),
+            "devices": [],
             "dns_options": pop("dns_opt"),
             "dns_search": pop("dns_search"),
             "dns_server": pop("dns"),
@@ -423,17 +422,8 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "work_dir": pop("working_dir"),
         }
 
-        # FIXME In addition to device Major/Minor include path
-        # this is temporary solution, allowing passing devices (without options)
-        devices = args.pop("devices", list())
-        if devices:
-            warnings.warn('Exposing devices is under construction. No path in container nor cgroup permissions are supported. Device is exposed in unchanged form.', FutureWarning)
-            for device in devices:
-                params["devices"].append(
-                    {
-                        "path": device.split(":")[0]
-                    }
-                )
+        for device in args.pop("devices", []):
+            params["devices"].append({"path": device})
 
         for item in args.pop("exposed_ports", []):
             port, protocol = item.split("/")
