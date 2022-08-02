@@ -24,7 +24,7 @@ lint: tox
 .PHONY: tests
 tests: tox
 	# see tox.ini for environment variable settings
-	$(PYTHON) -m tox -e pylint,coverage,py36,py38,py39,py310
+	$(PYTHON) -m tox -e pylint,coverage,py36,py38,py39,py310,py311
 
 .PHONY: unittest
 unittest:

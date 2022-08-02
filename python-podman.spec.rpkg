@@ -3,6 +3,14 @@
 # The following tag is to get correct syntax highlighting for this file in vim text editor
 # vim: syntax=spec
 
+%global debug_package %{nil}
+
+%if ! 0%{?fedora} && 0%{?rhel} <= 8
+%global old_rhel 1
+%else
+%global old_rhel 0
+%endif
+
 %global pypi_name podman
 %global desc %{pypi_name} is a library of bindings to use the RESTful API for Podman.
 
@@ -34,10 +42,13 @@ VCS:        {{{ git_dir_vcs }}}
 # and returns its filename. The tarball will be used to build the rpm.
 Source:     {{{ git_dir_pack }}}
 
+%description
+%desc
+
 %package -n python%{python3_pkgversion}-%{pypi_name}
 BuildRequires: git-core
 BuildRequires: python%{python3_pkgversion}-devel
-%if 0%{?rhel} <= 8
+%if %{?old_rhel}
 BuildRequires: python%{python3_pkgversion}-pytoml
 BuildRequires: python%{python3_pkgversion}-pyxdg
 BuildRequires: python%{python3_pkgversion}-requests
@@ -48,7 +59,7 @@ Requires: python%{python3_pkgversion}-requests
 %else
 BuildRequires: pyproject-rpm-macros
 %endif
-%if 0%{?fedora} <= 35
+%if 0%{?fedora} <= 35 && ! 0%{?rhel}
 BuildRequires: python%{python3_pkgversion}-toml
 Requires: python%{python3_pkgversion}-toml
 %endif
@@ -64,40 +75,33 @@ Summary: %{summary}
 %prep
 {{{ git_dir_setup_macro }}}
 
-%if 0%{?fedora} || 0%{?rhel} >= 9
+%if ! %{?old_rhel}
 %generate_buildrequires
 %pyproject_buildrequires %{?with_tests:-t}
 %endif
 
 # This will invoke `make` command in the directory with the extracted sources.
 %build
-%if 0%{?rhel} <= 8
+%if %{?old_rhel}
 %py3_build
 %else
 %pyproject_wheel
 %endif
 
 %install
-%if 0%{?rhel} <= 8
+%if %{?old_rhel}
 %py3_install
 %else
 %pyproject_install
-%pyproject_save_files %{pypi_name}
 %endif
 
 # This lists all the files that are included in the rpm package and that
 # are going to be installed into target system where the rpm is installed.
-%if 0%{?rhel} <= 8
 %files -n python3-podman
 %license LICENSE
 %doc README.md
 %{python3_sitelib}/podman/*
 %{python3_sitelib}/podman-*/*
-%else
-%files -n python%{python3_pkgversion}-%{pypi_name} -f %{pyproject_files}
-%license LICENSE
-%doc README.md
-%endif
 
 # Finally, changes from the latest release of your application are generated from
 # your project's Git history. It will be empty until you make first annotated Git tag.

@@ -165,9 +165,9 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                     For example: {'2222/tcp': None}.
                 - A tuple of (address, port) if you want to specify the host interface.
                     For example: {'1111/tcp': ('127.0.0.1', 1111)}.
-                - A list of integers, if you want to bind multiple host ports to a single container
-                    port.
-                    For example: {'1111/tcp': [1234, 4567]}.
+                - A list of integers or tuples of (address, port), if you want to bind
+                  multiple host ports to a single container port.
+                    For example: {'1111/tcp': [1234, ("127.0.0.1", 4567)]}.
 
                     For example: {'9090': 7878, '10932/tcp': '8781',
                                   "8989/tcp": ("127.0.0.1", 9091)}
@@ -215,17 +215,26 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             version (str): The version of the API to use. Set to auto to automatically detect
                 the server's version. Default: 3.0.0
             volume_driver (str): The name of a volume driver/plugin.
-            volumes (Dict[str, Dict[str, str]]): A dictionary to configure volumes mounted inside
-                the container. The key is either the host path or a volume name, and the value is
+            volumes (Dict[str, Dict[str, Union[str, list]]]): A dictionary to configure
+                volumes mounted inside the container.
+                The key is either the host path or a volume name, and the value is
                 a dictionary with the keys:
 
                 - bind: The path to mount the volume inside the container
                 - mode: Either rw to mount the volume read/write, or ro to mount it read-only.
+                        Kept for docker-py compatibility
+                - extended_mode: List of options passed to volume mount.
 
                 For example:
 
-                    {'/home/user1/': {'bind': '/mnt/vol2', 'mode': 'rw'},
-                     '/var/www': {'bind': '/mnt/vol1', 'mode': 'ro'}}
+                    {
+                        'test_bind_1':
+                            {'bind': '/mnt/vol1', 'mode': 'rw'},
+                        'test_bind_2':
+                            {'bind': '/mnt/vol2', 'extended_mode': ['ro', 'noexec']},
+                         'test_bind_3':
+                            {'bind': '/mnt/vol3', 'extended_mode': ['noexec'], 'mode': 'rw'}
+                    }
 
             volumes_from (List[str]): List of container names or IDs to get volumes from.
             working_dir (str): Path to the working directory.
@@ -492,9 +501,21 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 port_map["host_ip"] = host[0]
                 port_map["host_port"] = int(host[1])
             elif isinstance(host, list):
-                raise ValueError(
-                    "Podman API does not support multiple port bound to a single host port."
-                )
+                for host_list in host:
+                    port_map = {"container_port": int(container_port), "protocol": protocol}
+                    if (
+                        isinstance(host_list, int)
+                        or isinstance(host_list, str)
+                        and host_list.isdigit()
+                    ):
+                        port_map["host_port"] = int(host_list)
+                    elif isinstance(host_list, tuple):
+                        port_map["host_ip"] = host_list[0]
+                        port_map["host_port"] = int(host_list[1])
+                    else:
+                        raise ValueError(f"'ports' value  of '{host_list}' is not supported.")
+                    params["portmappings"].append(port_map)
+                continue
             else:
                 raise ValueError(f"'ports' value  of '{host}' is not supported.")
 
@@ -539,11 +560,18 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
         for item in args.pop("volumes", {}).items():
             key, value = item
-            volume = {
-                "Name": key,
-                "Dest": value["bind"],
-                "Options": [value["mode"]] if "mode" in value else [],
-            }
+            extended_mode = value.get('extended_mode', [])
+            if not isinstance(extended_mode, list):
+                raise ValueError("'extended_mode' value should be a list")
+
+            options = extended_mode
+            mode = value.get('mode')
+            if mode is not None:
+                if not isinstance(mode, str):
+                    raise ValueError("'mode' value should be a str")
+                options.append(mode)
+
+            volume = {"Name": key, "Dest": value["bind"], "Options": options}
             params["volumes"].append(volume)
 
         if "cgroupns" in args:
