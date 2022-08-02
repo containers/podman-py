@@ -1541,7 +1541,6 @@ elif HAVE_PROTOCOLS and not PEP_560:
             bases="Protocol, Generic[T]" if OLD_GENERICS else "Protocol[T]"
         )
 
-
 elif PEP_560:
     from typing import _type_check, _GenericAlias, _collect_type_vars  # noqa
 
