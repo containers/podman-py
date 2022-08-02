@@ -212,21 +212,48 @@ class ContainersIntegrationTest(base.IntegrationTest):
 
     def test_container_devices(self):
         devices = ["/dev/null:/dev/foo", "/dev/zero:/dev/bar"]
-        container = self.client.containers.create(self.alpine_image, devices=devices)
+        container = self.client.containers.create(
+            self.alpine_image, devices=devices, command=["ls", "-l", "/dev/"]
+        )
         self.containers.append(container)
 
         container_devices = container.attrs.get('HostConfig', {}).get('Devices', [])
-        for device in devices:
-            path_on_host, path_in_container = device.split(':', 1)
-            self.assertTrue(
-                any(
-                    [
-                        c.get('PathOnHost') == path_on_host
-                        and c.get('PathInContainer') == path_in_container
-                        for c in container_devices
-                    ]
+        with self.subTest("Check devices in container object"):
+            for device in devices:
+                path_on_host, path_in_container = device.split(':', 1)
+                self.assertTrue(
+                    any(
+                        [
+                            c.get('PathOnHost') == path_on_host
+                            and c.get('PathInContainer') == path_in_container
+                            for c in container_devices
+                        ]
+                    )
                 )
-            )
+
+        with self.subTest("Check devices in running container object"):
+            container.start()
+            container.wait()
+
+            logs = b"\n".join(container.logs()).decode()
+
+            device_regex = r'(\d+, *?\d+).*?{}\n'
+
+            for device in devices:
+                # check whether device exists
+                source_device, destination_device = device.split(':', 1)
+                source_match = re.search(
+                    device_regex.format(source_device.rsplit("/", 1)[-1]), logs
+                )
+                destination_match = re.search(
+                    device_regex.format(destination_device.rsplit("/", 1)[-1]), logs
+                )
+
+                self.assertIsNotNone(source_match)
+                self.assertIsNotNone(destination_match)
+
+                # validate if proper device was added (by major/minor numbers)
+                self.assertEqual(source_match.group(1), destination_match.group(1))
 
 
 if __name__ == '__main__':
