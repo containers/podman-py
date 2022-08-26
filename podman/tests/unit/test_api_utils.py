@@ -154,6 +154,16 @@ class TestUtilsCase(unittest.TestCase):
         self.assertDictEqual(actual_dict["Dictionary"], payload["Dictionary"])
         self.assertEqual(set(actual_dict["Set1"]), {"item1", "item2"})
 
+    def test_prepare_body_dict_empty_string(self):
+        payload = {"Dictionary": {"key1": "", "key2": {"key3": ""}, "key4": [], "key5": {}}}
+
+        actual = api.prepare_body(payload)
+        actual_dict = json.loads(actual)
+        payload["Dictionary"].pop("key4")
+        payload["Dictionary"].pop("key5")
+
+        self.assertDictEqual(payload, actual_dict)
+
 
 if __name__ == '__main__':
     unittest.main()
