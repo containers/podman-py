@@ -167,7 +167,7 @@ class BuildMixin:
         if "buildargs" in kwargs:
             params["buildargs"] = json.dumps(kwargs.get("buildargs"))
         if "cache_from" in kwargs:
-            params["cacheform"] = json.dumps(kwargs.get("cache_from"))
+            params["cachefrom"] = json.dumps(kwargs.get("cache_from"))
 
         if "container_limits" in kwargs:
             params["cpuperiod"] = kwargs["container_limits"].get("cpuperiod")
