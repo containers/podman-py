@@ -524,11 +524,11 @@ class Container(PodmanResource):
 
         interval = kwargs.get("interval")
 
-        params = dict()
+        params = {}
         if condition != []:
             params["condition"] = condition
         if interval != "":
-                params["interval"] = interval
+            params["interval"] = interval
         response = self.client.post(f"/containers/{self.id}/wait", params=params)
         response.raise_for_status()
         return response.json()
