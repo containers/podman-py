@@ -508,7 +508,7 @@ class Container(PodmanResource):
             condition (Union[str, List[str]]): Container state on which to release.
                 One or more of: "configured", "created", "running", "stopped",
                 "paused", "exited", "removing", "stopping".
-            timeout (int): Ignored.
+            interval (int): Time interval to wait before polling for completion.
 
         Returns:
             "Error" key has a dictionary value with the key "Message".
@@ -522,6 +522,13 @@ class Container(PodmanResource):
         if isinstance(condition, str):
             condition = [condition]
 
-        response = self.client.post(f"/containers/{self.id}/wait", params={"condition": condition})
+        interval = kwargs.get("interval")
+
+        params = {}
+        if condition != []:
+            params["condition"] = condition
+        if interval != "":
+            params["interval"] = interval
+        response = self.client.post(f"/containers/{self.id}/wait", params=params)
         response.raise_for_status()
         return response.json()

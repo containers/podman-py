@@ -212,6 +212,18 @@ class ContainersTestCase(unittest.TestCase):
         self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
+    def test_wait_condition_interval(self, mock):
+        adapter = mock.post(
+            tests.LIBPOD_URL
+            + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/wait",
+            status_code=200,
+            json={"StatusCode": 0},
+        )
+        container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
+        container.wait(condition="exited", interval=1)
+        self.assertTrue(adapter.called_once)
+
+    @requests_mock.Mocker()
     def test_diff(self, mock):
         payload = [
             {"Path": "modified", "Kind": 0},
