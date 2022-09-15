@@ -391,3 +391,31 @@ class ImagesManager(BuildMixin, Manager):
         response = self.client.get("/images/search", params=params)
         response.raise_for_status(not_found=ImageNotFound)
         return response.json()
+
+    def scp(
+        self,
+        source: str,
+        dest: Optional[str] = None,
+        quiet: Optional[bool] = False,
+    ) -> str:
+        """Securely copy images between hosts.
+
+        Args:
+            source: source connection/image
+            dest: destination connection/image
+            quiet: do not print save/load output, only the image
+
+        Returns:
+            A string containing the loaded image
+
+        Raises:
+            APIError: when service returns an error
+        """
+        params = {}
+        if dest is not None and quiet:
+            params = {"destination": dest, "quiet": quiet}
+        elif quiet:
+            params = {"quiet": quiet}
+        response = self.client.post(f"/images/scp/{source}", params=params)
+        response.raise_for_status()
+        return response.json()

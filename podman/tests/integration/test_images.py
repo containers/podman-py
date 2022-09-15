@@ -133,3 +133,15 @@ class ImagesIntegrationTest(base.IntegrationTest):
     def test_pull_stream(self):
         generator = self.client.images.pull("ubi8", tag="latest", stream=True)
         self.assertIsInstance(generator, types.GeneratorType)
+
+    def test_scp(self):
+        with self.assertRaises(APIError) as e:
+            next(
+                self.client.images.scp(
+                    source="randuser@fake.ip.addr:22::quay.io/libpod/alpine", quiet=False
+                )
+            )
+        self.assertIn(
+            "failed to connect: dial tcp: lookup fake.ip.addr: no such host",
+            e.exception.explanation,
+        )
