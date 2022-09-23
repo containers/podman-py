@@ -165,9 +165,9 @@ class BuildMixin:
             "squash": kwargs.get("squash"),
             "t": kwargs.get("tag"),
             "target": kwargs.get("target"),
-            'layers': kwargs.get("layers"),
-            'output': kwargs.get("output"),
-            'outputformat': kwargs.get("outputformat"),
+            "layers": kwargs.get("layers"),
+            "output": kwargs.get("output"),
+            "outputformat": kwargs.get("outputformat"),
         }
 
         if "buildargs" in kwargs:
