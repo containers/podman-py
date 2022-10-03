@@ -66,26 +66,33 @@ def prepare_body(body: Mapping[str, Any]) -> str:
     return json.dumps(body, sort_keys=True)
 
 
-def _filter_values(mapping: Mapping[str, Any]) -> Dict[str, Any]:
+def _filter_values(mapping: Mapping[str, Any], recursion=False) -> Dict[str, Any]:
     """Returns a canonical dictionary with values == None or empty Iterables removed.
 
     Dictionary is walked using recursion.
     """
     canonical = {}
+
     for key, value in mapping.items():
         # quick filter if possible...
-        if value is None or (isinstance(value, collections.abc.Sized) and len(value) <= 0):
+        if (
+            value is None
+            or (isinstance(value, collections.abc.Sized) and len(value) <= 0)
+            and not recursion
+        ):
             continue
 
         # depending on type we need details...
         if isinstance(value, collections.abc.Mapping):
-            proposal = _filter_values(value)
+            proposal = _filter_values(value, recursion=True)
         elif isinstance(value, collections.abc.Iterable) and not isinstance(value, str):
             proposal = [i for i in value if i is not None]
         else:
             proposal = value
 
-        if proposal not in (None, str(), [], {}):
+        if not recursion and proposal not in (None, str(), [], {}):
+            canonical[key] = proposal
+        elif recursion and proposal not in (None, [], {}):
             canonical[key] = proposal
 
     return canonical
