@@ -74,6 +74,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 process will run as.
             healthcheck (Dict[str,Any]): Specify a test to perform to check that the
                 container is healthy.
+            health_check_on_failure_action (int): Specify an action if a healthcheck fails.
             hostname (str): Optional hostname for the container.
             init (bool): Run an init inside the container that forwards signals and reaps processes
             init_path (str): Path to the docker-init binary
@@ -340,6 +341,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "expose": {},
             "groups": pop("group_add"),
             "healthconfig": pop("healthcheck"),
+            "health_check_on_failure_action": pop("health_check_on_failure_action"),
             "hostadd": [],
             "hostname": pop("hostname"),
             "httpproxy": pop("use_config_proxy"),
