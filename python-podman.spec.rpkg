@@ -49,19 +49,19 @@ Source:     {{{ git_dir_pack }}}
 BuildRequires: git-core
 BuildRequires: python%{python3_pkgversion}-devel
 %if %{?old_rhel}
-BuildRequires: python%{python3_pkgversion}-pytoml
 BuildRequires: python%{python3_pkgversion}-pyxdg
 BuildRequires: python%{python3_pkgversion}-requests
 BuildRequires: python%{python3_pkgversion}-setuptools
-Requires: python%{python3_pkgversion}-pytoml
+BuildRequires: python%{python3_pkgversion}-toml
 Requires: python%{python3_pkgversion}-pyxdg
 Requires: python%{python3_pkgversion}-requests
+Requires: python%{python3_pkgversion}-toml
 %else
 BuildRequires: pyproject-rpm-macros
 %endif
 %if 0%{?fedora} <= 35 && ! 0%{?rhel}
-BuildRequires: python%{python3_pkgversion}-toml
-Requires: python%{python3_pkgversion}-toml
+BuildRequires: python%{python3_pkgversion}-tomli
+Requires: python%{python3_pkgversion}-tomli
 %endif
 Provides: %{pypi_name}-py = %{version}-%{release}
 Summary: %{summary}
