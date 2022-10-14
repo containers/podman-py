@@ -25,7 +25,7 @@ requires = [
     "requests>=2.24",
     "setuptools>=46.4",
     "sphinx",
-    "toml>=0.10.2",
+    "tomli>=1.2.3; python_version<'3.11'",
     "urllib3>=1.26.5",
     "wheel",
 ]
