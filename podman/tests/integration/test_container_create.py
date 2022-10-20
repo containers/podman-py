@@ -144,6 +144,14 @@ class ContainersIntegrationTest(base.IntegrationTest):
                 ]
             )
         )
+    
+    def test_container_healtchecks(self):
+        """Test passing various healthcheck options"""
+        parameters = {}
+        parameters['healthcheck'] = {'Test': ['CMD-SHELL curl http://localhost || exit']}
+        parameters['health_check_on_failure_action'] = 1
+        container = self.client.containers.create(self.alpine_image, **parameters)
+        self.containers.append(container)
 
     def test_container_mem_limit(self):
         """Test passing memory limit"""
