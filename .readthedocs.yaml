@@ -1,23 +1,24 @@
 version: 2
-
-formats:
-  - pdf
-  - epub
-
-python:
-  version: "3.6"
-  install:
-    - requirements: requirements.txt
-
-sphinx:
-  configuration: docs/source/conf.py
-  fail_on_warning: true
-
 build:
+  os: "ubuntu-22.04"
+  tools:
+      python: "3.10"
   jobs:
     pre_build:
-      - mkdir -p build/docs/source
-      - cp -R docs/source/* build/docs/source
-      - sphinx-apidoc --separate --no-toc --force --templatedir build/docs/source/_templates/apidoc \
-		-o build/docs/source \
-		podman podman/tests
+      - mkdir -p _build/doctrees
+      - cp -R docs/source/* _build/doctrees
+      - sphinx-apidoc --separate --no-toc --force --templatedir docs/source/_templates/apidoc -o _build/doctrees podman podman/tests
+      - ls -lRta
+
+        #formats:
+        #  - pdf
+        #  - epub
+        #
+        #python:
+        #  version: "3.6"
+        #  install:
+        #    - requirements: requirements.txt
+        #
+sphinx:
+  configuration: _build/doctrees/conf.py
+  fail_on_warning: true
