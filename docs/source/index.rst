@@ -49,10 +49,29 @@ Example
    podman.client
 
 .. toctree::
+   :caption: Podman Version
+   :maxdepth: 2
+
+   podman.version
+
+.. toctree::
+   :caption: Podman TLS Config
+   :maxdepth: 2
+
+   podman.tlsconfig
+
+.. toctree::
+   :caption: Podman Errors
+   :maxdepth: 2
+
+   podman.errors
+
+.. toctree::
    :caption: Podman Entities
    :glob:
    :hidden:
 
+   podman.domain
    podman.domain.containers
    podman.domain.containers_manager
    podman.domain.images
