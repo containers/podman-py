@@ -13,3 +13,11 @@ sphinx:
   configuration: docs/source/conf.py
   fail_on_warning: true
 
+build:
+  jobs:
+    pre_build:
+      - mkdir -p build/docs/source
+      - cp -R docs/source/* build/docs/source
+      - sphinx-apidoc --separate --no-toc --force --templatedir build/docs/source/_templates/apidoc \
+		-o build/docs/source \
+		podman podman/tests
