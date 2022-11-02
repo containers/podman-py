@@ -305,13 +305,6 @@ max-line-length=100
 # Maximum number of lines in a module.
 max-module-lines=1000
 
-# List of optional constructs for which whitespace checking is disabled. `dict-
-# separator` is used to allow tabulation in dicts, etc.: {1  : 1,\n222: 2}.
-# `trailing-comma` allows a space between comma and closing bracket: (a, ).
-# `empty-line` allows space-only lines.
-no-space-check=trailing-comma,
-               dict-separator
-
 # Allow the body of a class to be on the same line as the declaration if body
 # contains single statement.
 single-line-class-stmt=no
@@ -329,7 +322,6 @@ single-line-if-stmt=no
 # Regular expression matching correct argument names. Overrides argument-
 # naming-style.
 argument-rgx=[a-z_][a-z0-9_]{1,30}$
-argument-name-hint=[a-z_][a-z0-9_]{1,30}$
 
 # Naming style matching correct attribute names.
 attr-naming-style=snake_case
@@ -436,7 +428,6 @@ property-classes=abc.abstractproperty
 # Regular expression matching correct variable names. Overrides variable-
 # naming-style.
 variable-rgx=[a-z_][a-z0-9_]{2,30}$
-variable-name-hint=[a-z_][a-z0-9_]{2,30}$
 
 [SIMILARITIES]
 
