@@ -1,16 +1,20 @@
 """Read containers.conf file."""
+import sys
 import urllib
 from pathlib import Path
 from typing import Dict, Optional
 
 import xdg.BaseDirectory
 
-try:
-    import toml
-except ImportError:
-    import pytoml as toml
-
 from podman.api import cached_property
+
+if sys.version_info >= (3, 11):
+    from tomllib import loads as toml_loads
+else:
+    try:
+        from tomli import loads as toml_loads
+    except ImportError:
+        from toml import loads as toml_loads
 
 
 class ServiceConnection:
@@ -64,7 +68,7 @@ class PodmanConfig:
         if self.path.exists():
             with self.path.open(encoding='utf-8') as file:
                 buffer = file.read()
-            self.attrs = toml.loads(buffer)
+            self.attrs = toml_loads(buffer)
 
     def __hash__(self) -> int:
         return hash(tuple(self.path.name))
