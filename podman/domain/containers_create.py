@@ -149,7 +149,8 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             pids_limit (int): Tune a container's pids limit. Set -1 for unlimited.
             platform (str): Platform in the format os[/arch[/variant]]. Only used if the method
                 needs to pull the requested image.
-            ports (Dict[str, Union[int, Tuple[str, int], List[int]]]): Ports to bind inside
+            ports (Dict[str, Union[int, Tuple[str, int], List[int],
+                      Dict[str, Union[int, Tuple[str, int], List[int]]]]]): Ports to bind inside
                 the container.
 
                 The keys of the dictionary are the ports to bind inside the container, either as an
@@ -172,6 +173,12 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
                     For example: {'9090': 7878, '10932/tcp': '8781',
                                   "8989/tcp": ("127.0.0.1", 9091)}
+                - A dictionary of the options above except for random host port.
+                  The dictionary has additional option - "range" which allows binding range of ports.
+                    For example:
+                        - {'2222/tcp': {"port": 3333, "range": 4}}
+                        - {'1111/tcp': {"port": ('127.0.0.1', 1111), "range": 4}}
+                        - {'1111/tcp': [{"port": 1234, "range": 4}, {"ip": "127.0.0.1", "port": 4567}]}
 
             privileged (bool): Give extended privileges to this container.
             publish_all_ports (bool): Publish all ports to the host.
@@ -488,40 +495,49 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 pod = pod.id
             params["pod"] = pod  # TODO document, podman only
 
+        def parse_host_port(_container_port, _protocol, _host):
+            result = []
+            port_map = {"container_port": int(_container_port), "protocol": _protocol}
+            if _host is None:
+                result.append(port_map)
+            elif isinstance(_host, int) or isinstance(_host, str) and _host.isdigit():
+                port_map["host_port"] = int(_host)
+                result.append(port_map)
+            elif isinstance(_host, tuple):
+                port_map["host_ip"] = _host[0]
+                port_map["host_port"] = int(_host[1])
+                result.append(port_map)
+            elif isinstance(_host, list):
+                for host_list in _host:
+                    host_list_result = parse_host_port(_container_port, _protocol, host_list)
+                    result.extend(host_list_result)
+            elif isinstance(_host, dict):
+                _host_port = _host.get("port")
+                if _host_port is not None:
+                    if (
+                        isinstance(_host_port, int)
+                        or isinstance(_host_port, str)
+                        and _host_port.isdigit()
+                    ):
+                        port_map["host_port"] = int(_host_port)
+                    elif isinstance(_host_port, tuple):
+                        port_map["host_ip"] = _host_port[0]
+                        port_map["host_port"] = int(_host_port[1])
+                if _host.get("range"):
+                    port_map["range"] = _host.get("range")
+                if _host.get("ip"):
+                    port_map["host_ip"] = _host.get("ip")
+                result.append(port_map)
+            return result
+
         for container, host in args.pop("ports", {}).items():
             if "/" in container:
                 container_port, protocol = container.split("/")
             else:
                 container_port, protocol = container, "tcp"
 
-            port_map = {"container_port": int(container_port), "protocol": protocol}
-            if host is None:
-                pass
-            elif isinstance(host, int) or isinstance(host, str) and host.isdigit():
-                port_map["host_port"] = int(host)
-            elif isinstance(host, tuple):
-                port_map["host_ip"] = host[0]
-                port_map["host_port"] = int(host[1])
-            elif isinstance(host, list):
-                for host_list in host:
-                    port_map = {"container_port": int(container_port), "protocol": protocol}
-                    if (
-                        isinstance(host_list, int)
-                        or isinstance(host_list, str)
-                        and host_list.isdigit()
-                    ):
-                        port_map["host_port"] = int(host_list)
-                    elif isinstance(host_list, tuple):
-                        port_map["host_ip"] = host_list[0]
-                        port_map["host_port"] = int(host_list[1])
-                    else:
-                        raise ValueError(f"'ports' value  of '{host_list}' is not supported.")
-                    params["portmappings"].append(port_map)
-                continue
-            else:
-                raise ValueError(f"'ports' value  of '{host}' is not supported.")
-
-            params["portmappings"].append(port_map)
+            port_map_list = parse_host_port(container_port, protocol, host)
+            params["portmappings"].extend(port_map_list)
 
         if "restart_policy" in args:
             params["restart_policy"] = args["restart_policy"].get("Name")

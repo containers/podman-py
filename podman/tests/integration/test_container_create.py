@@ -100,56 +100,69 @@ class ContainersIntegrationTest(base.IntegrationTest):
 
     def test_container_ports(self):
         """Test ports binding"""
-        port_tests = {
-            '97/tcp': '43',
-            '2/udp': ('127.0.0.1', '939'),
-            '11123/tcp': [[('127.0.0.1', '11123'), ('127.0.0.1', '112')], ['1123', '159']],
-        }
-        for container_port, host_port in port_tests.items():
-            if isinstance(host_port, str) or isinstance(host_port, tuple):
-                self._test_container_ports(container_port, host_port)
-            else:
-                for port_option in host_port:
-                    self._test_container_ports(container_port, port_option)
+        port_tests = [
+            {
+                'input': {'97/tcp': '43'},
+                'expected_output': {'97/tcp': [{'HostIp': '', 'HostPort': '43'}]},
+            },
+            {
+                'input': {'2/udp': ('127.0.0.1', '939')},
+                'expected_output': {'2/udp': [{'HostIp': '127.0.0.1', 'HostPort': '939'}]},
+            },
+            {
+                'input': {
+                    '11123/tcp': [('127.0.0.1', '11123'), ('127.0.0.1', '112'), '1123', '159']
+                },
+                'expected_output': {
+                    '11123/tcp': [
+                        {'HostIp': '127.0.0.1', 'HostPort': '11123'},
+                        {'HostIp': '', 'HostPort': '112'},
+                        {'HostIp': '', 'HostPort': '1123'},
+                        {'HostIp': '', 'HostPort': '159'},
+                    ]
+                },
+            },
+            {
+                'input': {'1111/tcp': {"port": ('127.0.0.1', 1111), "range": 3}},
+                'expected_output': {
+                    '1111/tcp': [{'HostIp': '127.0.0.1', 'HostPort': '1111'}],
+                    '1112/tcp': [{'HostIp': '127.0.0.1', 'HostPort': '1112'}],
+                    '1113/tcp': [{'HostIp': '127.0.0.1', 'HostPort': '1113'}],
+                },
+            },
+            {
+                'input': {
+                    '1222/tcp': [{"port": 1234, "range": 2}, {"ip": "127.0.0.1", "port": 4567}]
+                },
+                'expected_output': {
+                    '1222/tcp': [
+                        {'HostIp': '', 'HostPort': '1234'},
+                        {'HostIp': '127.0.0.1', 'HostPort': '4567'},
+                    ],
+                    '1223/tcp': [{'HostIp': '', 'HostPort': '1235'}],
+                },
+            },
+        ]
 
-    def _test_container_ports(self, container_port, host_port):
-        """ "Base for tests to check port binding is configured correctly"""
+        for port_test in port_tests:
+            container = self.client.containers.create(self.alpine_image, ports=port_test['input'])
+            self.containers.append(container)
 
-        def __get_expected_value(container_p, host_p):
-            """Generate the expected value based on the input"""
-            if isinstance(host_p, str):
-                return {container_p: [{'HostIp': '', 'HostPort': host_p}]}
-            elif isinstance(host_p, tuple):
-                return {container_p: [{'HostIp': host_p[0], 'HostPort': host_p[1]}]}
-            else:
-                host_ports = []
-                for host_port in host_p:
-                    if isinstance(host_port, tuple):
-                        host_ports.append({'HostIp': host_port[0], 'HostPort': host_port[1]})
-                    elif isinstance(host_port, str):
-                        host_ports.append({'HostIp': '', 'HostPort': host_port})
-                return {container_p: host_ports}
-
-        expected_value = __get_expected_value(container_port, host_port)
-        container = self.client.containers.create(
-            self.alpine_image, ports={container_port: host_port}
-        )
-        self.containers.append(container)
-
-        self.assertTrue(
-            all(
-                [
-                    x in expected_value
-                    for x in container.attrs.get('HostConfig', dict()).get('PortBindings')
-                ]
+            self.assertTrue(
+                all(
+                    [
+                        x in port_test['expected_output']
+                        for x in container.attrs.get('HostConfig', {}).get('PortBindings')
+                    ]
+                )
             )
-        )
 
-    def test_container_healtchecks(self):
+    def test_container_healthchecks(self):
         """Test passing various healthcheck options"""
-        parameters = {}
-        parameters['healthcheck'] = {'Test': ['CMD-SHELL curl http://localhost || exit']}
-        parameters['health_check_on_failure_action'] = 1
+        parameters = {
+            'healthcheck': {'Test': ['CMD-SHELL curl http://localhost || exit']},
+            'health_check_on_failure_action': 1,
+        }
         container = self.client.containers.create(self.alpine_image, **parameters)
         self.containers.append(container)
 
