@@ -173,12 +173,18 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
                     For example: {'9090': 7878, '10932/tcp': '8781',
                                   "8989/tcp": ("127.0.0.1", 9091)}
-                - A dictionary of the options above except for random host port.
-                  The dictionary has additional option - "range" which allows binding range of ports.
+                - A dictionary of the options mentioned above except for random host port.
+                  The dictionary has additional option "range",
+                    which allows binding range of ports.
+
                     For example:
                         - {'2222/tcp': {"port": 3333, "range": 4}}
                         - {'1111/tcp': {"port": ('127.0.0.1', 1111), "range": 4}}
-                        - {'1111/tcp': [{"port": 1234, "range": 4}, {"ip": "127.0.0.1", "port": 4567}]}
+                        - {'1111/tcp': [
+                              {"port": 1234, "range": 4},
+                              {"ip": "127.0.0.1", "port": 4567}
+                            ]
+                          }
 
             privileged (bool): Give extended privileges to this container.
             publish_all_ports (bool): Publish all ports to the host.
