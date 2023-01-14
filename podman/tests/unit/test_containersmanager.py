@@ -276,7 +276,7 @@ class ContainersManagerTestCase(unittest.TestCase):
         )
 
         with patch.multiple(Container, logs=DEFAULT, wait=DEFAULT, autospec=True) as mock_container:
-            mock_container["wait"].return_value = {"StatusCode": 0}
+            mock_container["wait"].return_value = 0
 
             with self.subTest("Results not streamed"):
                 mock_container["logs"].return_value = iter(mock_logs)
