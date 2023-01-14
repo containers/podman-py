@@ -257,8 +257,9 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         )
         response.raise_for_status(not_found=ImageNotFound)
 
-        body = response.json()
-        return self.get(body["Id"])
+        container_id = response.json()["Id"]
+
+        return self.get(container_id)
 
     # pylint: disable=too-many-locals,too-many-statements,too-many-branches
     @staticmethod
