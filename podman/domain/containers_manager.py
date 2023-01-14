@@ -31,6 +31,9 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
         Args:
             container_id: Container name or id.
 
+        Returns:
+            A `Container` object corresponding to `key`.
+
         Raises:
             NotFound: when Container does not exist
             APIError: when an error return by service
