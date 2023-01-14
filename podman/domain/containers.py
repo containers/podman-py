@@ -10,7 +10,6 @@ import requests
 from requests import Response
 
 from podman import api
-from podman.api import Literal
 from podman.domain.images import Image
 from podman.domain.images_manager import ImagesManager
 from podman.domain.manager import PodmanResource
