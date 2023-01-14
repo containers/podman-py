@@ -6,14 +6,15 @@ try:
 except:
     # Python < 3.10
     from collections import Iterator
-from unittest.mock import patch, DEFAULT
+
+from unittest.mock import DEFAULT, patch
 
 import requests_mock
 
 from podman import PodmanClient, tests
 from podman.domain.containers import Container
 from podman.domain.containers_manager import ContainersManager
-from podman.errors import NotFound, ImageNotFound
+from podman.errors import ImageNotFound, NotFound
 
 FIRST_CONTAINER = {
     "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
