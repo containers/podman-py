@@ -240,6 +240,9 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             volumes_from (List[str]): List of container names or IDs to get volumes from.
             working_dir (str): Path to the working directory.
 
+        Returns:
+            A Container object.
+
         Raises:
             ImageNotFound: when Image not found by Podman service
             APIError: when Podman service reports an error
