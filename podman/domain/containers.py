@@ -530,7 +530,8 @@ class Container(PodmanResource):
             params["interval"] = interval
 
         # This API endpoint responds with a JSON encoded integer.
-        # See: https://docs.podman.io/en/latest/_static/api.html#tag/containers/operation/ContainerWaitLibpod
+        # See:
+        # https://docs.podman.io/en/latest/_static/api.html#tag/containers/operation/ContainerWaitLibpod
         response = self.client.post(f"/containers/{self.id}/wait", params=params)
         response.raise_for_status()
         return response.json()
