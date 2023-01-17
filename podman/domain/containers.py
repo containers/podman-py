@@ -10,7 +10,6 @@ import requests
 from requests import Response
 
 from podman import api
-from podman.api import Literal
 from podman.domain.images import Image
 from podman.domain.images_manager import ImagesManager
 from podman.domain.manager import PodmanResource
@@ -501,7 +500,7 @@ class Container(PodmanResource):
         """
         raise NotImplementedError("Container.update() is not supported by Podman service.")
 
-    def wait(self, **kwargs) -> Dict[Literal["StatusCode", "Error"], Any]:
+    def wait(self, **kwargs) -> int:
         """Block until the container enters given state.
 
         Keyword Args:
@@ -529,6 +528,10 @@ class Container(PodmanResource):
             params["condition"] = condition
         if interval != "":
             params["interval"] = interval
+
+        # This API endpoint responds with a JSON encoded integer.
+        # See:
+        # https://docs.podman.io/en/latest/_static/api.html#tag/containers/operation/ContainerWaitLibpod
         response = self.client.post(f"/containers/{self.id}/wait", params=params)
         response.raise_for_status()
         return response.json()

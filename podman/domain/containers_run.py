@@ -77,7 +77,7 @@ class RunMixin:  # pylint: disable=too-few-public-methods
         if log_type in ("json-file", "journald"):
             log_iter = container.logs(stdout=stdout, stderr=stderr, stream=True, follow=True)
 
-        exit_status = container.wait()["StatusCode"]
+        exit_status = container.wait()
         if exit_status != 0:
             log_iter = None
             if not kwargs.get("auto_remove", False):

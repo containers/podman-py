@@ -253,6 +253,9 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             volumes_from (List[str]): List of container names or IDs to get volumes from.
             working_dir (str): Path to the working directory.
 
+        Returns:
+            A Container object.
+
         Raises:
             ImageNotFound: when Image not found by Podman service
             APIError: when Podman service reports an error
@@ -270,8 +273,9 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         )
         response.raise_for_status(not_found=ImageNotFound)
 
-        body = response.json()
-        return self.get(body["Id"])
+        container_id = response.json()["Id"]
+
+        return self.get(container_id)
 
     # pylint: disable=too-many-locals,too-many-statements,too-many-branches
     @staticmethod
