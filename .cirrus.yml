@@ -19,7 +19,7 @@ env:
     UBUNTU_NAME: "ubuntu-2204"
 
     # Google-cloud VM Images
-    IMAGE_SUFFIX: "c4987131005763584"
+    IMAGE_SUFFIX: "c6300530360713216"
     FEDORA_CACHE_IMAGE_NAME: "fedora-podman-py-${IMAGE_SUFFIX}"
 
 
