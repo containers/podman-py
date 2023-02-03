@@ -9,6 +9,7 @@ from podman import api
 from podman.domain.containers import Container
 from podman.domain.images import Image
 from podman.domain.pods import Pod
+from podman.domain.secrets import Secret
 from podman.errors import ImageNotFound
 
 logger = logging.getLogger("podman.containers")
@@ -199,6 +200,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 For example: {"Name": "on-failure", "MaximumRetryCount": 5}
 
             runtime (str): Runtime to use with this container.
+            secrets (List[Secret|str]): A List of Secret objects or string secret IDs.
             security_opt (List[str]): A List[str]ing values to customize labels for MLS systems,
                 such as SELinux.
             shm_size (Union[str, int]): Size of /dev/shm (e.g. 1G).
@@ -427,7 +429,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "sdnotifyMode": pop("sdnotifyMode"),  # TODO document, podman only
             "seccomp_policy": pop("seccomp_policy"),  # TODO document, podman only
             "seccomp_profile_path": pop("seccomp_profile_path"),  # TODO document, podman only
-            "secrets": pop("secrets"),  # TODO document, podman only
+            "secrets": [],
             "selinux_opts": pop("security_opt"),
             "shm_size": to_bytes(pop("shm_size")),
             "static_mac": pop("mac_address"),
@@ -601,6 +603,12 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
             volume = {"Name": key, "Dest": value["bind"], "Options": options}
             params["volumes"].append(volume)
+
+        for item in args.pop("secrets", []):
+            if isinstance(item, Secret):
+                params["secrets"].append({"ID": item.id})
+            elif isinstance(item, str):
+                params["secrets"].append({"ID": item})
 
         if "cgroupns" in args:
             params["cgroupns"] = {"nsmode": args.pop("cgroupns")}
