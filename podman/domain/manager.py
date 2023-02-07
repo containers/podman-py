@@ -118,4 +118,5 @@ class Manager(ABC):
             # pylint: disable=not-callable
             return self.resource(attrs=attrs, client=self.client, collection=self)
 
+        # pylint: disable=broad-exception-raised
         raise Exception(f"Can't create {self.resource.__name__} from {attrs}")
