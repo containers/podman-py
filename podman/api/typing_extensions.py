@@ -1322,9 +1322,11 @@ elif HAVE_PROTOCOLS and not PEP_560:
                                 "Some type variables (%s) are not listed in %s[%s]"
                                 % (
                                     ", ".join(str(t) for t in tvars if t not in gvarset),
-                                    "Generic"
-                                    if any(b.__origin__ is Generic for b in bases)
-                                    else "Protocol",
+                                    (
+                                        "Generic"
+                                        if any(b.__origin__ is Generic for b in bases)
+                                        else "Protocol"
+                                    ),
                                     ", ".join(str(g) for g in gvars),
                                 )
                             )

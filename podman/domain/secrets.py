@@ -72,7 +72,7 @@ class SecretsManager(Manager):
         """
         response = self.client.get(f"/secrets/{secret_id}/json")
         response.raise_for_status()
-        return self.prepare_model(attrs=(response.json()))
+        return self.prepare_model(attrs=response.json())
 
     def list(self, **kwargs) -> List[Secret]:
         """Report on Secrets.
