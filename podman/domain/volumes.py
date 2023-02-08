@@ -70,7 +70,7 @@ class VolumesManager(Manager):
             headers={"Content-Type": "application/json"},
         )
         response.raise_for_status()
-        return self.prepare_model(attrs=(response.json()))
+        return self.prepare_model(attrs=response.json())
 
     def exists(self, key: str) -> bool:
         response = self.client.get(f"/volumes/{key}/exists")

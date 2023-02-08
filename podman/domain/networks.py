@@ -84,26 +84,26 @@ class Network(PodmanResource):
             container = container.id
 
         # TODO Talk with baude on which IPAddress field is needed...
-        ipam = dict(
-            IPv4Address=kwargs.get("ipv4_address"),
-            IPv6Address=kwargs.get("ipv6_address"),
-            Links=kwargs.get("link_local_ips"),
-        )
+        ipam = {
+            "IPv4Address": kwargs.get('ipv4_address'),
+            "IPv6Address": kwargs.get('ipv6_address'),
+            "Links": kwargs.get("link_local_ips"),
+        }
         ipam = {k: v for (k, v) in ipam.items() if not (v is None or len(v) == 0)}
 
-        endpoint_config = dict(
-            Aliases=kwargs.get("aliases"),
-            DriverOpts=kwargs.get("driver_opt"),
-            IPAddress=kwargs.get("ipv4_address", kwargs.get("ipv6_address")),
-            IPAMConfig=ipam,
-            Links=kwargs.get("link_local_ips"),
-            NetworkID=self.id,
-        )
+        endpoint_config = {
+            "Aliases": kwargs.get("aliases"),
+            "DriverOpts": kwargs.get("driver_opt"),
+            "IPAddress": kwargs.get("ipv4_address", kwargs.get("ipv6_address")),
+            "IPAMConfig": ipam,
+            "Links": kwargs.get("link_local_ips"),
+            "NetworkID": self.id,
+        }
         endpoint_config = {
             k: v for (k, v) in endpoint_config.items() if not (v is None or len(v) == 0)
         }
 
-        data = dict(Container=container, EndpointConfig=endpoint_config)
+        data = {"Container": container, "EndpointConfig": endpoint_config}
         data = {k: v for (k, v) in data.items() if not (v is None or len(v) == 0)}
 
         response = self.client.post(
