@@ -609,7 +609,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 params["secrets"].append({"ID": item.id})
             elif isinstance(item, str):
                 params["secrets"].append({"ID": item})
-            
+
         if "cgroupns" in args:
             params["cgroupns"] = {"nsmode": args.pop("cgroupns")}
 
