@@ -1,5 +1,4 @@
 """Model and Manager for Container resources."""
-import io
 import json
 import logging
 import shlex
@@ -416,10 +415,7 @@ class Container(PodmanResource):
         if stream:
             return self._stats_helper(decode, response.iter_lines())
 
-        with io.StringIO() as buffer:
-            for entry in response.text:
-                buffer.write(json.dumps(entry) + "\n")
-            return buffer.getvalue()
+        return json.loads(response.text) if decode else response.content
 
     @staticmethod
     def _stats_helper(
