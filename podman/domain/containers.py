@@ -410,7 +410,7 @@ class Container(PodmanResource):
             "stream": stream,
         }
 
-        response = self.client.get("/containers/stats", params=params)
+        response = self.client.get("/containers/stats", params=params, stream=stream)
         response.raise_for_status()
 
         if stream:
