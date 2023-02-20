@@ -3,6 +3,6 @@ pyxdg>=0.26
 requests>=2.24
 setuptools
 sphinx
-tomli>=1.2.3; python_version<'3.11'
+toml>=0.10.2
 urllib3>=1.26.5
 wheel
