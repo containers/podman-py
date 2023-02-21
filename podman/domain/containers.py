@@ -1,10 +1,9 @@
 """Model and Manager for Container resources."""
-import io
 import json
 import logging
 import shlex
 from contextlib import suppress
-from typing import Any, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Iterable, Iterator, List, Mapping, Optional, Tuple, Union
 
 import requests
 from requests import Response
@@ -390,7 +389,7 @@ class Container(PodmanResource):
         )
         response.raise_for_status()
 
-    def stats(self, **kwargs) -> Union[Sequence[Dict[str, bytes]], bytes]:
+    def stats(self, **kwargs) -> Iterator[Union[bytes, Dict[str, Any]]]:
         """Return statistics for container.
 
         Keyword Args:
@@ -410,22 +409,19 @@ class Container(PodmanResource):
             "stream": stream,
         }
 
-        response = self.client.get("/containers/stats", params=params)
+        response = self.client.get("/containers/stats", params=params, stream=stream)
         response.raise_for_status()
 
         if stream:
             return self._stats_helper(decode, response.iter_lines())
 
-        with io.StringIO() as buffer:
-            for entry in response.text:
-                buffer.write(json.dumps(entry) + "\n")
-            return buffer.getvalue()
+        return json.loads(response.text) if decode else response.content
 
     @staticmethod
     def _stats_helper(
-        decode: bool, body: List[Dict[str, Any]]
-    ) -> Iterator[Union[str, Dict[str, Any]]]:
-        """Helper needed to allow stats() to return either a generator or a str."""
+        decode: bool, body: Iterator[bytes]
+    ) -> Iterator[Union[bytes, Dict[str, Any]]]:
+        """Helper needed to allow stats() to return either a generator or a bytes."""
         for entry in body:
             if decode:
                 yield json.loads(entry)
