@@ -52,16 +52,12 @@ BuildRequires: python%{python3_pkgversion}-devel
 BuildRequires: python%{python3_pkgversion}-pyxdg
 BuildRequires: python%{python3_pkgversion}-requests
 BuildRequires: python%{python3_pkgversion}-setuptools
-BuildRequires: python%{python3_pkgversion}-toml
+BuildRequires: python%{python3_pkgversion}-pytoml
 Requires: python%{python3_pkgversion}-pyxdg
 Requires: python%{python3_pkgversion}-requests
-Requires: python%{python3_pkgversion}-toml
+Requires: python%{python3_pkgversion}-pytoml
 %else
 BuildRequires: pyproject-rpm-macros
-%endif
-%if 0%{?fedora} <= 35 && ! 0%{?rhel}
-BuildRequires: python%{python3_pkgversion}-tomli
-Requires: python%{python3_pkgversion}-tomli
 %endif
 Provides: %{pypi_name}-py = %{version}-%{release}
 Summary: %{summary}
@@ -74,6 +70,20 @@ Summary: %{summary}
 # prep will extract the tarball defined as Source above and descend into it.
 %prep
 {{{ git_dir_setup_macro }}}
+
+%if %{defined el8}
+# RHEL 8 does not have tomli. Use pytoml instead.
+sed -i 's|tomli.*|pytoml|' setup.cfg
+# Ensure patch was properly applied.
+(! grep 'tomli' setup.cfg)
+%endif
+
+%if %{defined el9}
+# RHEL 9 does not have tomli. Use toml instead.
+sed -i 's|tomli.*|toml|' setup.cfg
+# Ensure patch was properly applied.
+(! grep 'tomli' setup.cfg)
+%endif
 
 %if ! %{?old_rhel}
 %generate_buildrequires

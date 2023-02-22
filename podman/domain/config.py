@@ -14,7 +14,11 @@ else:
     try:
         from tomli import loads as toml_loads
     except ImportError:
-        from toml import loads as toml_loads
+        try:
+            from toml import loads as toml_loads
+        except ImportError:
+            from pytoml import loads as toml_loads
+
 
 class ServiceConnection:
     """ServiceConnection defines a connection to the Podman service."""
