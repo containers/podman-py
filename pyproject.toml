@@ -21,13 +21,7 @@ line_length = 100
 [build-system]
 # Any changes should be copied into requirements.txt, setup.cfg, and/or test-requirements.txt
 requires = [
-    "pyxdg>=0.26",
-    "requests>=2.24",
     "setuptools>=46.4",
-    "sphinx",
-    "tomli>=1.2.3; python_version<'3.11'",
-    "urllib3>=1.26.5",
-    "wheel",
 ]
 build-backend = "setuptools.build_meta"
 [tool.pytest.ini_options]
