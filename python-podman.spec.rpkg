@@ -11,6 +11,12 @@
 %global old_rhel 0
 %endif
 
+%if %{undefined rhel}
+%bcond_without tests
+%else
+%bcond_with tests
+%endif
+
 %global pypi_name podman
 %global desc %{pypi_name} is a library of bindings to use the RESTful API for Podman.
 
@@ -85,6 +91,9 @@ sed -i 's|tomli.*|toml|' setup.cfg
 (! grep 'tomli' setup.cfg)
 %endif
 
+# Remove lint and integration test dependencies
+sed -i -E '/black|coverage|pylint|fixtures/d' test-requirements.txt
+
 %if ! %{?old_rhel}
 %generate_buildrequires
 %pyproject_buildrequires %{?with_tests:-t}
@@ -103,6 +112,11 @@ sed -i 's|tomli.*|toml|' setup.cfg
 %py3_install
 %else
 %pyproject_install
+%endif
+
+%check
+%if %{with tests}
+%tox -- -- podman/tests/unit
 %endif
 
 # This lists all the files that are included in the rpm package and that
