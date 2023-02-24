@@ -28,8 +28,7 @@ Release:    1%{?dist}
 # Basic description of the package
 Summary: Manage Pods, Containers and Container Images
 
-# License. We assume GPLv2+ here.
-License:   ASL 2.0
+License:   Apache-2.0
 
 # Home page of the project. Can also point to the public Git repository page.
 URL:        https://github.com/containers/podman-py
