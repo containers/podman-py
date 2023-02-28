@@ -11,6 +11,12 @@
 %global old_rhel 0
 %endif
 
+%if %{undefined rhel}
+%bcond_without tests
+%else
+%bcond_with tests
+%endif
+
 %global pypi_name podman
 %global desc %{pypi_name} is a library of bindings to use the RESTful API for Podman.
 
@@ -48,19 +54,15 @@ Source:     {{{ git_dir_pack }}}
 BuildRequires: git-core
 BuildRequires: python%{python3_pkgversion}-devel
 %if %{?old_rhel}
-BuildRequires: python%{python3_pkgversion}-pytoml
 BuildRequires: python%{python3_pkgversion}-pyxdg
 BuildRequires: python%{python3_pkgversion}-requests
 BuildRequires: python%{python3_pkgversion}-setuptools
-Requires: python%{python3_pkgversion}-pytoml
+BuildRequires: python%{python3_pkgversion}-pytoml
 Requires: python%{python3_pkgversion}-pyxdg
 Requires: python%{python3_pkgversion}-requests
+Requires: python%{python3_pkgversion}-pytoml
 %else
 BuildRequires: pyproject-rpm-macros
-%endif
-%if 0%{?fedora} <= 35 && ! 0%{?rhel}
-BuildRequires: python%{python3_pkgversion}-toml
-Requires: python%{python3_pkgversion}-toml
 %endif
 Provides: %{pypi_name}-py = %{version}-%{release}
 Summary: %{summary}
@@ -73,6 +75,23 @@ Summary: %{summary}
 # prep will extract the tarball defined as Source above and descend into it.
 %prep
 {{{ git_dir_setup_macro }}}
+
+%if %{defined el8}
+# RHEL 8 does not have tomli. Use pytoml instead.
+sed -i 's|tomli.*|pytoml|' setup.cfg
+# Ensure patch was properly applied.
+(! grep 'tomli' setup.cfg)
+%endif
+
+%if %{defined el9}
+# RHEL 9 does not have tomli. Use toml instead.
+sed -i 's|tomli.*|toml|' setup.cfg
+# Ensure patch was properly applied.
+(! grep 'tomli' setup.cfg)
+%endif
+
+# Remove lint and integration test dependencies
+sed -i -E '/black|coverage|pylint|fixtures/d' test-requirements.txt
 
 %if ! %{?old_rhel}
 %generate_buildrequires
@@ -92,6 +111,11 @@ Summary: %{summary}
 %py3_install
 %else
 %pyproject_install
+%endif
+
+%check
+%if %{with tests}
+%tox -- -- podman/tests/unit
 %endif
 
 # This lists all the files that are included in the rpm package and that
