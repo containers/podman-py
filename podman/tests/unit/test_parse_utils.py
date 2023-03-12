@@ -1,9 +1,12 @@
 import datetime
 import ipaddress
+import json
 import unittest
-from typing import Any, Optional
-
 from dataclasses import dataclass
+from typing import Any, Iterable, Optional, Tuple
+from unittest import mock
+
+from requests import Response
 
 from podman import api
 
@@ -14,7 +17,7 @@ class ParseUtilsTestCase(unittest.TestCase):
         class TestCase:
             name: str
             input: Any
-            expected: Optional[str]
+            expected: Tuple[str, Optional[str]]
 
         cases = [
             TestCase(name="empty str", input="", expected=("", None)),
@@ -56,11 +59,35 @@ class ParseUtilsTestCase(unittest.TestCase):
 
         self.assertEqual(api.prepare_timestamp(None), None)
         with self.assertRaises(ValueError):
-            api.prepare_timestamp("bad input")
+            api.prepare_timestamp("bad input")  # type: ignore
 
     def test_prepare_cidr(self):
         net = ipaddress.IPv4Network("127.0.0.0/24")
         self.assertEqual(api.prepare_cidr(net), ("127.0.0.0", "////AA=="))
+
+    def test_stream_helper(self):
+        streamed_results = [b'{"test":"val1"}', b'{"test":"val2"}']
+        mock_response = mock.Mock(spec=Response)
+        mock_response.iter_lines.return_value = iter(streamed_results)
+
+        streamable = api.stream_helper(mock_response)
+
+        self.assertIsInstance(streamable, Iterable)
+        for expected, actual in zip(streamed_results, streamable):
+            self.assertIsInstance(actual, bytes)
+            self.assertEqual(expected, actual)
+
+    def test_stream_helper_with_decode(self):
+        streamed_results = [b'{"test":"val1"}', b'{"test":"val2"}']
+        mock_response = mock.Mock(spec=Response)
+        mock_response.iter_lines.return_value = iter(streamed_results)
+
+        streamable = api.stream_helper(mock_response, decode_to_json=True)
+
+        self.assertIsInstance(streamable, Iterable)
+        for expected, actual in zip(streamed_results, streamable):
+            self.assertIsInstance(actual, dict)
+            self.assertDictEqual(json.loads(expected), actual)
 
 
 if __name__ == '__main__':

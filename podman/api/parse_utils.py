@@ -97,3 +97,14 @@ def stream_frames(response: Response) -> Iterator[bytes]:
         if not data:
             return
         yield data
+
+
+def stream_helper(
+    response: Response, decode_to_json: bool = False
+) -> Union[Iterator[bytes], Iterator[Dict[str, Any]]]:
+    """Helper to stream results and optionally decode to json"""
+    for value in response.iter_lines():
+        if decode_to_json:
+            yield json.loads(value)
+        else:
+            yield value
