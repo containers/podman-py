@@ -389,7 +389,9 @@ class Container(PodmanResource):
         )
         response.raise_for_status()
 
-    def stats(self, **kwargs) -> Iterator[Union[bytes, Dict[str, Any]]]:
+    def stats(
+        self, **kwargs
+    ) -> Union[bytes, Dict[str, Any], Iterator[bytes], Iterator[Dict[str, Any]]]:
         """Return statistics for container.
 
         Keyword Args:
@@ -413,20 +415,9 @@ class Container(PodmanResource):
         response.raise_for_status()
 
         if stream:
-            return self._stats_helper(decode, response.iter_lines())
+            return api.stream_helper(response, decode_to_json=decode)
 
-        return json.loads(response.text) if decode else response.content
-
-    @staticmethod
-    def _stats_helper(
-        decode: bool, body: Iterator[bytes]
-    ) -> Iterator[Union[bytes, Dict[str, Any]]]:
-        """Helper needed to allow stats() to return either a generator or a bytes."""
-        for entry in body:
-            if decode:
-                yield json.loads(entry)
-            else:
-                yield entry
+        return json.loads(response.content) if decode else response.content
 
     def stop(self, **kwargs) -> None:
         """Stop container.
