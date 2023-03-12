@@ -6,7 +6,6 @@ from contextlib import suppress
 from typing import Any, Dict, Iterable, Iterator, List, Mapping, Optional, Tuple, Union
 
 import requests
-from requests import Response
 
 from podman import api
 from podman.domain.images import Image
@@ -457,22 +456,19 @@ class Container(PodmanResource):
             NotFound: when the container no longer exists
             APIError: when the service reports an error
         """
+        stream = kwargs.get("stream", False)
+
         params = {
+            "stream": stream,
             "ps_args": kwargs.get("ps_args"),
-            "stream": kwargs.get("stream", False),
         }
-        response = self.client.get(f"/containers/{self.id}/top", params=params)
+        response = self.client.get(f"/containers/{self.id}/top", params=params, stream=stream)
         response.raise_for_status()
 
-        if params["stream"]:
-            self._top_helper(response)
+        if stream:
+            return api.stream_helper(response, decode_to_json=True)
 
         return response.json()
-
-    @staticmethod
-    def _top_helper(response: Response) -> Iterator[Dict[str, Any]]:
-        for line in response.iter_lines():
-            yield line
 
     def unpause(self) -> None:
         """Unpause processes in container."""

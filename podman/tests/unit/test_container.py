@@ -411,6 +411,53 @@ class ContainersTestCase(unittest.TestCase):
         self.assertDictEqual(actual, body)
         self.assertTrue(adapter.called_once)
 
+    @requests_mock.Mocker()
+    def test_top_with_streaming(self, mock):
+        stream = [
+            {
+                "Processes": [
+                    [
+                        'jhonce',
+                        '2417',
+                        '2274',
+                        '0',
+                        'Mar01',
+                        '?',
+                        '00:00:01',
+                        (
+                            '/usr/bin/ssh-agent /bin/sh -c exec -l /bin/bash -c'
+                            ' "/usr/bin/gnome-session"'
+                        ),
+                    ],
+                    ['jhonce', '5544', '3522', '0', 'Mar01', 'pts/1', '00:00:02', '-bash'],
+                    ['jhonce', '6140', '3522', '0', 'Mar01', 'pts/2', '00:00:00', '-bash'],
+                ],
+                "Titles": ["UID", "PID", "PPID", "C", "STIME", "TTY", "TIME CMD"],
+            }
+        ]
+
+        buffer = io.StringIO()
+        for entry in stream:
+            buffer.write(json.JSONEncoder().encode(entry))
+            buffer.write("\n")
+
+        adapter = mock.get(
+            tests.LIBPOD_URL
+            + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/top"
+            "?stream=True",
+            text=buffer.getvalue(),
+        )
+
+        container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
+        top_stats = container.top(stream=True)
+
+        self.assertIsInstance(top_stats, Iterable)
+        for response, actual in zip(top_stats, stream):
+            self.assertIsInstance(response, dict)
+            self.assertDictEqual(response, actual)
+
+        self.assertTrue(adapter.called_once)
+
 
 if __name__ == '__main__':
     unittest.main()
