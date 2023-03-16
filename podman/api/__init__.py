@@ -11,6 +11,7 @@ from podman.api.parse_utils import (
     prepare_cidr,
     prepare_timestamp,
     stream_frames,
+    stream_helper,
 )
 from podman.api.tar_utils import create_tar, prepare_containerfile, prepare_containerignore
 from .. import version
@@ -58,4 +59,5 @@ __all__ = [
     'prepare_filters',
     'prepare_timestamp',
     'stream_frames',
+    'stream_helper',
 ]

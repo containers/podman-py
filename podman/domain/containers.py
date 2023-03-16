@@ -6,7 +6,6 @@ from contextlib import suppress
 from typing import Any, Dict, Iterable, Iterator, List, Mapping, Optional, Tuple, Union
 
 import requests
-from requests import Response
 
 from podman import api
 from podman.domain.images import Image
@@ -389,7 +388,9 @@ class Container(PodmanResource):
         )
         response.raise_for_status()
 
-    def stats(self, **kwargs) -> Iterator[Union[bytes, Dict[str, Any]]]:
+    def stats(
+        self, **kwargs
+    ) -> Union[bytes, Dict[str, Any], Iterator[bytes], Iterator[Dict[str, Any]]]:
         """Return statistics for container.
 
         Keyword Args:
@@ -413,20 +414,9 @@ class Container(PodmanResource):
         response.raise_for_status()
 
         if stream:
-            return self._stats_helper(decode, response.iter_lines())
+            return api.stream_helper(response, decode_to_json=decode)
 
-        return json.loads(response.text) if decode else response.content
-
-    @staticmethod
-    def _stats_helper(
-        decode: bool, body: Iterator[bytes]
-    ) -> Iterator[Union[bytes, Dict[str, Any]]]:
-        """Helper needed to allow stats() to return either a generator or a bytes."""
-        for entry in body:
-            if decode:
-                yield json.loads(entry)
-            else:
-                yield entry
+        return json.loads(response.content) if decode else response.content
 
     def stop(self, **kwargs) -> None:
         """Stop container.
@@ -466,22 +456,19 @@ class Container(PodmanResource):
             NotFound: when the container no longer exists
             APIError: when the service reports an error
         """
+        stream = kwargs.get("stream", False)
+
         params = {
+            "stream": stream,
             "ps_args": kwargs.get("ps_args"),
-            "stream": kwargs.get("stream", False),
         }
-        response = self.client.get(f"/containers/{self.id}/top", params=params)
+        response = self.client.get(f"/containers/{self.id}/top", params=params, stream=stream)
         response.raise_for_status()
 
-        if params["stream"]:
-            self._top_helper(response)
+        if stream:
+            return api.stream_helper(response, decode_to_json=True)
 
         return response.json()
-
-    @staticmethod
-    def _top_helper(response: Response) -> Iterator[Dict[str, Any]]:
-        for line in response.iter_lines():
-            yield line
 
     def unpause(self) -> None:
         """Unpause processes in container."""
