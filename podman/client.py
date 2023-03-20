@@ -113,6 +113,9 @@ class PodmanClient(AbstractContextManager):
 
         Returns:
             Client used to communicate with a Podman service.
+
+        Raises:
+            ValueError when required environment variable is not set
         """
         environment = environment or os.environ
         credstore_env = credstore_env or {}
@@ -121,6 +124,8 @@ class PodmanClient(AbstractContextManager):
             version = None
 
         host = environment.get("CONTAINER_HOST") or environment.get("DOCKER_HOST") or None
+        if host is None:
+            raise ValueError("CONTAINER_HOST or DOCKER_HOST must be set to URL of podman service.")
 
         return PodmanClient(
             base_url=host,

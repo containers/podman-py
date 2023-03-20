@@ -57,3 +57,9 @@ class SystemIntegrationTest(base.IntegrationTest):
                 )
             )
         self.assertIn("lookup fake_registry: no such host", e.exception.explanation)
+
+    def test_from_env(self):
+        """integration: from_env() error message"""
+        with self.assertRaises(ValueError) as e:
+            next(self.client.from_env())
+        self.assertIn("CONTAINER_HOST or DOCKER_HOST", repr(e.exception))
