@@ -13,8 +13,7 @@ from podman import PodmanClient, tests
 class PodmanClientTestCase(unittest.TestCase):
     """Test the PodmanClient() object."""
 
-    opener = mock.mock_open(
-        read_data="""
+    opener = mock.mock_open(read_data="""
 [containers]
   log_size_max = -1
   pids_limit = 2048
@@ -33,8 +32,7 @@ class PodmanClientTestCase(unittest.TestCase):
       identity = "/home/qe/.ssh/id_rsa"
 
 [network]
-"""
-    )
+""")
 
     def setUp(self) -> None:
         super().setUp()

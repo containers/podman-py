@@ -121,10 +121,7 @@ class ImagesIntegrationTest(base.IntegrationTest):
         self.assertIn("payload does not match", e.exception.explanation)
 
     def test_build(self):
-        buffer = io.StringIO(
-            f"""FROM quay.io/libpod/alpine_labels:latest
-"""
-        )
+        buffer = io.StringIO(f"""FROM quay.io/libpod/alpine_labels:latest""")
 
         image, stream = self.client.images.build(fileobj=buffer)
         self.assertIsNotNone(image)
