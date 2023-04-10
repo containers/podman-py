@@ -225,9 +225,11 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 the corresponding environment variables will be set in the container being built.
             user (Union[str, int]): Username or UID to run commands as inside the container.
             userns_mode (str): Sets the user namespace mode for the container when user namespace
-                remapping option is enabled. Supported values are: host
+                remapping option is enabled. Supported values documented here
+                https://docs.podman.io/en/latest/markdown/options/userns.container.html#userns-mode
             uts_mode (str): Sets the UTS namespace mode for the container.
-                Supported values are: host
+                Supported values are documented here
+                https://docs.podman.io/en/latest/markdown/options/uts.container.html
             version (str): The version of the API to use. Set to auto to automatically detect
                 the server's version. Default: 3.0.0
             volume_driver (str): The name of a volume driver/plugin.
