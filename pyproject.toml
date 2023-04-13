@@ -9,6 +9,7 @@ exclude = '''
     \.git
   | \.tox
   | \.venv
+  | \.history
   | build
   | dist
   | docs
