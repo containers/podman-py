@@ -140,5 +140,5 @@ class ImagesIntegrationTest(base.IntegrationTest):
             )
         self.assertRegex(
             e.exception.explanation,
-            r"failed to connect: dial tcp: lookup fake\.ip\.addr.+no such host"
+            r"failed to connect: dial tcp: lookup fake\.ip\.addr.+no such host",
         )

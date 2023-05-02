@@ -58,7 +58,7 @@ class SystemIntegrationTest(base.IntegrationTest):
             )
         self.assertRegex(
             e.exception.explanation,
-            "lookup fake_registry.+no such host",
+            r"lookup fake_registry.+no such host",
         )
 
     def test_from_env(self):
