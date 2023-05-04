@@ -56,7 +56,10 @@ class SystemIntegrationTest(base.IntegrationTest):
                     "fake_user", "fake_password", "fake_email@fake_domain.test", "fake_registry"
                 )
             )
-        self.assertIn("lookup fake_registry: no such host", e.exception.explanation)
+        self.assertRegex(
+            e.exception.explanation,
+            r"lookup fake_registry.+no such host",
+        )
 
     def test_from_env(self):
         """integration: from_env() error message"""

@@ -138,7 +138,7 @@ class ImagesIntegrationTest(base.IntegrationTest):
                     source="randuser@fake.ip.addr:22::quay.io/libpod/alpine", quiet=False
                 )
             )
-        self.assertIn(
-            "failed to connect: dial tcp: lookup fake.ip.addr: no such host",
+        self.assertRegex(
             e.exception.explanation,
+            r"failed to connect: dial tcp: lookup fake\.ip\.addr.+no such host",
         )
