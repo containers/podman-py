@@ -141,7 +141,8 @@ class ContainersIntegrationTest(base.IntegrationTest):
             self.assertIn(top_ctnr.id, report["ContainersDeleted"])
 
             # SpaceReclaimed is the size of the content created during the running of the container
-            self.assertEqual(report["SpaceReclaimed"], 0)
+            # TODO: This should probably check if the podman version is >= 4.6 (guess)
+            self.assertGreater(report["SpaceReclaimed"], 0)
 
             with self.assertRaises(NotFound):
                 self.client.containers.get(top_ctnr.id)
