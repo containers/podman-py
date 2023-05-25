@@ -128,7 +128,7 @@ class PodsManager(Manager):
         response = self.client.delete(f"/pods/{pod_id}", params={"force": force})
         response.raise_for_status()
 
-    def stats(self, **kwargs) -> Union[Dict[str, Any], Iterator[Dict[str, Any]]]:
+    def stats(self, **kwargs) -> Union[List[Dict[str, Any]], Iterator[List[Dict[str, Any]]]]:
         """Resource usage statistics for the containers in pods.
 
         Keyword Args:
