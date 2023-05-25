@@ -1,4 +1,7 @@
+import io
+import json
 import unittest
+from typing import Iterable
 
 import requests_mock
 
@@ -156,6 +159,58 @@ class PodsManagerTestCase(unittest.TestCase):
             name="c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8"
         )
         self.assertDictEqual(actual, body)
+
+    @requests_mock.Mocker()
+    def test_top_with_streaming(self, mock):
+        stream = [
+            [
+                {
+                    'CPU': '2.53%',
+                    'MemUsage': '49.15kB / 16.71GB',
+                    'MemUsageBytes': '48KiB / 15.57GiB',
+                    'Mem': '0.00%',
+                    'NetIO': '7.638kB / 430B',
+                    'BlockIO': '-- / --',
+                    'PIDS': '1',
+                    'Pod': '1c948ab42339',
+                    'CID': 'd999c49a7b6c',
+                    'Name': '1c948ab42339-infra',
+                }
+            ],
+            [
+                {
+                    'CPU': '1.46%',
+                    'MemUsage': '57.23B / 16.71GB',
+                    'MemUsageBytes': '48KiB / 15.57GiB',
+                    'Mem': '0.00%',
+                    'NetIO': '7.638kB / 430B',
+                    'BlockIO': '-- / --',
+                    'PIDS': '1',
+                    'Pod': '1c948ab42339',
+                    'CID': 'd999c49a7b6c',
+                    'Name': '1c948ab42339-infra',
+                }
+            ],
+        ]
+
+        buffer = io.StringIO()
+        for entry in stream:
+            buffer.write(json.JSONEncoder().encode(entry))
+            buffer.write("\n")
+
+        adapter = mock.get(
+            tests.LIBPOD_URL + "/pods/stats?stream=True",
+            text=buffer.getvalue(),
+        )
+
+        stream_results = self.client.pods.stats(stream=True, decode=True)
+
+        self.assertIsInstance(stream_results, Iterable)
+        for response, actual in zip(stream_results, stream):
+            self.assertIsInstance(response, list)
+            self.assertListEqual(response, actual)
+
+        self.assertTrue(adapter.called_once)
 
     def test_stats_400(self):
         with self.assertRaises(ValueError):
