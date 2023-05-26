@@ -156,7 +156,38 @@ class PodsManagerTestCase(unittest.TestCase):
         )
 
         actual = self.client.pods.stats(
-            name="c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8"
+            name="c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8",
+        )
+        self.assertEqual(actual, json.dumps(body).encode())
+
+    @requests_mock.Mocker()
+    def test_stats_without_decode(self, mock):
+        body = {
+            "Processes": [
+                [
+                    'jhonce',
+                    '2417',
+                    '2274',
+                    '0',
+                    'Mar01',
+                    '?',
+                    '00:00:01',
+                    '/usr/bin/ssh-agent /bin/sh -c exec -l /bin/bash -c "/usr/bin/gnome-session"',
+                ],
+                ['jhonce', '5544', '3522', '0', 'Mar01', 'pts/1', '00:00:02', '-bash'],
+                ['jhonce', '6140', '3522', '0', 'Mar01', 'pts/2', '00:00:00', '-bash'],
+            ],
+            "Titles": ["UID", "PID", "PPID", "C", "STIME", "TTY", "TIME CMD"],
+        }
+        mock.get(
+            tests.LIBPOD_URL
+            + "/pods/stats"
+            "?namesOrIDs=c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8",
+            json=body,
+        )
+
+        actual = self.client.pods.stats(
+            name="c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8", decode=True
         )
         self.assertDictEqual(actual, body)
 
