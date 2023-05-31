@@ -76,11 +76,11 @@ tox -e coverage
   you love doing donuts when you're alone, but with passengers the goal is to
   make the ride as smooth as possible.
 - Use Google style python [docstrings](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings)
-    - A general exception is made for kwargs where we use the Sphinx extension of adding a section
+  - A general exception is made for kwargs where we use the Sphinx extension of adding a section
       "Keyword Arguments" and documenting the accepted keyword arguments, their type and usage.
       Example: kwarg1 (int): Description of kwarg1
 
-Again thank you for your interest and participation.
+Again, thank you for your interest and participation.
 Jhon Honce `<jhonce at redhat dot com>`
 
 Thanks to Carl Tashian, Participatory Politics Foundation for his fine
