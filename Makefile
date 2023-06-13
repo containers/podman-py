@@ -2,7 +2,7 @@ export GO111MODULE=off
 export GOPROXY=https://proxy.golang.org
 
 
-PYTHON ?= $(shell command -v python3 2>/dev/null || command -v python)
+PYTHON ?= $(shell command -v python3 2>/dev/null || command -v python || which python3)
 DESTDIR ?= /
 DESTDIR ?=
 EPOCH_TEST_COMMIT ?= $(shell git merge-base $${DEST_BRANCH:-main} HEAD)
@@ -38,7 +38,11 @@ integration:
 
 .PHONY: tox
 tox:
+ifeq (, $(shell which dnf))
+	brew install python@3.8 python@3.9 python@3.10 python@3.11
+else
 	-dnf install -y python3 python3.6 python3.8 python3.9
+endif
 	# ensure tox is available. It will take care of other testing requirements
 	$(PYTHON) -m pip install --user tox
 
