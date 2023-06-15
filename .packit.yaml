@@ -17,9 +17,6 @@ jobs:
     enable_net: true
     srpm_build_deps:
       - make
-    actions:
-      fix-spec-file:
-        - "bash .packit.sh"
 
   - <<: *copr
     # Run on commit to main branch
@@ -42,4 +39,3 @@ jobs:
     trigger: commit
     dist_git_branches:
       - fedora-branched # rawhide updates are created automatically
-          

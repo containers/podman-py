@@ -25,7 +25,7 @@
 
 Name: python-%{pypi_name}
 %if %{with copr}
-Epoch: 101
+Epoch: 102
 %else
 Epoch: 3
 %endif
