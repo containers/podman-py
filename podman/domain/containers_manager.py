@@ -111,8 +111,12 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
 
         results = {"ContainersDeleted": [], "SpaceReclaimed": 0}
         for entry in response.json():
-            if entry.get("error") is not None:
-                raise APIError(entry["error"], response=response, explanation=entry["error"])
+            if entry.get("Err") is not None:
+                raise APIError(
+                    entry["Err"],
+                    response=response,
+                    explanation=f"""Failed to prune container '{entry["Id"]}'""",
+                )
 
             results["ContainersDeleted"].append(entry["Id"])
             results["SpaceReclaimed"] += entry["Size"]
