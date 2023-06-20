@@ -103,7 +103,7 @@ class PodsManager(Manager):
                 raise APIError(
                     item["Err"],
                     response=response,
-                    explanation=f"""Failed to prune network '{item["Id"]}'""",
+                    explanation=f"""Failed to prune pod '{item["Id"]}'""",
                 )
             deleted.append(item["Id"])
         return {"PodsDeleted": deleted, "SpaceReclaimed": 0}
