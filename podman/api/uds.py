@@ -1,16 +1,13 @@
 """Specialized Transport Adapter for UNIX domain sockets."""
 import collections
 import functools
-import http.client
 import logging
 import socket
 from typing import Optional, Union
 from urllib.parse import unquote, urlparse
 
-try:
-    import urllib3
-except ImportError:
-    from requests.packages import urllib3
+import urllib3
+import urllib3.connection
 
 from requests.adapters import DEFAULT_POOLBLOCK, DEFAULT_POOLSIZE, DEFAULT_RETRIES, HTTPAdapter
 
@@ -45,7 +42,7 @@ class UDSSocket(socket.socket):
             raise APIError(f"Unable to make connection to UDS '{netloc}'") from e
 
 
-class UDSConnection(http.client.HTTPConnection):
+class UDSConnection(urllib3.connection.HTTPConnection):
     """Specialization of HTTPConnection to use a UNIX domain sockets."""
 
     def __init__(

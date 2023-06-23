@@ -5,5 +5,5 @@ coverage
 fixtures~=4.0.0
 pylint
 pytest
-requests-mock
+requests-mock >= 1.11.0
 tox

@@ -4,5 +4,5 @@ requests>=2.24
 setuptools
 sphinx
 tomli>=1.2.3; python_version<'3.11'
-urllib3>=1.26.5,<2.0.0
+urllib3
 wheel

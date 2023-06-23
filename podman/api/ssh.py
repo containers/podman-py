@@ -4,7 +4,6 @@ See Podman go bindings for more details.
 """
 import collections
 import functools
-import http.client
 import logging
 import pathlib
 import random
@@ -17,10 +16,8 @@ from typing import Optional, Union
 import time
 import xdg.BaseDirectory
 
-try:
-    import urllib3
-except ImportError:
-    from requests.packages import urllib3
+import urllib3
+import urllib3.connection
 
 from requests.adapters import DEFAULT_POOLBLOCK, DEFAULT_RETRIES, HTTPAdapter
 
@@ -151,7 +148,7 @@ class SSHSocket(socket.socket):
         super().close()
 
 
-class SSHConnection(http.client.HTTPConnection):
+class SSHConnection(urllib3.connection.HTTPConnection):
     """Specialization of HTTPConnection to use a SSH forwarded socket."""
 
     def __init__(
