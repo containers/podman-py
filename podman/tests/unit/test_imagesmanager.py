@@ -426,7 +426,7 @@ class ImagesManagerTestCase(unittest.TestCase):
                     "is_automated": False,
                     "name": "quay.io/libpod/fedora",
                     "star_count": 0,
-                    "tag": "1.0.0"
+                    "tag": "1.0.0",
                 },
             ],
         )
