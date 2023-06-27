@@ -44,6 +44,7 @@ class ImagesManager(BuildMixin, Manager):
 
                 - dangling (bool)
                 - label (Union[str, List[str]]): format either "key" or "key=value"
+
         Raises:
             APIError: when service returns an error
         """
