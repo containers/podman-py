@@ -100,8 +100,8 @@ export PBR_VERSION="0.0.0"
 
 %if %{with rhel8_py}
 %files -n python%{python3_pkgversion}-%{pypi_name}
-%dir %{python3_sitelib}/%{pypi_name}-%{version}-py%{python3_version}.egg-info
-%{python3_sitelib}/%{pypi_name}-%{version}-py%{python3_version}.egg-info/*
+%dir %{python3_sitelib}/%{pypi_name}-*-py%{python3_version}.egg-info
+%{python3_sitelib}/%{pypi_name}-*-py%{python3_version}.egg-info/*
 %dir %{python3_sitelib}/%{pypi_name}
 %{python3_sitelib}/%{pypi_name}/*
 %else
