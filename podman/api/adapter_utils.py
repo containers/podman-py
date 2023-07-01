@@ -1,8 +1,8 @@
 """Utility functions for working with Adapters."""
-from typing import NamedTuple, Mapping
+from typing import Dict, NamedTuple, Type
 
 
-def _key_normalizer(key_class: NamedTuple, request_context: Mapping) -> Mapping:
+def _key_normalizer(key_class: Type, request_context: Dict) -> NamedTuple:
     """Create a pool key out of a request context dictionary.
 
     According to RFC 3986, both the scheme and host are case-insensitive.

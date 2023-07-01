@@ -11,7 +11,7 @@ from podman import api
 
 
 class TestUtilsCase(unittest.TestCase):
-    def test_format_filters(self):
+    def test_format_filters(self) -> None:
         @dataclass
         class TestCase:
             name: str

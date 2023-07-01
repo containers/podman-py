@@ -12,7 +12,7 @@ from podman import api
 
 
 class ParseUtilsTestCase(unittest.TestCase):
-    def test_parse_repository(self):
+    def test_parse_repository(self) -> None:
         @dataclass
         class TestCase:
             name: str

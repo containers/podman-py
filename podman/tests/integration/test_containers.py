@@ -8,7 +8,7 @@ try:
     from collections.abc import Iterator
 except:
     # Python < 3.10
-    from collections import Iterator
+    from collections import Iterator  # type: ignore[attr-defined]
 
 import podman.tests.integration.base as base
 from podman import PodmanClient

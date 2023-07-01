@@ -15,6 +15,8 @@ logger = logging.getLogger("podman.volumes")
 class Volume(PodmanResource):
     """Details and configuration for an image managed by the Podman service."""
 
+    manager: "VolumesManager"
+
     @property
     def id(self):
         return self.name

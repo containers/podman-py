@@ -1,7 +1,7 @@
 """APIClient for connecting to Podman service."""
 import json
 import urllib.parse
-from typing import Any, ClassVar, IO, Iterable, List, Mapping, Optional, Tuple, Type, Union
+from typing import Any, ClassVar, IO, List, Mapping, Optional, Tuple, Type, Union
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -18,7 +18,6 @@ _Data = Union[
     str,
     bytes,
     Mapping[str, Any],
-    Iterable[Tuple[str, Optional[str]]],
     IO,
 ]
 """Type alias for request data parameter."""
@@ -69,14 +68,14 @@ class APIClient(requests.Session):
     # Abstract methods (delete,get,head,post) are specialized and pylint cannot walk hierarchy.
     # pylint: disable=too-many-instance-attributes,arguments-differ,arguments-renamed
 
-    supported_schemes: ClassVar[List[str]] = (
+    supported_schemes: ClassVar[List[str]] = [
         "unix",
         "http+unix",
         "ssh",
         "http+ssh",
         "tcp",
         "http",
-    )
+    ]
 
     def __init__(
         self,
@@ -175,11 +174,11 @@ class APIClient(requests.Session):
 
         return uri
 
-    def delete(
+    def delete(  # type: ignore[override]
         self,
         path: Union[str, bytes],
-        params: Union[None, bytes, Mapping[str, str]] = None,
-        headers: Optional[Mapping[str, str]] = None,
+        params: Union[None, bytes, Mapping[str, Any]] = None,
+        headers: Optional[Mapping[str, Any]] = None,
         timeout: _Timeout = None,
         stream: Optional[bool] = False,
         **kwargs,
@@ -209,11 +208,11 @@ class APIClient(requests.Session):
             **kwargs,
         )
 
-    def get(
+    def get(  # type: ignore[override]
         self,
         path: Union[str, bytes],
-        params: Union[None, bytes, Mapping[str, List[str]]] = None,
-        headers: Optional[Mapping[str, str]] = None,
+        params: Union[None, bytes, Mapping[str, Any]] = None,
+        headers: Optional[Mapping[str, Any]] = None,
         timeout: _Timeout = None,
         stream: Optional[bool] = False,
         **kwargs,
@@ -243,11 +242,11 @@ class APIClient(requests.Session):
             **kwargs,
         )
 
-    def head(
+    def head(  # type: ignore[override]
         self,
         path: Union[str, bytes],
-        params: Union[None, bytes, Mapping[str, str]] = None,
-        headers: Optional[Mapping[str, str]] = None,
+        params: Union[None, bytes, Mapping[str, Any]] = None,
+        headers: Optional[Mapping[str, Any]] = None,
         timeout: _Timeout = None,
         stream: Optional[bool] = False,
         **kwargs,
@@ -277,12 +276,12 @@ class APIClient(requests.Session):
             **kwargs,
         )
 
-    def post(
+    def post(  # type: ignore[override]
         self,
         path: Union[str, bytes],
-        params: Union[None, bytes, Mapping[str, str]] = None,
+        params: Union[None, bytes, Mapping[str, Any]] = None,
         data: _Data = None,
-        headers: Optional[Mapping[str, str]] = None,
+        headers: Optional[Mapping[str, Any]] = None,
         timeout: _Timeout = None,
         stream: Optional[bool] = False,
         **kwargs,
@@ -314,12 +313,12 @@ class APIClient(requests.Session):
             **kwargs,
         )
 
-    def put(
+    def put(  # type: ignore[override]
         self,
         path: Union[str, bytes],
-        params: Union[None, bytes, Mapping[str, str]] = None,
+        params: Union[None, bytes, Mapping[str, Any]] = None,
         data: _Data = None,
-        headers: Optional[Mapping[str, str]] = None,
+        headers: Optional[Mapping[str, Any]] = None,
         timeout: _Timeout = None,
         stream: Optional[bool] = False,
         **kwargs,
@@ -356,8 +355,8 @@ class APIClient(requests.Session):
         method: str,
         path: Union[str, bytes],
         data: _Data = None,
-        params: Union[None, bytes, Mapping[str, str]] = None,
-        headers: Optional[Mapping[str, str]] = None,
+        params: Union[None, bytes, Mapping[str, Any]] = None,
+        headers: Optional[Mapping[str, Any]] = None,
         timeout: _Timeout = None,
         stream: Optional[bool] = None,
         **kwargs,
@@ -378,13 +377,16 @@ class APIClient(requests.Session):
             APIError: when service returns an error
         """
         # Only set timeout if one is given, lower level APIs will not override None
-        timeout_kw = {}
+        timeout_kw: dict[str, Any] = {}
         timeout = timeout or self.timeout
         if timeout_kw is not None:
             timeout_kw["timeout"] = timeout
 
         compatible = kwargs.get("compatible", False)
         path_prefix = self.compatible_prefix if compatible else self.path_prefix
+
+        if isinstance(path, bytes):
+            path = path.decode()
 
         path = path.lstrip("/")  # leading / makes urljoin crazy...
 

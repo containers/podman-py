@@ -80,8 +80,11 @@ class Network(PodmanResource):
         Raises:
             APIError: when Podman service reports an error
         """
+        container_id: str
         if isinstance(container, Container):
-            container = container.id
+            container_id = container.id
+        else:
+            container_id = container
 
         # TODO Talk with baude on which IPAddress field is needed...
         ipam = {
@@ -103,7 +106,7 @@ class Network(PodmanResource):
             k: v for (k, v) in endpoint_config.items() if not (v is None or len(v) == 0)
         }
 
-        data = {"Container": container, "EndpointConfig": endpoint_config}
+        data = {"Container": container_id, "EndpointConfig": endpoint_config}
         data = {k: v for (k, v) in data.items() if not (v is None or len(v) == 0)}
 
         response = self.client.post(
@@ -141,4 +144,4 @@ class Network(PodmanResource):
         Raises:
             APIError: when Podman service reports an error
         """
-        self.manager.remove(self.name, force=force, **kwargs)
+        self.manager.remove(self.name, force=force, **kwargs)  # type: ignore[union-attr]

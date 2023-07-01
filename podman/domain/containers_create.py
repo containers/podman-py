@@ -272,14 +272,14 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         payload = self._render_payload(payload)
         payload = api.prepare_body(payload)
 
-        response = self.client.post(
+        response = self.client.post(  # type: ignore[attr-defined]
             "/containers/create", headers={"content-type": "application/json"}, data=payload
         )
         response.raise_for_status(not_found=ImageNotFound)
 
         container_id = response.json()["Id"]
 
-        return self.get(container_id)
+        return self.get(container_id)  # type: ignore[attr-defined]
 
     # pylint: disable=too-many-locals,too-many-statements,too-many-branches
     @staticmethod
@@ -348,12 +348,11 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                g | G = gigabytes
                e.g. '100m' == 104857600 bytes
             """
-            size_type = type(size)
             if size is None:
                 return size
-            if size_type is int:
+            if isinstance(size, int):
                 return size
-            if size_type is str:
+            if isinstance(size, str):
                 try:
                     return int(size)
                 except ValueError as bad_size:
@@ -368,7 +367,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             else:
                 raise TypeError(
                     f"Passed size {size} should be a type of unicode, str "
-                    f"or int (found : {size_type})"
+                    f"or int (found : {type(size)})"
                 )
 
         # Transform keywords into parameters

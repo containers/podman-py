@@ -316,7 +316,7 @@ class Container(PodmanResource):
             raise ValueError("'path' is a required argument.")
 
         if data is None:
-            data = api.create_tar("/", path)
+            data = api.create_tar("/", path)  # type: ignore[assignment]
 
         response = self.client.put(
             f"/containers/{self.id}/archive", params={"path": path}, data=data
@@ -331,7 +331,7 @@ class Container(PodmanResource):
             link (bool): Ignored.
             force (bool): Kill a running container before deleting.
         """
-        self.manager.remove(self.id, **kwargs)
+        self.manager.remove(self.id, **kwargs)  # type: ignore[union-attr]
 
     def rename(self, name: str) -> None:
         """Rename container.
@@ -370,7 +370,7 @@ class Container(PodmanResource):
             timeout (int): Seconds to wait for container to stop before killing container.
         """
         params = {"timeout": kwargs.get("timeout")}
-        post_kwargs = {}
+        post_kwargs: dict[str, Any] = {}
         if kwargs.get("timeout"):
             post_kwargs["timeout"] = float(params["timeout"]) * 1.5
 
@@ -428,7 +428,7 @@ class Container(PodmanResource):
         """
         params = {"all": kwargs.get("all"), "timeout": kwargs.get("timeout")}
 
-        post_kwargs = {}
+        post_kwargs: dict[str, Any] = {}
         if kwargs.get("timeout"):
             post_kwargs["timeout"] = float(params["timeout"]) * 1.5
 
@@ -445,7 +445,7 @@ class Container(PodmanResource):
         body = response.json()
         raise APIError(body["cause"], response=response, explanation=body["message"])
 
-    def top(self, **kwargs) -> Union[Iterator[Dict[str, Any]], Dict[str, Any]]:
+    def top(self, **kwargs) -> Union[Iterator[bytes], Iterator[Dict[str, Any]], Dict[str, Any]]:
         """Report on running processes in the container.
 
         Keyword Args:

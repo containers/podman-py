@@ -214,7 +214,7 @@ class ManifestsManager(Manager):
             body["names"] = key
         return self.prepare_model(attrs=body)
 
-    def list(self, **kwargs) -> List[Manifest]:
+    def list(self, **kwargs) -> list[Manifest]:
         """Not Implemented."""
 
         raise NotImplementedError("Podman service currently does not support listing manifests.")

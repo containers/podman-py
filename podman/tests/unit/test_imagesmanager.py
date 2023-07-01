@@ -6,7 +6,7 @@ try:
     from collections.abc import Iterable
 except:
     # Python < 3.10
-    from collections import Iterable
+    from collections import Iterable  # type: ignore[attr-defined]
 
 import requests_mock
 

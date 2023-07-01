@@ -212,7 +212,7 @@ class ImagesManager(BuildMixin, Manager):
         response.raise_for_status(not_found=ImageNotFound)
 
         tag_count = 0 if tag is None else 1
-        body = [
+        body: List[Dict[str, Any]] = [
             {
                 "status": f"Pushing repository {repository} ({tag_count} tags)",
             },
@@ -331,7 +331,7 @@ class ImagesManager(BuildMixin, Manager):
         image: Union[Image, str],
         force: Optional[bool] = None,
         noprune: bool = False,  # pylint: disable=unused-argument
-    ) -> List[Dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[str, int]]]:
+    ) -> List[Dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], Any]]:
         """Delete image from Podman service.
 
         Args:
@@ -350,11 +350,11 @@ class ImagesManager(BuildMixin, Manager):
         response.raise_for_status(not_found=ImageNotFound)
 
         body = response.json()
-        results: List[Dict[str, Union[int, str]]] = []
+        results: List[Dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], Any]] = []
         for key in ("Deleted", "Untagged", "Errors"):
             if key in body:
                 for element in body[key]:
-                    results.append({key: element})
+                    results.append({key: element})  # type: ignore[dict-item]
         results.append({"ExitCode": body["ExitCode"]})
         return results
 

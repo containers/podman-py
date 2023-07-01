@@ -5,6 +5,7 @@ FIXME: Remove file when supported Python >= 3.8
 
 # Code is backup for missing typing_extensions...
 # pylint: disable-all
+# mypy: ignore-errors
 
 import abc
 import collections

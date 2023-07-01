@@ -1,12 +1,13 @@
 """Base classes for PodmanResources and Manager's."""
 from abc import ABC, abstractmethod
 from collections import abc
-from typing import Any, List, Mapping, Optional, TypeVar, Union
+from typing import Any, Iterable, Mapping, Optional, TypeVar, Union
 
 from podman.api.client import APIClient
 
 # Methods use this Type when a subclass of PodmanResource is expected.
-PodmanResourceType: TypeVar = TypeVar("PodmanResourceType", bound="PodmanResource")
+# pylint: disable=invalid-name
+PodmanResourceType = TypeVar("PodmanResourceType", bound="PodmanResource")
 
 
 class PodmanResource(ABC):
@@ -33,7 +34,7 @@ class PodmanResource(ABC):
         self.client = client
         self.manager = collection
 
-        self.attrs = {}
+        self.attrs: dict[str, Any] = {}
         if attrs is not None:
             self.attrs.update(attrs)
 
@@ -96,21 +97,24 @@ class Manager(ABC):
         """
 
     @abstractmethod
-    def get(self, key: str) -> PodmanResourceType:
+    def get(self, key: str) -> PodmanResource:
         """Returns representation of resource."""
 
     @abstractmethod
-    def list(self, **kwargs) -> List[PodmanResourceType]:
+    def list(self, **kwargs) -> Iterable[PodmanResource]:
         """Returns list of resources."""
 
-    def prepare_model(self, attrs: Union[PodmanResource, Mapping[str, Any]]) -> PodmanResourceType:
+    # pylint: disable=line-too-long
+    def prepare_model(
+        self, attrs: Union[PodmanResourceType, Mapping[str, Any]]
+    ) -> PodmanResourceType:
         """Create a model from a set of attributes."""
 
         # Refresh existing PodmanResource.
         if isinstance(attrs, PodmanResource):
             attrs.client = self.client
-            attrs.collection = self
-            return attrs
+            attrs.manager = self
+            return attrs  # type: ignore[return-value]
 
         # Instantiate new PodmanResource from Mapping[str, Any]
         if isinstance(attrs, abc.Mapping):

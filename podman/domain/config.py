@@ -44,12 +44,12 @@ class ServiceConnection:
         """str: Returns identifier for service connection."""
         return self.name
 
-    @cached_property
+    @cached_property  # type: ignore[operator]
     def url(self):
         """urllib.parse.ParseResult: Returns URL for service connection."""
         return urllib.parse.urlparse(self.attrs.get("uri"))
 
-    @cached_property
+    @cached_property  # type: ignore[operator]
     def identity(self):
         """Path: Returns Path to identity file for service connection."""
         return Path(self.attrs.get("identity"))
@@ -86,8 +86,8 @@ class PodmanConfig:
         """Path: Returns Path() of container.conf."""
         return self.path
 
-    @cached_property
-    def services(self):
+    @cached_property  # type: ignore[operator]
+    def services(self) -> Dict[str, ServiceConnection]:
         """Dict[str, ServiceConnection]: Returns list of service connections.
 
         Examples:
@@ -106,7 +106,7 @@ class PodmanConfig:
 
         return services
 
-    @cached_property
+    @cached_property  # type: ignore[operator]
     def active_service(self):
         """Optional[ServiceConnection]: Returns active connection."""
 

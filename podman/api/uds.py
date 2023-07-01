@@ -97,8 +97,8 @@ class UDSPoolManager(urllib3.PoolManager):
 
     # pylint's special handling for namedtuple does not cover this usage
     # pylint: disable=invalid-name
-    _PoolKey = collections.namedtuple(
-        "_PoolKey", urllib3.poolmanager.PoolKey._fields + ("key_uds",)
+    _PoolKey = collections.namedtuple(  #  type: ignore[misc]
+        "_PoolKey", urllib3.poolmanager.PoolKey._fields + ("key_uds",)  # type: ignore[attr-defined]
     )
 
     # Map supported schemes to Pool Classes

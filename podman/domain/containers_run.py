@@ -52,16 +52,20 @@ class RunMixin:  # pylint: disable=too-few-public-methods
             ImageNotFound: when Image not found by Podman service
             APIError: when Podman service reports an error
         """
+        image_id: str
         if isinstance(image, Image):
-            image = image.id
+            image_id = image.id
+        else:
+            image_id = image
         if isinstance(command, str):
             command = [command]
 
+        # pylint: disable=line-too-long
         try:
-            container = self.create(image=image, command=command, **kwargs)
+            container = self.create(image=image_id, command=command, **kwargs)  # type: ignore[attr-defined]
         except ImageNotFound:
-            self.client.images.pull(image, platform=kwargs.get("platform"))
-            container = self.create(image=image, command=command, **kwargs)
+            self.client.images.pull(image_id, platform=kwargs.get("platform"))  # type: ignore[attr-defined]
+            container = self.create(image=image_id, command=command, **kwargs)  # type: ignore[attr-defined]
 
         container.start()
         container.wait(condition=["running", "exited"])
@@ -87,6 +91,6 @@ class RunMixin:  # pylint: disable=too-few-public-methods
             container.remove()
 
         if exit_status != 0:
-            raise ContainerError(container, exit_status, command, image, log_iter)
+            raise ContainerError(container, exit_status, command, image_id, log_iter)
 
-        return log_iter if kwargs.get("stream", False) or log_iter is None else b"".join(log_iter)
+        return log_iter if kwargs.get("stream", False) or log_iter is None else b"".join(log_iter)  # type: ignore[return-value]

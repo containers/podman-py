@@ -36,7 +36,7 @@ try:
     from typing import Literal
 except (ImportError, ModuleNotFoundError):
     try:
-        from typing_extensions import Literal
+        from typing_extensions import Literal  # type: ignore[assignment]
     except (ImportError, ModuleNotFoundError):
         from podman.api.typing_extensions import Literal  # pylint: disable=ungrouped-imports
 

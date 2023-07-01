@@ -16,6 +16,12 @@ exclude = '''
   | hack
 )/
 '''
+[tool.mypy]
+install_types = true
+non_interactive = true
+ignore_missing_imports = true
+allow_redefinition = true
+no_strict_optional = true
 [tool.isort]
 profile = "black"
 line_length = 100
@@ -30,4 +36,3 @@ log_cli = true
 log_cli_level = "DEBUG"
 log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
 log_cli_date_format = "%Y-%m-%d %H:%M:%S"
-

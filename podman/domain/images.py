@@ -1,16 +1,21 @@
 """Model and Manager for Image resources."""
 import logging
-from typing import Any, Dict, Iterator, List, Optional, Union
+from typing import Any, Dict, Iterator, List, Optional, TYPE_CHECKING, Union
 
 from podman import api
 from podman.domain.manager import PodmanResource
 from podman.errors import ImageNotFound
+
+if TYPE_CHECKING:
+    from podman.domain.images_manager import ImagesManager
 
 logger = logging.getLogger("podman.images")
 
 
 class Image(PodmanResource):
     """Details and configuration for an Image managed by the Podman service."""
+
+    manager: "ImagesManager"
 
     def __repr__(self) -> str:
         return f"""<{self.__class__.__name__}: '{"', '".join(self.tags)}'>"""

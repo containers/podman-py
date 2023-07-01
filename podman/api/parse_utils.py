@@ -6,7 +6,7 @@ import struct
 from datetime import datetime
 from typing import Any, Dict, Iterator, Optional, Tuple, Union
 
-from requests import Response
+from podman.api.client import APIResponse
 
 
 def parse_repository(name: str) -> Tuple[str, Optional[str]]:
@@ -54,7 +54,7 @@ def prepare_timestamp(value: Union[datetime, int, None]) -> Optional[int]:
     raise ValueError(f"Type '{type(value)}' is not supported by prepare_timestamp()")
 
 
-def prepare_cidr(value: Union[ipaddress.IPv4Network, ipaddress.IPv6Network]) -> (str, str):
+def prepare_cidr(value: Union[ipaddress.IPv4Network, ipaddress.IPv6Network]) -> Tuple[str, str]:
     """Returns network address and Base64 encoded netmask from CIDR.
 
     The return values are dictated by the Go JSON decoder.
@@ -62,7 +62,7 @@ def prepare_cidr(value: Union[ipaddress.IPv4Network, ipaddress.IPv6Network]) -> 
     return str(value.network_address), base64.b64encode(value.netmask.packed).decode("utf-8")
 
 
-def frames(response: Response) -> Iterator[bytes]:
+def frames(response: APIResponse) -> Iterator[bytes]:
     """Returns each frame from multiplexed payload, all results are expected in the payload.
 
     The stdout and stderr frames are undifferentiated as they are returned.
@@ -78,7 +78,7 @@ def frames(response: Response) -> Iterator[bytes]:
         yield response.content[frame_begin:frame_end]
 
 
-def stream_frames(response: Response) -> Iterator[bytes]:
+def stream_frames(response: APIResponse) -> Iterator[bytes]:
     """Returns each frame from multiplexed streamed payload.
 
     Notes:
@@ -100,7 +100,7 @@ def stream_frames(response: Response) -> Iterator[bytes]:
 
 
 def stream_helper(
-    response: Response, decode_to_json: bool = False
+    response: APIResponse, decode_to_json: bool = False
 ) -> Union[Iterator[bytes], Iterator[Dict[str, Any]]]:
     """Helper to stream results and optionally decode to json"""
     for value in response.iter_lines():

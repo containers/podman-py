@@ -118,7 +118,7 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
                     explanation=f"""Failed to prune container '{entry["Id"]}'""",
                 )
 
-            results["ContainersDeleted"].append(entry["Id"])
+            results["ContainersDeleted"].append(entry["Id"])  # type: ignore[attr-defined]
             results["SpaceReclaimed"] += entry["Size"]
         return results
 

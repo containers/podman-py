@@ -1,17 +1,22 @@
 """Module for tracking registry metadata."""
 import logging
-from typing import Any, Mapping, Optional, Union
+from typing import Any, Iterator, List, Mapping, Optional, TYPE_CHECKING, Union
 
 from podman import api
 from podman.domain.images import Image
 from podman.domain.manager import PodmanResource
 from podman.errors import InvalidArgument
 
+if TYPE_CHECKING:
+    from podman.domain.images_manager import ImagesManager
+
 logger = logging.getLogger("podman.images")
 
 
 class RegistryData(PodmanResource):
     """Registry metadata about Image."""
+
+    manager: "ImagesManager"
 
     def __init__(self, image_name: str, *args, **kwargs) -> None:
         """Initialize RegistryData object.
@@ -32,14 +37,14 @@ class RegistryData(PodmanResource):
         if self.attrs is None:
             self.attrs = self.manager.get(image_name).attrs
 
-    def pull(self, platform: Optional[str] = None) -> Image:
+    def pull(self, platform: Optional[str] = None) -> Union[Image, List[Image], Iterator[str]]:
         """Returns Image pulled by identifier.
 
         Args:
             platform: Platform for which to pull Image. Default: None (all platforms.)
         """
         repository = api.parse_repository(self.image_name)
-        return self.manager.pull(repository, tag=self.id, platform=platform)
+        return self.manager.pull(repository[0], tag=self.id, platform=platform)
 
     def has_platform(self, platform: Union[str, Mapping[str, Any]]) -> bool:
         """Returns True if platform is available for Image.
@@ -63,7 +68,7 @@ class RegistryData(PodmanResource):
 
         if isinstance(platform, dict):
             if not {"os", "architecture"} <= platform.keys():
-                version = self.client.version()
+                version = self.client.version()  # type: ignore[operator]
                 platform["os"] = platform.get("os", version["Os"])
                 platform["architecture"] = platform.get("architecture", version["Arch"])
         elif isinstance(platform, str):

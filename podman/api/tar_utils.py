@@ -5,7 +5,7 @@ import shutil
 import tarfile
 import tempfile
 from fnmatch import fnmatch
-from typing import BinaryIO, List, Optional
+from typing import Any, BinaryIO, List, Optional
 
 import sys
 
@@ -96,11 +96,12 @@ def create_tar(
 
         return info
 
+    path: Any
     if name is None:
         # pylint: disable=consider-using-with
-        name = tempfile.NamedTemporaryFile(prefix="podman_context", suffix=".tar")
+        path = tempfile.NamedTemporaryFile(prefix="podman_context", suffix=".tar")
     else:
-        name = pathlib.Path(name)
+        path = pathlib.Path(name)
 
     if exclude is None:
         exclude = []
@@ -109,13 +110,13 @@ def create_tar(
 
     # FIXME caller needs to add this...
     # exclude.append(".dockerignore")
-    exclude.append(name.name)
+    exclude.append(path.name)
 
     mode = "w:gz" if gzip else "w"
-    with tarfile.open(name.name, mode) as tar:
+    with tarfile.open(path.name, mode) as tar:
         tar.add(anchor, arcname="", recursive=True, filter=add_filter)
 
-    return open(name.name, "rb")  # pylint: disable=consider-using-with
+    return open(path.name, "rb")  # pylint: disable=consider-using-with
 
 
 def _exclude_matcher(path: str, exclude: List[str]) -> bool:

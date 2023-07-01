@@ -83,6 +83,7 @@ def _filter_values(mapping: Mapping[str, Any], recursion=False) -> Dict[str, Any
             continue
 
         # depending on type we need details...
+        proposal: Any
         if isinstance(value, collections.abc.Mapping):
             proposal = _filter_values(value, recursion=True)
         elif isinstance(value, collections.abc.Iterable) and not isinstance(value, str):
@@ -98,5 +99,5 @@ def _filter_values(mapping: Mapping[str, Any], recursion=False) -> Dict[str, Any
     return canonical
 
 
-def encode_auth_header(auth_config: Dict[str, str]) -> str:
+def encode_auth_header(auth_config: Dict[str, str]) -> bytes:
     return base64.b64encode(json.dumps(auth_config).encode('utf-8'))

@@ -90,7 +90,7 @@ class SSHSocket(socket.socket):
 
         super().connect(str(self.local_sock))
 
-    def send(self, data: bytes, flags=None) -> int:  # pylint: disable=unused-argument
+    def send(self, data: bytes, flags=None) -> int:  # type: ignore[override] # pylint: disable=unused-argument
         """Write data to SSH forwarded UNIX domain socket.
 
         Args:
@@ -209,9 +209,9 @@ class SSHPoolManager(urllib3.PoolManager):
     """Specialized PoolManager for tracking SSH connections."""
 
     # pylint's special handling for namedtuple does not cover this usage
-    # pylint: disable=invalid-name
-    _PoolKey = collections.namedtuple(
-        "_PoolKey", urllib3.poolmanager.PoolKey._fields + ("key_uri", "key_identity")
+    # pylint: disable=invalid-name, line-too-long
+    _PoolKey = collections.namedtuple(  # type: ignore[misc]
+        "_PoolKey", urllib3.poolmanager.PoolKey._fields + ("key_uri", "key_identity")  # type: ignore[attr-defined]
     )
 
     # Map supported schemes to Pool Classes
@@ -247,7 +247,7 @@ class SSHAdapter(HTTPAdapter):
         pool_connections: int = 9,
         pool_maxsize: int = 10,
         max_retries: int = DEFAULT_RETRIES,
-        pool_block: int = DEFAULT_POOLBLOCK,
+        pool_block: bool = DEFAULT_POOLBLOCK,
         **kwargs,
     ):
         """Initialize SSHAdapter.

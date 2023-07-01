@@ -6,7 +6,7 @@ import random
 import re
 import shutil
 import tempfile
-from typing import Any, Dict, Iterator, List, Tuple
+from typing import Any, Dict, Iterator, Tuple
 
 import itertools
 
@@ -101,7 +101,7 @@ class BuildMixin:
         if kwargs.get("timeout"):
             post_kwargs["timeout"] = float(kwargs.get("timeout"))
 
-        response = self.client.post(
+        response = self.client.post(  # type: ignore[attr-defined]
             "/build",
             params=params,
             data=body,
@@ -134,12 +134,12 @@ class BuildMixin:
             unknown = line
 
         if image_id:
-            return self.get(image_id), report_stream
+            return self.get(image_id), report_stream  # type: ignore[attr-defined]
 
         raise BuildError(unknown or "Unknown", report_stream)
 
     @staticmethod
-    def _render_params(kwargs) -> Dict[str, List[Any]]:
+    def _render_params(kwargs) -> Dict[str, Any]:
         """Map kwargs to query parameters.
 
         All unsupported kwargs are silently ignored.

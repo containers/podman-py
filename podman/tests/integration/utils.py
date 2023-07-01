@@ -19,7 +19,7 @@ import shutil
 import subprocess
 import threading
 from contextlib import suppress
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import time
 
@@ -49,7 +49,7 @@ class PodmanLauncher:
         self.socket_file: str = socket_uri.replace('unix://', '')
         self.log_level = log_level
 
-        self.proc = None
+        self.proc: Any = None
         self.reference_id = hash(time.monotonic())
 
         self.cmd: List[str] = []
