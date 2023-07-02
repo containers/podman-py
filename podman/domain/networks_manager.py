@@ -171,7 +171,8 @@ class NetworksManager(Manager):
         Raises:
             APIError: when service reports error
         """
-        response = self.client.post("/networks/prune", filters=api.prepare_filters(filters))
+        params = {"filters": api.prepare_filters(filters)}
+        response = self.client.post("/networks/prune", params=params)
         response.raise_for_status()
 
         deleted: List[str] = []
