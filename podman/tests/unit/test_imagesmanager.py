@@ -416,6 +416,28 @@ class ImagesManagerTestCase(unittest.TestCase):
         self.assertEqual(report[0]["name"], "quay.io/libpod/fedora")
 
     @requests_mock.Mocker()
+    def test_search_listTags(self, mock):
+        mock.get(
+            tests.LIBPOD_URL + "/images/search?term=fedora&noTrunc=true&listTags=true",
+            json=[
+                {
+                    "description": "mock term=fedora search",
+                    "is_official": False,
+                    "is_automated": False,
+                    "name": "quay.io/libpod/fedora",
+                    "star_count": 0,
+                    "tag": "1.0.0",
+                },
+            ],
+        )
+
+        report = self.client.images.search("fedora", listTags=True)
+        self.assertEqual(len(report), 1)
+
+        self.assertEqual(report[0]["name"], "quay.io/libpod/fedora")
+        self.assertEqual(report[0]["tag"], "1.0.0")
+
+    @requests_mock.Mocker()
     def test_push(self, mock):
         mock.post(tests.LIBPOD_URL + "/images/quay.io%2Ffedora%3Alatest/push")
 
