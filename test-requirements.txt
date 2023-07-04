@@ -2,7 +2,7 @@
 -r requirements.txt
 black
 coverage
-fixtures~=4.1.0
+fixtures
 pylint
 pytest
 requests-mock >= 1.11.0
