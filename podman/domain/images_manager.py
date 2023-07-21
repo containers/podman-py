@@ -198,7 +198,9 @@ class ImagesManager(BuildMixin, Manager):
 
         headers = {
             # A base64url-encoded auth configuration
-            "X-Registry-Auth": encode_auth_header(auth_config) if auth_config else ""
+            "X-Registry-Auth": encode_auth_header(auth_config)
+            if auth_config
+            else ""
         }
 
         params = {
@@ -283,7 +285,9 @@ class ImagesManager(BuildMixin, Manager):
 
         headers = {
             # A base64url-encoded auth configuration
-            "X-Registry-Auth": encode_auth_header(auth_config) if auth_config else ""
+            "X-Registry-Auth": encode_auth_header(auth_config)
+            if auth_config
+            else ""
         }
 
         params = {

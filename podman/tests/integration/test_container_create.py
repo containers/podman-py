@@ -276,6 +276,34 @@ class ContainersIntegrationTest(base.IntegrationTest):
                 # validate if proper device was added (by major/minor numbers)
                 self.assertEqual(source_match.group(1), destination_match.group(1))
 
+    def test_read_write_tmpfs(self):
+        with self.subTest("Check read_write_tmpfs set to True"):
+            container = self.client.containers.create(
+                self.alpine_image,
+                read_only=True,
+                read_write_tmpfs=True,
+                command=["touch", "/tmp/test_file"],
+            )
+            self.containers.append(container)
+
+            container.start()
+            container.wait()
+
+            self.assertEqual(container.attrs.get('State', {}).get('ExitCode', -1), 0)
+
+        with self.subTest("Check default read_write_tmpfs"):
+            container = self.client.containers.create(
+                self.alpine_image, read_only=True, command=["touch", "/tmp/test_file"]
+            )
+            self.containers.append(container)
+
+            container.start()
+            container.wait()
+
+            self.assertNotEqual(container.attrs.get('State', {}).get('ExitCode', -1), 0)
+
+            self.assertIn("Read-only file system", b"\n".join(container.logs()).decode())
+
 
 if __name__ == '__main__':
     unittest.main()
