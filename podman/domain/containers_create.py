@@ -426,7 +426,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "r_limits": [],
             "raw_image_name": pop("raw_image_name"),  # TODO document, podman only
             "read_only_filesystem": pop("read_only"),
-            "read_write_tmpfs": args.pop("read_write_tmpfs", False),
+            "read_write_tmpfs": pop("read_write_tmpfs"),
             "remove": args.pop("remove", args.pop("auto_remove", None)),
             "resource_limits": {},
             "rootfs": pop("rootfs"),

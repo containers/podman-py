@@ -277,32 +277,50 @@ class ContainersIntegrationTest(base.IntegrationTest):
                 self.assertEqual(source_match.group(1), destination_match.group(1))
 
     def test_read_write_tmpfs(self):
-        with self.subTest("Check read_write_tmpfs set to True"):
-            container = self.client.containers.create(
-                self.alpine_image,
-                read_only=True,
-                read_write_tmpfs=True,
-                command=["touch", "/tmp/test_file"],
-            )
-            self.containers.append(container)
+        test_cases = [
+            {"read_write_tmpfs": True, "failed_container": False},
+            {
+                "read_write_tmpfs": False,
+                "failed_container": True,
+                "expected_output": "Read-only file system",
+            },
+            {
+                "read_write_tmpfs": None,
+                "failed_container": True,
+                "expected_output": "Read-only file system",
+            },
+        ]
 
-            container.start()
-            container.wait()
+        for test in test_cases:
+            read_write_tmpfs = test.get('read_write_tmpfs')
+            with self.subTest(f"Check read_write_tmpfs set to {read_write_tmpfs}"):
+                kwargs = (
+                    {"read_write_tmpfs": read_write_tmpfs} if read_write_tmpfs is not None else {}
+                )
+                container = self.client.containers.create(
+                    self.alpine_image,
+                    read_only=True,
+                    command=["/bin/touch", "/tmp/test_file"],
+                    **kwargs,
+                )
 
-            self.assertEqual(container.attrs.get('State', {}).get('ExitCode', -1), 0)
+                self.containers.append(container)
 
-        with self.subTest("Check default read_write_tmpfs"):
-            container = self.client.containers.create(
-                self.alpine_image, read_only=True, command=["touch", "/tmp/test_file"]
-            )
-            self.containers.append(container)
+                container.start()
+                container.wait()
 
-            container.start()
-            container.wait()
+                inspect = container.inspect()
+                logs = b"\n".join(container.logs(stderr=True)).decode()
 
-            self.assertNotEqual(container.attrs.get('State', {}).get('ExitCode', -1), 0)
+                if test.get("failed_container") is True:
+                    self.assertNotEqual(inspect.get("State", {}).get("ExitCode", -1), 0)
+                else:
+                    self.assertEqual(inspect.get("State", {}).get("ExitCode", -1), 0)
 
-            self.assertIn("Read-only file system", b"\n".join(container.logs()).decode())
+                expected_output = test.get("expected_output")
+                if expected_output:
+                    print(inspect)
+                    self.assertIn(expected_output, logs)
 
 
 if __name__ == '__main__':
