@@ -8,7 +8,7 @@ DESTDIR ?=
 EPOCH_TEST_COMMIT ?= $(shell git merge-base $${DEST_BRANCH:-main} HEAD)
 HEAD ?= HEAD
 
-export PODMAN_VERSION ?= "4.6.0"
+export PODMAN_VERSION ?= "4.7.0-dev"
 
 .PHONY: podman
 podman:
