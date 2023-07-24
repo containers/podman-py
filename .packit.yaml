@@ -5,6 +5,7 @@
 # Build targets can be found at:
 # https://copr.fedorainfracloud.org/coprs/rhcontainerbot/packit-builds/
 
+downstream_package_name: python-podman
 specfile_path: rpm/python-podman.spec
 upstream_tag_template: v{version}
 
