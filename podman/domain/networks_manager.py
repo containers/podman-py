@@ -10,7 +10,6 @@ Example:
 """
 import ipaddress
 import logging
-import sys
 from contextlib import suppress
 from typing import Any, Dict, List, Optional
 
