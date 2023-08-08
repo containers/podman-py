@@ -10,7 +10,6 @@ Example:
 """
 import ipaddress
 import logging
-import sys
 from contextlib import suppress
 from typing import Any, Dict, List, Optional
 
@@ -73,7 +72,6 @@ class NetworksManager(Manager):
             headers={"Content-Type": "application/json"},
         )
         response.raise_for_status()
-        sys.stderr.write(str(response.json()))
         return self.prepare_model(attrs=response.json())
 
     def _prepare_ipam(self, data: Dict[str, Any], ipam: Dict[str, Any]):
