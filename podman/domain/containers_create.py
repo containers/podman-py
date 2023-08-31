@@ -212,7 +212,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                     - As list of Secret objects the corresponding IDs are read from:
                         [Secret, Secret]
 
-                    - As list of dictionaries
+                    - As list of dictionaries:
                         [
                             {
                                 "source": "my_secret",  # A string representing the ID or name of
@@ -649,7 +649,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 secret_opts = ["source", "target", "uid", "gid", "mode"]
                 for k, v in item.items():
                     if k in secret_opts:
-                        secret.update({k:v})
+                        secret.update({k: v})
                 params["secrets"].append(secret)
 
         if "secret_env" in args:
