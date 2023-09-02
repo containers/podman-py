@@ -411,11 +411,10 @@ class ImagesManager(BuildMixin, Manager):
         Raises:
             APIError: when service returns an error
         """
-        params = {}
-        if dest is not None and quiet:
-            params = {"destination": dest, "quiet": quiet}
-        elif quiet:
-            params = {"quiet": quiet}
+        params = {"quiet": quiet}
+        if dest is not None:
+            params["destination"] = dest
+
         response = self.client.post(f"/images/scp/{source}", params=params)
         response.raise_for_status()
         return response.json()
