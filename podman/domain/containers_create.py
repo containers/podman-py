@@ -103,7 +103,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             mounts (List[Mount]): Specification for mounts to be added to the container. More
                 powerful alternative to volumes. Each item in the list is expected to be a
                 Mount object.
-                For example :
+                For example:
                  [
                     {
                         "type": "bind",
@@ -202,7 +202,37 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 For example: {"Name": "on-failure", "MaximumRetryCount": 5}
 
             runtime (str): Runtime to use with this container.
-            secrets (Union[List[Secret]|List[str]]): Secrets to add to this container.
+            secrets (List[Union[str, Secret, Dict[str, Union[str, int]]]]): Secrets to
+                mount to this container.
+
+                For example:
+                    - As list of strings, each string representing a secret's ID or name:
+                        ['my_secret', 'my_secret2']
+
+                    - As list of Secret objects the corresponding IDs are read from:
+                        [Secret, Secret]
+
+                    - As list of dictionaries:
+                        [
+                            {
+                                "source": "my_secret",  # A string representing the ID or name of
+                                                        # a secret
+                                "target": "/my_secret", # An optional target to mount source to,
+                                                        # falls back to /run/secrets/source
+                                "uid": 1000,            # An optional UID that falls back to 0
+                                                        # if not given
+                                "gid": 1000,            # An optional GID that falls back to 0
+                                                        # if not given
+                                "mode": 0o400,          # An optional mode to apply to the target,
+                                                        # use an 0o prefix for octal integers
+                            },
+                        ]
+
+            secret_env (Dict[str, str]): Secrets to add as environment variables available in the
+                container.
+
+                For example: {"VARIABLE1": "NameOfSecret", "VARIABLE2": "NameOfAnotherSecret"}
+
             security_opt (List[str]): A List[str]ing values to customize labels for MLS systems,
                 such as SELinux.
             shm_size (Union[str, int]): Size of /dev/shm (e.g. 1G).
@@ -611,9 +641,19 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
         for item in args.pop("secrets", []):
             if isinstance(item, Secret):
-                params["secrets"].append({"ID": item.id})
+                params["secrets"].append({"source": item.id})
             elif isinstance(item, str):
-                params["secrets"].append({"ID": item})
+                params["secrets"].append({"source": item})
+            elif isinstance(item, dict):
+                secret = {}
+                secret_opts = ["source", "target", "uid", "gid", "mode"]
+                for k, v in item.items():
+                    if k in secret_opts:
+                        secret.update({k: v})
+                params["secrets"].append(secret)
+
+        if "secret_env" in args:
+            params["secret_env"] = args.pop("secret_env", {})
 
         if "cgroupns" in args:
             params["cgroupns"] = {"nsmode": args.pop("cgroupns")}
