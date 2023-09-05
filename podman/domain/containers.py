@@ -131,7 +131,7 @@ class Container(PodmanResource):
         stdout: bool = True,
         stderr: bool = True,
         stdin: bool = False,
-        tty: bool = True,
+        tty: bool = False,
         privileged: bool = False,
         user=None,
         detach: bool = False,
