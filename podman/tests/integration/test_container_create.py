@@ -322,6 +322,12 @@ class ContainersIntegrationTest(base.IntegrationTest):
                     print(inspect)
                     self.assertIn(expected_output, logs)
 
+    def test_container_working_dir_deprecation(self):
+        with self.assertWarns(PendingDeprecationWarning):
+            self.client.containers.create(
+                self.alpine_image, working_dir="/tmp", command=["/bin/ls", "-l", "/"]
+            )
+
 
 if __name__ == '__main__':
     unittest.main()

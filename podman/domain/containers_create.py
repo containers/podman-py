@@ -4,6 +4,7 @@ import logging
 import re
 from contextlib import suppress
 from typing import Any, Dict, List, MutableMapping, Union
+import warnings
 
 from podman import api
 from podman.domain.containers import Container
@@ -287,7 +288,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                     }
 
             volumes_from (List[str]): List of container names or IDs to get volumes from.
-            working_dir (str): Path to the working directory.
+            workdir (str): Path to the working directory.
 
         Returns:
             A Container object.
@@ -403,6 +404,9 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                     f"or int (found : {size_type})"
                 )
 
+        if "working_dir" in args:
+            warnings.warn("working_dir is deprecated, use workdir instead", PendingDeprecationWarning)
+
         # Transform keywords into parameters
         params = {
             "annotations": pop("annotations"),  # TODO document, podman only
@@ -484,7 +488,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "version": pop("version"),
             "volumes": [],
             "volumes_from": pop("volumes_from"),
-            "work_dir": pop("working_dir"),
+            "work_dir": pop("workdir") or pop("working_dir"),
         }
 
         for device in args.pop("devices", []):
