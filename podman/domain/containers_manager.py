@@ -26,7 +26,8 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
         return response.ok
 
     def get(self, key: str) -> Container:
-        """Get container by name or id.
+        """
+        Get container by name or id.
 
         Args:
             container_id: Container name or id.
@@ -44,7 +45,8 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
         return self.prepare_model(attrs=response.json())
 
     def list(self, **kwargs) -> List[Container]:
-        """Report on containers.
+        """
+        Report on containers.
 
         Keyword Args:
             all: If False, only show running containers. Default: False.
@@ -90,7 +92,8 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
         return [self.prepare_model(attrs=i) for i in response.json()]
 
     def prune(self, filters: Mapping[str, str] = None) -> Dict[str, Any]:
-        """Delete stopped containers.
+        """
+        Delete stopped containers.
 
         Args:
             filters: Criteria for determining containers to remove. Available keys are:
@@ -115,7 +118,8 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
                 raise APIError(
                     entry["Err"],
                     response=response,
-                    explanation=f"""Failed to prune container '{entry["Id"]}'""",
+                    explanation=
+                    f"""Failed to prune container '{entry["Id"]}'""",
                 )
 
             results["ContainersDeleted"].append(entry["Id"])
@@ -123,7 +127,8 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
         return results
 
     def remove(self, container_id: Union[Container, str], **kwargs):
-        """Delete container.
+        """
+        Delete container.
 
         Podman only
 
@@ -143,5 +148,6 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
             "force": kwargs.get("force"),
         }
 
-        response = self.client.delete(f"/containers/{container_id}", params=params)
+        response = self.client.delete(f"/containers/{container_id}",
+                                      params=params)
         response.raise_for_status()

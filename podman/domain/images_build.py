@@ -86,16 +86,18 @@ class BuildMixin:
 
             with open(filename, "w", encoding='utf-8') as file:
                 shutil.copyfileobj(kwargs["fileobj"], file)
-            body = api.create_tar(anchor=path.name, gzip=kwargs.get("gzip", False))
+            body = api.create_tar(anchor=path.name,
+                                  gzip=kwargs.get("gzip", False))
         elif "path" in kwargs:
             filename = pathlib.Path(kwargs["path"]) / params["dockerfile"]
             # The Dockerfile will be copied into the context_dir if needed
-            params["dockerfile"] = api.prepare_containerfile(kwargs["path"], str(filename))
+            params["dockerfile"] = api.prepare_containerfile(
+                kwargs["path"], str(filename))
 
             excludes = api.prepare_containerignore(kwargs["path"])
-            body = api.create_tar(
-                anchor=kwargs["path"], exclude=excludes, gzip=kwargs.get("gzip", False)
-            )
+            body = api.create_tar(anchor=kwargs["path"],
+                                  exclude=excludes,
+                                  gzip=kwargs.get("gzip", False))
 
         post_kwargs = {}
         if kwargs.get("timeout"):
@@ -148,7 +150,8 @@ class BuildMixin:
             raise TypeError("Either path or fileobj must be provided.")
 
         if "gzip" in kwargs and "encoding" in kwargs:
-            raise PodmanError("Custom encoding not supported when gzip enabled.")
+            raise PodmanError(
+                "Custom encoding not supported when gzip enabled.")
 
         params = {
             "dockerfile": kwargs.get("dockerfile"),
@@ -189,7 +192,8 @@ class BuildMixin:
             params["labels"] = json.dumps(kwargs.get("labels"))
 
         if params["dockerfile"] is None:
-            params["dockerfile"] = f".containerfile.{random.getrandbits(160):x}"
+            params[
+                "dockerfile"] = f".containerfile.{random.getrandbits(160):x}"
 
         # Remove any unset parameters
         return dict(filter(lambda i: i[1] is not None, params.items()))

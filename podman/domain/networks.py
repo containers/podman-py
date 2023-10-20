@@ -43,7 +43,10 @@ class Network(PodmanResource):
         """List[Container]: Returns list of Containers connected to network."""
         with suppress(KeyError):
             container_manager = ContainersManager(client=self.client)
-            return [container_manager.get(ident) for ident in self.attrs["Containers"].keys()]
+            return [
+                container_manager.get(ident)
+                for ident in self.attrs["Containers"].keys()
+            ]
         return []
 
     @property
@@ -89,22 +92,31 @@ class Network(PodmanResource):
             "IPv6Address": kwargs.get('ipv6_address'),
             "Links": kwargs.get("link_local_ips"),
         }
-        ipam = {k: v for (k, v) in ipam.items() if not (v is None or len(v) == 0)}
+        ipam = {
+            k: v
+            for (k, v) in ipam.items() if not (v is None or len(v) == 0)
+        }
 
         endpoint_config = {
             "Aliases": kwargs.get("aliases"),
             "DriverOpts": kwargs.get("driver_opt"),
-            "IPAddress": kwargs.get("ipv4_address", kwargs.get("ipv6_address")),
+            "IPAddress": kwargs.get("ipv4_address",
+                                    kwargs.get("ipv6_address")),
             "IPAMConfig": ipam,
             "Links": kwargs.get("link_local_ips"),
             "NetworkID": self.id,
         }
         endpoint_config = {
-            k: v for (k, v) in endpoint_config.items() if not (v is None or len(v) == 0)
+            k: v
+            for (k, v) in endpoint_config.items()
+            if not (v is None or len(v) == 0)
         }
 
         data = {"Container": container, "EndpointConfig": endpoint_config}
-        data = {k: v for (k, v) in data.items() if not (v is None or len(v) == 0)}
+        data = {
+            k: v
+            for (k, v) in data.items() if not (v is None or len(v) == 0)
+        }
 
         response = self.client.post(
             f"/networks/{self.name}/connect",
@@ -129,7 +141,8 @@ class Network(PodmanResource):
             container = container.id
 
         data = {"Container": container, "Force": kwargs.get("force")}
-        response = self.client.post(f"/networks/{self.name}/disconnect", data=json.dumps(data))
+        response = self.client.post(f"/networks/{self.name}/disconnect",
+                                    data=json.dumps(data))
         response.raise_for_status()
 
     def remove(self, force: Optional[bool] = None, **kwargs) -> None:

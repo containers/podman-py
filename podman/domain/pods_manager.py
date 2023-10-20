@@ -83,7 +83,8 @@ class PodsManager(Manager):
         response.raise_for_status()
         return [self.prepare_model(attrs=i) for i in response.json()]
 
-    def prune(self, filters: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+    def prune(self,
+              filters: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
         """Delete unused Pods.
 
         Returns:
@@ -94,7 +95,8 @@ class PodsManager(Manager):
         Raises:
             APIError: when service reports error
         """
-        response = self.client.post("/pods/prune", params={"filters": api.prepare_filters(filters)})
+        response = self.client.post(
+            "/pods/prune", params={"filters": api.prepare_filters(filters)})
         response.raise_for_status()
 
         deleted: List[str] = []
@@ -108,7 +110,9 @@ class PodsManager(Manager):
             deleted.append(item["Id"])
         return {"PodsDeleted": deleted, "SpaceReclaimed": 0}
 
-    def remove(self, pod_id: Union[Pod, str], force: Optional[bool] = None) -> None:
+    def remove(self,
+               pod_id: Union[Pod, str],
+               force: Optional[bool] = None) -> None:
         """Delete pod.
 
         Args:
@@ -125,10 +129,13 @@ class PodsManager(Manager):
         if isinstance(pod_id, Pod):
             pod_id = pod_id.id
 
-        response = self.client.delete(f"/pods/{pod_id}", params={"force": force})
+        response = self.client.delete(f"/pods/{pod_id}",
+                                      params={"force": force})
         response.raise_for_status()
 
-    def stats(self, **kwargs) -> Union[List[Dict[str, Any]], Iterator[List[Dict[str, Any]]]]:
+    def stats(
+        self, **kwargs
+    ) -> Union[List[Dict[str, Any]], Iterator[List[Dict[str, Any]]]]:
         """Resource usage statistics for the containers in pods.
 
         Keyword Args:
@@ -142,7 +149,8 @@ class PodsManager(Manager):
             APIError: when service reports an error
         """
         if "all" in kwargs and "name" in kwargs:
-            raise ValueError("Keywords 'all' and 'name' are mutually exclusive.")
+            raise ValueError(
+                "Keywords 'all' and 'name' are mutually exclusive.")
 
         # Keeping the default for stream as False to not break existing users
         # Should probably be changed in a newer major version to match behavior of container.stats

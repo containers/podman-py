@@ -78,9 +78,9 @@ class ImagesManager(BuildMixin, Manager):
         return self.prepare_model(response.json())
 
     def get_registry_data(
-        self,
-        name: str,
-        auth_config=Mapping[str, str],  # pylint: disable=unused-argument
+            self,
+            name: str,
+            auth_config=Mapping[str, str],  # pylint: disable=unused-argument
     ) -> RegistryData:
         """Returns registry data for an image.
 
@@ -115,8 +115,9 @@ class ImagesManager(BuildMixin, Manager):
         # headers = {"Content-type": "application/x-www-form-urlencoded"}
 
         response = self.client.post(
-            "/images/load", data=data, headers={"Content-type": "application/x-tar"}
-        )
+            "/images/load",
+            data=data,
+            headers={"Content-type": "application/x-tar"})
         response.raise_for_status()
 
         body = response.json()
@@ -124,7 +125,8 @@ class ImagesManager(BuildMixin, Manager):
             yield self.get(item)
 
     def prune(
-        self, filters: Optional[Mapping[str, Any]] = None
+        self,
+        filters: Optional[Mapping[str, Any]] = None
     ) -> Dict[Literal["ImagesDeleted", "SpaceReclaimed"], Any]:
         """Delete unused images.
 
@@ -140,8 +142,7 @@ class ImagesManager(BuildMixin, Manager):
             APIError: when service returns an error
         """
         response = self.client.post(
-            "/images/prune", params={"filters": api.prepare_filters(filters)}
-        )
+            "/images/prune", params={"filters": api.prepare_filters(filters)})
         response.raise_for_status()
 
         deleted: List[Dict[str, str]] = []
@@ -152,21 +153,22 @@ class ImagesManager(BuildMixin, Manager):
                 error.append(element["Err"])
             else:
                 reclaimed += element["Size"]
-                deleted.append(
-                    {
-                        "Deleted": element["Id"],
-                        "Untagged": "",
-                    }
-                )
+                deleted.append({
+                    "Deleted": element["Id"],
+                    "Untagged": "",
+                })
         if len(error) > 0:
-            raise APIError(response.url, response=response, explanation="; ".join(error))
+            raise APIError(response.url,
+                           response=response,
+                           explanation="; ".join(error))
 
         return {
             "ImagesDeleted": deleted,
             "SpaceReclaimed": reclaimed,
         }
 
-    def prune_builds(self) -> Dict[Literal["CachesDeleted", "SpaceReclaimed"], Any]:
+    def prune_builds(
+            self) -> Dict[Literal["CachesDeleted", "SpaceReclaimed"], Any]:
         """Delete builder cache.
 
         Method included to complete API, the operation always returns empty
@@ -174,9 +176,10 @@ class ImagesManager(BuildMixin, Manager):
         """
         return {"CachesDeleted": [], "SpaceReclaimed": 0}
 
-    def push(
-        self, repository: str, tag: Optional[str] = None, **kwargs
-    ) -> Union[str, Iterator[Union[str, Dict[str, Any]]]]:
+    def push(self,
+             repository: str,
+             tag: Optional[str] = None,
+             **kwargs) -> Union[str, Iterator[Union[str, Dict[str, Any]]]]:
         """Push Image or repository to the registry.
 
         Args:
@@ -198,7 +201,8 @@ class ImagesManager(BuildMixin, Manager):
 
         headers = {
             # A base64url-encoded auth configuration
-            "X-Registry-Auth": encode_auth_header(auth_config) if auth_config else ""
+            "X-Registry-Auth":
+            encode_auth_header(auth_config) if auth_config else ""
         }
 
         params = {
@@ -208,13 +212,16 @@ class ImagesManager(BuildMixin, Manager):
 
         name = f'{repository}:{tag}' if tag else repository
         name = urllib.parse.quote_plus(name)
-        response = self.client.post(f"/images/{name}/push", params=params, headers=headers)
+        response = self.client.post(f"/images/{name}/push",
+                                    params=params,
+                                    headers=headers)
         response.raise_for_status(not_found=ImageNotFound)
 
         tag_count = 0 if tag is None else 1
         body = [
             {
-                "status": f"Pushing repository {repository} ({tag_count} tags)",
+                "status":
+                f"Pushing repository {repository} ({tag_count} tags)",
             },
             {
                 "status": "Pushing",
@@ -235,8 +242,9 @@ class ImagesManager(BuildMixin, Manager):
 
     @staticmethod
     def _push_helper(
-        decode: bool, body: List[Dict[str, Any]]
-    ) -> Iterator[Union[str, Dict[str, Any]]]:
+            decode: bool,
+            body: List[Dict[str,
+                            Any]]) -> Iterator[Union[str, Dict[str, Any]]]:
         """Helper needed to allow push() to return either a generator or a str."""
         for entry in body:
             if decode:
@@ -245,9 +253,11 @@ class ImagesManager(BuildMixin, Manager):
                 yield json.dumps(entry)
 
     # pylint: disable=too-many-locals,too-many-branches
-    def pull(
-        self, repository: str, tag: Optional[str] = None, all_tags: bool = False, **kwargs
-    ) -> Union[Image, List[Image], Iterator[str]]:
+    def pull(self,
+             repository: str,
+             tag: Optional[str] = None,
+             all_tags: bool = False,
+             **kwargs) -> Union[Image, List[Image], Iterator[str]]:
         """Request Podman service to pull image(s) from repository.
 
         Args:
@@ -283,7 +293,8 @@ class ImagesManager(BuildMixin, Manager):
 
         headers = {
             # A base64url-encoded auth configuration
-            "X-Registry-Auth": encode_auth_header(auth_config) if auth_config else ""
+            "X-Registry-Auth":
+            encode_auth_header(auth_config) if auth_config else ""
         }
 
         params = {
@@ -299,7 +310,8 @@ class ImagesManager(BuildMixin, Manager):
         if "platform" in kwargs:
             tokens = kwargs.get("platform").split("/")
             if 1 < len(tokens) > 3:
-                raise ValueError(f'\'{kwargs.get("platform")}\' is not a legal platform.')
+                raise ValueError(
+                    f'\'{kwargs.get("platform")}\' is not a legal platform.')
 
             params["OS"] = tokens[0]
             if len(tokens) > 1:
@@ -308,7 +320,10 @@ class ImagesManager(BuildMixin, Manager):
                 params["Variant"] = tokens[2]
 
         stream = kwargs.get("stream", False)
-        response = self.client.post("/images/pull", params=params, stream=stream, headers=headers)
+        response = self.client.post("/images/pull",
+                                    params=params,
+                                    stream=stream,
+                                    headers=headers)
         response.raise_for_status(not_found=ImageNotFound)
 
         if stream:
@@ -331,7 +346,8 @@ class ImagesManager(BuildMixin, Manager):
         image: Union[Image, str],
         force: Optional[bool] = None,
         noprune: bool = False,  # pylint: disable=unused-argument
-    ) -> List[Dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[str, int]]]:
+    ) -> List[Dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[
+            str, int]]]:
         """Delete image from Podman service.
 
         Args:
@@ -346,7 +362,8 @@ class ImagesManager(BuildMixin, Manager):
         if isinstance(image, Image):
             image = image.id
 
-        response = self.client.delete(f"/images/{image}", params={"force": force})
+        response = self.client.delete(f"/images/{image}",
+                                      params={"force": force})
         response.raise_for_status(not_found=ImageNotFound)
 
         body = response.json()

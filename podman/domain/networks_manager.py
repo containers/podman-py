@@ -157,7 +157,8 @@ class NetworksManager(Manager):
         return [self.prepare_model(i) for i in response.json()]
 
     def prune(
-        self, filters: Optional[Dict[str, Any]] = None
+        self,
+        filters: Optional[Dict[str, Any]] = None
     ) -> Dict[api.Literal["NetworksDeleted", "SpaceReclaimed"], Any]:
         """Delete unused Networks.
 
@@ -185,7 +186,9 @@ class NetworksManager(Manager):
 
         return {"NetworksDeleted": deleted, "SpaceReclaimed": 0}
 
-    def remove(self, name: [Network, str], force: Optional[bool] = None) -> None:
+    def remove(self,
+               name: [Network, str],
+               force: Optional[bool] = None) -> None:
         """Remove Network resource.
 
         Args:
@@ -198,5 +201,6 @@ class NetworksManager(Manager):
         if isinstance(name, Network):
             name = name.name
 
-        response = self.client.delete(f"/networks/{name}", params={"force": force})
+        response = self.client.delete(f"/networks/{name}",
+                                      params={"force": force})
         response.raise_for_status()

@@ -36,13 +36,13 @@ class SystemManager:
         return response.json()
 
     def login(
-        self,
-        username: str,
-        password: Optional[str] = None,
-        email: Optional[str] = None,
-        registry: Optional[str] = None,
-        reauth: Optional[bool] = False,  # pylint: disable=unused-argument
-        dockercfg_path: Optional[str] = None,  # pylint: disable=unused-argument
+            self,
+            username: str,
+            password: Optional[str] = None,
+            email: Optional[str] = None,
+            registry: Optional[str] = None,
+            reauth: Optional[bool] = False,  # pylint: disable=unused-argument
+            dockercfg_path: Optional[str] = None,  # pylint: disable=unused-argument
     ) -> Dict[str, Any]:
         """Log into Podman service.
 

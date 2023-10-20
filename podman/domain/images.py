@@ -46,7 +46,8 @@ class Image(PodmanResource):
 
     def remove(
         self, **kwargs
-    ) -> List[Dict[api.Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[str, int]]]:
+    ) -> List[Dict[api.Literal["Deleted", "Untagged", "Errors", "ExitCode"],
+                   Union[str, int]]]:
         """Delete image from Podman service.
 
         Podman only
@@ -65,9 +66,9 @@ class Image(PodmanResource):
         return self.manager.remove(self.id, **kwargs)
 
     def save(
-        self,
-        chunk_size: Optional[int] = api.DEFAULT_CHUNK_SIZE,
-        named: Union[str, bool] = False,  # pylint: disable=unused-argument
+            self,
+            chunk_size: Optional[int] = api.DEFAULT_CHUNK_SIZE,
+            named: Union[str, bool] = False,  # pylint: disable=unused-argument
     ) -> Iterator[bytes]:
         """Returns Image as tarball.
 
@@ -81,17 +82,17 @@ class Image(PodmanResource):
         Raises:
             APIError: when service returns an error
         """
-        response = self.client.get(
-            f"/images/{self.id}/get", params={"format": ["docker-archive"]}, stream=True
-        )
+        response = self.client.get(f"/images/{self.id}/get",
+                                   params={"format": ["docker-archive"]},
+                                   stream=True)
         response.raise_for_status(not_found=ImageNotFound)
         return response.iter_content(chunk_size=chunk_size)
 
     def tag(
-        self,
-        repository: str,
-        tag: Optional[str],
-        force: bool = False,  # pylint: disable=unused-argument
+            self,
+            repository: str,
+            tag: Optional[str],
+            force: bool = False,  # pylint: disable=unused-argument
     ) -> bool:
         """Tag Image into repository.
 

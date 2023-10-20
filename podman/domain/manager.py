@@ -6,7 +6,8 @@ from typing import Any, List, Mapping, Optional, TypeVar, Union
 from podman.api.client import APIClient
 
 # Methods use this Type when a subclass of PodmanResource is expected.
-PodmanResourceType: TypeVar = TypeVar("PodmanResourceType", bound="PodmanResource")
+PodmanResourceType: TypeVar = TypeVar("PodmanResourceType",
+                                      bound="PodmanResource")
 
 
 class PodmanResource(ABC):
@@ -103,7 +104,9 @@ class Manager(ABC):
     def list(self, **kwargs) -> List[PodmanResourceType]:
         """Returns list of resources."""
 
-    def prepare_model(self, attrs: Union[PodmanResource, Mapping[str, Any]]) -> PodmanResourceType:
+    def prepare_model(
+            self, attrs: Union[PodmanResource,
+                               Mapping[str, Any]]) -> PodmanResourceType:
         """Create a model from a set of attributes."""
 
         # Refresh existing PodmanResource.
@@ -116,7 +119,9 @@ class Manager(ABC):
         if isinstance(attrs, abc.Mapping):
             # TODO Determine why pylint is reporting typing.Type not callable
             # pylint: disable=not-callable
-            return self.resource(attrs=attrs, client=self.client, collection=self)
+            return self.resource(attrs=attrs,
+                                 client=self.client,
+                                 collection=self)
 
         # pylint: disable=broad-exception-raised
         raise Exception(f"Can't create {self.resource.__name__} from {attrs}")

@@ -24,14 +24,12 @@ class IPAMPool(dict):
             aux_addresses: Ignored.
         """
         super().__init__()
-        self.update(
-            {
-                "AuxiliaryAddresses": aux_addresses,
-                "Gateway": gateway,
-                "IPRange": iprange,
-                "Subnet": subnet,
-            }
-        )
+        self.update({
+            "AuxiliaryAddresses": aux_addresses,
+            "Gateway": gateway,
+            "IPRange": iprange,
+            "Subnet": subnet,
+        })
 
 
 class IPAMConfig(dict):
@@ -51,10 +49,8 @@ class IPAMConfig(dict):
             options: Options to provide to the Network driver.
         """
         super().__init__()
-        self.update(
-            {
-                "Config": pool_configs or [],
-                "Driver": driver,
-                "Options": options or {},
-            }
-        )
+        self.update({
+            "Config": pool_configs or [],
+            "Driver": driver,
+            "Options": options or {},
+        })

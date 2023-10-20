@@ -18,9 +18,10 @@ logger = logging.getLogger("podman.containers")
 class CreateMixin:  # pylint: disable=too-few-public-methods
     """Class providing create method for ContainersManager."""
 
-    def create(
-        self, image: Union[Image, str], command: Union[str, List[str], None] = None, **kwargs
-    ) -> Container:
+    def create(self,
+               image: Union[Image, str],
+               command: Union[str, List[str], None] = None,
+               **kwargs) -> Container:
         """Create a container.
 
         Args:
@@ -104,33 +105,54 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 powerful alternative to volumes. Each item in the list is expected to be a
                 Mount object.
                 For example:
-                 [
-                    {
-                        "type": "bind",
-                        "source": "/a/b/c1",
-                        "target" "/d1",
-                        "read_only": True,
-                        "relabel": "Z"
-                    },
-                    {
-                        "type": "tmpfs",
-                        "source": "tmpfs", # If this was not passed, the regular directory
-                                           # would be created rather than tmpfs mount !!!
-                                           # as this will cause to have invalid entry
-                                           # in /proc/self/mountinfo
-                        "target" "/d2",
-                        "size": "100k",
-                        "chown": True
-                    }
-                ]
 
+                [
+
+                    {
+
+                        "type": "bind",
+
+                        "source": "/a/b/c1",
+
+                        "target" "/d1",
+
+                        "read_only": True,
+
+                        "relabel": "Z"
+
+                    },
+
+                    {
+
+                        "type": "tmpfs",
+
+                        # If this was not passed, the regular directory
+
+                        # would be created rather than tmpfs mount !!!
+
+                        # as this will cause to have invalid entry
+
+                        # in /proc/self/mountinfo
+
+                        "source": "tmpfs",
+
+                        "target" "/d2",
+
+                        "size": "100k",
+
+                        "chown": True
+
+                    }
+
+                ]
             name (str): The name for this container.
             nano_cpus (int):  CPU quota in units of 1e-9 CPUs.
             networks (Dict[str, Dict[str, Union[str, List[str]]):
                 Networks which will be connected to container during container creation
                 Values of the network configuration can be :
-                     - string
-                     - list of strings (e.g. Aliases)
+
+                - string
+                - list of strings (e.g. Aliases)
             network_disabled (bool): Disable networking.
             network_mode (str): One of:
 
@@ -150,9 +172,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             pids_limit (int): Tune a container's pids limit. Set -1 for unlimited.
             platform (str): Platform in the format os[/arch[/variant]]. Only used if the method
                 needs to pull the requested image.
-            ports (Dict[str, Union[int, Tuple[str, int], List[int],
-                                   Dict[str, Union[int, Tuple[str, int], List[int]]]]]
-                  ): Ports to bind inside the container.
+            ports (Dict[str, Union[int, Tuple[str, int], List[int], Dict[str, Union[int, Tuple[str, int], List[int]]]]]): Ports to bind inside the container.
 
                 The keys of the dictionary are the ports to bind inside the container, either as an
                 integer or a string in the form port/protocol, where the protocol is either
@@ -162,31 +182,40 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 which can be either:
 
                 - The port number, as an integer.
+
                     For example: {'2222/tcp': 3333} will expose port 2222 inside the container
                     as port 3333 on the host.
                 - None, to assign a random host port.
+
                     For example: {'2222/tcp': None}.
                 - A tuple of (address, port) if you want to specify the host interface.
+
                     For example: {'1111/tcp': ('127.0.0.1', 1111)}.
                 - A list of integers or tuples of (address, port), if you want to bind
                   multiple host ports to a single container port.
+
                     For example: {'1111/tcp': [1234, ("127.0.0.1", 4567)]}.
 
                     For example: {'9090': 7878, '10932/tcp': '8781',
                                   "8989/tcp": ("127.0.0.1", 9091)}
                 - A dictionary of the options mentioned above except for random host port.
+
                   The dictionary has additional option "range",
                     which allows binding range of ports.
 
                     For example:
-                        - {'2222/tcp': {"port": 3333, "range": 4}}
-                        - {'1111/tcp': {"port": ('127.0.0.1', 1111), "range": 4}}
-                        - {'1111/tcp': [
-                              {"port": 1234, "range": 4},
-                              {"ip": "127.0.0.1", "port": 4567}
-                            ]
-                          }
 
+                    - {'2222/tcp': {"port": 3333, "range": 4}}
+                    - {'1111/tcp': {"port": ('127.0.0.1', 1111), "range": 4}}
+                    - {'1111/tcp': [
+
+                            {"port": 1234, "range": 4},
+
+                            {"ip": "127.0.0.1", "port": 4567}
+
+                        ]
+
+                    }
             privileged (bool): Give extended privileges to this container.
             publish_all_ports (bool): Publish all ports to the host.
             read_only (bool): Mount the container's root filesystem as read only.
@@ -200,34 +229,41 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 - MaximumRetryCount: Number of times to restart the container on failure.
 
                 For example: {"Name": "on-failure", "MaximumRetryCount": 5}
-
             runtime (str): Runtime to use with this container.
             secrets (List[Union[str, Secret, Dict[str, Union[str, int]]]]): Secrets to
                 mount to this container.
 
                 For example:
-                    - As list of strings, each string representing a secret's ID or name:
-                        ['my_secret', 'my_secret2']
 
-                    - As list of Secret objects the corresponding IDs are read from:
-                        [Secret, Secret]
+                - As list of strings, each string representing a secret's ID or name:
+                    ['my_secret', 'my_secret2']
 
-                    - As list of dictionaries:
-                        [
-                            {
-                                "source": "my_secret",  # A string representing the ID or name of
-                                                        # a secret
-                                "target": "/my_secret", # An optional target to mount source to,
-                                                        # falls back to /run/secrets/source
-                                "uid": 1000,            # An optional UID that falls back to 0
-                                                        # if not given
-                                "gid": 1000,            # An optional GID that falls back to 0
-                                                        # if not given
-                                "mode": 0o400,          # An optional mode to apply to the target,
-                                                        # use an 0o prefix for octal integers
-                            },
-                        ]
+                - As list of Secret objects the corresponding IDs are read from:
+                    [Secret, Secret]
 
+                - As list of dictionaries:
+                    [
+
+                        {
+
+                            "source": "my_secret",  # A string representing the ID or name of
+                                                    # a secret
+
+                            "target": "/my_secret", # An optional target to mount source to,
+                                                    # falls back to /run/secrets/source
+
+                            "uid": 1000,            # An optional UID that falls back to 0
+                                                    # if not given
+
+                            "gid": 1000,            # An optional GID that falls back to 0
+                                                    # if not given
+
+                            "mode": 0o400,          # An optional mode to apply to the target,
+                                                    # use an 0o prefix for octal integers
+
+                        },
+
+                    ]
             secret_env (Dict[str, str]): Secrets to add as environment variables available in the
                 container.
 
@@ -257,11 +293,9 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 the corresponding environment variables will be set in the container being built.
             user (Union[str, int]): Username or UID to run commands as inside the container.
             userns_mode (str): Sets the user namespace mode for the container when user namespace
-                remapping option is enabled. Supported values documented here
-                https://docs.podman.io/en/latest/markdown/options/userns.container.html#userns-mode
+                remapping option is enabled. Supported values documented `here <https://docs.podman.io/en/latest/markdown/options/userns.container.html#userns-mode>`_
             uts_mode (str): Sets the UTS namespace mode for the container.
-                Supported values are documented here
-                https://docs.podman.io/en/latest/markdown/options/uts.container.html
+                `These <https://docs.podman.io/en/latest/markdown/options/uts.container.html>`_ are the supported values.
             version (str): The version of the API to use. Set to auto to automatically detect
                 the server's version. Default: 3.0.0
             volume_driver (str): The name of a volume driver/plugin.
@@ -278,12 +312,19 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 For example:
 
                     {
+
                         'test_bind_1':
+
                             {'bind': '/mnt/vol1', 'mode': 'rw'},
+
                         'test_bind_2':
+
                             {'bind': '/mnt/vol2', 'extended_mode': ['ro', 'noexec']},
+
                          'test_bind_3':
+
                             {'bind': '/mnt/vol3', 'extended_mode': ['noexec'], 'mode': 'rw'}
+
                     }
 
             volumes_from (List[str]): List of container names or IDs to get volumes from.
@@ -305,8 +346,9 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         payload = api.prepare_body(payload)
 
         response = self.client.post(
-            "/containers/create", headers={"content-type": "application/json"}, data=payload
-        )
+            "/containers/create",
+            headers={"content-type": "application/json"},
+            data=payload)
         response.raise_for_status(not_found=ImageNotFound)
 
         container_id = response.json()["Id"]
@@ -321,47 +363,45 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
         if "links" in args:
             if len(args["links"]) > 0:
-                raise ValueError("'links' are not supported by Podman service.")
+                raise ValueError(
+                    "'links' are not supported by Podman service.")
             del args["links"]
 
         # Ignore these keywords
         for key in (
-            "cpu_count",
-            "cpu_percent",
-            "nano_cpus",
-            "platform",  # used by caller
-            "remove",  # used by caller
-            "stderr",  # used by caller
-            "stdout",  # used by caller
-            "stream",  # used by caller
-            "detach",  # used by caller
-            "volume_driver",
+                "cpu_count",
+                "cpu_percent",
+                "nano_cpus",
+                "platform",  # used by caller
+                "remove",  # used by caller
+                "stderr",  # used by caller
+                "stdout",  # used by caller
+                "stream",  # used by caller
+                "detach",  # used by caller
+                "volume_driver",
         ):
             with suppress(KeyError):
                 del args[key]
 
         # These keywords are not supported for various reasons.
-        unsupported_keys = set(args.keys()).intersection(
-            (
-                "blkio_weight",
-                "blkio_weight_device",  # FIXME In addition to device Major/Minor include path
-                "device_cgroup_rules",  # FIXME Where to map for Podman API?
-                "device_read_bps",  # FIXME In addition to device Major/Minor include path
-                "device_read_iops",  # FIXME In addition to device Major/Minor include path
-                "device_requests",  # FIXME In addition to device Major/Minor include path
-                "device_write_bps",  # FIXME In addition to device Major/Minor include path
-                "device_write_iops",  # FIXME In addition to device Major/Minor include path
-                "domainname",
-                "network_disabled",  # FIXME Where to map for Podman API?
-                "storage_opt",  # FIXME Where to map for Podman API?
-                "tmpfs",  # FIXME Where to map for Podman API?
-            )
-        )
+        unsupported_keys = set(args.keys()).intersection((
+            "blkio_weight",
+            "blkio_weight_device",  # FIXME In addition to device Major/Minor include path
+            "device_cgroup_rules",  # FIXME Where to map for Podman API?
+            "device_read_bps",  # FIXME In addition to device Major/Minor include path
+            "device_read_iops",  # FIXME In addition to device Major/Minor include path
+            "device_requests",  # FIXME In addition to device Major/Minor include path
+            "device_write_bps",  # FIXME In addition to device Major/Minor include path
+            "device_write_iops",  # FIXME In addition to device Major/Minor include path
+            "domainname",
+            "network_disabled",  # FIXME Where to map for Podman API?
+            "storage_opt",  # FIXME Where to map for Podman API?
+            "tmpfs",  # FIXME Where to map for Podman API?
+        ))
         if len(unsupported_keys) > 0:
             raise TypeError(
                 f"""Keyword(s) '{" ,".join(unsupported_keys)}' are"""
-                f""" currently not supported by Podman API."""
-            )
+                f""" currently not supported by Podman API.""")
 
         def pop(k):
             return args.pop(k, None)
@@ -391,30 +431,34 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 except ValueError as bad_size:
                     mapping = {'b': 0, 'k': 1, 'm': 2, 'g': 3}
                     mapping_regex = ''.join(mapping.keys())
-                    search = re.search(rf'^(\d+)([{mapping_regex}])$', size.lower())
+                    search = re.search(rf'^(\d+)([{mapping_regex}])$',
+                                       size.lower())
                     if search:
-                        return int(search.group(1)) * (1024 ** mapping[search.group(2)])
+                        return int(
+                            search.group(1)) * (1024**mapping[search.group(2)])
                     raise TypeError(
                         f"Passed string size {size} should be in format\\d+[bBkKmMgG] (e.g. '100m')"
                     ) from bad_size
             else:
                 raise TypeError(
                     f"Passed size {size} should be a type of unicode, str "
-                    f"or int (found : {size_type})"
-                )
+                    f"or int (found : {size_type})")
 
         # Transform keywords into parameters
         params = {
             "annotations": pop("annotations"),  # TODO document, podman only
-            "apparmor_profile": pop("apparmor_profile"),  # TODO document, podman only
+            "apparmor_profile":
+            pop("apparmor_profile"),  # TODO document, podman only
             "cap_add": pop("cap_add"),
             "cap_drop": pop("cap_drop"),
             "cgroup_parent": pop("cgroup_parent"),
             "cgroups_mode": pop("cgroups_mode"),  # TODO document, podman only
             "cni_networks": [pop("network")],
             "command": args.pop("command", args.pop("cmd", None)),
-            "conmon_pid_file": pop("conmon_pid_file"),  # TODO document, podman only
-            "containerCreateCommand": pop("containerCreateCommand"),  # TODO document, podman only
+            "conmon_pid_file":
+            pop("conmon_pid_file"),  # TODO document, podman only
+            "containerCreateCommand":
+            pop("containerCreateCommand"),  # TODO document, podman only
             "devices": [],
             "dns_options": pop("dns_opt"),
             "dns_search": pop("dns_search"),
@@ -425,14 +469,17 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "expose": {},
             "groups": pop("group_add"),
             "healthconfig": pop("healthcheck"),
-            "health_check_on_failure_action": pop("health_check_on_failure_action"),
+            "health_check_on_failure_action":
+            pop("health_check_on_failure_action"),
             "hostadd": [],
             "hostname": pop("hostname"),
             "httpproxy": pop("use_config_proxy"),
             "idmappings": pop("idmappings"),  # TODO document, podman only
             "image": pop("image"),
-            "image_volume_mode": pop("image_volume_mode"),  # TODO document, podman only
-            "image_volumes": pop("image_volumes"),  # TODO document, podman only
+            "image_volume_mode":
+            pop("image_volume_mode"),  # TODO document, podman only
+            "image_volumes":
+            pop("image_volumes"),  # TODO document, podman only
             "init": pop("init"),
             "init_path": pop("init_path"),
             "isolation": pop("isolation"),
@@ -443,18 +490,22 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "mounts": [],
             "name": pop("name"),
             "namespace": pop("namespace"),  # TODO What is this for?
-            "network_options": pop("network_options"),  # TODO document, podman only
+            "network_options":
+            pop("network_options"),  # TODO document, podman only
             "networks": pop("networks"),
-            "no_new_privileges": pop("no_new_privileges"),  # TODO document, podman only
+            "no_new_privileges":
+            pop("no_new_privileges"),  # TODO document, podman only
             "oci_runtime": pop("runtime"),
             "oom_score_adj": pop("oom_score_adj"),
-            "overlay_volumes": pop("overlay_volumes"),  # TODO document, podman only
+            "overlay_volumes":
+            pop("overlay_volumes"),  # TODO document, podman only
             "portmappings": [],
             "privileged": pop("privileged"),
             "procfs_opts": pop("procfs_opts"),  # TODO document, podman only
             "publish_image_ports": pop("publish_all_ports"),
             "r_limits": [],
-            "raw_image_name": pop("raw_image_name"),  # TODO document, podman only
+            "raw_image_name":
+            pop("raw_image_name"),  # TODO document, podman only
             "read_only_filesystem": pop("read_only"),
             "read_write_tmpfs": pop("read_write_tmpfs"),
             "remove": args.pop("remove", args.pop("auto_remove", None)),
@@ -462,8 +513,10 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "rootfs": pop("rootfs"),
             "rootfs_propagation": pop("rootfs_propagation"),
             "sdnotifyMode": pop("sdnotifyMode"),  # TODO document, podman only
-            "seccomp_policy": pop("seccomp_policy"),  # TODO document, podman only
-            "seccomp_profile_path": pop("seccomp_profile_path"),  # TODO document, podman only
+            "seccomp_policy":
+            pop("seccomp_policy"),  # TODO document, podman only
+            "seccomp_profile_path":
+            pop("seccomp_profile_path"),  # TODO document, podman only
             "secrets": [],  # TODO document, podman only
             "selinux_opts": pop("security_opt"),
             "shm_size": to_bytes(pop("shm_size")),
@@ -478,8 +531,10 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "umask": pop("umask"),  # TODO document, podman only
             "unified": pop("unified"),  # TODO document, podman only
             "unmask": pop("unmasked_paths"),  # TODO document, podman only
-            "use_image_hosts": pop("use_image_hosts"),  # TODO document, podman only
-            "use_image_resolve_conf": pop("use_image_resolve_conf"),  # TODO document, podman only
+            "use_image_hosts":
+            pop("use_image_hosts"),  # TODO document, podman only
+            "use_image_resolve_conf":
+            pop("use_image_resolve_conf"),  # TODO document, podman only
             "user": pop("user"),
             "version": pop("version"),
             "volumes": [],
@@ -498,12 +553,16 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             params["hostadd"].append(f"{hostname}:{ip}")
 
         if "log_config" in args:
-            params["log_configuration"]["driver"] = args["log_config"].get("Type")
+            params["log_configuration"]["driver"] = args["log_config"].get(
+                "Type")
 
             if "Config" in args["log_config"]:
-                params["log_configuration"]["path"] = args["log_config"]["Config"].get("path")
-                params["log_configuration"]["size"] = args["log_config"]["Config"].get("size")
-                params["log_configuration"]["options"] = args["log_config"]["Config"].get("options")
+                params["log_configuration"]["path"] = args["log_config"][
+                    "Config"].get("path")
+                params["log_configuration"]["size"] = args["log_config"][
+                    "Config"].get("size")
+                params["log_configuration"]["options"] = args["log_config"][
+                    "Config"].get("options")
             args.pop("log_config")
 
         for item in args.pop("mounts", []):
@@ -544,10 +603,14 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
         def parse_host_port(_container_port, _protocol, _host):
             result = []
-            port_map = {"container_port": int(_container_port), "protocol": _protocol}
+            port_map = {
+                "container_port": int(_container_port),
+                "protocol": _protocol
+            }
             if _host is None:
                 result.append(port_map)
-            elif isinstance(_host, int) or isinstance(_host, str) and _host.isdigit():
+            elif isinstance(_host,
+                            int) or isinstance(_host, str) and _host.isdigit():
                 port_map["host_port"] = int(_host)
                 result.append(port_map)
             elif isinstance(_host, tuple):
@@ -556,16 +619,15 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 result.append(port_map)
             elif isinstance(_host, list):
                 for host_list in _host:
-                    host_list_result = parse_host_port(_container_port, _protocol, host_list)
+                    host_list_result = parse_host_port(_container_port,
+                                                       _protocol, host_list)
                     result.extend(host_list_result)
             elif isinstance(_host, dict):
                 _host_port = _host.get("port")
                 if _host_port is not None:
-                    if (
-                        isinstance(_host_port, int)
-                        or isinstance(_host_port, str)
-                        and _host_port.isdigit()
-                    ):
+                    if (isinstance(_host_port, int)
+                            or isinstance(_host_port, str)
+                            and _host_port.isdigit()):
                         port_map["host_port"] = int(_host_port)
                     elif isinstance(_host_port, tuple):
                         port_map["host_ip"] = _host_port[0]
@@ -588,10 +650,13 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
         if "restart_policy" in args:
             params["restart_policy"] = args["restart_policy"].get("Name")
-            params["restart_tries"] = args["restart_policy"].get("MaximumRetryCount")
+            params["restart_tries"] = args["restart_policy"].get(
+                "MaximumRetryCount")
             args.pop("restart_policy")
 
-        params["resource_limits"]["pids"] = {"limit": args.pop("pids_limit", None)}
+        params["resource_limits"]["pids"] = {
+            "limit": args.pop("pids_limit", None)
+        }
 
         params["resource_limits"]["cpu"] = {
             "cpus": args.pop("cpuset_cpus", None),
@@ -615,13 +680,11 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         }
 
         for item in args.pop("ulimits", []):
-            params["r_limits"].append(
-                {
-                    "type": item["Name"],
-                    "hard": item["Hard"],
-                    "soft": item["Soft"],
-                }
-            )
+            params["r_limits"].append({
+                "type": item["Name"],
+                "hard": item["Hard"],
+                "soft": item["Soft"],
+            })
 
         for item in args.pop("volumes", {}).items():
             key, value = item
@@ -674,8 +737,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             params["utsns"] = {"nsmode": args.pop("uts_mode")}
 
         if len(args) > 0:
-            raise TypeError(
-                "Unknown keyword argument(s): " + " ,".join(f"'{k}'" for k in args.keys())
-            )
+            raise TypeError("Unknown keyword argument(s): " +
+                            " ,".join(f"'{k}'" for k in args.keys()))
 
         return params

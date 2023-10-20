@@ -24,8 +24,8 @@ class Secret(PodmanResource):
         return ""
 
     def remove(
-        self,
-        all: Optional[bool] = None,  # pylint: disable=redefined-builtin
+            self,
+            all: Optional[bool] = None,  # pylint: disable=redefined-builtin
     ):
         """Delete secret.
 
@@ -109,16 +109,18 @@ class SecretsManager(Manager):
             "name": name,
             "driver": driver,
         }
-        response = self.client.post("/secrets/create", params=params, data=data)
+        response = self.client.post("/secrets/create",
+                                    params=params,
+                                    data=data)
         response.raise_for_status()
 
         body = response.json()
         return self.get(body["ID"])
 
     def remove(
-        self,
-        secret_id: Union[Secret, str],
-        all: Optional[bool] = None,  # pylint: disable=redefined-builtin
+            self,
+            secret_id: Union[Secret, str],
+            all: Optional[bool] = None,  # pylint: disable=redefined-builtin
     ):
         """Delete secret.
 
@@ -135,5 +137,6 @@ class SecretsManager(Manager):
         if isinstance(secret_id, Secret):
             secret_id = secret_id.id
 
-        response = self.client.delete(f"/secrets/{secret_id}", params={"all": all})
+        response = self.client.delete(f"/secrets/{secret_id}",
+                                      params={"all": all})
         response.raise_for_status()

@@ -56,7 +56,8 @@ class RegistryData(PodmanResource):
             InvalidArgument: when platform value is not valid
             APIError: when service reports an error
         """
-        invalid_platform = InvalidArgument(f"'{platform}' is not a valid platform descriptor.")
+        invalid_platform = InvalidArgument(
+            f"'{platform}' is not a valid platform descriptor.")
 
         if platform is None:
             platform = {}
@@ -65,7 +66,8 @@ class RegistryData(PodmanResource):
             if not {"os", "architecture"} <= platform.keys():
                 version = self.client.version()
                 platform["os"] = platform.get("os", version["Os"])
-                platform["architecture"] = platform.get("architecture", version["Arch"])
+                platform["architecture"] = platform.get(
+                    "architecture", version["Arch"])
         elif isinstance(platform, str):
             elements = platform.split("/")
             if 1 < len(elements) > 3:
@@ -82,5 +84,4 @@ class RegistryData(PodmanResource):
         return (
             # Variant not carried in libpod attrs
             platform["os"] == self.attrs["Os"]
-            and platform["architecture"] == self.attrs["Architecture"]
-        )
+            and platform["architecture"] == self.attrs["Architecture"])

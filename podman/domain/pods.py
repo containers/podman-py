@@ -31,7 +31,8 @@ class Pod(PodmanResource):
             NotFound: when pod not found
             APIError: when service reports an error
         """
-        response = self.client.post(f"/pods/{self.id}/kill", params={"signal": signal})
+        response = self.client.post(f"/pods/{self.id}/kill",
+                                    params={"signal": signal})
         response.raise_for_status()
 
     def pause(self) -> None:

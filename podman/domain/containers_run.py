@@ -75,7 +75,10 @@ class RunMixin:  # pylint: disable=too-few-public-methods
 
         log_iter = None
         if log_type in ("json-file", "journald"):
-            log_iter = container.logs(stdout=stdout, stderr=stderr, stream=True, follow=True)
+            log_iter = container.logs(stdout=stdout,
+                                      stderr=stderr,
+                                      stream=True,
+                                      follow=True)
 
         exit_status = container.wait()
         if exit_status != 0:
@@ -87,6 +90,8 @@ class RunMixin:  # pylint: disable=too-few-public-methods
             container.remove()
 
         if exit_status != 0:
-            raise ContainerError(container, exit_status, command, image, log_iter)
+            raise ContainerError(container, exit_status, command, image,
+                                 log_iter)
 
-        return log_iter if kwargs.get("stream", False) or log_iter is None else b"".join(log_iter)
+        return log_iter if kwargs.get(
+            "stream", False) or log_iter is None else b"".join(log_iter)

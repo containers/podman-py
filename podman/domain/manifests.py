@@ -91,9 +91,9 @@ class Manifest(PodmanResource):
         return self.reload()
 
     def push(
-        self,
-        destination: str,
-        all: Optional[bool] = None,  # pylint: disable=redefined-builtin
+            self,
+            destination: str,
+            all: Optional[bool] = None,  # pylint: disable=redefined-builtin
     ) -> None:
         """Push a manifest list or image index to a registry.
 
@@ -109,7 +109,8 @@ class Manifest(PodmanResource):
             "all": all,
             "destination": destination,
         }
-        response = self.client.post(f"/manifests/{self.quoted_name}/push", params=params)
+        response = self.client.post(f"/manifests/{self.quoted_name}/push",
+                                    params=params)
         response.raise_for_status()
 
     def remove(self, digest: str) -> None:
@@ -148,10 +149,10 @@ class ManifestsManager(Manager):
         return Manifest
 
     def create(
-        self,
-        name: str,
-        images: Optional[List[Union[Image, str]]] = None,
-        all: Optional[bool] = None,  # pylint: disable=redefined-builtin
+            self,
+            name: str,
+            images: Optional[List[Union[Image, str]]] = None,
+            all: Optional[bool] = None,  # pylint: disable=redefined-builtin
     ) -> Manifest:
         """Create a Manifest.
 
@@ -217,7 +218,8 @@ class ManifestsManager(Manager):
     def list(self, **kwargs) -> List[Manifest]:
         """Not Implemented."""
 
-        raise NotImplementedError("Podman service currently does not support listing manifests.")
+        raise NotImplementedError(
+            "Podman service currently does not support listing manifests.")
 
     def remove(self, name: Union[Manifest, str]) -> Dict[str, Any]:
         """Delete the manifest list from the Podman service."""

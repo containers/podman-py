@@ -82,7 +82,10 @@ class Container(PodmanResource):
         """
         raise NotImplementedError()
 
-    def commit(self, repository: str = None, tag: str = None, **kwargs) -> Image:
+    def commit(self,
+               repository: str = None,
+               tag: str = None,
+               **kwargs) -> Image:
         """Save container to given repository.
 
         Args:
@@ -140,7 +143,8 @@ class Container(PodmanResource):
         environment: Union[Mapping[str, str], List[str]] = None,
         workdir: str = None,
         demux: bool = False,
-    ) -> Tuple[Optional[int], Union[Iterator[bytes], Any, Tuple[bytes, bytes]]]:
+    ) -> Tuple[Optional[int], Union[Iterator[bytes], Any, Tuple[bytes,
+                                                                bytes]]]:
         """Run given command inside container and return results.
 
         Args:
@@ -187,20 +191,24 @@ class Container(PodmanResource):
             "WorkingDir": workdir,
         }
         # create the exec instance
-        response = self.client.post(f"/containers/{self.name}/exec", data=json.dumps(data))
+        response = self.client.post(f"/containers/{self.name}/exec",
+                                    data=json.dumps(data))
         response.raise_for_status()
         exec_id = response.json()['Id']
         # start the exec instance, this will store command output
-        start_resp = self.client.post(
-            f"/exec/{exec_id}/start", data=json.dumps({"Detach": detach, "Tty": tty})
-        )
+        start_resp = self.client.post(f"/exec/{exec_id}/start",
+                                      data=json.dumps({
+                                          "Detach": detach,
+                                          "Tty": tty
+                                      }))
         start_resp.raise_for_status()
         # get and return exec information
         response = self.client.get(f"/exec/{exec_id}/json")
         response.raise_for_status()
         return response.json().get('ExitCode'), start_resp.content
 
-    def export(self, chunk_size: int = api.DEFAULT_CHUNK_SIZE) -> Iterator[bytes]:
+    def export(self,
+               chunk_size: int = api.DEFAULT_CHUNK_SIZE) -> Iterator[bytes]:
         """Download container's filesystem contents as a tar archive.
 
         Args:
@@ -213,14 +221,17 @@ class Container(PodmanResource):
             NotFound: when container has been removed from service
             APIError: when service reports an error
         """
-        response = self.client.get(f"/containers/{self.id}/export", stream=True)
+        response = self.client.get(f"/containers/{self.id}/export",
+                                   stream=True)
         response.raise_for_status()
 
         for out in response.iter_content(chunk_size=chunk_size):
             yield out
 
     def get_archive(
-        self, path: str, chunk_size: int = api.DEFAULT_CHUNK_SIZE
+        self,
+        path: str,
+        chunk_size: int = api.DEFAULT_CHUNK_SIZE
     ) -> Tuple[Iterable, Dict[str, Any]]:
         """Download a file or folder from the container's filesystem.
 
@@ -232,7 +243,8 @@ class Container(PodmanResource):
             First item is a raw tar data stream.
             Second item is a dict containing os.stat() information on the specified path.
         """
-        response = self.client.get(f"/containers/{self.id}/archive", params={"path": [path]})
+        response = self.client.get(f"/containers/{self.id}/archive",
+                                   params={"path": [path]})
         response.raise_for_status()
 
         stat = response.headers.get("x-docker-container-path-stat", None)
@@ -255,7 +267,8 @@ class Container(PodmanResource):
         Raises:
             APIError: when service reports an error
         """
-        response = self.client.post(f"/containers/{self.id}/kill", params={"signal": signal})
+        response = self.client.post(f"/containers/{self.id}/kill",
+                                    params={"signal": signal})
         response.raise_for_status()
 
     def logs(self, **kwargs) -> Union[bytes, Iterator[bytes]]:
@@ -286,7 +299,9 @@ class Container(PodmanResource):
             "until": api.prepare_timestamp(kwargs.get("until")),
         }
 
-        response = self.client.get(f"/containers/{self.id}/logs", stream=stream, params=params)
+        response = self.client.get(f"/containers/{self.id}/logs",
+                                   stream=stream,
+                                   params=params)
         response.raise_for_status()
 
         if stream:
@@ -318,9 +333,9 @@ class Container(PodmanResource):
         if data is None:
             data = api.create_tar("/", path)
 
-        response = self.client.put(
-            f"/containers/{self.id}/archive", params={"path": path}, data=data
-        )
+        response = self.client.put(f"/containers/{self.id}/archive",
+                                   params={"path": path},
+                                   data=data)
         return response.ok
 
     def remove(self, **kwargs) -> None:
@@ -344,7 +359,8 @@ class Container(PodmanResource):
         if not name:
             raise ValueError("'name' is a required argument.")
 
-        response = self.client.post(f"/containers/{self.id}/rename", params={"name": name})
+        response = self.client.post(f"/containers/{self.id}/rename",
+                                    params={"name": name})
         response.raise_for_status()
 
         self.attrs["Name"] = name  # shortcut to avoid needing reload()
@@ -360,7 +376,8 @@ class Container(PodmanResource):
             "h": height,
             "w": width,
         }
-        response = self.client.post(f"/containers/{self.id}/resize", params=params)
+        response = self.client.post(f"/containers/{self.id}/resize",
+                                    params=params)
         response.raise_for_status()
 
     def restart(self, **kwargs) -> None:
@@ -374,7 +391,9 @@ class Container(PodmanResource):
         if kwargs.get("timeout"):
             post_kwargs["timeout"] = float(params["timeout"]) * 1.5
 
-        response = self.client.post(f"/containers/{self.id}/restart", params=params, **post_kwargs)
+        response = self.client.post(f"/containers/{self.id}/restart",
+                                    params=params,
+                                    **post_kwargs)
         response.raise_for_status()
 
     def start(self, **kwargs) -> None:
@@ -384,13 +403,14 @@ class Container(PodmanResource):
             detach_keys: Override the key sequence for detaching a container (Podman only)
         """
         response = self.client.post(
-            f"/containers/{self.id}/start", params={"detachKeys": kwargs.get("detach_keys")}
-        )
+            f"/containers/{self.id}/start",
+            params={"detachKeys": kwargs.get("detach_keys")})
         response.raise_for_status()
 
     def stats(
         self, **kwargs
-    ) -> Union[bytes, Dict[str, Any], Iterator[bytes], Iterator[Dict[str, Any]]]:
+    ) -> Union[bytes, Dict[str, Any], Iterator[bytes], Iterator[Dict[str,
+                                                                     Any]]]:
         """Return statistics for container.
 
         Keyword Args:
@@ -410,7 +430,9 @@ class Container(PodmanResource):
             "stream": stream,
         }
 
-        response = self.client.get("/containers/stats", params=params, stream=stream)
+        response = self.client.get("/containers/stats",
+                                   params=params,
+                                   stream=stream)
         response.raise_for_status()
 
         if stream:
@@ -432,7 +454,9 @@ class Container(PodmanResource):
         if kwargs.get("timeout"):
             post_kwargs["timeout"] = float(params["timeout"]) * 1.5
 
-        response = self.client.post(f"/containers/{self.id}/stop", params=params, **post_kwargs)
+        response = self.client.post(f"/containers/{self.id}/stop",
+                                    params=params,
+                                    **post_kwargs)
         response.raise_for_status()
 
         if response.status_code == requests.codes.no_content:
@@ -443,7 +467,9 @@ class Container(PodmanResource):
                 return
 
         body = response.json()
-        raise APIError(body["cause"], response=response, explanation=body["message"])
+        raise APIError(body["cause"],
+                       response=response,
+                       explanation=body["message"])
 
     def top(self, **kwargs) -> Union[Iterator[Dict[str, Any]], Dict[str, Any]]:
         """Report on running processes in the container.
@@ -462,7 +488,9 @@ class Container(PodmanResource):
             "stream": stream,
             "ps_args": kwargs.get("ps_args"),
         }
-        response = self.client.get(f"/containers/{self.id}/top", params=params, stream=stream)
+        response = self.client.get(f"/containers/{self.id}/top",
+                                   params=params,
+                                   stream=stream)
         response.raise_for_status()
 
         if stream:
@@ -481,7 +509,8 @@ class Container(PodmanResource):
         Raises:
             NotImplementedError: Podman service unsupported operation.
         """
-        raise NotImplementedError("Container.update() is not supported by Podman service.")
+        raise NotImplementedError(
+            "Container.update() is not supported by Podman service.")
 
     def wait(self, **kwargs) -> int:
         """Block until the container enters given state.
@@ -515,6 +544,7 @@ class Container(PodmanResource):
         # This API endpoint responds with a JSON encoded integer.
         # See:
         # https://docs.podman.io/en/latest/_static/api.html#tag/containers/operation/ContainerWaitLibpod
-        response = self.client.post(f"/containers/{self.id}/wait", params=params)
+        response = self.client.post(f"/containers/{self.id}/wait",
+                                    params=params)
         response.raise_for_status()
         return response.json()

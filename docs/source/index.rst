@@ -53,14 +53,18 @@ Example
    :glob:
    :hidden:
 
+   podman.domain.config*
    podman.domain.containers
    podman.domain.containers_manager
    podman.domain.images
    podman.domain.images_manager
+   podman.domain.ipam*
    podman.domain.events*
+   podman.domain.manager
    podman.domain.manifests*
    podman.domain.networks*
    podman.domain.pods*
+   podman.domain.registry_data*
    podman.domain.secrets*
    podman.domain.system*
    podman.domain.volume*

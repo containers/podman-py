@@ -102,7 +102,8 @@ class VolumesManager(Manager):
                 - name (str): filter by volume's name
         """
         filters = api.prepare_filters(kwargs.get("filters"))
-        response = self.client.get("/volumes/json", params={"filters": filters})
+        response = self.client.get("/volumes/json",
+                                   params={"filters": filters})
 
         if response.status_code == requests.codes.not_found:
             return []
@@ -111,7 +112,8 @@ class VolumesManager(Manager):
         return [self.prepare_model(i) for i in response.json()]
 
     def prune(
-        self, filters: Optional[Dict[str, str]] = None  # pylint: disable=unused-argument
+        self,
+        filters: Optional[Dict[str, str]] = None  # pylint: disable=unused-argument
     ) -> Dict[Literal["VolumesDeleted", "SpaceReclaimed"], Any]:
         """Delete unused volumes.
 
@@ -132,14 +134,17 @@ class VolumesManager(Manager):
                 raise APIError(
                     item["Err"],
                     response=response,
-                    explanation=f"""Failed to prune volume '{item.get("Id")}'""",
+                    explanation=
+                    f"""Failed to prune volume '{item.get("Id")}'""",
                 )
             volumes.append(item.get("Id"))
             space_reclaimed += item["Size"]
 
         return {"VolumesDeleted": volumes, "SpaceReclaimed": space_reclaimed}
 
-    def remove(self, name: Union[Volume, str], force: Optional[bool] = None) -> None:
+    def remove(self,
+               name: Union[Volume, str],
+               force: Optional[bool] = None) -> None:
         """Delete a volume.
 
         Podman only.
@@ -153,5 +158,6 @@ class VolumesManager(Manager):
         """
         if isinstance(name, Volume):
             name = name.name
-        response = self.client.delete(f"/volumes/{name}", params={"force": force})
+        response = self.client.delete(f"/volumes/{name}",
+                                      params={"force": force})
         response.raise_for_status()
