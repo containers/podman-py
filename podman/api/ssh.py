@@ -2,6 +2,7 @@
 
 See Podman go bindings for more details.
 """
+
 import collections
 import functools
 import logging

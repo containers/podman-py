@@ -1,4 +1,5 @@
 """SystemManager to provide system level information from Podman service."""
+
 import logging
 from typing import Any, Dict, Optional
 

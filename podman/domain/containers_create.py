@@ -1,4 +1,6 @@
 """Mixin to provide Container create() method."""
+
+# pylint: disable=line-too-long
 import copy
 import logging
 import re
@@ -104,33 +106,54 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 powerful alternative to volumes. Each item in the list is expected to be a
                 Mount object.
                 For example:
-                 [
-                    {
-                        "type": "bind",
-                        "source": "/a/b/c1",
-                        "target" "/d1",
-                        "read_only": True,
-                        "relabel": "Z"
-                    },
-                    {
-                        "type": "tmpfs",
-                        "source": "tmpfs", # If this was not passed, the regular directory
-                                           # would be created rather than tmpfs mount !!!
-                                           # as this will cause to have invalid entry
-                                           # in /proc/self/mountinfo
-                        "target" "/d2",
-                        "size": "100k",
-                        "chown": True
-                    }
-                ]
 
+                [
+
+                    {
+
+                        "type": "bind",
+
+                        "source": "/a/b/c1",
+
+                        "target" "/d1",
+
+                        "read_only": True,
+
+                        "relabel": "Z"
+
+                    },
+
+                    {
+
+                        "type": "tmpfs",
+
+                        # If this was not passed, the regular directory
+
+                        # would be created rather than tmpfs mount !!!
+
+                        # as this will cause to have invalid entry
+
+                        # in /proc/self/mountinfo
+
+                        "source": "tmpfs",
+
+                        "target" "/d2",
+
+                        "size": "100k",
+
+                        "chown": True
+
+                    }
+
+                ]
             name (str): The name for this container.
             nano_cpus (int):  CPU quota in units of 1e-9 CPUs.
             networks (Dict[str, Dict[str, Union[str, List[str]]):
                 Networks which will be connected to container during container creation
                 Values of the network configuration can be :
-                     - string
-                     - list of strings (e.g. Aliases)
+
+                - string
+                - list of strings (e.g. Aliases)
             network_disabled (bool): Disable networking.
             network_mode (str): One of:
 
@@ -150,9 +173,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             pids_limit (int): Tune a container's pids limit. Set -1 for unlimited.
             platform (str): Platform in the format os[/arch[/variant]]. Only used if the method
                 needs to pull the requested image.
-            ports (Dict[str, Union[int, Tuple[str, int], List[int],
-                                   Dict[str, Union[int, Tuple[str, int], List[int]]]]]
-                  ): Ports to bind inside the container.
+            ports (Dict[str, Union[int, Tuple[str, int], List[int], Dict[str, Union[int, Tuple[str, int], List[int]]]]]): Ports to bind inside the container.
 
                 The keys of the dictionary are the ports to bind inside the container, either as an
                 integer or a string in the form port/protocol, where the protocol is either
@@ -162,31 +183,40 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 which can be either:
 
                 - The port number, as an integer.
+
                     For example: {'2222/tcp': 3333} will expose port 2222 inside the container
                     as port 3333 on the host.
                 - None, to assign a random host port.
+
                     For example: {'2222/tcp': None}.
                 - A tuple of (address, port) if you want to specify the host interface.
+
                     For example: {'1111/tcp': ('127.0.0.1', 1111)}.
                 - A list of integers or tuples of (address, port), if you want to bind
                   multiple host ports to a single container port.
+
                     For example: {'1111/tcp': [1234, ("127.0.0.1", 4567)]}.
 
                     For example: {'9090': 7878, '10932/tcp': '8781',
                                   "8989/tcp": ("127.0.0.1", 9091)}
                 - A dictionary of the options mentioned above except for random host port.
+
                   The dictionary has additional option "range",
                     which allows binding range of ports.
 
                     For example:
-                        - {'2222/tcp': {"port": 3333, "range": 4}}
-                        - {'1111/tcp': {"port": ('127.0.0.1', 1111), "range": 4}}
-                        - {'1111/tcp': [
-                              {"port": 1234, "range": 4},
-                              {"ip": "127.0.0.1", "port": 4567}
-                            ]
-                          }
 
+                    - {'2222/tcp': {"port": 3333, "range": 4}}
+                    - {'1111/tcp': {"port": ('127.0.0.1', 1111), "range": 4}}
+                    - {'1111/tcp': [
+
+                            {"port": 1234, "range": 4},
+
+                            {"ip": "127.0.0.1", "port": 4567}
+
+                        ]
+
+                    }
             privileged (bool): Give extended privileges to this container.
             publish_all_ports (bool): Publish all ports to the host.
             read_only (bool): Mount the container's root filesystem as read only.
@@ -200,34 +230,41 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 - MaximumRetryCount: Number of times to restart the container on failure.
 
                 For example: {"Name": "on-failure", "MaximumRetryCount": 5}
-
             runtime (str): Runtime to use with this container.
             secrets (List[Union[str, Secret, Dict[str, Union[str, int]]]]): Secrets to
                 mount to this container.
 
                 For example:
-                    - As list of strings, each string representing a secret's ID or name:
-                        ['my_secret', 'my_secret2']
 
-                    - As list of Secret objects the corresponding IDs are read from:
-                        [Secret, Secret]
+                - As list of strings, each string representing a secret's ID or name:
+                    ['my_secret', 'my_secret2']
 
-                    - As list of dictionaries:
-                        [
-                            {
-                                "source": "my_secret",  # A string representing the ID or name of
-                                                        # a secret
-                                "target": "/my_secret", # An optional target to mount source to,
-                                                        # falls back to /run/secrets/source
-                                "uid": 1000,            # An optional UID that falls back to 0
-                                                        # if not given
-                                "gid": 1000,            # An optional GID that falls back to 0
-                                                        # if not given
-                                "mode": 0o400,          # An optional mode to apply to the target,
-                                                        # use an 0o prefix for octal integers
-                            },
-                        ]
+                - As list of Secret objects the corresponding IDs are read from:
+                    [Secret, Secret]
 
+                - As list of dictionaries:
+                    [
+
+                        {
+
+                            "source": "my_secret",  # A string representing the ID or name of
+                                                    # a secret
+
+                            "target": "/my_secret", # An optional target to mount source to,
+                                                    # falls back to /run/secrets/source
+
+                            "uid": 1000,            # An optional UID that falls back to 0
+                                                    # if not given
+
+                            "gid": 1000,            # An optional GID that falls back to 0
+                                                    # if not given
+
+                            "mode": 0o400,          # An optional mode to apply to the target,
+                                                    # use an 0o prefix for octal integers
+
+                        },
+
+                    ]
             secret_env (Dict[str, str]): Secrets to add as environment variables available in the
                 container.
 
@@ -257,11 +294,9 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 the corresponding environment variables will be set in the container being built.
             user (Union[str, int]): Username or UID to run commands as inside the container.
             userns_mode (str): Sets the user namespace mode for the container when user namespace
-                remapping option is enabled. Supported values documented here
-                https://docs.podman.io/en/latest/markdown/options/userns.container.html#userns-mode
+                remapping option is enabled. Supported values documented `here <https://docs.podman.io/en/latest/markdown/options/userns.container.html#userns-mode>`_
             uts_mode (str): Sets the UTS namespace mode for the container.
-                Supported values are documented here
-                https://docs.podman.io/en/latest/markdown/options/uts.container.html
+                `These <https://docs.podman.io/en/latest/markdown/options/uts.container.html>`_ are the supported values.
             version (str): The version of the API to use. Set to auto to automatically detect
                 the server's version. Default: 3.0.0
             volume_driver (str): The name of a volume driver/plugin.
@@ -278,12 +313,19 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 For example:
 
                     {
+
                         'test_bind_1':
+
                             {'bind': '/mnt/vol1', 'mode': 'rw'},
+
                         'test_bind_2':
+
                             {'bind': '/mnt/vol2', 'extended_mode': ['ro', 'noexec']},
+
                          'test_bind_3':
+
                             {'bind': '/mnt/vol3', 'extended_mode': ['noexec'], 'mode': 'rw'}
+
                     }
 
             volumes_from (List[str]): List of container names or IDs to get volumes from.

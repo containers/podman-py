@@ -1,4 +1,5 @@
 """Model and Manager for Manifest resources."""
+
 import logging
 import urllib.parse
 from contextlib import suppress

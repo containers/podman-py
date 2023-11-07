@@ -8,6 +8,7 @@ Example:
         for net in client.networks.list():
             print(net.id, "\n")
 """
+
 import ipaddress
 import logging
 from contextlib import suppress
