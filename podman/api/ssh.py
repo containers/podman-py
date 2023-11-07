@@ -203,7 +203,7 @@ class SSHConnection(urllib3.connection.HTTPConnection):
 class SSHConnectionPool(urllib3.HTTPConnectionPool):
     """Specialized HTTPConnectionPool for holding SSH connections."""
 
-    ConnectionCls = SSHConnection
+    ConnectionCls = SSHConnection  # pylint: disable=invalid-name
 
 
 class SSHPoolManager(urllib3.PoolManager):

@@ -7,7 +7,7 @@ from typing import Any, ClassVar, IO, Iterable, List, Mapping, Optional, Tuple, 
 import requests
 from requests.adapters import HTTPAdapter
 
-from podman import api
+from podman import api  # pylint: disable=cyclic-import
 from podman.api.ssh import SSHAdapter
 from podman.api.uds import UDSAdapter
 from podman.errors import APIError, NotFound
