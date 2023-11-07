@@ -39,7 +39,7 @@ add_module_names = False
 # sphinx.ext.napoleon: Support for NumPy and Google style docstrings
 # sphinx.ext.viewcode: Add links to highlighted source code
 # isort: unique-list
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx.ext.viewcode']
+extensions = ['sphinx.ext.napoleon', 'sphinx.ext.autodoc', 'sphinx.ext.viewcode']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -51,6 +51,9 @@ templates_path = ['_templates']
 exclude_patterns = [
     'podman.api.*rst',
     'podman.rst',
+    'podman.version.rst',
+    'podman.tlsconfig.rst',
+    'podman.errors.rst',
 ]
 
 

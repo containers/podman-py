@@ -76,7 +76,7 @@ docs:
 	# -D language=en : define language as en
 	# . : source directory
 	# _build/html : target
-	cd _build/doctrees && python3 -m sphinx -T -E -W --keep-going -b html -d _build/doctrees -D language=en . _build/html
+	python3 -m sphinx -T -E -W --keep-going -b html -d _build/doctrees -D language=en _build/doctrees _build/html
 
 .PHONY: rpm
 rpm: ## Build rpm packages
