@@ -1,12 +1,12 @@
 """Podman API Errors."""
-import typing
-from typing import Iterable, List, Optional, Union
+
+from typing import Iterable, List, Optional, Union, TYPE_CHECKING
 
 from requests import Response
 from requests.exceptions import HTTPError
 
 # Break circular import
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from podman.domain.containers import Container
     from podman.api.client import APIResponse
 

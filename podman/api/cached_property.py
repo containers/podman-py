@@ -1,4 +1,5 @@
 """Provide cached_property for Python <=3.8 programs."""
+
 import functools
 
 try:

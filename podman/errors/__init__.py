@@ -6,6 +6,7 @@ is not supported. PodmanClient related errors take precedence over APIConnection
 
 ApiConnection and associated classes have been deprecated.
 """
+
 import warnings
 from http.client import HTTPException
 

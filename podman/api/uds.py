@@ -1,4 +1,5 @@
 """Specialized Transport Adapter for UNIX domain sockets."""
+
 import collections
 import functools
 import logging
@@ -89,7 +90,7 @@ class UDSConnection(urllib3.connection.HTTPConnection):
 class UDSConnectionPool(urllib3.HTTPConnectionPool):
     """Specialization of HTTPConnectionPool for holding UNIX domain sockets."""
 
-    ConnectionCls = UDSConnection
+    ConnectionCls = UDSConnection  # pylint: disable=invalid-name
 
 
 class UDSPoolManager(urllib3.PoolManager):
