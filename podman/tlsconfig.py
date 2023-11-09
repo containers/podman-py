@@ -1,5 +1,6 @@
 """Holds TLS configuration."""
 
+
 class TLSConfig:
     """TLS configuration.
 

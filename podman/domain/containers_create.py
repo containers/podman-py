@@ -657,13 +657,11 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         }
 
         for item in args.pop("ulimits", []):
-            params["r_limits"].append(
-                {
-                    "type": item["Name"],
-                    "hard": item["Hard"],
-                    "soft": item["Soft"],
-                }
-            )
+            params["r_limits"].append({
+                "type": item["Name"],
+                "hard": item["Hard"],
+                "soft": item["Soft"],
+            })
 
         for item in args.pop("volumes", {}).items():
             key, value = item
