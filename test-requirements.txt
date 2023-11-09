@@ -7,3 +7,4 @@ pylint
 pytest
 requests-mock >= 1.11.0
 tox
+rich >= 12.5.1
