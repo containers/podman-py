@@ -6,7 +6,7 @@ import logging
 import urllib.parse
 from typing import Any, Dict, Generator, Iterator, List, Mapping, Optional, Union
 import requests
-from rich.progress import Progress
+from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeRemainingColumn
 
 from podman import api
 from podman.api import Literal
@@ -323,7 +323,13 @@ class ImagesManager(BuildMixin, Manager):
         if progress_bar:
             tasks = {}
             print("Pulling", params["reference"])
-            with Progress() as progress:
+            progress = Progress(
+                TextColumn("[progress.description]{task.description}"),
+                BarColumn(complete_style="default", finished_style="green"),
+                TaskProgressColumn(),
+                TimeRemainingColumn(),
+            )
+            with progress:
                 for line in response.iter_lines():
                     decoded_line = json.loads(line.decode('utf-8'))
                     self.__show_progress_bar(decoded_line, progress, tasks)
@@ -350,7 +356,7 @@ class ImagesManager(BuildMixin, Manager):
             description = f'[green][Download complete  {line["id"]}]'
             completed = True
         elif line['status'] == 'Downloading':
-            description = f'[red][Downloading {line["id"]}]'
+            description = f'[bold][Downloading {line["id"]}]'
         else:
             # skip other statuses
             return
