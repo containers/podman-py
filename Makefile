@@ -60,13 +60,9 @@ release:
 
 .PHONY: docs
 docs:
-	mkdir -p _build/doctrees
-	cp -R docs/source/* _build/doctrees
-	sphinx-apidoc --separate --no-toc --force --templatedir build/docs/source/_templates/apidoc \
-		-o _build/doctrees \
-		podman podman/tests
-	# Previous Command: sphinx-build _build/doctrees _build/html
-	#
+	sphinx-apidoc --separate --no-toc --force --templatedir docs/source/_templates/apidoc \
+		-o docs/source/ podman podman/tests
+
 	# HARD CODED COMMAND from readthedocs! We must conform!
 	# -T : traceback
 	# -E : do not use saved environment, always read all files
@@ -76,7 +72,7 @@ docs:
 	# -D language=en : define language as en
 	# . : source directory
 	# _build/html : target
-	python3 -m sphinx -T -E -W --keep-going -b html -d _build/doctrees -D language=en _build/doctrees _build/html
+	cd docs/source && python3 -m sphinx -T -E -W --keep-going -b html -d _build/doctrees -D language=en . _build/html
 
 .PHONY: rpm
 rpm: ## Build rpm packages

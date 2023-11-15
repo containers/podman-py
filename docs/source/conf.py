@@ -54,6 +54,7 @@ exclude_patterns = [
     'podman.version.rst',
     'podman.tlsconfig.rst',
     'podman.errors.rst',
+    'podman.domain.rst',
 ]
 
 

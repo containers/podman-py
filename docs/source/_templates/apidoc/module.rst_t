@@ -1,9 +1,14 @@
 {%- if show_headings %}
-{{- basename | replace("podman.", "") | e | heading }}
-
+{%- if "podman.errors" in basename %}
+{{- basename | replace("podman.errors.", "") | e | heading }}
+{% elif "podman.client" in basename -%}
+{{- basename | replace("podman.client", "client") | e | heading }}
+{% else -%}
+{{- basename | replace("podman.domain.", "") | e | heading }}
 {% endif -%}
+{% endif -%}
+
 .. automodule:: {{ qualname }}
 {%- for option in automodule_options %}
    :{{ option }}:
 {%- endfor %}
-
