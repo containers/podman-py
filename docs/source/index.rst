@@ -44,7 +44,7 @@ Example
 
 .. toctree::
    :caption: Podman Client
-   :maxdepth: 2
+   :hidden:
 
    podman.client
 
@@ -53,21 +53,19 @@ Example
    :glob:
    :hidden:
 
-   podman.domain.config*
-   podman.domain.containers
-   podman.domain.containers_manager
-   podman.domain.images
-   podman.domain.images_manager
-   podman.domain.ipam*
-   podman.domain.events*
+   podman.domain.config
+   podman.domain.containers*
+   podman.domain.images*
+   podman.domain.ipam
+   podman.domain.events
    podman.domain.manager
-   podman.domain.manifests*
+   podman.domain.manifests
    podman.domain.networks*
    podman.domain.pods*
-   podman.domain.registry_data*
-   podman.domain.secrets*
-   podman.domain.system*
-   podman.domain.volume*
+   podman.domain.registry_data
+   podman.domain.secrets
+   podman.domain.system
+   podman.domain.volumes
    podman.errors.exceptions
 
 Indices and tables

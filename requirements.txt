@@ -6,3 +6,4 @@ sphinx
 tomli>=1.2.3; python_version<'3.11'
 urllib3
 wheel
+rich >= 12.5.1
