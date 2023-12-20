@@ -383,22 +383,20 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 del args[key]
 
         # These keywords are not supported for various reasons.
-        unsupported_keys = set(args.keys()).intersection(
-            (
-                "blkio_weight",
-                "blkio_weight_device",  # FIXME In addition to device Major/Minor include path
-                "device_cgroup_rules",  # FIXME Where to map for Podman API?
-                "device_read_bps",  # FIXME In addition to device Major/Minor include path
-                "device_read_iops",  # FIXME In addition to device Major/Minor include path
-                "device_requests",  # FIXME In addition to device Major/Minor include path
-                "device_write_bps",  # FIXME In addition to device Major/Minor include path
-                "device_write_iops",  # FIXME In addition to device Major/Minor include path
-                "domainname",
-                "network_disabled",  # FIXME Where to map for Podman API?
-                "storage_opt",  # FIXME Where to map for Podman API?
-                "tmpfs",  # FIXME Where to map for Podman API?
-            )
-        )
+        unsupported_keys = set(args.keys()).intersection((
+            "blkio_weight",
+            "blkio_weight_device",  # FIXME In addition to device Major/Minor include path
+            "device_cgroup_rules",  # FIXME Where to map for Podman API?
+            "device_read_bps",  # FIXME In addition to device Major/Minor include path
+            "device_read_iops",  # FIXME In addition to device Major/Minor include path
+            "device_requests",  # FIXME In addition to device Major/Minor include path
+            "device_write_bps",  # FIXME In addition to device Major/Minor include path
+            "device_write_iops",  # FIXME In addition to device Major/Minor include path
+            "domainname",
+            "network_disabled",  # FIXME Where to map for Podman API?
+            "storage_opt",  # FIXME Where to map for Podman API?
+            "tmpfs",  # FIXME Where to map for Podman API?
+        ))
         if len(unsupported_keys) > 0:
             raise TypeError(
                 f"""Keyword(s) '{" ,".join(unsupported_keys)}' are"""
