@@ -51,16 +51,14 @@ class ImageTestCase(unittest.TestCase):
         adapter = mock.get(
             tests.LIBPOD_URL
             + "/images/326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/history",
-            json=[
-                {
-                    "Id": "326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab",
-                    "Comment": "",
-                    "Created": 1614208404,
-                    "CreatedBy": "2021-02-24T23:13:24+00:00",
-                    "Tags": ["latest"],
-                    "Size": 1024,
-                }
-            ],
+            json=[{
+                "Id": "326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab",
+                "Comment": "",
+                "Created": 1614208404,
+                "CreatedBy": "2021-02-24T23:13:24+00:00",
+                "Tags": ["latest"],
+                "Size": 1024,
+            }],
         )
         image = Image(attrs=FIRST_IMAGE, client=self.client.api)
 
