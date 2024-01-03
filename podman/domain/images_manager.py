@@ -6,7 +6,6 @@ import logging
 import urllib.parse
 from typing import Any, Dict, Generator, Iterator, List, Mapping, Optional, Union
 import requests
-from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeRemainingColumn
 
 from podman import api
 from podman.api import Literal
@@ -16,6 +15,17 @@ from podman.domain.images_build import BuildMixin
 from podman.domain.manager import Manager
 from podman.domain.registry_data import RegistryData
 from podman.errors import APIError, ImageNotFound
+
+try:
+    from rich.progress import (
+        Progress,
+        TextColumn,
+        BarColumn,
+        TaskProgressColumn,
+        TimeRemainingColumn,
+    )
+except (ImportError, ModuleNotFoundError):
+    Progress = None
 
 logger = logging.getLogger("podman.images")
 
@@ -314,6 +324,8 @@ class ImagesManager(BuildMixin, Manager):
         # progress bar
         progress_bar = kwargs.get("progress_bar", False)
         if progress_bar:
+            if Progress is None:
+                raise ModuleNotFoundError('progress_bar requires \'rich.progress\' module')
             params["compatMode"] = True
             stream = True
 

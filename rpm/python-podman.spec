@@ -81,6 +81,11 @@ export PBR_VERSION="0.0.0"
 %pyproject_save_files %{pypi_name}
 %endif
 
+%if !%{defined rhel8_py}
+%check
+%pyproject_check_import -e podman.api.typing_extensions
+%endif
+
 %if %{defined rhel8_py}
 %files -n python%{python3_pkgversion}-%{pypi_name}
 %dir %{python3_sitelib}/%{pypi_name}-*-py%{python3_version}.egg-info
@@ -88,6 +93,7 @@ export PBR_VERSION="0.0.0"
 %dir %{python3_sitelib}/%{pypi_name}
 %{python3_sitelib}/%{pypi_name}/*
 %else
+%pyproject_extras_subpkg -n python%{python3_pkgversion}-%{pypi_name} progress_bar
 %files -n python%{python3_pkgversion}-%{pypi_name} -f %{pyproject_files}
 %endif
 %license LICENSE
