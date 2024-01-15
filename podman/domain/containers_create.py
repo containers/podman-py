@@ -163,6 +163,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 - container:<name|id>: Reuse another container's network
                   stack.
                 - host: Use the host network stack.
+                - ns:<path>: User defined netns path.
 
                 Incompatible with network.
             oom_kill_disable (bool): Whether to disable OOM killer.
@@ -700,7 +701,12 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             params["ipcns"] = {"nsmode": args.pop("ipc_mode")}
 
         if "network_mode" in args:
-            params["netns"] = {"nsmode": args.pop("network_mode")}
+            network_mode = args.pop("network_mode")
+            details = network_mode.split(":")
+            if len(details) == 2 and details[0] == "ns":
+                params["netns"] = {"nsmode": "path", "value": details[1]}
+            else:
+                params["netns"] = {"nsmode": network_mode}
 
         if "pid_mode" in args:
             params["pidns"] = {"nsmode": args.pop("pid_mode")}
