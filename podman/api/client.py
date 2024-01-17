@@ -89,7 +89,7 @@ class APIClient(requests.Session):
         num_pools: Optional[int] = None,
         credstore_env: Optional[Mapping[str, str]] = None,
         use_ssh_client=True,
-        max_pools_size=None,
+        max_pool_size=None,
         **kwargs,
     ):  # pylint: disable=unused-argument
         """Instantiate APIClient object.
@@ -119,8 +119,8 @@ class APIClient(requests.Session):
         adapter_kwargs = kwargs.copy()
         if num_pools is not None:
             adapter_kwargs["pool_connections"] = num_pools
-        if max_pools_size is not None:
-            adapter_kwargs["pool_maxsize"] = max_pools_size
+        if max_pool_size is not None:
+            adapter_kwargs["pool_maxsize"] = max_pool_size
         if timeout is not None:
             adapter_kwargs["timeout"] = timeout
 
