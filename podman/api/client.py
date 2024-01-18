@@ -28,8 +28,15 @@ _Data = Union[
 _Timeout = Union[None, float, Tuple[float, float], Tuple[float, None]]
 """Type alias for request timeout parameter."""
 
-# Make the DeprecationWarning visible for user.
-warnings.simplefilter('always', DeprecationWarning)
+
+class ParameterDeprecationWarning(DeprecationWarning):
+    """
+    Custom DeprecationWarning for deprecated parameters.
+    """
+
+
+# Make the ParameterDeprecationWarning visible for user.
+warnings.simplefilter('always', ParameterDeprecationWarning)
 
 
 class APIResponse:
@@ -134,7 +141,7 @@ class APIClient(requests.Session):
         if max_pools_size is not None:
             warnings.warn(
                 "'max_pools_size' parameter is deprecated! Please use 'max_pool_size' parameter.",
-                DeprecationWarning,
+                ParameterDeprecationWarning,
             )
             if max_pool_size is not None:
                 raise ValueError(
