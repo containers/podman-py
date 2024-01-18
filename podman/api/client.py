@@ -132,11 +132,15 @@ class APIClient(requests.Session):
         # and the below section is needed for backward compatible.
         # This section can be removed in a future release.
         if max_pools_size is not None:
-            warnings.warn("'max_pools_size' parameter is deprecated! "
-                          "Please use 'max_pool_size' parameter.", DeprecationWarning)
+            warnings.warn(
+                "'max_pools_size' parameter is deprecated! Please use 'max_pool_size' parameter.",
+                DeprecationWarning,
+            )
             if max_pool_size is not None:
-                raise ValueError("Both of 'max_pools_size' and 'max_pool_size' parameters are set. "
-                                 "Please use only the 'max_pool_size', 'max_pools_size' is deprecated!")
+                raise ValueError(
+                    "Both of 'max_pools_size' and 'max_pool_size' parameters are set. "
+                    "Please use only the 'max_pool_size', 'max_pools_size' is deprecated!"
+                )
             max_pool_size = max_pools_size
 
         if num_pools is not None:
