@@ -1,6 +1,7 @@
 """APIClient for connecting to Podman service."""
 
 import json
+import warnings
 import urllib.parse
 from typing import Any, ClassVar, IO, Iterable, List, Mapping, Optional, Tuple, Type, Union
 
@@ -26,6 +27,9 @@ _Data = Union[
 
 _Timeout = Union[None, float, Tuple[float, float], Tuple[float, None]]
 """Type alias for request timeout parameter."""
+
+# Make the DeprecationWarning visible for user.
+warnings.simplefilter('always', DeprecationWarning)
 
 
 class APIResponse:
@@ -90,6 +94,7 @@ class APIClient(requests.Session):
         credstore_env: Optional[Mapping[str, str]] = None,
         use_ssh_client=True,
         max_pool_size=None,
+        max_pools_size=None,  # This parameter is kept only for backward compatibility.
         **kwargs,
     ):  # pylint: disable=unused-argument
         """Instantiate APIClient object.
@@ -103,6 +108,7 @@ class APIClient(requests.Session):
             num_pools: The number of connection pools to cache.
             credstore_env: Environment for storing credentials.
             use_ssh_client: Use system ssh agent rather than ssh module. Always, True.
+            max_pools_size: Deprecated! Please use 'max_pool_size'.
             max_pool_size: Override number of connections pools to maintain.
                 Default: requests.adapters.DEFAULT_POOLSIZE
 
@@ -117,10 +123,28 @@ class APIClient(requests.Session):
         self.base_url = self._normalize_url(base_url)
 
         adapter_kwargs = kwargs.copy()
+
+        # The HTTPAdapter doesn't handle the "**kwargs", so it needs special structure
+        # where the parameters are set specifically.
+        http_adapter_kwargs = {}
+
+        # 'max_pools_size' has been changed to 'max_pool_size'
+        # and the below section is needed for backward compatible.
+        # This section can be removed in a future release.
+        if max_pools_size is not None:
+            warnings.warn("'max_pools_size' parameter is deprecated! "
+                          "Please use 'max_pool_size' parameter.", DeprecationWarning)
+            if max_pool_size is not None:
+                raise ValueError("Both of 'max_pools_size' and 'max_pool_size' parameters are set. "
+                                 "Please use only the 'max_pool_size', 'max_pools_size' is deprecated!")
+            max_pool_size = max_pools_size
+
         if num_pools is not None:
             adapter_kwargs["pool_connections"] = num_pools
+            http_adapter_kwargs["pool_connections"] = num_pools
         if max_pool_size is not None:
             adapter_kwargs["pool_maxsize"] = max_pool_size
+            http_adapter_kwargs["pool_maxsize"] = max_pool_size
         if timeout is not None:
             adapter_kwargs["timeout"] = timeout
 
@@ -133,8 +157,8 @@ class APIClient(requests.Session):
             self.mount("https://", SSHAdapter(self.base_url.geturl(), **adapter_kwargs))
 
         elif self.base_url.scheme == "http":
-            self.mount("http://", HTTPAdapter(**adapter_kwargs))
-            self.mount("https://", HTTPAdapter(**adapter_kwargs))
+            self.mount("http://", HTTPAdapter(**http_adapter_kwargs))
+            self.mount("https://", HTTPAdapter(**http_adapter_kwargs))
         else:
             assert False, "APIClient.supported_schemes changed without adding a branch here."
 
