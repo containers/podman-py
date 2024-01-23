@@ -331,6 +331,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
             volumes_from (List[str]): List of container names or IDs to get volumes from.
             working_dir (str): Path to the working directory.
+            workdir (str): Alias of working_dir - Path to the working directory.
 
         Returns:
             A Container object.
@@ -525,7 +526,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "version": pop("version"),
             "volumes": [],
             "volumes_from": pop("volumes_from"),
-            "work_dir": pop("working_dir"),
+            "work_dir": pop("workdir") or pop("working_dir"),
         }
 
         for device in args.pop("devices", []):
