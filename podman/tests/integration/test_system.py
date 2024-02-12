@@ -62,7 +62,5 @@ class SystemIntegrationTest(base.IntegrationTest):
         )
 
     def test_from_env(self):
-        """integration: from_env() error message"""
-        with self.assertRaises(ValueError) as e:
-            next(self.client.from_env())
-        self.assertIn("CONTAINER_HOST or DOCKER_HOST", repr(e.exception))
+        """integration: from_env() no error"""
+        PodmanClient.from_env()
