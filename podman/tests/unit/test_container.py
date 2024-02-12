@@ -38,8 +38,7 @@ class ContainersTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_remove(self, mock):
         adapter = mock.delete(
-            tests.LIBPOD_URL
-            + "/containers/"
+            tests.LIBPOD_URL + "/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd?v=True&force=True",
             status_code=204,
         )
@@ -71,8 +70,7 @@ class ContainersTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_restart(self, mock):
         adapter = mock.post(
-            tests.LIBPOD_URL
-            + "/containers/"
+            tests.LIBPOD_URL + "/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/restart?timeout=10",
             status_code=204,
         )
@@ -83,8 +81,7 @@ class ContainersTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_start_dkeys(self, mock):
         adapter = mock.post(
-            tests.LIBPOD_URL
-            + "/containers/"
+            tests.LIBPOD_URL + "/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/start"
             "?detachKeys=%5Ef%5Eu",
             status_code=204,
@@ -120,8 +117,7 @@ class ContainersTestCase(unittest.TestCase):
             buffer.write("\n")
 
         adapter = mock.get(
-            tests.LIBPOD_URL
-            + "/containers/stats"
+            tests.LIBPOD_URL + "/containers/stats"
             "?containers=87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
             "&stream=True",
             text=buffer.getvalue(),
@@ -143,8 +139,7 @@ class ContainersTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_stop(self, mock):
         adapter = mock.post(
-            tests.LIBPOD_URL
-            + "/containers/"
+            tests.LIBPOD_URL + "/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/stop"
             "?all=True&timeout=10.0",
             status_code=204,
@@ -173,8 +168,7 @@ class ContainersTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_unpause(self, mock):
         adapter = mock.post(
-            tests.LIBPOD_URL
-            + "/containers/"
+            tests.LIBPOD_URL + "/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/unpause",
             status_code=204,
         )
@@ -225,8 +219,7 @@ class ContainersTestCase(unittest.TestCase):
             {"Path": "deleted", "Kind": 2},
         ]
         adapter = mock.get(
-            tests.LIBPOD_URL
-            + "/containers/"
+            tests.LIBPOD_URL + "/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/changes",
             json=payload,
         )
@@ -238,8 +231,7 @@ class ContainersTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_diff_404(self, mock):
         adapter = mock.get(
-            tests.LIBPOD_URL
-            + "/containers/"
+            tests.LIBPOD_URL + "/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/changes",
             json={
                 "cause": "Container not found.",
@@ -284,8 +276,7 @@ class ContainersTestCase(unittest.TestCase):
         encoded_value = base64.urlsafe_b64encode(json.dumps(header_value).encode("utf8"))
 
         adapter = mock.get(
-            tests.LIBPOD_URL
-            + "/containers/"
+            tests.LIBPOD_URL + "/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/archive"
             "?path=/etc/motd",
             body=body,
@@ -306,8 +297,7 @@ class ContainersTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_commit(self, mock):
         post_adapter = mock.post(
-            tests.LIBPOD_URL
-            + "/commit"
+            tests.LIBPOD_URL + "/commit"
             "?author=redhat&changes=ADD+%2fetc%2fmod&comment=This+is+a+unittest"
             "&container=87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd&format=docker"
             "&pause=True&repo=quay.local&tag=unittest",
@@ -340,8 +330,7 @@ class ContainersTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_put_archive(self, mock):
         adapter = mock.put(
-            tests.LIBPOD_URL
-            + "/containers/"
+            tests.LIBPOD_URL + "/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/archive"
             "?path=%2fetc%2fmotd",
             status_code=200,
@@ -357,8 +346,7 @@ class ContainersTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_put_archive_404(self, mock):
         adapter = mock.put(
-            tests.LIBPOD_URL
-            + "/containers/"
+            tests.LIBPOD_URL + "/containers/"
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/archive"
             "?path=deadbeef",
             status_code=404,

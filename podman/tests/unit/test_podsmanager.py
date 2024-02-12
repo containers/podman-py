@@ -149,8 +149,7 @@ class PodsManagerTestCase(unittest.TestCase):
             "Titles": ["UID", "PID", "PPID", "C", "STIME", "TTY", "TIME CMD"],
         }
         mock.get(
-            tests.LIBPOD_URL
-            + "/pods/stats"
+            tests.LIBPOD_URL + "/pods/stats"
             "?namesOrIDs=c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8",
             json=body,
         )
@@ -180,8 +179,7 @@ class PodsManagerTestCase(unittest.TestCase):
             "Titles": ["UID", "PID", "PPID", "C", "STIME", "TTY", "TIME CMD"],
         }
         mock.get(
-            tests.LIBPOD_URL
-            + "/pods/stats"
+            tests.LIBPOD_URL + "/pods/stats"
             "?namesOrIDs=c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8",
             json=body,
         )
