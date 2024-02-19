@@ -163,10 +163,12 @@ class ImagesManager(BuildMixin, Manager):
                 error.append(element["Err"])
             else:
                 reclaimed += element["Size"]
-                deleted.append({
-                    "Deleted": element["Id"],
-                    "Untagged": "",
-                })
+                deleted.append(
+                    {
+                        "Deleted": element["Id"],
+                        "Untagged": "",
+                    }
+                )
         if len(error) > 0:
             raise APIError(response.url, response=response, explanation="; ".join(error))
 
