@@ -66,12 +66,14 @@ class PodmanLauncher:
         if os.environ.get("container") == "oci":
             self.cmd.append("--storage-driver=vfs")
 
-        self.cmd.extend([
-            "system",
-            "service",
-            f"--time={timeout}",
-            socket_uri,
-        ])
+        self.cmd.extend(
+            [
+                "system",
+                "service",
+                f"--time={timeout}",
+                socket_uri,
+            ]
+        )
 
         process = subprocess.run(
             [podman_exe, "--version"], check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT

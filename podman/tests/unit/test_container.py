@@ -103,14 +103,18 @@ class ContainersTestCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_stats(self, mock):
-        stream = [{
-            "Error": None,
-            "Stats": [{
-                "ContainerId": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
-                "Name": "evil_ptolemy",
-                "CPU": 1000.0,
-            }],
-        }]
+        stream = [
+            {
+                "Error": None,
+                "Stats": [
+                    {
+                        "ContainerId": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
+                        "Name": "evil_ptolemy",
+                        "CPU": 1000.0,
+                    }
+                ],
+            }
+        ]
         buffer = io.StringIO()
         for entry in stream:
             buffer.write(json.JSONEncoder().encode(entry))
@@ -395,23 +399,25 @@ class ContainersTestCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_top_with_streaming(self, mock):
-        stream = [{
-            "Processes": [
-                [
-                    'jhonce',
-                    '2417',
-                    '2274',
-                    '0',
-                    'Mar01',
-                    '?',
-                    '00:00:01',
-                    '/usr/bin/ssh-agent /bin/sh -c exec -l /bin/bash -c "/usr/bin/gnome-session"',
+        stream = [
+            {
+                "Processes": [
+                    [
+                        'jhonce',
+                        '2417',
+                        '2274',
+                        '0',
+                        'Mar01',
+                        '?',
+                        '00:00:01',
+                        '/usr/bin/ssh-agent /bin/sh -c exec -l /bin/bash -c "/usr/bin/gnome-session"',
+                    ],
+                    ['jhonce', '5544', '3522', '0', 'Mar01', 'pts/1', '00:00:02', '-bash'],
+                    ['jhonce', '6140', '3522', '0', 'Mar01', 'pts/2', '00:00:00', '-bash'],
                 ],
-                ['jhonce', '5544', '3522', '0', 'Mar01', 'pts/1', '00:00:02', '-bash'],
-                ['jhonce', '6140', '3522', '0', 'Mar01', 'pts/2', '00:00:00', '-bash'],
-            ],
-            "Titles": ["UID", "PID", "PPID", "C", "STIME", "TTY", "TIME CMD"],
-        }]
+                "Titles": ["UID", "PID", "PPID", "C", "STIME", "TTY", "TIME CMD"],
+            }
+        ]
 
         buffer = io.StringIO()
         for entry in stream:
