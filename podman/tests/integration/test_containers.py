@@ -2,6 +2,7 @@ import io
 import random
 import tarfile
 import unittest
+import tempfile
 
 try:
     # Python >= 3.10
@@ -157,6 +158,36 @@ class ContainersIntegrationTest(base.IntegrationTest):
         image = container.commit(repository="busybox.local", tag="unittest")
         self.assertIn("localhost/busybox.local:unittest", image.attrs["RepoTags"])
         busybox.remove(force=True)
+
+    def test_container_rm_anonymous_volume(self):
+        with self.subTest("Check anonymous volume is removed"):
+            container_file = """
+FROM alpine
+VOLUME myvol
+ENV foo=bar
+"""
+            tmp_file = tempfile.mktemp()
+            file = open(tmp_file, 'w')
+            file.write(container_file)
+            file.close()
+            self.client.images.build(dockerfile=tmp_file, tag="test-img", path=".")
+
+            # get existing number of containers and volumes
+            existing_containers = self.client.containers.list(all=True)
+            existing_volumes = self.client.volumes.list()
+
+            container = self.client.containers.create("test-img")
+            container_list = self.client.containers.list(all=True)
+            self.assertEqual(len(container_list), len(existing_containers) + 1)
+            volume_list = self.client.volumes.list()
+            self.assertEqual(len(volume_list), len(existing_volumes) + 1)
+
+            # remove the container with v=True
+            container.remove(v=True)
+            container_list = self.client.containers.list(all=True)
+            self.assertEqual(len(container_list), len(existing_containers))
+            volume_list = self.client.volumes.list()
+            self.assertEqual(len(volume_list), len(existing_volumes))
 
 
 if __name__ == '__main__':

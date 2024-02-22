@@ -139,10 +139,8 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
         if isinstance(container_id, Container):
             container_id = container_id.id
 
-        params = {
-            "v": kwargs.get("v"),
-            "force": kwargs.get("force"),
-        }
+        # v is used for the compat endpoint while volumes is used for the libpod endpoint
+        params = {"v": kwargs.get("v"), "force": kwargs.get("force"), "volumes": kwargs.get("v")}
 
         response = self.client.delete(f"/containers/{container_id}", params=params)
         response.raise_for_status()
