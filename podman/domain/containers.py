@@ -217,8 +217,7 @@ class Container(PodmanResource):
         response = self.client.get(f"/containers/{self.id}/export", stream=True)
         response.raise_for_status()
 
-        for out in response.iter_content(chunk_size=chunk_size):
-            yield out
+        yield from response.iter_content(chunk_size=chunk_size)
 
     def get_archive(
         self, path: str, chunk_size: int = api.DEFAULT_CHUNK_SIZE
