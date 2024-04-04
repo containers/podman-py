@@ -460,7 +460,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "conmon_pid_file": pop("conmon_pid_file"),  # TODO document, podman only
             "containerCreateCommand": pop("containerCreateCommand"),  # TODO document, podman only
             "devices": [],
-            "dns_options": pop("dns_opt"),
+            "dns_option": pop("dns_opt"),
             "dns_search": pop("dns_search"),
             "dns_server": pop("dns"),
             "entrypoint": pop("entrypoint"),
