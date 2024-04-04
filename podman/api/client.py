@@ -1,12 +1,14 @@
 """APIClient for connecting to Podman service."""
+
 import json
+import warnings
 import urllib.parse
 from typing import Any, ClassVar, IO, Iterable, List, Mapping, Optional, Tuple, Type, Union
 
 import requests
 from requests.adapters import HTTPAdapter
 
-from podman import api
+from podman import api  # pylint: disable=cyclic-import
 from podman.api.ssh import SSHAdapter
 from podman.api.uds import UDSAdapter
 from podman.errors import APIError, NotFound
@@ -25,6 +27,16 @@ _Data = Union[
 
 _Timeout = Union[None, float, Tuple[float, float], Tuple[float, None]]
 """Type alias for request timeout parameter."""
+
+
+class ParameterDeprecationWarning(DeprecationWarning):
+    """
+    Custom DeprecationWarning for deprecated parameters.
+    """
+
+
+# Make the ParameterDeprecationWarning visible for user.
+warnings.simplefilter('always', ParameterDeprecationWarning)
 
 
 class APIResponse:
@@ -88,7 +100,7 @@ class APIClient(requests.Session):
         num_pools: Optional[int] = None,
         credstore_env: Optional[Mapping[str, str]] = None,
         use_ssh_client=True,
-        max_pools_size=None,
+        max_pool_size=None,
         **kwargs,
     ):  # pylint: disable=unused-argument
         """Instantiate APIClient object.
@@ -116,10 +128,17 @@ class APIClient(requests.Session):
         self.base_url = self._normalize_url(base_url)
 
         adapter_kwargs = kwargs.copy()
+
+        # The HTTPAdapter doesn't handle the "**kwargs", so it needs special structure
+        # where the parameters are set specifically.
+        http_adapter_kwargs = {}
+
         if num_pools is not None:
             adapter_kwargs["pool_connections"] = num_pools
-        if max_pools_size is not None:
-            adapter_kwargs["pool_maxsize"] = max_pools_size
+            http_adapter_kwargs["pool_connections"] = num_pools
+        if max_pool_size is not None:
+            adapter_kwargs["pool_maxsize"] = max_pool_size
+            http_adapter_kwargs["pool_maxsize"] = max_pool_size
         if timeout is not None:
             adapter_kwargs["timeout"] = timeout
 
@@ -132,8 +151,8 @@ class APIClient(requests.Session):
             self.mount("https://", SSHAdapter(self.base_url.geturl(), **adapter_kwargs))
 
         elif self.base_url.scheme == "http":
-            self.mount("http://", HTTPAdapter(**adapter_kwargs))
-            self.mount("https://", HTTPAdapter(**adapter_kwargs))
+            self.mount("http://", HTTPAdapter(**http_adapter_kwargs))
+            self.mount("https://", HTTPAdapter(**http_adapter_kwargs))
         else:
             assert False, "APIClient.supported_schemes changed without adding a branch here."
 

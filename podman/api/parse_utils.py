@@ -1,4 +1,5 @@
 """Helper functions for parsing strings."""
+
 import base64
 import ipaddress
 import json

@@ -1,4 +1,5 @@
 """Module for tracking registry metadata."""
+
 import logging
 from typing import Any, Mapping, Optional, Union
 

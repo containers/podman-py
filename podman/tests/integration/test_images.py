@@ -114,6 +114,9 @@ class ImagesIntegrationTest(base.IntegrationTest):
         self.assertEqual(len(actual), 1)
         self.assertEqual(actual[0]["Official"], "[OK]")
 
+        actual = self.client.images.search("alpine", listTags=True)
+        self.assertIsNotNone(actual[0]["Tag"])
+
     @unittest.skip("Needs Podman 3.1.0")
     def test_corrupt_load(self):
         with self.assertRaises(APIError) as e:

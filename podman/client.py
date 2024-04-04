@@ -1,4 +1,5 @@
 """Client for connecting to Podman service."""
+
 import logging
 import os
 from contextlib import AbstractContextManager
@@ -123,18 +124,19 @@ class PodmanClient(AbstractContextManager):
         if version == "auto":
             version = None
 
-        host = environment.get("CONTAINER_HOST") or environment.get("DOCKER_HOST") or None
-        if host is None:
-            raise ValueError("CONTAINER_HOST or DOCKER_HOST must be set to URL of podman service.")
+        kwargs = {
+            'version': version,
+            'timeout': timeout,
+            'tls': False,
+            'credstore_env': credstore_env,
+            'max_pool_size': max_pool_size,
+        }
 
-        return PodmanClient(
-            base_url=host,
-            version=version,
-            timeout=timeout,
-            tls=False,
-            credstore_env=credstore_env,
-            max_pool_size=max_pool_size,
-        )
+        host = environment.get("CONTAINER_HOST") or environment.get("DOCKER_HOST") or None
+        if host is not None:
+            kwargs['base_url'] = host
+
+        return PodmanClient(**kwargs)
 
     @cached_property
     def containers(self) -> ContainersManager:

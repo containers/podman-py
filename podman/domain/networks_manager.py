@@ -8,9 +8,9 @@ Example:
         for net in client.networks.list():
             print(net.id, "\n")
 """
+
 import ipaddress
 import logging
-import sys
 from contextlib import suppress
 from typing import Any, Dict, List, Optional
 
@@ -73,7 +73,6 @@ class NetworksManager(Manager):
             headers={"Content-Type": "application/json"},
         )
         response.raise_for_status()
-        sys.stderr.write(str(response.json()))
         return self.prepare_model(attrs=response.json())
 
     def _prepare_ipam(self, data: Dict[str, Any], ipam: Dict[str, Any]):
@@ -171,7 +170,8 @@ class NetworksManager(Manager):
         Raises:
             APIError: when service reports error
         """
-        response = self.client.post("/networks/prune", filters=api.prepare_filters(filters))
+        params = {"filters": api.prepare_filters(filters)}
+        response = self.client.post("/networks/prune", params=params)
         response.raise_for_status()
 
         deleted: List[str] = []

@@ -1,4 +1,5 @@
 """Base classes for PodmanResources and Manager's."""
+
 from abc import ABC, abstractmethod
 from collections import abc
 from typing import Any, List, Mapping, Optional, TypeVar, Union

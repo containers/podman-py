@@ -1,10 +1,10 @@
 """PodmanResource manager subclassed for Images."""
+
 import io
 import json
 import logging
 import urllib.parse
 from typing import Any, Dict, Generator, Iterator, List, Mapping, Optional, Union
-
 import requests
 
 from podman import api
@@ -15,6 +15,17 @@ from podman.domain.images_build import BuildMixin
 from podman.domain.manager import Manager
 from podman.domain.registry_data import RegistryData
 from podman.errors import APIError, ImageNotFound
+
+try:
+    from rich.progress import (
+        Progress,
+        TextColumn,
+        BarColumn,
+        TaskProgressColumn,
+        TimeRemainingColumn,
+    )
+except (ImportError, ModuleNotFoundError):
+    Progress = None
 
 logger = logging.getLogger("podman.images")
 
@@ -260,6 +271,8 @@ class ImagesManager(BuildMixin, Manager):
                 config for this request. auth_config should contain the username and password
                 keys to be valid.
             platform (str) – Platform in the format os[/arch[/variant]]
+            progress_bar (bool) - Display a progress bar with the image pull progress (uses
+                the compat endpoint). Default: False
             tls_verify (bool) - Require TLS verification. Default: True.
             stream (bool) - When True, the pull progress will be published as received.
                 Default: False.
@@ -308,8 +321,33 @@ class ImagesManager(BuildMixin, Manager):
                 params["Variant"] = tokens[2]
 
         stream = kwargs.get("stream", False)
+        # if the user wants a progress bar, we need to use the compat endpoint
+        # so set that to true as well as stream so we can parse that output for the
+        # progress bar
+        progress_bar = kwargs.get("progress_bar", False)
+        if progress_bar:
+            if Progress is None:
+                raise ModuleNotFoundError('progress_bar requires \'rich.progress\' module')
+            params["compatMode"] = True
+            stream = True
+
         response = self.client.post("/images/pull", params=params, stream=stream, headers=headers)
         response.raise_for_status(not_found=ImageNotFound)
+
+        if progress_bar:
+            tasks = {}
+            print("Pulling", params["reference"])
+            progress = Progress(
+                TextColumn("[progress.description]{task.description}"),
+                BarColumn(complete_style="default", finished_style="green"),
+                TaskProgressColumn(),
+                TimeRemainingColumn(),
+            )
+            with progress:
+                for line in response.iter_lines():
+                    decoded_line = json.loads(line.decode('utf-8'))
+                    self.__show_progress_bar(decoded_line, progress, tasks)
+            return None
 
         if stream:
             return response.iter_lines()
@@ -325,6 +363,37 @@ class ImagesManager(BuildMixin, Manager):
             if "id" in obj:
                 return self.get(obj["id"])
         return self.resource()
+
+    def __show_progress_bar(self, line, progress, tasks):
+        completed = False
+        if line['status'] == 'Download complete':
+            description = f'[green][Download complete  {line["id"]}]'
+            completed = True
+        elif line['status'] == 'Downloading':
+            description = f'[bold][Downloading {line["id"]}]'
+        else:
+            # skip other statuses
+            return
+
+        task_id = line["id"]
+        if task_id not in tasks.keys():
+            if completed:
+                # some layers are really small that they download immediately without showing
+                # anything as Downloading in the stream.
+                # For that case, show a completed progress bar
+                tasks[task_id] = progress.add_task(description, total=100, completed=100)
+            else:
+                tasks[task_id] = progress.add_task(
+                    description, total=line['progressDetail']['total']
+                )
+        else:
+            if completed:
+                # due to the stream, the Download complete output can happen before the Downloading
+                # bar outputs the 100%. So when we detect that the download is in fact complete,
+                # update the progress bar to show 100%
+                progress.update(tasks[task_id], description=description, total=100, completed=100)
+            else:
+                progress.update(tasks[task_id], completed=line['progressDetail']['current'])
 
     def remove(
         self,
@@ -373,6 +442,7 @@ class ImagesManager(BuildMixin, Manager):
 
             noTrunc (bool): Do not truncate any result string. Default: True.
             limit (int): Maximum number of results.
+            listTags (bool): list the available tags in the repository. Default: False
 
         Raises:
             APIError: when service returns an error
@@ -383,6 +453,9 @@ class ImagesManager(BuildMixin, Manager):
             "noTrunc": True,
             "term": [term],
         }
+
+        if "listTags" in kwargs:
+            params["listTags"] = kwargs.get("listTags")
 
         response = self.client.get("/images/search", params=params)
         response.raise_for_status(not_found=ImageNotFound)
@@ -407,11 +480,10 @@ class ImagesManager(BuildMixin, Manager):
         Raises:
             APIError: when service returns an error
         """
-        params = {}
-        if dest is not None and quiet:
-            params = {"destination": dest, "quiet": quiet}
-        elif quiet:
-            params = {"quiet": quiet}
+        params = {"quiet": quiet}
+        if dest is not None:
+            params["destination"] = dest
+
         response = self.client.post(f"/images/scp/{source}", params=params)
         response.raise_for_status()
         return response.json()
