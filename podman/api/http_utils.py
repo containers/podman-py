@@ -100,4 +100,4 @@ def _filter_values(mapping: Mapping[str, Any], recursion=False) -> Dict[str, Any
 
 
 def encode_auth_header(auth_config: Dict[str, str]) -> str:
-    return base64.b64encode(json.dumps(auth_config).encode('utf-8'))
+    return base64.urlsafe_b64encode(json.dumps(auth_config).encode('utf-8'))
