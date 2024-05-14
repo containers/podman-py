@@ -3,32 +3,67 @@
 # https://packit.dev/docs/configuration/
 
 downstream_package_name: python-podman
-specfile_path: rpm/python-podman.spec
+update_release: false
 upstream_tag_template: v{version}
+
+packages:
+  python-podman-fedora:
+    pkg_tool: fedpkg
+    specfile_path: rpm/python-podman.spec
+  python-podman-centos:
+    pkg_tool: centpkg
+    specfile_path: rpm/python-podman.spec
+  python-podman-rhel:
+    specfile_path: rpm/python-podman.spec
 
 srpm_build_deps:
   - make
 
 jobs:
+  # Copr builds for Fedora
   - job: copr_build
     trigger: pull_request
+    packages: [python-podman-fedora]
     targets:
       - fedora-all
-      - centos-stream-8
+
+  # Copr builds for CentOS Stream
+  - job: copr_build
+    trigger: pull_request
+    packages: [python-podman-centos]
+    targets:
+      - centos-stream-10
       - centos-stream-9
+
+  # Copr builds for RHEL
+  - job: copr_build
+    trigger: pull_request
+    packages: [python-podman-rhel]
+    targets:
+      - epel-9
 
   # Run on commit to main branch
   - job: copr_build
     trigger: commit
+    packages: [python-podman-fedora]
     branch: main
     owner: rhcontainerbot
     project: podman-next
 
+  # Downstream sync for Fedora
   - job: propose_downstream
     trigger: release
-    update_release: false
+    packages: [python-podman-fedora]
     dist_git_branches:
       - fedora-all
+
+  # Downstream sync for CentOS Stream
+  # TODO: c9s enablement being tracked in https://issues.redhat.com/browse/RUN-2123
+  - job: propose_downstream
+    trigger: release
+    packages: [python-podman-centos]
+    dist_git_branches:
+      - c10s
 
   - job: koji_build
     trigger: commit
