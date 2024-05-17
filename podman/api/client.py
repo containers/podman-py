@@ -145,6 +145,8 @@ class APIClient(requests.Session):
         if self.base_url.scheme == "http+unix":
             self.mount("http://", UDSAdapter(self.base_url.geturl(), **adapter_kwargs))
             self.mount("https://", UDSAdapter(self.base_url.geturl(), **adapter_kwargs))
+            # ignore proxies from the env vars
+            self.trust_env = False
 
         elif self.base_url.scheme == "http+ssh":
             self.mount("http://", SSHAdapter(self.base_url.geturl(), **adapter_kwargs))
