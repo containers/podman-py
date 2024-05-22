@@ -81,6 +81,7 @@ class PodmanConfig:
             self.is_default = True
         else:
             self.path = Path(path)
+            old_toml_file = None
 
         self.attrs = {}
         if self.path.exists():
