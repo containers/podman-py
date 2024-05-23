@@ -3,7 +3,6 @@
 # https://packit.dev/docs/configuration/
 
 downstream_package_name: python-podman
-update_release: false
 upstream_tag_template: v{version}
 
 packages:
