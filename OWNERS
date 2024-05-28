@@ -1,6 +1,5 @@
 approvers:
   - baude
-  - cdoern
   - edsantiago
   - giuseppe
   - jwhonce
@@ -27,3 +26,4 @@ reviewers:
   - TomSweeneyRedHat
   - umohnani8
   - vrothberg
+  - inknos
