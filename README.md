@@ -35,9 +35,12 @@ with PodmanClient(base_url=uri) as client:
 
     # find all containers
     for container in client.containers.list():
-        first_name = container['Names'][0]
-        container = client.containers.get(first_name)
+        # After a list call you would probably want to reload the container
+        # to get the information about the variables such as status.
+        # Note that list() ignores the sparse option and assumes True by default.
+        container.reload()
         print(container, container.id, "\n")
+        print(container, container.status, "\n")
 
         # available fields
         print(sorted(container.attrs.keys()))
