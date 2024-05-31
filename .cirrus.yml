@@ -14,8 +14,6 @@ env:
     ####
     #### Cache-image names to test with (double-quotes around names are critical)
     ####
-    FEDORA_NAME: "fedora-39"
-
     # Google-cloud VM Images
     IMAGE_SUFFIX: "c20240320t153921z-f39f38d13"
     FEDORA_CACHE_IMAGE_NAME: "fedora-podman-py-${IMAGE_SUFFIX}"
@@ -51,7 +49,7 @@ gating_task:
         - make lint
 
 test_task:
-    name: "Test on $FEDORA_NAME"
+    name: "Test on Fedora"
     alias: test
 
     depends_on:
@@ -64,7 +62,7 @@ test_task:
         - ${SCRIPT_BASE}/test.sh
 
 latest_task:
-    name: "Test Podman main on $FEDORA_NAME"
+    name: "Test Podman main on Fedora"
     alias: latest
     allow_failures: true
 
