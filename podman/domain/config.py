@@ -6,9 +6,8 @@ from pathlib import Path
 from typing import Dict, Optional
 import json
 
-import xdg.BaseDirectory
-
 from podman.api import cached_property
+from podman.api.path_utils import get_xdg_config_home
 
 if sys.version_info >= (3, 11):
     from tomllib import loads as toml_loads
@@ -69,7 +68,7 @@ class PodmanConfig:
 
         self.is_default = False
         if path is None:
-            home = Path(xdg.BaseDirectory.xdg_config_home)
+            home = Path(get_xdg_config_home())
             self.path = home / "containers" / "podman-connections.json"
             old_toml_file = home / "containers" / "containers.conf"
             self.is_default = True
