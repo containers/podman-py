@@ -1,5 +1,4 @@
 # Any changes should be copied into pyproject.toml
-pyxdg>=0.26
 requests>=2.24
 setuptools
 sphinx

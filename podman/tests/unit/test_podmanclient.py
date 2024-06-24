@@ -5,9 +5,9 @@ from unittest import mock
 from unittest.mock import MagicMock
 
 import requests_mock
-import xdg
 
 from podman import PodmanClient, tests
+from podman.api.path_utils import get_runtime_dir, get_xdg_config_home
 
 
 class PodmanClientTestCase(unittest.TestCase):
@@ -88,7 +88,7 @@ class PodmanClientTestCase(unittest.TestCase):
                 )
 
             # Build path to support tests running as root or a user
-            expected = Path(xdg.BaseDirectory.xdg_config_home) / "containers" / "containers.conf"
+            expected = Path(get_xdg_config_home()) / "containers" / "containers.conf"
             PodmanClientTestCase.opener.assert_called_with(expected, encoding="utf-8")
 
     def test_connect_404(self):
@@ -100,16 +100,12 @@ class PodmanClientTestCase(unittest.TestCase):
         with mock.patch.multiple(Path, open=self.mocked_open, exists=MagicMock(return_value=True)):
             with PodmanClient() as client:
                 expected = "http+unix://" + urllib.parse.quote_plus(
-                    str(
-                        Path(xdg.BaseDirectory.get_runtime_dir(strict=False))
-                        / "podman"
-                        / "podman.sock"
-                    )
+                    str(Path(get_runtime_dir()) / "podman" / "podman.sock")
                 )
                 self.assertEqual(client.api.base_url.geturl(), expected)
 
             # Build path to support tests running as root or a user
-            expected = Path(xdg.BaseDirectory.xdg_config_home) / "containers" / "containers.conf"
+            expected = Path(get_xdg_config_home()) / "containers" / "containers.conf"
             PodmanClientTestCase.opener.assert_called_with(expected, encoding="utf-8")
 
 

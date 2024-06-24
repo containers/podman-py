@@ -6,10 +6,9 @@ from contextlib import AbstractContextManager
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-import xdg.BaseDirectory
-
 from podman.api import cached_property
 from podman.api.client import APIClient
+from podman.api.path_utils import get_runtime_dir
 from podman.domain.config import PodmanConfig
 from podman.domain.containers_manager import ContainersManager
 from podman.domain.events import EventsManager
@@ -70,9 +69,7 @@ class PodmanClient(AbstractContextManager):
             # Override configured identity, if provided in arguments
             api_kwargs["identity"] = kwargs.get("identity", str(connection.identity))
         elif "base_url" not in api_kwargs:
-            path = str(
-                Path(xdg.BaseDirectory.get_runtime_dir(strict=False)) / "podman" / "podman.sock"
-            )
+            path = str(Path(get_runtime_dir()) / "podman" / "podman.sock")
             api_kwargs["base_url"] = "http+unix://" + path
         self.api = APIClient(**api_kwargs)
 

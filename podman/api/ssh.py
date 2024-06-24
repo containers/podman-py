@@ -15,12 +15,12 @@ from contextlib import suppress
 from typing import Optional, Union
 
 import time
-import xdg.BaseDirectory
 
 import urllib3
 import urllib3.connection
 
 from requests.adapters import DEFAULT_POOLBLOCK, DEFAULT_RETRIES, HTTPAdapter
+from podman.api.path_utils import get_runtime_dir
 
 from .adapter_utils import _key_normalizer
 
@@ -46,7 +46,7 @@ class SSHSocket(socket.socket):
         self.identity = identity
         self._proc: Optional[subprocess.Popen] = None
 
-        runtime_dir = pathlib.Path(xdg.BaseDirectory.get_runtime_dir(strict=False)) / "podman"
+        runtime_dir = pathlib.Path(get_runtime_dir()) / "podman"
         runtime_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
 
         self.local_sock = runtime_dir / f"podman-forward-{random.getrandbits(80):x}.sock"
