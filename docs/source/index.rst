@@ -36,7 +36,7 @@ Example
 
     import podman
 
-    with podman.Client() as client:
+    with podman.PodmanClient() as client:
         if client.ping():
             images = client.images.list()
             for image in images:
