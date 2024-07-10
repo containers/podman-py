@@ -3,9 +3,11 @@
 import logging
 from typing import Any, Dict, Iterator, List, Optional, Union
 
+import urllib.parse
+
 from podman import api
 from podman.domain.manager import PodmanResource
-from podman.errors import ImageNotFound
+from podman.errors import ImageNotFound, InvalidArgument
 
 logger = logging.getLogger("podman.images")
 
@@ -68,7 +70,7 @@ class Image(PodmanResource):
     def save(
         self,
         chunk_size: Optional[int] = api.DEFAULT_CHUNK_SIZE,
-        named: Union[str, bool] = False,  # pylint: disable=unused-argument
+        named: Union[str, bool] = False,
     ) -> Iterator[bytes]:
         """Returns Image as tarball.
 
@@ -77,13 +79,28 @@ class Image(PodmanResource):
         Args:
             chunk_size: If None, data will be streamed in received buffer size.
                 If not None, data will be returned in sized buffers. Default: 2MB
-            named: Ignored.
+            named (str or bool): If ``False`` (default), the tarball will not
+                retain repository and tag information for this image. If set
+                to ``True``, the first tag in the :py:attr:`~tags` list will
+                be used to identify the image. Alternatively, any element of
+                the :py:attr:`~tags` list can be used as an argument to use
+                that specific tag as the saved identifier.
 
         Raises:
-            APIError: when service returns an error
+            APIError: When service returns an error
+            InvalidArgument: When the provided Tag name is not valid for the image.
         """
+
+        img = self.id
+        if named:
+            img = urllib.parse.quote(self.tags[0] if self.tags else img)
+            if isinstance(named, str):
+                if named not in self.tags:
+                    raise InvalidArgument(f"'{named}' is not a valid tag for this image")
+                img = urllib.parse.quote(named)
+
         response = self.client.get(
-            f"/images/{self.id}/get", params={"format": ["docker-archive"]}, stream=True
+            f"/images/{img}/get", params={"format": ["docker-archive"]}, stream=True
         )
         response.raise_for_status(not_found=ImageNotFound)
         return response.iter_content(chunk_size=chunk_size)

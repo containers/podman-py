@@ -109,6 +109,25 @@ class ImagesIntegrationTest(base.IntegrationTest):
             self.assertIn(image.id, deleted)
             self.assertGreater(actual["SpaceReclaimed"], 0)
 
+        with self.subTest("Export Image to tarball (in memory) with named mode"):
+            alpine_image = self.client.images.pull("quay.io/libpod/alpine", tag="latest")
+            image_buffer = io.BytesIO()
+            for chunk in alpine_image.save(named=True):
+                image_buffer.write(chunk)
+            image_buffer.seek(0, 0)
+
+            with tarfile.open(fileobj=image_buffer, mode="r") as tar:
+                items_in_tar = tar.getnames()
+                # Check if repositories file is available in the tarball
+                self.assertIn("repositories", items_in_tar)
+                # Extract the 'repositories' file
+                repositories_file = tar.extractfile("repositories")
+                if repositories_file is not None:
+                    # Check the content of the "repositories" file.
+                    repositories_content = repositories_file.read().decode("utf-8")
+                    # Check if "repositories" file contains the name of the Image (named).
+                    self.assertTrue("alpine" in str(repositories_content))
+
     def test_search(self):
         actual = self.client.images.search("alpine", filters={"is-official": True})
         self.assertEqual(len(actual), 1)
