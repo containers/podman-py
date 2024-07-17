@@ -209,7 +209,9 @@ class ImagesManager(BuildMixin, Manager):
 
         headers = {
             # A base64url-encoded auth configuration
-            "X-Registry-Auth": encode_auth_header(auth_config) if auth_config else ""
+            "X-Registry-Auth": encode_auth_header(auth_config)
+            if auth_config
+            else ""
         }
 
         params = {
@@ -296,7 +298,9 @@ class ImagesManager(BuildMixin, Manager):
 
         headers = {
             # A base64url-encoded auth configuration
-            "X-Registry-Auth": encode_auth_header(auth_config) if auth_config else ""
+            "X-Registry-Auth": encode_auth_header(auth_config)
+            if auth_config
+            else ""
         }
 
         params = {
@@ -309,7 +313,8 @@ class ImagesManager(BuildMixin, Manager):
         else:
             params["reference"] = f"{repository}:{tag}"
 
-        if "platform" in kwargs:
+        # Check if "platform" in kwargs AND it has value.
+        if "platform" in kwargs and kwargs["platform"]:
             tokens = kwargs.get("platform").split("/")
             if 1 < len(tokens) > 3:
                 raise ValueError(f'\'{kwargs.get("platform")}\' is not a legal platform.')

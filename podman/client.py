@@ -138,7 +138,7 @@ class PodmanClient(AbstractContextManager):
     @cached_property
     def containers(self) -> ContainersManager:
         """Returns Manager for operations on containers stored by a Podman service."""
-        return ContainersManager(client=self.api)
+        return ContainersManager(client=self.api, podman_client=self)
 
     @cached_property
     def images(self) -> ImagesManager:
