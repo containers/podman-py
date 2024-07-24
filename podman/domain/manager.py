@@ -22,6 +22,7 @@ class PodmanResource(ABC):
         attrs: Optional[Mapping[str, Any]] = None,
         client: Optional[APIClient] = None,
         collection: Optional["Manager"] = None,
+        podman_client: Optional["PodmanClient"] = None,
     ):
         """Initialize base class for PodmanResource's.
 
@@ -29,10 +30,12 @@ class PodmanResource(ABC):
             attrs: Mapping of attributes for resource from Podman service.
             client: Configured connection to a Podman service.
             collection: Manager of this category of resource, named `collection` for compatibility
+            podman_client: PodmanClient() configured to connect to Podman object.
         """
         super().__init__()
         self.client = client
         self.manager = collection
+        self.podman_client = podman_client
 
         self.attrs = {}
         if attrs is not None:
@@ -77,14 +80,18 @@ class Manager(ABC):
     def resource(self):
         """Type[PodmanResource]: Class which the factory method prepare_model() will use."""
 
-    def __init__(self, client: APIClient = None) -> None:
+    def __init__(
+        self, client: Optional[APIClient] = None, podman_client: Optional["PodmanClient"] = None
+    ) -> None:
         """Initialize Manager() object.
 
         Args:
             client: APIClient() configured to connect to Podman service.
+            podman_client: PodmanClient() configured to connect to Podman object.
         """
         super().__init__()
         self.client = client
+        self.podman_client = podman_client
 
     @abstractmethod
     def exists(self, key: str) -> bool:
@@ -110,6 +117,7 @@ class Manager(ABC):
         # Refresh existing PodmanResource.
         if isinstance(attrs, PodmanResource):
             attrs.client = self.client
+            attrs.podman_client = self.podman_client
             attrs.collection = self
             return attrs
 
@@ -117,7 +125,9 @@ class Manager(ABC):
         if isinstance(attrs, abc.Mapping):
             # TODO Determine why pylint is reporting typing.Type not callable
             # pylint: disable=not-callable
-            return self.resource(attrs=attrs, client=self.client, collection=self)
+            return self.resource(
+                attrs=attrs, client=self.client, podman_client=self.podman_client, collection=self
+            )
 
         # pylint: disable=broad-exception-raised
         raise Exception(f"Can't create {self.resource.__name__} from {attrs}")

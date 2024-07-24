@@ -30,7 +30,7 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
         """Get container by name or id.
 
         Args:
-            container_id: Container name or id.
+            key: Container name or id.
 
         Returns:
             A `Container` object corresponding to `key`.
