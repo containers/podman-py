@@ -9,6 +9,7 @@ from typing import Any, Dict, Iterable, Iterator, List, Mapping, Optional, Tuple
 import requests
 
 from podman import api
+from podman.api.output_utils import demux_output
 from podman.domain.images import Image
 from podman.domain.images_manager import ImagesManager
 from podman.domain.manager import PodmanResource
@@ -164,8 +165,10 @@ class Container(PodmanResource):
             demux: Return stdout and stderr separately
 
         Returns:
-            First item is the command response code
-            Second item is the requests response content
+            First item is the command response code.
+            Second item is the requests response content.
+            If demux is True, the second item is a tuple of
+            (stdout, stderr).
 
         Raises:
             NotImplementedError: method not implemented.
@@ -199,6 +202,9 @@ class Container(PodmanResource):
         # get and return exec information
         response = self.client.get(f"/exec/{exec_id}/json")
         response.raise_for_status()
+        if demux:
+            stdout_data, stderr_data = demux_output(start_resp.content)
+            return response.json().get('ExitCode'), (stdout_data, stderr_data)
         return response.json().get('ExitCode'), start_resp.content
 
     def export(self, chunk_size: int = api.DEFAULT_CHUNK_SIZE) -> Iterator[bytes]:
