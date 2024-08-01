@@ -224,6 +224,15 @@ class ImagesManagerTestCase(unittest.TestCase):
         self.assertEqual(e.exception.explanation, "Test prune failure in response body.")
 
     @requests_mock.Mocker()
+    def test_prune_empty(self, mock):
+        """Unit test if prune API responses null (None)."""
+        mock.post(tests.LIBPOD_URL + "/images/prune", text="null")
+
+        report = self.client.images.prune()
+        self.assertEqual(report["ImagesDeleted"], [])
+        self.assertEqual(report["SpaceReclaimed"], 0)
+
+    @requests_mock.Mocker()
     def test_get(self, mock):
         mock.get(
             tests.LIBPOD_URL + "/images/fedora%3Alatest/json",
