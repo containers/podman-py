@@ -158,17 +158,22 @@ class ImagesManager(BuildMixin, Manager):
         deleted: List[Dict[str, str]] = []
         error: List[str] = []
         reclaimed: int = 0
-        for element in response.json():
-            if "Err" in element and element["Err"] is not None:
-                error.append(element["Err"])
-            else:
-                reclaimed += element["Size"]
-                deleted.append(
-                    {
-                        "Deleted": element["Id"],
-                        "Untagged": "",
-                    }
-                )
+        # If the prune doesn't remove images, the API returns "null"
+        # and it's interpreted as None (NoneType)
+        # so the for loop throws "TypeError: 'NoneType' object is not iterable".
+        # The below if condition fixes this issue.
+        if response.json() is not None:
+            for element in response.json():
+                if "Err" in element and element["Err"] is not None:
+                    error.append(element["Err"])
+                else:
+                    reclaimed += element["Size"]
+                    deleted.append(
+                        {
+                            "Deleted": element["Id"],
+                            "Untagged": "",
+                        }
+                    )
         if len(error) > 0:
             raise APIError(response.url, response=response, explanation="; ".join(error))
 
