@@ -206,6 +206,8 @@ class ImagesManager(BuildMixin, Manager):
             destination (str): alternate destination for image. (Podman only)
             stream (bool): return output as blocking generator. Default: False.
             tlsVerify (bool): Require TLS verification.
+            format (str): Manifest type (oci, v2s1, or v2s2) to use when pushing an image.
+                Default is manifest type of source, with fallbacks.
 
         Raises:
             APIError: when service returns an error
@@ -220,6 +222,7 @@ class ImagesManager(BuildMixin, Manager):
         params = {
             "destination": kwargs.get("destination"),
             "tlsVerify": kwargs.get("tlsVerify"),
+            "format": kwargs.get("format"),
         }
 
         name = f'{repository}:{tag}' if tag else repository
