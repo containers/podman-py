@@ -2,15 +2,16 @@
 # See the documentation for more information:
 # https://packit.dev/docs/configuration/
 
-downstream_package_name: python-podman
 upstream_tag_template: v{version}
 
 packages:
   python-podman-fedora:
     pkg_tool: fedpkg
+    downstream_package_name: python-podman
     specfile_path: rpm/python-podman.spec
   python-podman-centos:
     pkg_tool: centpkg
+    downstream_package_name: python-podman
     specfile_path: rpm/python-podman.spec
   python-podman-rhel:
     specfile_path: rpm/python-podman.spec
