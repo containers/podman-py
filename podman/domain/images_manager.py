@@ -135,24 +135,39 @@ class ImagesManager(BuildMixin, Manager):
             yield self.get(item)
 
     def prune(
-        self, filters: Optional[Mapping[str, Any]] = None
+        self,
+        all: Optional[bool] = False,  # pylint: disable=redefined-builtin
+        external: Optional[bool] = False,
+        filters: Optional[Mapping[str, Any]] = None,
     ) -> Dict[Literal["ImagesDeleted", "SpaceReclaimed"], Any]:
         """Delete unused images.
 
         The Untagged keys will always be "".
 
         Args:
+            all: Remove all images not in use by containers, not just dangling ones.
+            external: Remove images even when they are used by external containers
+            (e.g, by build containers).
             filters: Qualify Images to prune. Available filters:
 
                 - dangling (bool): when true, only delete unused and untagged images.
+                - label: (dict): filter by label.
+                         Examples:
+                         filters={"label": {"key": "value"}}
+                         filters={"label!": {"key": "value"}}
                 - until (str): Delete images older than this timestamp.
 
         Raises:
             APIError: when service returns an error
         """
-        response = self.client.post(
-            "/images/prune", params={"filters": api.prepare_filters(filters)}
-        )
+
+        params = {
+            "all": all,
+            "external": external,
+            "filters": api.prepare_filters(filters),
+        }
+
+        response = self.client.post("/images/prune", params=params)
         response.raise_for_status()
 
         deleted: List[Dict[str, str]] = []
