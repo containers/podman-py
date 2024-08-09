@@ -155,6 +155,26 @@ class ContainersIntegrationTest(base.IntegrationTest):
                 ])
             )
 
+    def test_container_dns_option(self):
+        expected_dns_opt = ['edns0']
+
+        container = self.client.containers.create(
+            self.alpine_image, command=["cat", "/etc/resolv.conf"], dns_opt=expected_dns_opt
+        )
+        self.containers.append(container)
+
+        with self.subTest("Check HostConfig"):
+            self.assertEqual(
+                container.attrs.get('HostConfig', {}).get('DnsOptions'), expected_dns_opt
+            )
+
+        with self.subTest("Check content of /etc/resolv.conf"):
+            container.start()
+            container.wait()
+            self.assertTrue(
+                all([opt in b"\n".join(container.logs()).decode() for opt in expected_dns_opt])
+            )
+
     def test_container_healthchecks(self):
         """Test passing various healthcheck options"""
         parameters = {
