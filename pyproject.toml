@@ -1,33 +1,176 @@
-[tool.black]
-line-length = 100
-skip-string-normalization = true
-preview = true
-target-version = ["py39"]
-include = '\.pyi?$'
-exclude = '''
-/(
-    \.git
-  | \.tox
-  | \.venv
-  | \.history
-  | build
-  | dist
-  | docs
-  | hack
-)/
-'''
-[tool.isort]
-profile = "black"
-line_length = 100
 [build-system]
-# Any changes should be copied into requirements.txt, setup.cfg, and/or test-requirements.txt
-requires = [
-    "setuptools>=46.4",
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "podman"
+dynamic = ["version"]
+description = "Bindings for Podman RESTful API"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.9"
+authors = [
+    { name = "Brent Baude" },
+    { name = "Jhon Honce", email = "jhonce@redhat.com" },
+    { name = "Urvashi Mohnani" },
+    { name = "Nicola Sella", email = "nsella@redhat.com" },
 ]
-build-backend = "setuptools.build_meta"
+keywords = [
+    "libpod",
+    "podman",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+# compatible releases
+# ~= with version numbers
+dependencies = [
+    "requests >=2.24",
+    "tomli>=1.2.3; python_version<'3.11'",
+    "urllib3",
+]
+
+[project.optional-dependencies]
+progress_bar = [
+    "rich >= 12.5.1",
+]
+docs = [
+    "sphinx"
+]
+
+[project.urls]
+"Bug Tracker" = "https://github.com/containers/podman-py/issues"
+Homepage = "https://github.com/containers/podman-py"
+"Libpod API" = "https://docs.podman.io/en/latest/_static/api.html"
+
+[tool.hatch.version]
+path = "podman/version.py"
+
+# [tool.hatch.build.targets.sdist]
+# include = [
+#     "/podman",
+# ]
+
+# to run a test environment, use `hatch shell`
+# and not use virtualenv anymore
+[tool.hatch.envs.default]
+[tool.hatch.envs.dev]
+description = "Development environment"
+dependencies = [
+    "coverage",
+    "fixtures",
+    "pre-commit",
+    "pytest",
+    "requests-mock >= 1.11.0",
+]
+
+[tool.hatch.envs.test]
+description = "Testing environment"
+dependencies = [
+    "coverage",
+    "fixtures",
+    "pytest",
+    "requests-mock >= 1.11.0",
+]
+
+[tool.hatch.envs.test.scripts]
+run = "pytest{env:HATCH_TEST_ARGS:} {args}"
+run-cov = "coverage run -m pytest{env:HATCH_TEST_ARGS:} {args}"
+cov-combine = "coverage combine"
+cov-report = "coverage report -m --skip-covered --fail-under=80 --omit=podman/tests/*"
+cov-all = ["run-cov", "cov-report"]
+
+#TODO figure it out later
+[tool.hatch.envs.test.env-vars]
+PODMAN_LOG_LEVEL = "INFO"
+PODMAN_BINARY = "podman"
+DEBUG = "0"
+
+[[tool.hatch.envs.test.matrix]]
+python = ["3.12", "3.11", "3.10", "3.9", "3.8", "3.6"]
+
+[tool.hatch.envs.docs]
+features = ["docs"]
+
+# This is the environment used by `hatch test [args] useful to run
+# specific pytest tests like
+# `hatch test -vv tests/test_foo.py::test_bar`
+# See more here https://hatch.pypa.io/1.11/tutorials/testing/overview/
+# To check the environment: `hatch test -s`
+# See more here https://hatch.pypa.io/1.11/config/internal/testing/
+[tool.hatch.envs.hatch-test]
+extra-dependencies = [
+    "fixtures",
+    "requests-mock >= 1.11.0",
+]
+
+[[tool.hatch.envs.hatch-test.matrix]]
+python = ["3.12", "3.11", "3.10", "3.9", "3.8", "3.6"]
+
+[tool.ruff]
+line-length = 100
+[tool.ruff.format]
+exclude = [
+    ".git",
+    ".venv",
+    ".history",
+    "build",
+    "dist",
+    "docs",
+    "hack",
+]
+quote-style = "preserve"
+[tool.ruff.lint]
+select = [
+    # More stuff here https://docs.astral.sh/ruff/rules/
+    "F", # Pyflakes
+    "E", # Pycodestyle Error
+    "W", # Pycodestyle Warning
+    "N", # PEP8 Naming
+    # TODO "UP", # Pyupgrade
+    # TODO "ANN",
+    # TODO "S", # Bandit
+    # "B", # Bugbear
+    "A", # flake-8-builtins
+    "YTT", # flake-8-2020
+    "PLC", # Pylint Convention
+    "PLE", # Pylint Error
+    "PLW", # Pylint Warning
+]
+# Some checks should be enabled for code sanity disabled now
+# to avoid changing too many lines
+ignore = [
+    "F821", # TODO Undefined name
+    "F541", # TODO f-string is missing placeholders
+    "F401", # TODO Module imported but unused
+    "F841", # TODO Local variable is assigned to but never used
+    "E402", # TODO Module level import not at top of file
+    "E741", # TODO ambiguous variable name
+    "E722", # TODO do not use bare 'except'
+    "E501", # TODO line too long
+    "N818", # TODO Error Suffix in exception name
+    "N80", # TODO Invalid Name
+    "ANN10", # Missing type annotation
+    "PLW2901", # TODO Redefined Loop Name
+]
+[tool.ruff.lint.per-file-ignores]
+"podman/tests/*.py" = ["S"]
+[tool.ruff.lint.flake8-builtins]
+builtins-ignorelist = ["copyright", "all"]
+
 [tool.pytest.ini_options]
 log_cli = true
 log_cli_level = "DEBUG"
 log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
 log_cli_date_format = "%Y-%m-%d %H:%M:%S"
-

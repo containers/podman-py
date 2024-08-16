@@ -13,38 +13,35 @@ export PODMAN_VERSION ?= "5.3.0"
 .PHONY: podman
 podman:
 	rm dist/* || :
-	$(PYTHON) -m pip install --user -r requirements.txt
+	$(PYTHON) -m pip install --user .
+	$(PYTHON) -m pip install --user hatch
 	PODMAN_VERSION=$(PODMAN_VERSION) \
-	$(PYTHON) setup.py sdist bdist bdist_wheel
-
-.PHONY: lint
-lint: tox
-	$(PYTHON) -m tox -e black,pylint
+	$(PYTHON) -m hatch build
 
 .PHONY: tests
-tests: tox
-	# see tox.ini for environment variable settings
-	$(PYTHON) -m tox -e coverage,py39,py310,py311,py312,py313
+tests: hatch
+	# run tests on all the envs set in tool.hatch.envs.test.matrix
+	$(PYTHON) -m hatch run test:cov
 
 .PHONY: unittest
 unittest:
 	coverage run -m unittest discover -s podman/tests/unit
-	coverage report -m --skip-covered --fail-under=80 --omit=./podman/tests/* --omit=.tox/* --omit=/usr/lib/*
+	coverage report -m --skip-covered --fail-under=80 --omit=./podman/tests/* --omit=/usr/lib/*
 
 .PHONY: integration
 integration:
 	coverage run -m unittest discover -s podman/tests/integration
-	coverage report -m --skip-covered --fail-under=80 --omit=./podman/tests/* --omit=.tox/* --omit=/usr/lib/*
+	coverage report -m --skip-covered --fail-under=80 --omit=./podman/tests/* --omit=/usr/lib/*
 
-.PHONY: tox
-tox:
+.PHONY: hatch
+hatch:
 ifeq (, $(shell which dnf))
 	brew install python@3.9 python@3.10 python@3.11 python@3.12 python@3.13
 else
 	-dnf install -y python3 python3.9 python3.10 python3.11 python3.12 python3.13
 endif
-	# ensure tox is available. It will take care of other testing requirements
-	$(PYTHON) -m pip install --user tox
+	# ensure hatch is available. It will take care of other testing requirements
+	$(PYTHON) -m pip install --user hatch
 
 .PHONY: test-release
 test-release: SOURCE = $(shell find dist -regex '.*/podman-[0-9][0-9\.]*.tar.gz' -print)
