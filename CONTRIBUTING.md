@@ -25,12 +25,10 @@ Please don't include any private/sensitive information in your issue!
 
 ## Tools we use
 
-- Python 3.6
-- [pylint](https://www.pylint.org/)
-- [black](https://github.com/psf/black)
-- [tox](https://tox.readthedocs.io/en/latest/)
-- You may need to use [virtualenv](https://virtualenv.pypa.io/en/latest/) to
-  support Python 3.6
+- Python >= 3.6
+- [Hatch](https://hatch.pypa.io/)
+- [pre-commit](https://pre-commit.com/)
+- [ruff](https://docs.astral.sh/ruff/)
 
 ## Testing
 
@@ -41,9 +39,24 @@ Integration tests would be required for large changes (TBD).
 Run unit tests and get coverage report:
 
 ```
-pip install tox
-tox -e coverage
+hatch run test:cov
 ```
+
+If you need to run individual tests you could use the hatch commands that wrap pytest:
+
+```
+hatch run test:run -vv podman/tests/integration/test_file.py -k "test_name"
+```
+
+It is worth mentioning that in this context test is not a command but it means the testing environment. The command is
+specified after the colon and it could be one of the commands defined in pyproject.toml or any command that can be run
+in the environment (like `test:pip` will run `pip` in the default `test` environment).
+
+To use a separate environment replace `test` with `test.py3.10`, for example. See all the environments available with
+`hatch env show`.
+
+You might be used to create virtual envs and sourcing them via `source .venv/bin/activate`. Well, now you can do that
+with hatch by running `hatch shell` or, for a specific environment `hatch shell test.py3.10`.
 
 ## Submitting changes
 
@@ -65,10 +78,14 @@ tox -e coverage
 
 ## Coding conventions
 
-- Use [black](https://github.com/psf/black) code formatter. If you have tox
-  installed, run `tox -e black` to see what changes will be made. You can use
-  `tox -e black-format` to update the code formatting prior to committing.
-- Pass pylint
+- Formatting and linting are incorporated using [ruff](https://docs.astral.sh/ruff/).
+- If you use [pre-commit](https://pre-commit.com/) the checks will run automatically
+  when you commit some changes
+- If you prefer to run the ckecks with pre-commit, use `pre-commit run -a` to run the
+  pre-commit checks for you.
+- If you'd like to see what's happening with the checks you can run the [linter](https://docs.astral.sh/ruff/linter/)
+  and [formatter](https://docs.astral.sh/ruff/formatter/) separately with `ruff check --diff` and `ruff format --diff`
+- Checks need to pass pylint
   - exceptions are possible, but you will need to make a good argument
 - Use spaces not tabs for indentation
 - This is open source software. Consider the people who will read your code,
