@@ -24,8 +24,8 @@ pip install podman
 
 ## Dependencies
 
-* For runtime dependencies, see [requirements.txt](https://github.com/containers/podman-py/blob/main/requirements.txt).
-* For testing and development dependencies, see [test-requirements.txt](https://github.com/containers/podman-py/blob/main/test-requirements.txt).
+* Runtime dependencies are specified in [pyproject.toml](https://github.com/containers/podman-py/blob/main/pyproject.toml).
+* Testing dependencies can be installed via `pip install -e .[test]`
 
 ## Example usage
 
