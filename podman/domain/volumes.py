@@ -112,7 +112,8 @@ class VolumesManager(Manager):
         return [self.prepare_model(i) for i in response.json()]
 
     def prune(
-        self, filters: Optional[Dict[str, str]] = None  # pylint: disable=unused-argument
+        self,
+        filters: Optional[Dict[str, str]] = None,  # pylint: disable=unused-argument
     ) -> Dict[Literal["VolumesDeleted", "SpaceReclaimed"], Any]:
         """Delete unused volumes.
 
