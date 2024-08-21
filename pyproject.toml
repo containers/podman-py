@@ -25,12 +25,11 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.6",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 # compatible releases
@@ -89,7 +88,7 @@ run = "pytest{env:HATCH_TEST_ARGS:} {args}"
 run-cov = "coverage run -m pytest{env:HATCH_TEST_ARGS:} {args}"
 cov-combine = "coverage combine"
 cov-report = "coverage report -m --skip-covered --fail-under=80 --omit=podman/tests/*"
-cov-all = ["run-cov", "cov-report"]
+cov = ["run-cov", "cov-report"]
 
 #TODO figure it out later
 [tool.hatch.envs.test.env-vars]
@@ -98,7 +97,7 @@ PODMAN_BINARY = "podman"
 DEBUG = "0"
 
 [[tool.hatch.envs.test.matrix]]
-python = ["3.12", "3.11", "3.10", "3.9", "3.8", "3.6"]
+python = ["3.13", "3.12", "3.11", "3.10", "3.9"]
 
 [tool.hatch.envs.docs]
 features = ["docs"]
@@ -114,9 +113,6 @@ extra-dependencies = [
     "fixtures",
     "requests-mock >= 1.11.0",
 ]
-
-[[tool.hatch.envs.hatch-test.matrix]]
-python = ["3.12", "3.11", "3.10", "3.9", "3.8", "3.6"]
 
 [tool.ruff]
 line-length = 100
