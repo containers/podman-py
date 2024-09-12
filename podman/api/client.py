@@ -320,6 +320,7 @@ class APIClient(requests.Session):
 
         Keyword Args:
             compatible: Will override the default path prefix with compatible prefix
+            verify: Whether to verify TLS certificates.
 
         Raises:
             APIError: when service returns an error
@@ -394,6 +395,7 @@ class APIClient(requests.Session):
 
         Keyword Args:
             compatible: Will override the default path prefix with compatible prefix
+            verify: Whether to verify TLS certificates.
 
         Raises:
             APIError: when service returns an error
@@ -412,6 +414,7 @@ class APIClient(requests.Session):
         # TODO should we have an option for HTTPS support?
         # Build URL for operation from base_url
         uri = urllib.parse.ParseResult(
+            # TODO: Does it make sense: "https" if kwargs.get("verify", None) else "http" ?
             "http",
             self.base_url.netloc,
             urllib.parse.urljoin(path_prefix, path),
@@ -429,6 +432,7 @@ class APIClient(requests.Session):
                     data=data,
                     headers=(headers or {}),
                     stream=stream,
+                    verify=kwargs.get("verify", None),
                     **timeout_kw,
                 )
             )
