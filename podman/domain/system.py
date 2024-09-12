@@ -60,7 +60,8 @@ class SystemManager:
             dockercfg_path: Ignored: Path to custom configuration file.
                 https://quay.io/v2
             auth = None,
-            identitytoken: IdentityToken is used to authenticate the user and get an access token for the registry.
+            identitytoken: IdentityToken is used to authenticate the user and
+                           get an access token for the registry.
             registrytoken: RegistryToken is a bearer token to be sent to a registry
             tls_verify: Whether to verify TLS certificates.
         """
