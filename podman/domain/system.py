@@ -1,7 +1,7 @@
 """SystemManager to provide system level information from Podman service."""
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 from podman.api.client import APIClient
 from podman import api
@@ -47,7 +47,7 @@ class SystemManager:
         auth: Optional[str] = None,
         identitytoken: Optional[str] = None,
         registrytoken: Optional[str] = None,
-        tls_verify: Optional[bool, str] = None,
+        tls_verify: Optional[Union[bool, str]] = None,
     ) -> Dict[str, Any]:
         """Log into Podman service.
 
