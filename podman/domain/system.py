@@ -1,7 +1,7 @@
 """SystemManager to provide system level information from Podman service."""
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 from podman.api.client import APIClient
 from podman import api
@@ -44,6 +44,10 @@ class SystemManager:
         registry: Optional[str] = None,
         reauth: Optional[bool] = False,  # pylint: disable=unused-argument
         dockercfg_path: Optional[str] = None,  # pylint: disable=unused-argument
+        auth: Optional[str] = None,
+        identitytoken: Optional[str] = None,
+        registrytoken: Optional[str] = None,
+        tls_verify: Optional[Union[bool, str]] = None,
     ) -> Dict[str, Any]:
         """Log into Podman service.
 
@@ -55,6 +59,11 @@ class SystemManager:
             reauth: Ignored: If True, refresh existing authentication. Default: False
             dockercfg_path: Ignored: Path to custom configuration file.
                 https://quay.io/v2
+            auth = None,
+            identitytoken: IdentityToken is used to authenticate the user and
+                           get an access token for the registry.
+            registrytoken: RegistryToken is a bearer token to be sent to a registry
+            tls_verify: Whether to verify TLS certificates.
         """
 
         payload = {
@@ -62,6 +71,9 @@ class SystemManager:
             "password": password,
             "email": email,
             "serveraddress": registry,
+            "auth": auth,
+            "identitytoken": identitytoken,
+            "registrytoken": registrytoken,
         }
         payload = api.prepare_body(payload)
         response = self.client.post(
@@ -69,6 +81,7 @@ class SystemManager:
             headers={"Content-type": "application/json"},
             data=payload,
             compatible=True,
+            verify=tls_verify,  # Pass tls_verify to the client
         )
         response.raise_for_status()
         return response.json()
