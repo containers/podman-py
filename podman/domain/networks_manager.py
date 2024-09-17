@@ -76,6 +76,9 @@ class NetworksManager(Manager):
         return self.prepare_model(attrs=response.json())
 
     def _prepare_ipam(self, data: Dict[str, Any], ipam: Dict[str, Any]):
+        if "Driver" in ipam:
+            data["ipam_options"] = {"driver": ipam["Driver"]}
+
         if "Config" not in ipam:
             return
 
