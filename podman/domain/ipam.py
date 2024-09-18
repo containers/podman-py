@@ -40,7 +40,7 @@ class IPAMConfig(dict):
 
     def __init__(
         self,
-        driver: Optional[str] = "default",
+        driver: Optional[str] = "host-local",
         pool_configs: Optional[List[IPAMPool]] = None,
         options: Optional[Mapping[str, Any]] = None,
     ):
