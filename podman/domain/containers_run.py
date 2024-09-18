@@ -64,7 +64,6 @@ class RunMixin:  # pylint: disable=too-few-public-methods
             container = self.create(image=image, command=command, **kwargs)
 
         container.start()
-        container.wait(condition=["running", "exited"])
         container.reload()
 
         if kwargs.get("detach", False):
