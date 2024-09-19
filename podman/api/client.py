@@ -411,11 +411,10 @@ class APIClient(requests.Session):
 
         path = path.lstrip("/")  # leading / makes urljoin crazy...
 
-        # TODO should we have an option for HTTPS support?
+        scheme = "https" if kwargs.get("verify", None) else "http"
         # Build URL for operation from base_url
         uri = urllib.parse.ParseResult(
-            # TODO: Does it make sense: "https" if kwargs.get("verify", None) else "http" ?
-            "http",
+            scheme,
             self.base_url.netloc,
             urllib.parse.urljoin(path_prefix, path),
             self.base_url.params,
