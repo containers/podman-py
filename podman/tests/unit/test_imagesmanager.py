@@ -322,13 +322,13 @@ class ImagesManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_load(self, mock):
         with self.assertRaises(PodmanError):
-            self.client.images.load()
+            next(self.client.images.load())
 
         with self.assertRaises(PodmanError):
-            self.client.images.load(b'data', b'file_path')
+            next(self.client.images.load(b'data', b'file_path'))
 
         with self.assertRaises(PodmanError):
-            self.client.images.load(data=b'data', file_path=b'file_path')
+            next(self.client.images.load(data=b'data', file_path=b'file_path'))
 
         with patch("builtins.open", mock_open(read_data=b"mock tarball data")) as mock_file:
             mock.post(

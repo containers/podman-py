@@ -36,14 +36,15 @@ class SystemManager:
         response.raise_for_status()
         return response.json()
 
-    def login(  # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,unused-argument
+    def login(
         self,
         username: str,
         password: Optional[str] = None,
         email: Optional[str] = None,
         registry: Optional[str] = None,
-        reauth: Optional[bool] = False,  # pylint: disable=unused-argument
-        dockercfg_path: Optional[str] = None,  # pylint: disable=unused-argument
+        reauth: Optional[bool] = False,
+        dockercfg_path: Optional[str] = None,
         auth: Optional[str] = None,
         identitytoken: Optional[str] = None,
         registrytoken: Optional[str] = None,
