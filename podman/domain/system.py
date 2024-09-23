@@ -36,7 +36,7 @@ class SystemManager:
         response.raise_for_status()
         return response.json()
 
-    def login(
+    def login(  # pylint: disable=too-many-arguments
         self,
         username: str,
         password: Optional[str] = None,
@@ -48,7 +48,7 @@ class SystemManager:
         identitytoken: Optional[str] = None,
         registrytoken: Optional[str] = None,
         tls_verify: Optional[Union[bool, str]] = None,
-    ) -> Dict[str, Any]:  # pylint: disable=too-many-arguments
+    ) -> Dict[str, Any]:
         """Log into Podman service.
 
         Args:
