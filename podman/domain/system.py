@@ -59,7 +59,7 @@ class SystemManager:
             reauth: Ignored: If True, refresh existing authentication. Default: False
             dockercfg_path: Ignored: Path to custom configuration file.
                 https://quay.io/v2
-            auth = None,
+            auth: TODO: Add description based on the source code of Podman.
             identitytoken: IdentityToken is used to authenticate the user and
                            get an access token for the registry.
             registrytoken: RegistryToken is a bearer token to be sent to a registry
