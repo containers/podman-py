@@ -48,7 +48,7 @@ class SystemManager:
         identitytoken: Optional[str] = None,
         registrytoken: Optional[str] = None,
         tls_verify: Optional[Union[bool, str]] = None,
-    ) -> Dict[str, Any]:
+    ) -> Dict[str, Any]:  # pylint: disable=too-many-arguments
         """Log into Podman service.
 
         Args:
