@@ -6,8 +6,8 @@ import logging
 import os
 import urllib.parse
 from typing import Any, Dict, Iterator, List, Mapping, Optional, Union
-import requests
 from pathlib import Path
+import requests
 
 from podman import api
 from podman.api import Literal
@@ -142,7 +142,8 @@ class ImagesManager(BuildMixin, Manager):
 
         # Load a tarball containing the image
         if file_path:
-            # Convert to Path if file_path is a string (This works with both str and Path-like objects)
+            # Convert to Path if file_path is a string
+            # (This works with both str and Path-like objects)
             file_path = Path(file_path)
             data = file_path.read_bytes()  # Read the tarball file as bytes
 
