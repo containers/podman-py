@@ -125,10 +125,11 @@ class Container(PodmanResource):
         response.raise_for_status()
         return response.json()
 
-    # pylint: disable=too-many-arguments,unused-argument
+    # pylint: disable=too-many-arguments
     def exec_run(
         self,
         cmd: Union[str, List[str]],
+        *,
         stdout: bool = True,
         stderr: bool = True,
         stdin: bool = False,
@@ -136,8 +137,8 @@ class Container(PodmanResource):
         privileged: bool = False,
         user=None,
         detach: bool = False,
-        stream: bool = False,
-        socket: bool = False,
+        stream: bool = False,  # pylint: disable=unused-argument
+        socket: bool = False,  # pylint: disable=unused-argument
         environment: Union[Mapping[str, str], List[str]] = None,
         workdir: str = None,
         demux: bool = False,
