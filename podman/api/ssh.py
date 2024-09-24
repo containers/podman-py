@@ -250,7 +250,7 @@ class SSHAdapter(HTTPAdapter):
         max_retries: int = DEFAULT_RETRIES,
         pool_block: int = DEFAULT_POOLBLOCK,
         **kwargs,
-    ):
+    ):  # pylint: disable=too-many-positional-arguments
         """Initialize SSHAdapter.
 
         Args:

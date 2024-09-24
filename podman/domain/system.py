@@ -36,7 +36,7 @@ class SystemManager:
         response.raise_for_status()
         return response.json()
 
-    def login(
+    def login(  # pylint: disable=too-many-arguments,too-many-positional-arguments,unused-argument
         self,
         username: str,
         password: Optional[str] = None,

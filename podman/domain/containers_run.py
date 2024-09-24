@@ -18,6 +18,7 @@ class RunMixin:  # pylint: disable=too-few-public-methods
         self,
         image: Union[str, Image],
         command: Union[str, List[str], None] = None,
+        *,
         stdout=True,
         stderr=False,
         remove: bool = False,

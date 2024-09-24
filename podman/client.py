@@ -82,6 +82,7 @@ class PodmanClient(AbstractContextManager):
     @classmethod
     def from_env(
         cls,
+        *,
         version: str = "auto",
         timeout: Optional[int] = None,
         max_pool_size: Optional[int] = None,
