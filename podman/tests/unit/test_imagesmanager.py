@@ -330,7 +330,8 @@ class ImagesManagerTestCase(unittest.TestCase):
         with self.assertRaises(PodmanError):
             self.client.images.load(data=b'data', file_path=b'file_path')
 
-        with patch("builtins.open", mock_open(read_data=b"mock tarball data")) as mock_file:
+        # Patch Path.read_bytes to mock the file reading behavior
+        with patch("pathlib.Path.read_bytes", return_value=b"mock tarball data"):
             mock.post(
                 tests.LIBPOD_URL + "/images/load",
                 json={"Names": ["quay.io/fedora:latest"]},
@@ -341,15 +342,15 @@ class ImagesManagerTestCase(unittest.TestCase):
             )
 
             # 3a. Test the case where only 'file_path' is provided
-            result_list = self.client.images.load(file_path="mock_file.tar")
-            self.assertIsInstance(result_list, list)
+            gntr = self.client.images.load(file_path="mock_file.tar")
+            self.assertIsInstance(gntr, types.GeneratorType)
 
-            self.assertEqual(len(result_list), 1)
+            report = list(gntr)
+            self.assertEqual(len(report), 1)
             self.assertEqual(
-                result_list[0].id,
+                report[0].id,
                 "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab",
             )
-            mock_file.assert_called_once_with("mock_file.tar", "rb")
 
         mock.post(
             tests.LIBPOD_URL + "/images/load",
@@ -360,13 +361,13 @@ class ImagesManagerTestCase(unittest.TestCase):
             json=FIRST_IMAGE,
         )
 
-        result_list = self.client.images.load(b'This is a weird tarball...')
-        self.assertIsInstance(result_list, list)
+        gntr = self.client.images.load(b'This is a weird tarball...')
+        self.assertIsInstance(gntr, types.GeneratorType)
 
-        self.assertEqual(len(result_list), 1)
+        report = list(gntr)
+        self.assertEqual(len(report), 1)
         self.assertEqual(
-            result_list[0].id,
-            "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab",
+            report[0].id, "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
         )
 
     @requests_mock.Mocker()
