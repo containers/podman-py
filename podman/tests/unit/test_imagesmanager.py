@@ -322,13 +322,13 @@ class ImagesManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_load(self, mock):
         with self.assertRaises(PodmanError):
-            next(self.client.images.load())
+            self.client.images.load()
 
         with self.assertRaises(PodmanError):
-            next(self.client.images.load(b'data', b'file_path'))
+            self.client.images.load(b'data', b'file_path')
 
         with self.assertRaises(PodmanError):
-            next(self.client.images.load(data=b'data', file_path=b'file_path'))
+            self.client.images.load(data=b'data', file_path=b'file_path')
 
         with patch("builtins.open", mock_open(read_data=b"mock tarball data")) as mock_file:
             mock.post(
@@ -341,13 +341,12 @@ class ImagesManagerTestCase(unittest.TestCase):
             )
 
             # 3a. Test the case where only 'file_path' is provided
-            gntr = self.client.images.load(file_path="mock_file.tar")
-            self.assertIsInstance(gntr, types.GeneratorType)
+            result_list = self.client.images.load(file_path="mock_file.tar")
+            self.assertIsInstance(result_list, list)
 
-            report = list(gntr)
-            self.assertEqual(len(report), 1)
+            self.assertEqual(len(result_list), 1)
             self.assertEqual(
-                report[0].id,
+                result_list[0].id,
                 "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab",
             )
             mock_file.assert_called_once_with("mock_file.tar", "rb")
@@ -361,13 +360,12 @@ class ImagesManagerTestCase(unittest.TestCase):
             json=FIRST_IMAGE,
         )
 
-        gntr = self.client.images.load(b'This is a weird tarball...')
-        self.assertIsInstance(gntr, types.GeneratorType)
+        result_list = self.client.images.load(b'This is a weird tarball...')
+        self.assertIsInstance(result_list, list)
 
-        report = list(gntr)
-        self.assertEqual(len(report), 1)
+        self.assertEqual(len(result_list), 1)
         self.assertEqual(
-            report[0].id, "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
+            result_list[0].id, "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
         )
 
     @requests_mock.Mocker()

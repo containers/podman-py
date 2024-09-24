@@ -3,9 +3,11 @@
 import io
 import json
 import logging
+import os
 import urllib.parse
-from typing import Any, Dict, Generator, Iterator, List, Mapping, Optional, Union
+from typing import Any, Dict, Iterator, List, Mapping, Optional, Union
 import requests
+from pathlib import Path
 
 from podman import api
 from podman.api import Literal
@@ -114,16 +116,18 @@ class ImagesManager(BuildMixin, Manager):
         )
 
     def load(
-        self, data: Optional[bytes] = None, file_path: Optional[str] = None
-    ) -> Generator[Image, None, None]:
+        self, data: Optional[bytes] = None, file_path: Optional[os.PathLike] = None
+    ) -> List[Image, None, None]:
         """Restore an image previously saved.
 
         Args:
             data: Image to be loaded in tarball format.
             file_path: Path of the Tarball.
+                       It works with both str and Path-like objects
 
         Raises:
-            APIError: when service returns an error
+            APIError: When service returns an error.
+            PodmanError: When the arguments are not set correctly.
         """
         # TODO fix podman swagger cannot use this header!
         # headers = {"Content-type": "application/x-www-form-urlencoded"}
@@ -136,10 +140,11 @@ class ImagesManager(BuildMixin, Manager):
                 "Only one parameter should be set from 'data' and 'file_path' parameters."
             )
 
+        # Load a tarball containing the image
         if file_path:
-            # Load a tarball containing the image
-            with open(file_path, "rb") as tarball_file:
-                data = tarball_file.read()  # Read the tarball file as bytes
+            # Convert to Path if file_path is a string (This works with both str and Path-like objects)
+            file_path = Path(file_path)
+            data = file_path.read_bytes()  # Read the tarball file as bytes
 
         response = self.client.post(
             "/images/load", data=data, headers={"Content-type": "application/x-tar"}
@@ -147,8 +152,7 @@ class ImagesManager(BuildMixin, Manager):
         response.raise_for_status()
 
         body = response.json()
-        for item in body["Names"]:
-            yield self.get(item)
+        return [self.get(item) for item in body["Names"]]
 
     def prune(
         self, filters: Optional[Mapping[str, Any]] = None
