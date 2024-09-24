@@ -49,7 +49,6 @@ class SystemManager:
         registrytoken: Optional[str] = None,
         tls_verify: Optional[Union[bool, str]] = None,
     ) -> Dict[str, Any]:
-
         """Log into Podman service.
 
         Args:

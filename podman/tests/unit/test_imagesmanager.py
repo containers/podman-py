@@ -365,7 +365,8 @@ class ImagesManagerTestCase(unittest.TestCase):
 
         self.assertEqual(len(result_list), 1)
         self.assertEqual(
-            result_list[0].id, "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
+            result_list[0].id,
+            "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab",
         )
 
     @requests_mock.Mocker()

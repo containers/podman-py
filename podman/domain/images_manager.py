@@ -117,7 +117,7 @@ class ImagesManager(BuildMixin, Manager):
 
     def load(
         self, data: Optional[bytes] = None, file_path: Optional[os.PathLike] = None
-    ) -> List[Image, None, None]:
+    ) -> List[Image]:
         """Restore an image previously saved.
 
         Args:
