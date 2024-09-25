@@ -132,26 +132,7 @@ class ImagesManager(BuildMixin, Manager):
         # TODO fix podman swagger cannot use this header!
         # headers = {"Content-type": "application/x-www-form-urlencoded"}
 
-        def _generator(
-            bytearg: Optional[bytes] = None, file_path_arg: Optional[os.PathLike] = None
-        ) -> Generator[bytes, None, None]:
-            post_data = bytearg
-            # Load a tarball containing the image
-            if file_path_arg:
-                # Convert to Path if file_path is a string
-                # (This works with both str and Path-like objects)
-                file_path_object = Path(file_path_arg)
-                post_data = file_path_object.read_bytes()  # Read the tarball file as bytes
-
-            response = self.client.post(
-                "/images/load", data=post_data, headers={"Content-type": "application/x-tar"}
-            )
-            response.raise_for_status()
-
-            body = response.json()
-            for item in body["Names"]:
-                yield self.get(item)
-
+        # Check that exactly one of the data or file_path is provided
         if not data and not file_path:
             raise PodmanError("The 'data' or 'file_path' parameter should be set.")
 
@@ -160,7 +141,25 @@ class ImagesManager(BuildMixin, Manager):
                 "Only one parameter should be set from 'data' and 'file_path' parameters."
             )
 
-        return _generator(data, file_path)
+        post_data = data
+        if file_path:
+            # Convert to Path if file_path is a string
+            file_path_object = Path(file_path)
+            post_data = file_path_object.read_bytes()  # Read the tarball file as bytes
+
+        # Make the client request before entering the generator
+        response = self.client.post(
+            "/images/load", data=post_data, headers={"Content-type": "application/x-tar"}
+        )
+        response.raise_for_status()  # Catch any errors before proceeding
+
+        def _generator(body: dict) -> Generator[bytes, None, None]:
+            # Iterate and yield images from response body
+            for item in body["Names"]:
+                yield self.get(item)
+
+        # Pass the response body to the generator
+        return _generator(response.json())
 
     def prune(
         self, filters: Optional[Mapping[str, Any]] = None

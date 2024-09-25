@@ -37,7 +37,6 @@ class SystemManager:
         return response.json()
 
     def login(  # pylint: disable=too-many-arguments,too-many-positional-arguments,unused-argument
-        main
         self,
         username: str,
         password: Optional[str] = None,
