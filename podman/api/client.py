@@ -102,7 +102,7 @@ class APIClient(requests.Session):
         use_ssh_client=True,
         max_pool_size=None,
         **kwargs,
-    ):  # pylint: disable=unused-argument
+    ):  # pylint: disable=unused-argument,too-many-positional-arguments
         """Instantiate APIClient object.
 
         Args:
@@ -199,6 +199,7 @@ class APIClient(requests.Session):
     def delete(
         self,
         path: Union[str, bytes],
+        *,
         params: Union[None, bytes, Mapping[str, str]] = None,
         headers: Optional[Mapping[str, str]] = None,
         timeout: _Timeout = None,
@@ -233,6 +234,7 @@ class APIClient(requests.Session):
     def get(
         self,
         path: Union[str, bytes],
+        *,
         params: Union[None, bytes, Mapping[str, List[str]]] = None,
         headers: Optional[Mapping[str, str]] = None,
         timeout: _Timeout = None,
@@ -267,6 +269,7 @@ class APIClient(requests.Session):
     def head(
         self,
         path: Union[str, bytes],
+        *,
         params: Union[None, bytes, Mapping[str, str]] = None,
         headers: Optional[Mapping[str, str]] = None,
         timeout: _Timeout = None,
@@ -301,6 +304,7 @@ class APIClient(requests.Session):
     def post(
         self,
         path: Union[str, bytes],
+        *,
         params: Union[None, bytes, Mapping[str, str]] = None,
         data: _Data = None,
         headers: Optional[Mapping[str, str]] = None,
@@ -339,6 +343,7 @@ class APIClient(requests.Session):
     def put(
         self,
         path: Union[str, bytes],
+        *,
         params: Union[None, bytes, Mapping[str, str]] = None,
         data: _Data = None,
         headers: Optional[Mapping[str, str]] = None,
@@ -377,6 +382,7 @@ class APIClient(requests.Session):
         self,
         method: str,
         path: Union[str, bytes],
+        *,
         data: _Data = None,
         params: Union[None, bytes, Mapping[str, str]] = None,
         headers: Optional[Mapping[str, str]] = None,
