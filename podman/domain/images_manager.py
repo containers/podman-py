@@ -14,7 +14,7 @@ from podman.domain.images import Image
 from podman.domain.images_build import BuildMixin
 from podman.domain.manager import Manager
 from podman.domain.registry_data import RegistryData
-from podman.errors import APIError, ImageNotFound
+from podman.errors import APIError, ImageNotFound, PodmanError
 
 try:
     from rich.progress import (
@@ -113,17 +113,33 @@ class ImagesManager(BuildMixin, Manager):
             collection=self,
         )
 
-    def load(self, data: bytes) -> Generator[Image, None, None]:
+    def load(
+        self, data: Optional[bytes] = None, file_path: Optional[str] = None
+    ) -> Generator[Image, None, None]:
         """Restore an image previously saved.
 
         Args:
             data: Image to be loaded in tarball format.
+            file_path: Path of the Tarball.
 
         Raises:
             APIError: when service returns an error
         """
         # TODO fix podman swagger cannot use this header!
         # headers = {"Content-type": "application/x-www-form-urlencoded"}
+
+        if not data and not file_path:
+            raise PodmanError("The 'data' or 'file_path' parameter should be set.")
+
+        if data and file_path:
+            raise PodmanError(
+                "Only one parameter should be set from 'data' and 'file_path' parameters."
+            )
+
+        if file_path:
+            # Load a tarball containing the image
+            with open(file_path, "rb") as tarball_file:
+                data = tarball_file.read()  # Read the tarball file as bytes
 
         response = self.client.post(
             "/images/load", data=data, headers={"Content-type": "application/x-tar"}
