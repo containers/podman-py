@@ -47,6 +47,12 @@ progress_bar = [
 docs = [
     "sphinx"
 ]
+test = [
+    "coverage",
+    "fixtures",
+    "pytest",
+    "requests-mock",
+]
 
 [project.urls]
 "Bug Tracker" = "https://github.com/containers/podman-py/issues"
