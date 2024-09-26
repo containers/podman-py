@@ -3,8 +3,10 @@
 import io
 import json
 import logging
+import os
 import urllib.parse
-from typing import Any, Dict, Generator, Iterator, List, Mapping, Optional, Union
+from typing import Any, Dict, Iterator, List, Mapping, Optional, Union, Generator
+from pathlib import Path
 import requests
 
 from podman import api
@@ -14,7 +16,7 @@ from podman.domain.images import Image
 from podman.domain.images_build import BuildMixin
 from podman.domain.manager import Manager
 from podman.domain.registry_data import RegistryData
-from podman.errors import APIError, ImageNotFound
+from podman.errors import APIError, ImageNotFound, PodmanError
 
 try:
     from rich.progress import (
@@ -113,26 +115,51 @@ class ImagesManager(BuildMixin, Manager):
             collection=self,
         )
 
-    def load(self, data: bytes) -> Generator[Image, None, None]:
+    def load(
+        self, data: Optional[bytes] = None, file_path: Optional[os.PathLike] = None
+    ) -> Generator[bytes, None, None]:
         """Restore an image previously saved.
 
         Args:
             data: Image to be loaded in tarball format.
+            file_path: Path of the Tarball.
+                       It works with both str and Path-like objects
 
         Raises:
-            APIError: when service returns an error
+            APIError: When service returns an error.
+            PodmanError: When the arguments are not set correctly.
         """
         # TODO fix podman swagger cannot use this header!
         # headers = {"Content-type": "application/x-www-form-urlencoded"}
 
-        response = self.client.post(
-            "/images/load", data=data, headers={"Content-type": "application/x-tar"}
-        )
-        response.raise_for_status()
+        # Check that exactly one of the data or file_path is provided
+        if not data and not file_path:
+            raise PodmanError("The 'data' or 'file_path' parameter should be set.")
 
-        body = response.json()
-        for item in body["Names"]:
-            yield self.get(item)
+        if data and file_path:
+            raise PodmanError(
+                "Only one parameter should be set from 'data' and 'file_path' parameters."
+            )
+
+        post_data = data
+        if file_path:
+            # Convert to Path if file_path is a string
+            file_path_object = Path(file_path)
+            post_data = file_path_object.read_bytes()  # Read the tarball file as bytes
+
+        # Make the client request before entering the generator
+        response = self.client.post(
+            "/images/load", data=post_data, headers={"Content-type": "application/x-tar"}
+        )
+        response.raise_for_status()  # Catch any errors before proceeding
+
+        def _generator(body: dict) -> Generator[bytes, None, None]:
+            # Iterate and yield images from response body
+            for item in body["Names"]:
+                yield self.get(item)
+
+        # Pass the response body to the generator
+        return _generator(response.json())
 
     def prune(
         self, filters: Optional[Mapping[str, Any]] = None

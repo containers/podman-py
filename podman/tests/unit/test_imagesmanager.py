@@ -1,5 +1,6 @@
 import types
 import unittest
+from unittest.mock import mock_open, patch
 
 try:
     # Python >= 3.10
@@ -13,7 +14,7 @@ import requests_mock
 from podman import PodmanClient, tests
 from podman.domain.images import Image
 from podman.domain.images_manager import ImagesManager
-from podman.errors import APIError, ImageNotFound
+from podman.errors import APIError, ImageNotFound, PodmanError
 
 FIRST_IMAGE = {
     "Id": "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab",
@@ -320,6 +321,37 @@ class ImagesManagerTestCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_load(self, mock):
+        with self.assertRaises(PodmanError):
+            self.client.images.load()
+
+        with self.assertRaises(PodmanError):
+            self.client.images.load(b'data', b'file_path')
+
+        with self.assertRaises(PodmanError):
+            self.client.images.load(data=b'data', file_path=b'file_path')
+
+        # Patch Path.read_bytes to mock the file reading behavior
+        with patch("pathlib.Path.read_bytes", return_value=b"mock tarball data"):
+            mock.post(
+                tests.LIBPOD_URL + "/images/load",
+                json={"Names": ["quay.io/fedora:latest"]},
+            )
+            mock.get(
+                tests.LIBPOD_URL + "/images/quay.io%2ffedora%3Alatest/json",
+                json=FIRST_IMAGE,
+            )
+
+            # 3a. Test the case where only 'file_path' is provided
+            gntr = self.client.images.load(file_path="mock_file.tar")
+            self.assertIsInstance(gntr, types.GeneratorType)
+
+            report = list(gntr)
+            self.assertEqual(len(report), 1)
+            self.assertEqual(
+                report[0].id,
+                "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab",
+            )
+
         mock.post(
             tests.LIBPOD_URL + "/images/load",
             json={"Names": ["quay.io/fedora:latest"]},
