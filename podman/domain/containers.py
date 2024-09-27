@@ -153,7 +153,7 @@ class Container(PodmanResource):
             stdin: Attach to stdin. Default: False
             tty: Allocate a pseudo-TTY. Default: False
             privileged: Run as privileged.
-            user: User to execute command as. Default: root
+            user: User to execute command as.
             detach: If true, detach from the exec command.
                 Default: False
             stream: Stream response data. Default: False
@@ -176,7 +176,6 @@ class Container(PodmanResource):
             APIError: when service reports error
         """
         # pylint: disable-msg=too-many-locals
-        user = user or "root"
         if isinstance(environment, dict):
             environment = [f"{k}={v}" for k, v in environment.items()]
         data = {
@@ -188,9 +187,11 @@ class Container(PodmanResource):
             "Env": environment,
             "Privileged": privileged,
             "Tty": tty,
-            "User": user,
             "WorkingDir": workdir,
         }
+        if user:
+            data["User"] = user
+
         # create the exec instance
         response = self.client.post(f"/containers/{self.name}/exec", data=json.dumps(data))
         response.raise_for_status()
