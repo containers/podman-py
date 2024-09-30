@@ -51,5 +51,5 @@
    *************************************************/
 
   // Don't leave dep. update. PRs "hanging", assign them to people.
-  "assignees": ["umohnani8", "cevich"],
+  "assignees": ["inknos"],
 }
