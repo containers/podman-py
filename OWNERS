@@ -1,5 +1,4 @@
 approvers:
-  - baude
   - edsantiago
   - giuseppe
   - jwhonce
@@ -7,23 +6,11 @@ approvers:
   - Luap99
   - mheon
   - mwhahaha
-  - rhatdan
-  - TomSweeneyRedHat
-  - umohnani8
-  - vrothberg
-reviewers:
-  - ashley-cui
-  - baude
-  - cdoern
-  - edsantiago
-  - giuseppe
-  - jwhonce
-  - lsm5
-  - Luap99
-  - mheon
-  - mwhahaha
-  - rhatdan
-  - TomSweeneyRedHat
   - umohnani8
   - vrothberg
   - inknos
+reviewers:
+  - ashley-cui
+  - baude
+  - rhatdan
+  - TomSweeneyRedHat
