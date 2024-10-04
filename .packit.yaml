@@ -64,6 +64,7 @@ jobs:
     packages: [python-podman-centos]
     dist_git_branches:
       - c10s
+      - c9s
 
   - job: koji_build
     trigger: commit
