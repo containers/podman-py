@@ -1,6 +1,7 @@
 """Mixin to provide Container run() method."""
 
 import logging
+import threading
 from contextlib import suppress
 from typing import Generator, Iterator, List, Union
 
@@ -67,7 +68,19 @@ class RunMixin:  # pylint: disable=too-few-public-methods
         container.start()
         container.reload()
 
+        def remove_container(container_object: Container) -> None:
+            """
+            Wait the container to finish and remove it.
+            Args:
+                container_object: Container object
+            """
+            container_object.wait()  # Wait for the container to finish
+            container_object.remove()  # Remove the container
+
         if kwargs.get("detach", False):
+            if remove:
+                # Start a background thread to remove the container after finishing
+                threading.Thread(target=remove_container, args=(container,)).start()
             return container
 
         with suppress(KeyError):
