@@ -15,7 +15,7 @@ env:
     #### Cache-image names to test with (double-quotes around names are critical)
     ####
     # Google-cloud VM Images
-    IMAGE_SUFFIX: "c20240821t171500z-f40f39d13"
+    IMAGE_SUFFIX: "c20241010t105554z-f40f39d13"
     FEDORA_CACHE_IMAGE_NAME: "fedora-podman-py-${IMAGE_SUFFIX}"
 
 
