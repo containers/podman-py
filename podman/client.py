@@ -1,4 +1,5 @@
 """Client for connecting to Podman service."""
+
 import logging
 import os
 from contextlib import AbstractContextManager

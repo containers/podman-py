@@ -1,4 +1,5 @@
 """Secrets integration tests."""
+
 import random
 import unittest
 import uuid

@@ -461,8 +461,7 @@ class ImagesManagerTestCase(unittest.TestCase):
             },
         )
         mock.get(
-            tests.LIBPOD_URL
-            + "/images"
+            tests.LIBPOD_URL + "/images"
             "/sha256%3A326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/json",
             json=FIRST_IMAGE,
         )
@@ -483,8 +482,7 @@ class ImagesManagerTestCase(unittest.TestCase):
             },
         )
         mock.get(
-            tests.LIBPOD_URL
-            + "/images"
+            tests.LIBPOD_URL + "/images"
             "/sha256%3A326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/json",
             json=FIRST_IMAGE,
         )
@@ -505,8 +503,7 @@ class ImagesManagerTestCase(unittest.TestCase):
             },
         )
         mock.get(
-            tests.LIBPOD_URL
-            + "/images"
+            tests.LIBPOD_URL + "/images"
             "/sha256%3A326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/json",
             json=FIRST_IMAGE,
         )
@@ -531,8 +528,7 @@ class ImagesManagerTestCase(unittest.TestCase):
             },
         )
         mock.get(
-            tests.LIBPOD_URL
-            + "/images"
+            tests.LIBPOD_URL + "/images"
             "/sha256%3A326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/json",
             json=FIRST_IMAGE,
         )

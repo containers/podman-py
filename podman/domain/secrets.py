@@ -1,4 +1,5 @@
 """Model and Manager for Secrets resources."""
+
 from contextlib import suppress
 from typing import Any, List, Mapping, Optional, Union
 

@@ -180,8 +180,7 @@ class PodTestCase(unittest.TestCase):
             "Titles": ["UID", "PID", "PPID", "C", "STIME", "TTY", "TIME CMD"],
         }
         adapter = mock.get(
-            tests.LIBPOD_URL
-            + "/pods"
+            tests.LIBPOD_URL + "/pods"
             "/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/top"
             "?ps_args=aux&stream=False",
             json=body,

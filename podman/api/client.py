@@ -1,4 +1,5 @@
 """APIClient for connecting to Podman service."""
+
 import json
 import urllib.parse
 from typing import Any, ClassVar, IO, Iterable, List, Mapping, Optional, Tuple, Type, Union
