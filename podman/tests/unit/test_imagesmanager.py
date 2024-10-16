@@ -156,11 +156,13 @@ class ImagesManagerTestCase(unittest.TestCase):
         """Unit test Images prune()."""
         mock.post(
             tests.LIBPOD_URL + "/images/prune",
-            json=[{
-                "Id": "326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab",
-                "Err": None,
-                "Size": 1024,
-            }],
+            json=[
+                {
+                    "Id": "326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab",
+                    "Err": None,
+                    "Size": 1024,
+                }
+            ],
         )
 
         results = self.client.images.prune()
@@ -210,9 +212,11 @@ class ImagesManagerTestCase(unittest.TestCase):
         """Unit test to report error carried in response body."""
         mock.post(
             tests.LIBPOD_URL + "/images/prune",
-            json=[{
-                "Err": "Test prune failure in response body.",
-            }],
+            json=[
+                {
+                    "Err": "Test prune failure in response body.",
+                }
+            ],
         )
 
         with self.assertRaises(APIError) as e:
@@ -457,8 +461,7 @@ class ImagesManagerTestCase(unittest.TestCase):
             },
         )
         mock.get(
-            tests.LIBPOD_URL
-            + "/images"
+            tests.LIBPOD_URL + "/images"
             "/sha256%3A326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/json",
             json=FIRST_IMAGE,
         )
@@ -479,8 +482,7 @@ class ImagesManagerTestCase(unittest.TestCase):
             },
         )
         mock.get(
-            tests.LIBPOD_URL
-            + "/images"
+            tests.LIBPOD_URL + "/images"
             "/sha256%3A326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/json",
             json=FIRST_IMAGE,
         )
@@ -501,8 +503,7 @@ class ImagesManagerTestCase(unittest.TestCase):
             },
         )
         mock.get(
-            tests.LIBPOD_URL
-            + "/images"
+            tests.LIBPOD_URL + "/images"
             "/sha256%3A326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/json",
             json=FIRST_IMAGE,
         )
@@ -527,8 +528,7 @@ class ImagesManagerTestCase(unittest.TestCase):
             },
         )
         mock.get(
-            tests.LIBPOD_URL
-            + "/images"
+            tests.LIBPOD_URL + "/images"
             "/sha256%3A326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/json",
             json=FIRST_IMAGE,
         )

@@ -34,14 +34,16 @@ FIRST_NETWORK_LIBPOD = {
     "driver": "bridge",
     "network_interface": "libpod_veth0",
     "created": "2022-01-28T09:18:37.491308364-07:00",
-    "subnets": [{
-        "subnet": "10.11.12.0/24",
-        "gateway": "10.11.12.1",
-        "lease_range": {
-            "start_ip": "10.11.12.1",
-            "end_ip": "10.11.12.63",
-        },
-    }],
+    "subnets": [
+        {
+            "subnet": "10.11.12.0/24",
+            "gateway": "10.11.12.1",
+            "lease_range": {
+                "start_ip": "10.11.12.1",
+                "end_ip": "10.11.12.63",
+            },
+        }
+    ],
     "ipv6_enabled": False,
     "internal": False,
     "dns_enabled": False,

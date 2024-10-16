@@ -149,10 +149,32 @@ class ContainersIntegrationTest(base.IntegrationTest):
             self.containers.append(container)
 
             self.assertTrue(
-                all([
-                    x in port_test['expected_output']
-                    for x in container.attrs.get('HostConfig', {}).get('PortBindings')
-                ])
+                all(
+                    [
+                        x in port_test['expected_output']
+                        for x in container.attrs.get('HostConfig', {}).get('PortBindings')
+                    ]
+                )
+            )
+
+    def test_container_dns_option(self):
+        expected_dns_opt = ['edns0']
+
+        container = self.client.containers.create(
+            self.alpine_image, command=["cat", "/etc/resolv.conf"], dns_opt=expected_dns_opt
+        )
+        self.containers.append(container)
+
+        with self.subTest("Check HostConfig"):
+            self.assertEqual(
+                container.attrs.get('HostConfig', {}).get('DnsOptions'), expected_dns_opt
+            )
+
+        with self.subTest("Check content of /etc/resolv.conf"):
+            container.start()
+            container.wait()
+            self.assertTrue(
+                all([opt in b"\n".join(container.logs()).decode() for opt in expected_dns_opt])
             )
 
     def test_container_healthchecks(self):
@@ -241,11 +263,13 @@ class ContainersIntegrationTest(base.IntegrationTest):
             for device in devices:
                 path_on_host, path_in_container = device.split(':', 1)
                 self.assertTrue(
-                    any([
-                        c.get('PathOnHost') == path_on_host
-                        and c.get('PathInContainer') == path_in_container
-                        for c in container_devices
-                    ])
+                    any(
+                        [
+                            c.get('PathOnHost') == path_on_host
+                            and c.get('PathInContainer') == path_in_container
+                            for c in container_devices
+                        ]
+                    )
                 )
 
         with self.subTest("Check devices in running container object"):

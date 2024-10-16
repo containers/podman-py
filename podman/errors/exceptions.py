@@ -115,7 +115,7 @@ class ContainerError(PodmanError):
         command: Union[str, List[str]],
         image: str,
         stderr: Optional[Iterable[str]] = None,
-    ):
+    ):  # pylint: disable=too-many-positional-arguments
         """Initialize ContainerError.
 
         Args:
