@@ -141,7 +141,7 @@ class Container(PodmanResource):
         socket: bool = False,  # pylint: disable=unused-argument
         environment: Union[Mapping[str, str], List[str]] = None,
         workdir: str = None,
-        demux: bool = False,
+        demux: bool = False,  # pylint: disable=unused-argument
     ) -> Tuple[Optional[int], Union[Iterator[bytes], Any, Tuple[bytes, bytes]]]:
         """Run given command inside container and return results.
 
@@ -218,7 +218,7 @@ class Container(PodmanResource):
         response = self.client.get(f"/containers/{self.id}/export", stream=True)
         response.raise_for_status()
 
-        for out in response.iter_content(chunk_size=chunk_size):
+        for out in response.iter_content(chunk_size=chunk_size):  # pylint: disable=use-yield-from
             yield out
 
     def get_archive(
