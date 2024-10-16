@@ -952,7 +952,8 @@ elif hasattr(contextlib, 'AbstractAsyncContextManager'):
 
     __all__.append('AsyncContextManager')
 elif sys.version_info[:2] >= (3, 5):
-    exec("""
+    exec(
+        """
 class AsyncContextManager(typing.Generic[T_co]):
     __slots__ = ()
 
@@ -970,7 +971,8 @@ class AsyncContextManager(typing.Generic[T_co]):
         return NotImplemented
 
 __all__.append('AsyncContextManager')
-""")
+"""
+    )
 
 if hasattr(typing, 'DefaultDict'):
     DefaultDict = typing.DefaultDict

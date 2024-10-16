@@ -61,8 +61,7 @@ class TestBuildCase(unittest.TestCase):
 
         with requests_mock.Mocker() as mock:
             mock.post(
-                tests.LIBPOD_URL
-                + "/build"
+                tests.LIBPOD_URL + "/build"
                 "?t=latest"
                 "&buildargs=%7B%22BUILD_DATE%22%3A+%22January+1%2C+1970%22%7D"
                 "&cpuperiod=10"

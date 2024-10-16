@@ -149,10 +149,12 @@ class ContainersIntegrationTest(base.IntegrationTest):
             self.containers.append(container)
 
             self.assertTrue(
-                all([
-                    x in port_test['expected_output']
-                    for x in container.attrs.get('HostConfig', {}).get('PortBindings')
-                ])
+                all(
+                    [
+                        x in port_test['expected_output']
+                        for x in container.attrs.get('HostConfig', {}).get('PortBindings')
+                    ]
+                )
             )
 
     def test_container_dns_option(self):
@@ -261,11 +263,13 @@ class ContainersIntegrationTest(base.IntegrationTest):
             for device in devices:
                 path_on_host, path_in_container = device.split(':', 1)
                 self.assertTrue(
-                    any([
-                        c.get('PathOnHost') == path_on_host
-                        and c.get('PathInContainer') == path_in_container
-                        for c in container_devices
-                    ])
+                    any(
+                        [
+                            c.get('PathOnHost') == path_on_host
+                            and c.get('PathInContainer') == path_in_container
+                            for c in container_devices
+                        ]
+                    )
                 )
 
         with self.subTest("Check devices in running container object"):

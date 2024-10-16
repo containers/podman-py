@@ -22,21 +22,23 @@ class EventsManagerTestCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_list(self, mock):
-        stream = [{
-            "Type": "pod",
-            "Action": "create",
-            "Actor": {
-                "ID": "",
-                "Attributes": {
-                    "image": "",
-                    "name": "",
-                    "containerExitCode": 0,
+        stream = [
+            {
+                "Type": "pod",
+                "Action": "create",
+                "Actor": {
+                    "ID": "",
+                    "Attributes": {
+                        "image": "",
+                        "name": "",
+                        "containerExitCode": 0,
+                    },
                 },
-            },
-            "Scope": "local",
-            "Time": 1615845480,
-            "TimeNano": 1615845480,
-        }]
+                "Scope": "local",
+                "Time": 1615845480,
+                "TimeNano": 1615845480,
+            }
+        ]
         buffer = io.StringIO()
         for item in stream:
             buffer.write(json.JSONEncoder().encode(item))
