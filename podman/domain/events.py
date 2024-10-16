@@ -1,4 +1,5 @@
 """Model and Manager for Event resources."""
+
 import json
 import logging
 from datetime import datetime

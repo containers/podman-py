@@ -1,4 +1,5 @@
 """Utility functions for working with Adapters."""
+
 from typing import NamedTuple, Mapping
 
 

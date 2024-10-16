@@ -17,7 +17,7 @@ env:
     FEDORA_NAME: "fedora-38"
 
     # Google-cloud VM Images
-    IMAGE_SUFFIX: "c20230614t132754z-f38f37d13"
+    IMAGE_SUFFIX: "c20241015t085508z-f40f39d13"
     FEDORA_CACHE_IMAGE_NAME: "fedora-podman-py-${IMAGE_SUFFIX}"
 
 

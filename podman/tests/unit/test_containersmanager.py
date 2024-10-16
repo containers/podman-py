@@ -112,8 +112,7 @@ class ContainersManagerTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_list_filtered(self, mock):
         mock.get(
-            tests.LIBPOD_URL
-            + "/containers/json?"
+            tests.LIBPOD_URL + "/containers/json?"
             "all=True"
             "&filters=%7B"
             "%22before%22%3A"

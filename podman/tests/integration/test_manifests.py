@@ -66,7 +66,7 @@ class ManifestsIntegrationTest(base.IntegrationTest):
 
         with self.subTest("Remove digest"):
             manifest.remove(self.alpine_image.attrs["RepoDigests"][0])
-            self.assertIsNone(manifest.attrs["manifests"])
+            self.assertEqual(manifest.attrs["manifests"], [])
 
     def test_create_409(self):
         """Test that invalid Image names are caught and not corrupt storage."""

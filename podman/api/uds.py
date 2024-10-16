@@ -1,4 +1,5 @@
 """Specialized Transport Adapter for UNIX domain sockets."""
+
 import collections
 import functools
 import logging
@@ -136,7 +137,7 @@ class UDSAdapter(HTTPAdapter):
         max_retries=DEFAULT_RETRIES,
         pool_block=DEFAULT_POOLBLOCK,
         **kwargs,
-    ):
+    ):  # pylint: disable=too-many-positional-arguments
         """Initialize UDSAdapter.
 
         Args:
