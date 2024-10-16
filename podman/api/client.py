@@ -8,7 +8,7 @@ from typing import Any, ClassVar, IO, Iterable, List, Mapping, Optional, Tuple, 
 import requests
 from requests.adapters import HTTPAdapter
 
-from podman import api  # pylint: disable=cyclic-import
+from podman.api.api_versions import VERSION, COMPATIBLE_VERSION
 from podman.api.ssh import SSHAdapter
 from podman.api.uds import UDSAdapter
 from podman.errors import APIError, NotFound
@@ -158,9 +158,9 @@ class APIClient(requests.Session):
         else:
             assert False, "APIClient.supported_schemes changed without adding a branch here."
 
-        self.version = version or api.VERSION
+        self.version = version or VERSION
         self.path_prefix = f"/v{self.version}/libpod/"
-        self.compatible_version = kwargs.get("compatible_version", api.COMPATIBLE_VERSION)
+        self.compatible_version = kwargs.get("compatible_version", COMPATIBLE_VERSION)
         self.compatible_prefix = f"/v{self.compatible_version}/"
 
         self.timeout = timeout
