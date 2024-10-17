@@ -287,7 +287,7 @@ class Container(PodmanResource):
         params = {
             "follow": kwargs.get("follow", kwargs.get("stream", None)),
             "since": api.prepare_timestamp(kwargs.get("since")),
-            "stderr": kwargs.get("stderr", None),
+            "stderr": kwargs.get("stderr", True),
             "stdout": kwargs.get("stdout", True),
             "tail": kwargs.get("tail"),
             "timestamps": kwargs.get("timestamps"),
