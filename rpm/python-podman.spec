@@ -61,7 +61,13 @@ Summary: %{summary}
 
 %if !%{defined rhel8_py}
 %generate_buildrequires
-%pyproject_buildrequires %{?with_tests:-t}
+# In fedora all testing dependencies are packaged
+# In CentOS stream they are not. Tests are run upstream
+%if 0%{?fedora}
+%pyproject_buildrequires -x test
+%else
+%pyproject_buildrequires
+%endif
 %endif
 
 %build
@@ -83,7 +89,13 @@ export PBR_VERSION="0.0.0"
 
 %if !%{defined rhel8_py}
 %check
-%pyproject_check_import -e podman.api.typing_extensions
+# In fedora all testing dependencies are packaged
+# In CentOS stream they are not. Tests are run upstream
+%if 0%{?fedora}
+%pyproject_check_import
+%else
+%pyproject_check_import -e podman.tests.*
+%endif
 %endif
 
 %if %{defined rhel8_py}

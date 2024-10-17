@@ -46,7 +46,6 @@ gating_task:
 
     script:
         - make
-        - make lint
 
 test_task:
     name: "Test on Fedora"
