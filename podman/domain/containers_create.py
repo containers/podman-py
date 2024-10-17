@@ -174,7 +174,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             pids_limit (int): Tune a container's pids limit. Set -1 for unlimited.
             platform (str): Platform in the format os[/arch[/variant]]. Only used if the method
                 needs to pull the requested image.
-            ports (Dict[str, Union[int, Tuple[str, int], List[int], Dict[str, Union[int, Tuple[str, int], List[int]]]]]): Ports to bind inside the container.
+            ports (Dict[Union[int, str], Union[int, Tuple[str, int], List[int], Dict[str, Union[int, Tuple[str, int], List[int]]]]]): Ports to bind inside the container.
 
                 The keys of the dictionary are the ports to bind inside the container, either as an
                 integer or a string in the form port/protocol, where the protocol is either
@@ -622,6 +622,9 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             return result
 
         for container, host in args.pop("ports", {}).items():
+            if isinstance(container, int):
+                container = str(container)
+
             if "/" in container:
                 container_port, protocol = container.split("/")
             else:
