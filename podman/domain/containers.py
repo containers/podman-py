@@ -138,12 +138,12 @@ class Container(PodmanResource):
         privileged: bool = False,
         user=None,
         detach: bool = False,
-        stream: bool = False,  # pylint: disable=unused-argument
+        stream: bool = False,
         socket: bool = False,  # pylint: disable=unused-argument
         environment: Union[Mapping[str, str], List[str]] = None,
         workdir: str = None,
         demux: bool = False,
-    ) -> Tuple[Optional[int], Union[Iterator[bytes], Any, Tuple[bytes, bytes]]]:
+    ) -> Tuple[Optional[int], Union[Iterator[Union[bytes, Tuple[bytes, bytes]]], Any, Tuple[bytes, bytes]]]:
         """Run given command inside container and return results.
 
         Args:
@@ -166,10 +166,11 @@ class Container(PodmanResource):
             demux: Return stdout and stderr separately
 
         Returns:
-            First item is the command response code.
-            Second item is the requests response content.
-            If demux is True, the second item is a tuple of
-            (stdout, stderr).
+            A tuple of (``response_code``, ``output``). ``response_code``
+            is ``None`` if ``stream``. If neither ``stream`` nor ``demux``,
+            then ``output`` is the response content. If ``stream`` output
+            is a generator yeilding response chunks. If ``demux`` output is
+            a tuple of (``stdout``, ``stderr``).
 
         Raises:
             NotImplementedError: method not implemented.
@@ -198,9 +199,13 @@ class Container(PodmanResource):
         exec_id = response.json()['Id']
         # start the exec instance, this will store command output
         start_resp = self.client.post(
-            f"/exec/{exec_id}/start", data=json.dumps({"Detach": detach, "Tty": tty})
+            f"/exec/{exec_id}/start", data=json.dumps({"Detach": detach, "Tty": tty}),  stream=stream
         )
         start_resp.raise_for_status()
+
+        if stream:
+            return None, api.stream_frames(start_resp, demux=demux)
+
         # get and return exec information
         response = self.client.get(f"/exec/{exec_id}/json")
         response.raise_for_status()

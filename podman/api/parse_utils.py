@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Any, Dict, Iterator, Optional, Tuple, Union
 
 from requests import Response
+from .output_utils import demux_output
 
 
 def parse_repository(name: str) -> Tuple[str, Optional[str]]:
@@ -79,11 +80,9 @@ def frames(response: Response) -> Iterator[bytes]:
         yield response.content[frame_begin:frame_end]
 
 
-def stream_frames(response: Response) -> Iterator[bytes]:
-    """Returns each frame from multiplexed streamed payload.
-
-    Notes:
-        The stdout and stderr frames are undifferentiated as they are returned.
+def stream_frames(response: Response, demux: bool = False) -> Iterator[Union[bytes, Tuple[bytes, bytes]]]:
+    """Returns each frame from multiplexed streamed payload. If ``demux`` then output will be
+    tuples where the first position is ``STDOUT`` and the second is ``STDERR``.
     """
     while True:
         header = response.raw.read(8)
@@ -95,6 +94,10 @@ def stream_frames(response: Response) -> Iterator[bytes]:
             continue
 
         data = response.raw.read(frame_length)
+
+        if demux:
+            data = demux_output(header + data)
+
         if not data:
             return
         yield data
