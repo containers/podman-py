@@ -100,9 +100,4 @@ export PBR_VERSION="0.0.0"
 %doc README.md
 
 %changelog
-%if %{defined autochangelog}
 %autochangelog
-%else
-* Mon May 01 2023 RH Container Bot <rhcontainerbot@fedoraproject.org>
-- Placeholder changelog for envs that are not autochangelog-ready
-%endif
