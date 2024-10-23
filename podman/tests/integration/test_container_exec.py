@@ -49,5 +49,42 @@ class ContainersExecIntegrationTests(base.IntegrationTest):
         error_code, output = container.exec_run("ls nonexistent", demux=True)
 
         self.assertEqual(error_code, 1)
-        self.assertEqual(output[0], b'')
+        self.assertEqual(output[0], None)
         self.assertEqual(output[1], b"ls: nonexistent: No such file or directory\n")
+
+    def test_container_exec_run_stream(self):
+        """Test streaming the output from a long running command."""
+        container = self.client.containers.create(self.alpine_image, command=["top"], detach=True)
+        container.start()
+
+        command = []
+        for i in range(3):
+            # We want to sleep so that the lines get  processed seperately
+            command.extend(['echo', str(i), ';', 'sleep', '.1', ';'])
+        command = ['/bin/sh', '-c', ' '.join(command)]
+        error_code, output = container.exec_run(command, stream=True)
+
+        self.assertEqual(error_code, None)
+        for index, data in enumerate(output):
+            self.assertEqual(data, f'{index}\n'.encode())
+
+    def test_container_exec_run_stream_demux(self):
+        """Test streaming the output from a long running command with demux enabled."""
+        container = self.client.containers.create(self.alpine_image, command=["top"], detach=True)
+        container.start()
+
+        command = []
+        for i in range(3):
+            # We want to sleep so that the lines get  processed seperately
+            command.extend(
+                ['echo', str(i * 2), ';', '>&2', 'echo', str(i * 2 + 1), ';', 'sleep', '.1', ';']
+            )
+        command = ['/bin/sh', '-c', ' '.join(command)]
+        error_code, output = container.exec_run(command, stream=True, demux=True)
+
+        self.assertEqual(error_code, None)
+        for index, data in enumerate(output):
+            if index % 2 == 0:
+                self.assertEqual(data, (f'{index}\n'.encode(), None))
+            else:
+                self.assertEqual(data, (None, f'{index}\n'.encode()))

@@ -46,4 +46,4 @@ def demux_output(data_bytes):
         # Update data for next frame
         data_bytes = data_bytes[payload_size:]
 
-    return stdout, stderr
+    return stdout or None, stderr or None
