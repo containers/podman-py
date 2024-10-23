@@ -80,9 +80,13 @@ def frames(response: Response) -> Iterator[bytes]:
         yield response.content[frame_begin:frame_end]
 
 
-def stream_frames(response: Response, demux: bool = False) -> Iterator[Union[bytes, Tuple[bytes, bytes]]]:
-    """Returns each frame from multiplexed streamed payload. If ``demux`` then output will be
-    tuples where the first position is ``STDOUT`` and the second is ``STDERR``.
+def stream_frames(
+    response: Response, demux: bool = False
+) -> Iterator[Union[bytes, Tuple[bytes, bytes]]]:
+    """Returns each frame from multiplexed streamed payload.
+
+    If ``demux`` then output will be tuples where the first position is ``STDOUT`` and the second
+    is ``STDERR``.
     """
     while True:
         header = response.raw.read(8)
