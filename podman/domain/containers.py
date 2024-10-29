@@ -158,7 +158,7 @@ class Container(PodmanResource):
             user: User to execute command as.
             detach: If true, detach from the exec command.
                 Default: False
-            stream: Stream response data. Default: False
+            stream: Stream response data. Ignored if ``detach`` is ``True``. Default: False
             socket: Return the connection socket to allow custom
                 read/write operations. Default: False
             environment: A dictionary or a List[str] in
@@ -196,6 +196,8 @@ class Container(PodmanResource):
         }
         if user:
             data["User"] = user
+
+        stream = stream and not detach
 
         # create the exec instance
         response = self.client.post(f"/containers/{self.name}/exec", data=json.dumps(data))

@@ -57,34 +57,67 @@ class ContainersExecIntegrationTests(base.IntegrationTest):
         container = self.client.containers.create(self.alpine_image, command=["top"], detach=True)
         container.start()
 
-        command = []
-        for i in range(3):
-            # We want to sleep so that the lines get  processed seperately
-            command.extend(['echo', str(i), ';', 'sleep', '.1', ';'])
-        command = ['/bin/sh', '-c', ' '.join(command)]
+        command = [
+            '/bin/sh',
+            '-c',
+            'echo 0 ; sleep .1 ; echo 1 ; sleep .1 ; echo 2 ; sleep .1 ;',
+        ]
         error_code, output = container.exec_run(command, stream=True)
 
         self.assertEqual(error_code, None)
-        for index, data in enumerate(output):
-            self.assertEqual(data, f'{index}\n'.encode())
+        self.assertEqual(
+            list(output),
+            [
+                b'0\n',
+                b'1\n',
+                b'2\n',
+            ],
+        )
 
     def test_container_exec_run_stream_demux(self):
         """Test streaming the output from a long running command with demux enabled."""
         container = self.client.containers.create(self.alpine_image, command=["top"], detach=True)
         container.start()
 
-        command = []
-        for i in range(3):
-            # We want to sleep so that the lines get  processed seperately
-            command.extend(
-                ['echo', str(i * 2), ';', '>&2', 'echo', str(i * 2 + 1), ';', 'sleep', '.1', ';']
-            )
-        command = ['/bin/sh', '-c', ' '.join(command)]
+        command = [
+            '/bin/sh',
+            '-c',
+            'echo 0 ; >&2 echo 1 ; sleep .1 ; '
+            + 'echo 2 ; >&2 echo 3 ; sleep .1 ; '
+            + 'echo 4 ; >&2 echo 5 ; sleep .1 ;',
+        ]
         error_code, output = container.exec_run(command, stream=True, demux=True)
 
         self.assertEqual(error_code, None)
-        for index, data in enumerate(output):
-            if index % 2 == 0:
-                self.assertEqual(data, (f'{index}\n'.encode(), None))
-            else:
-                self.assertEqual(data, (None, f'{index}\n'.encode()))
+        self.assertEqual(
+            list(output),
+            [
+                (b'0\n', None),
+                (None, b'1\n'),
+                (b'2\n', None),
+                (None, b'3\n'),
+                (b'4\n', None),
+                (None, b'5\n'),
+            ],
+        )
+
+    def test_container_exec_run_stream_detach(self):
+        """Test streaming the output from a long running command with detach enabled."""
+        container = self.client.containers.create(self.alpine_image, command=["top"], detach=True)
+        container.start()
+
+        command = [
+            '/bin/sh',
+            '-c',
+            'echo 0 ; sleep .1 ; echo 1 ; sleep .1 ; echo 2 ; sleep .1 ;',
+        ]
+        error_code, output = container.exec_run(command, stream=True, detach=True)
+
+        # Detach should make the ``exec_run`` ignore the ``stream`` flag so we will assert against the standard,
+        # non-streaming behavior.
+        self.assertEqual(error_code, 0)
+        # The endpoint should return immediately, before we are able to actually get any of the output.
+        self.assertEqual(
+            output,
+            b'\n',
+        )
