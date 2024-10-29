@@ -138,12 +138,14 @@ class Container(PodmanResource):
         privileged: bool = False,
         user=None,
         detach: bool = False,
-        stream: bool = False,  # pylint: disable=unused-argument
+        stream: bool = False,
         socket: bool = False,  # pylint: disable=unused-argument
         environment: Union[Mapping[str, str], List[str]] = None,
         workdir: str = None,
         demux: bool = False,
-    ) -> Tuple[Optional[int], Union[Iterator[bytes], Any, Tuple[bytes, bytes]]]:
+    ) -> Tuple[
+        Optional[int], Union[Iterator[Union[bytes, Tuple[bytes, bytes]]], Any, Tuple[bytes, bytes]]
+    ]:
         """Run given command inside container and return results.
 
         Args:
@@ -156,7 +158,7 @@ class Container(PodmanResource):
             user: User to execute command as.
             detach: If true, detach from the exec command.
                 Default: False
-            stream: Stream response data. Default: False
+            stream: Stream response data. Ignored if ``detach`` is ``True``. Default: False
             socket: Return the connection socket to allow custom
                 read/write operations. Default: False
             environment: A dictionary or a List[str] in
@@ -166,10 +168,13 @@ class Container(PodmanResource):
             demux: Return stdout and stderr separately
 
         Returns:
-            First item is the command response code.
-            Second item is the requests response content.
-            If demux is True, the second item is a tuple of
-            (stdout, stderr).
+            A tuple of (``response_code``, ``output``).
+            ``response_code``:
+                The exit code of the provided command. ``None`` if ``stream``.
+            ``output``:
+                If ``stream``, then a generator yeilding response chunks.
+                If ``demux``, then a tuple of (``stdout``, ``stderr``).
+                Else the response content.
 
         Raises:
             NotImplementedError: method not implemented.
@@ -192,15 +197,21 @@ class Container(PodmanResource):
         if user:
             data["User"] = user
 
+        stream = stream and not detach
+
         # create the exec instance
         response = self.client.post(f"/containers/{self.name}/exec", data=json.dumps(data))
         response.raise_for_status()
         exec_id = response.json()['Id']
         # start the exec instance, this will store command output
         start_resp = self.client.post(
-            f"/exec/{exec_id}/start", data=json.dumps({"Detach": detach, "Tty": tty})
+            f"/exec/{exec_id}/start", data=json.dumps({"Detach": detach, "Tty": tty}), stream=stream
         )
         start_resp.raise_for_status()
+
+        if stream:
+            return None, api.stream_frames(start_resp, demux=demux)
+
         # get and return exec information
         response = self.client.get(f"/exec/{exec_id}/json")
         response.raise_for_status()
