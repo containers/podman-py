@@ -56,8 +56,6 @@ class ContainersIntegrationTest(base.IntegrationTest):
 
         with self.subTest("Inspect Container"):
             actual = self.client.containers.get(container.id)
-
-            labeled_container.remove(v=True)
             self.assertIsInstance(actual, Container)
             self.assertEqual(actual.id, container.id)
 
