@@ -43,7 +43,9 @@ class ContainersIntegrationTest(base.IntegrationTest):
 
         with self.subTest("Create from Alpine Image"):
             container = self.client.containers.create(
-                self.alpine_image, command=["echo", random_string], ports={'2222/tcp': 3333}
+                self.alpine_image,
+                command=["echo", random_string],
+                ports={'2222/tcp': 3333, 2244: 3344},
             )
             self.assertIsInstance(container, Container)
             self.assertGreater(len(container.attrs), 0)
@@ -62,6 +64,10 @@ class ContainersIntegrationTest(base.IntegrationTest):
             self.assertIn("2222/tcp", container.attrs["NetworkSettings"]["Ports"])
             self.assertEqual(
                 "3333", container.attrs["NetworkSettings"]["Ports"]["2222/tcp"][0]["HostPort"]
+            )
+            self.assertIn("2244/tcp", container.attrs["NetworkSettings"]["Ports"])
+            self.assertEqual(
+                "3344", container.attrs["NetworkSettings"]["Ports"]["2244/tcp"][0]["HostPort"]
             )
 
         file_contents = b"This is an integration test for archive."

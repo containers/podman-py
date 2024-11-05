@@ -142,6 +142,16 @@ class ContainersIntegrationTest(base.IntegrationTest):
                     '1223/tcp': [{'HostIp': '', 'HostPort': '1235'}],
                 },
             },
+            {
+                'input': {
+                    2244: 3344,
+                },
+                'expected_output': {
+                    '2244/tcp': [
+                        {'HostIp': '', 'HostPort': '3344'},
+                    ],
+                },
+            },
         ]
 
         for port_test in port_tests:

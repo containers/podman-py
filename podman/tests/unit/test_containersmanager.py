@@ -1,3 +1,4 @@
+import json
 import unittest
 
 try:
@@ -7,7 +8,7 @@ except:
     # Python < 3.10
     from collections import Iterator
 
-from unittest.mock import DEFAULT, patch
+from unittest.mock import ANY, DEFAULT, patch, MagicMock
 
 import requests_mock
 
@@ -212,6 +213,49 @@ class ContainersManagerTestCase(unittest.TestCase):
         )
         with self.assertRaises(ImageNotFound):
             self.client.containers.create("fedora", "/usr/bin/ls", cpu_count=9999)
+
+    @requests_mock.Mocker()
+    def test_create_parse_host_port(self, mock):
+        mock_response = MagicMock()
+        mock_response.json = lambda: {
+            "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
+            "Size": 1024,
+        }
+        self.client.containers.client.post = MagicMock(return_value=mock_response)
+        mock.get(
+            tests.LIBPOD_URL
+            + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
+            json=FIRST_CONTAINER,
+        )
+
+        port_str = {'2233': 3333}
+        port_str_protocol = {'2244/tcp': 3344}
+        port_int = {2255: 3355}
+        ports = {**port_str, **port_str_protocol, **port_int}
+        self.client.containers.create("fedora", "/usr/bin/ls", ports=ports)
+
+        self.client.containers.client.post.assert_called()
+        expected_ports = [
+            {
+                'container_port': 2233,
+                'host_port': 3333,
+                'protocol': 'tcp',
+            },
+            {
+                'container_port': 2244,
+                'host_port': 3344,
+                'protocol': 'tcp',
+            },
+            {
+                'container_port': 2255,
+                'host_port': 3355,
+                'protocol': 'tcp',
+            },
+        ]
+        actual_ports = json.loads(self.client.containers.client.post.call_args[1]['data'])[
+            'portmappings'
+        ]
+        self.assertEqual(expected_ports, actual_ports)
 
     def test_create_unsupported_key(self):
         with self.assertRaises(TypeError) as e:
