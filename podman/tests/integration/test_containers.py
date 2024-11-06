@@ -195,6 +195,31 @@ ENV foo=bar
             volume_list = self.client.volumes.list()
             self.assertEqual(len(volume_list), len(existing_volumes))
 
+    def test_container_labels(self):
+        labels = {'label1': 'value1', 'label2': 'value2'}
+        labeled_container = self.client.containers.create(self.alpine_image, labels=labels)
+        unlabeled_container = self.client.containers.create(
+            self.alpine_image,
+        )
+
+        # inspect and list have 2 different schemas so we need to verify that we can
+        # successfully retrieve the labels on both
+        try:
+            # inspect schema
+            self.assertEqual(labeled_container.labels, labels)
+            self.assertEqual(unlabeled_container.labels, {})
+
+            # list schema
+            for container in self.client.containers.list(all=True):
+                if container.id == labeled_container.id:
+                    self.assertEqual(container.labels, labels)
+                elif container.id == unlabeled_container.id:
+                    self.assertEqual(container.labels, {})
+
+        finally:
+            labeled_container.remove(v=True)
+            unlabeled_container.remove(v=True)
+
 
 if __name__ == '__main__':
     unittest.main()
