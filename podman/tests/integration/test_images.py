@@ -44,7 +44,7 @@ class ImagesIntegrationTest(base.IntegrationTest):
         """Test Image CRUD.
 
         Notes:
-            Written to maximize re-use of pulled image.
+            Written to maximize reuse of pulled image.
         """
 
         with self.subTest("Pull Alpine Image"):
