@@ -176,7 +176,7 @@ class Container(PodmanResource):
             ``response_code``:
                 The exit code of the provided command. ``None`` if ``stream``.
             ``output``:
-                If ``stream``, then a generator yeilding response chunks.
+                If ``stream``, then a generator yielding response chunks.
                 If ``demux``, then a tuple of (``stdout``, ``stderr``).
                 Else the response content.
 

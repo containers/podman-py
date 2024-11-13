@@ -22,7 +22,7 @@ import sys
 
 # After PEP 560, internal typing API was substantially reworked.
 # This is especially important for Protocol class which uses internal APIs
-# quite extensivelly.
+# quite extensively.
 PEP_560 = sys.version_info[:3] >= (3, 7, 0)
 
 if PEP_560:
@@ -2097,7 +2097,7 @@ elif HAVE_ANNOTATED:
         return len(name) > 4 and name.startswith('__') and name.endswith('__')
 
     # Prior to Python 3.7 types did not have `copy_with`. A lot of the equality
-    # checks, argument expansion etc. are done on the _subs_tre. As a result we
+    # checks, argument expansion etc. are done on the _subs_tree. As a result we
     # can't provide a get_type_hints function that strips out annotations.
 
     class AnnotatedMeta(typing.GenericMeta):
