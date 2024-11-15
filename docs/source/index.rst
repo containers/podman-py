@@ -34,13 +34,14 @@ Example
 .. code-block:: python
    :linenos:
 
-    import podman
+   import podman
 
-    with podman.PodmanClient() as client:
-        if client.ping():
-            images = client.images.list()
-            for image in images:
-                print(image.id)
+   with podman.PodmanClient() as client:
+       if client.ping():
+           images = client.images.list()
+           for image in images:
+               print(image.id)
+
 
 .. toctree::
    :caption: Podman Client
