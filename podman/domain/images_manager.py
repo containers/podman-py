@@ -61,10 +61,13 @@ class ImagesManager(BuildMixin, Manager):
         Raises:
             APIError: when service returns an error
         """
+        filters = kwargs.get("filters", {}).copy()
+        if name := kwargs.get("name"):
+            filters["reference"] = name
+
         params = {
             "all": kwargs.get("all"),
-            "name": kwargs.get("name"),
-            "filters": api.prepare_filters(kwargs.get("filters")),
+            "filters": api.prepare_filters(filters=filters),
         }
         response = self.client.get("/images/json", params=params)
         if response.status_code == requests.codes.not_found:
