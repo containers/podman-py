@@ -24,7 +24,7 @@ class ContainersIntegrationTest(base.IntegrationTest):
         for container in self.containers:
             container.remove(force=True)
 
-    def test_container_volume_mount(self):
+    def test_container_named_volume_mount(self):
         with self.subTest("Check volume mount"):
             volumes = {
                 'test_bind_1': {'bind': '/mnt/vol1', 'mode': 'rw'},
@@ -51,6 +51,33 @@ class ContainersIntegrationTest(base.IntegrationTest):
                 other_options = [o for o in test_extended_mode if o not in ['ro', 'rw']]
                 for o in other_options:
                     self.assertIn(o, mount.get('Options'))
+
+    def test_container_directory_volume_mount(self):
+        """Test that directories can be mounted with the ``volume`` parameter."""
+        with self.subTest("Check bind mount"):
+            volumes = {
+                "/etc/hosts": dict(bind="/test_ro", mode='ro'),
+                "/etc/hosts": dict(bind="/test_rw", mode='rw'),
+            }
+            container = self.client.containers.create(
+                self.alpine_image, command=["cat", "/test_ro", "/test_rw"], volumes=volumes
+            )
+            container_mounts = container.attrs.get('Mounts', {})
+            self.assertEqual(len(container_mounts), len(volumes))
+
+            self.containers.append(container)
+
+            for directory, mount_spec in volumes.items():
+                self.assertIn(
+                    f"{directory}:{mount_spec['bind']}:{mount_spec['mode']},rprivate,rbind",
+                    container.attrs.get('HostConfig', {}).get('Binds', list()),
+                )
+
+            # check if container can be started and exits with EC == 0
+            container.start()
+            container.wait()
+
+            self.assertEqual(container.attrs.get('State', dict()).get('ExitCode', 256), 0)
 
     def test_container_extra_hosts(self):
         """Test Container Extra hosts"""

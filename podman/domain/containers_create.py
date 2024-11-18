@@ -16,6 +16,8 @@ from podman.errors import ImageNotFound
 
 logger = logging.getLogger("podman.containers")
 
+NAMED_VOLUME_PATTERN = re.compile(r'[a-zA-Z0-9][a-zA-Z0-9_.-]*')
+
 
 class CreateMixin:  # pylint: disable=too-few-public-methods
     """Class providing create method for ContainersManager."""
@@ -683,8 +685,21 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                     raise ValueError("'mode' value should be a str")
                 options.append(mode)
 
-            volume = {"Name": key, "Dest": value["bind"], "Options": options}
-            params["volumes"].append(volume)
+            # The Podman API only supports named volumes through the ``volume`` parameter. Directory
+            # mounting needs to happen through the ``mounts`` parameter. Luckily the translation
+            # isn't too complicated so we can just do it for the user if we suspect that the key
+            # isn't a named volume.
+            if NAMED_VOLUME_PATTERN.match(key):
+                volume = {"Name": key, "Dest": value["bind"], "Options": options}
+                params["volumes"].append(volume)
+            else:
+                mount_point = {
+                    "destination": value['bind'],
+                    "options": options,
+                    "source": key,
+                    "type": 'bind',
+                }
+                params["mounts"].append(mount_point)
 
         for item in args.pop("secrets", []):
             if isinstance(item, Secret):
