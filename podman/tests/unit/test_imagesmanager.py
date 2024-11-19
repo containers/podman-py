@@ -594,11 +594,11 @@ class ImagesManagerTestCase(unittest.TestCase):
         """Test that name parameter is correctly converted to a reference filter"""
         mock.get(
             tests.LIBPOD_URL + "/images/json?filters=%7B%22reference%22%3A+%5B%22fedora%22%5D%7D",
-            json=[FIRST_IMAGE]
+            json=[FIRST_IMAGE],
         )
 
         images = self.client.images.list(name="fedora")
-        
+
         self.assertEqual(len(images), 1)
         self.assertIsInstance(images[0], Image)
         self.assertEqual(images[0].tags, ["fedora:latest", "fedora:33"])
@@ -607,15 +607,13 @@ class ImagesManagerTestCase(unittest.TestCase):
     def test_list_with_name_and_existing_filters(self, mock):
         """Test that name parameter works alongside other filters"""
         mock.get(
-            tests.LIBPOD_URL + "/images/json?filters=%7B%22reference%22%3A+%5B%22fedora%22%5D%2C+%22dangling%22%3A+%5B%22true%22%5D%7D",
-            json=[FIRST_IMAGE]
+            tests.LIBPOD_URL
+            + "/images/json?filters=%7B%22reference%22%3A+%5B%22fedora%22%5D%2C+%22dangling%22%3A+%5B%22true%22%5D%7D",
+            json=[FIRST_IMAGE],
         )
 
-        images = self.client.images.list(
-            name="fedora",
-            filters={"dangling": True}
-        )
-        
+        images = self.client.images.list(name="fedora", filters={"dangling": True})
+
         self.assertEqual(len(images), 1)
         self.assertIsInstance(images[0], Image)
 
@@ -624,15 +622,14 @@ class ImagesManagerTestCase(unittest.TestCase):
         """Test that name parameter takes precedence over existing reference filter"""
         mock.get(
             tests.LIBPOD_URL + "/images/json?filters=%7B%22reference%22%3A+%5B%22fedora%22%5D%7D",
-            json=[FIRST_IMAGE]
+            json=[FIRST_IMAGE],
         )
 
         # The name parameter should override the reference filter
         images = self.client.images.list(
-            name="fedora",
-            filters={"reference": "ubuntu"}  # This should be overridden
+            name="fedora", filters={"reference": "ubuntu"}  # This should be overridden
         )
-        
+
         self.assertEqual(len(images), 1)
         self.assertIsInstance(images[0], Image)
 
@@ -640,43 +637,36 @@ class ImagesManagerTestCase(unittest.TestCase):
     def test_list_with_all_and_name(self, mock):
         """Test that all parameter works alongside name filter"""
         mock.get(
-            tests.LIBPOD_URL + "/images/json?all=true&filters=%7B%22reference%22%3A+%5B%22fedora%22%5D%7D",
-            json=[FIRST_IMAGE]
+            tests.LIBPOD_URL
+            + "/images/json?all=true&filters=%7B%22reference%22%3A+%5B%22fedora%22%5D%7D",
+            json=[FIRST_IMAGE],
         )
 
-        images = self.client.images.list(
-            all=True,
-            name="fedora"
-        )
-        
+        images = self.client.images.list(all=True, name="fedora")
+
         self.assertEqual(len(images), 1)
         self.assertIsInstance(images[0], Image)
 
     @requests_mock.Mocker()
     def test_list_with_empty_name(self, mock):
         """Test that empty name parameter doesn't add a reference filter"""
-        mock.get(
-            tests.LIBPOD_URL + "/images/json",
-            json=[FIRST_IMAGE]
-        )
+        mock.get(tests.LIBPOD_URL + "/images/json", json=[FIRST_IMAGE])
 
         images = self.client.images.list(name="")
-        
+
         self.assertEqual(len(images), 1)
         self.assertIsInstance(images[0], Image)
 
     @requests_mock.Mocker()
     def test_list_with_none_name(self, mock):
         """Test that None name parameter doesn't add a reference filter"""
-        mock.get(
-            tests.LIBPOD_URL + "/images/json",
-            json=[FIRST_IMAGE]
-        )
+        mock.get(tests.LIBPOD_URL + "/images/json", json=[FIRST_IMAGE])
 
         images = self.client.images.list(name=None)
-        
+
         self.assertEqual(len(images), 1)
         self.assertIsInstance(images[0], Image)
+
 
 if __name__ == '__main__':
     unittest.main()
