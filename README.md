@@ -4,6 +4,23 @@
 This python package is a library of bindings to use the RESTful API of [Podman](https://github.com/containers/podman).
 It is currently under development and contributors are welcome!
 
+## Installation
+
+<div class="termy">
+
+```console
+pip install podman
+```
+
+</div>
+
+---
+
+**Documentation**: <a href="https://podman-py.readthedocs.io/en/latest/" target="_blank">https://podman-py.readthedocs.io/en/latest/</a>
+
+**Source Code**: <a href="https://github.com/containers/podman-py" target="_blank">https://github.com/containers/podman-py</a>
+
+---
 
 ## Dependencies
 
