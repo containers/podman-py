@@ -9,7 +9,7 @@ It is currently under development and contributors are welcome!
 <div class="termy">
 
 ```console
-$ pip install podman
+pip install podman
 ```
 
 </div>
