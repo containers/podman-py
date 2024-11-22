@@ -24,7 +24,7 @@ lint: tox
 .PHONY: tests
 tests: tox
 	# see tox.ini for environment variable settings
-	$(PYTHON) -m tox -e coverage,py36,py38,py39,py310,py311
+	$(PYTHON) -m tox -e coverage,py39,py310,py311,py312,py313
 
 .PHONY: unittest
 unittest:
@@ -39,9 +39,9 @@ integration:
 .PHONY: tox
 tox:
 ifeq (, $(shell which dnf))
-	brew install python@3.8 python@3.9 python@3.10 python@3.11
+	brew install python@3.9 python@3.10 python@3.11 python@3.12 python@3.13
 else
-	-dnf install -y python3 python3.6 python3.8 python3.9
+	-dnf install -y python3 python3.9 python3.10 python3.11 python3.12 python3.13
 endif
 	# ensure tox is available. It will take care of other testing requirements
 	$(PYTHON) -m pip install --user tox
