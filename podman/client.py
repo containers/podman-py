@@ -19,6 +19,7 @@ from podman.domain.pods_manager import PodsManager
 from podman.domain.secrets import SecretsManager
 from podman.domain.system import SystemManager
 from podman.domain.volumes import VolumesManager
+from podman.errors.exceptions import PodmanConnectionError
 
 logger = logging.getLogger("podman")
 
@@ -114,27 +115,38 @@ class PodmanClient(AbstractContextManager):
             Client used to communicate with a Podman service.
 
         Raises:
-            ValueError when required environment variable is not set
+            PodmanConnectionError: When connection to service fails or environment is invalid
         """
-        environment = environment or os.environ
-        credstore_env = credstore_env or {}
+        try:
+            environment = environment or os.environ
+            credstore_env = credstore_env or {}
 
-        if version == "auto":
-            version = None
+            if version == "auto":
+                version = None
 
-        kwargs = {
-            'version': version,
-            'timeout': timeout,
-            'tls': False,
-            'credstore_env': credstore_env,
-            'max_pool_size': max_pool_size,
-        }
+            kwargs = {
+                'version': version,
+                'timeout': timeout,
+                'tls': False,
+                'credstore_env': credstore_env,
+                'max_pool_size': max_pool_size,
+            }
 
-        host = environment.get("CONTAINER_HOST") or environment.get("DOCKER_HOST") or None
-        if host is not None:
-            kwargs['base_url'] = host
+            host = environment.get("CONTAINER_HOST") or environment.get("DOCKER_HOST") or None
+            if host is not None:
+                kwargs['base_url'] = host
 
-        return PodmanClient(**kwargs)
+            return PodmanClient(**kwargs)
+        except Exception as exc:
+            error_msg = "Failed to initialize Podman client from environment"
+            if isinstance(exc, ValueError):
+                error_msg = "Invalid environment configuration for Podman client"
+            elif isinstance(exc, (ConnectionError, TimeoutError)):
+                error_msg = "Failed to connect to Podman service"
+
+            raise PodmanConnectionError(
+                message=error_msg, environment=environment, host=host, original_error=exc
+            ) from exc
 
     @cached_property
     def containers(self) -> ContainersManager:
