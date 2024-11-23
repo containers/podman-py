@@ -1,6 +1,6 @@
 """Podman API Errors."""
 
-from typing import Iterable, List, Optional, Union, TYPE_CHECKING
+from typing import Iterable, List, Optional, Union, Dict, TYPE_CHECKING
 
 from requests import Response
 from requests.exceptions import HTTPError
