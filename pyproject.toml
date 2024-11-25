@@ -2,7 +2,7 @@
 line-length = 100
 skip-string-normalization = true
 preview = true
-target-version = ["py36"]
+target-version = ["py39"]
 include = '\.pyi?$'
 exclude = '''
 /(
