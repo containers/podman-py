@@ -1,0 +1,50 @@
+
+line-length = 100
+[format]
+exclude = [
+    ".git",
+    ".venv",
+    ".history",
+    "build",
+    "dist",
+    "docs",
+    "hack",
+]
+quote-style = "preserve"
+[lint]
+select = [
+    # More stuff here https://docs.astral.sh/ruff/rules/
+    "F", # Pyflakes
+    "E", # Pycodestyle Error
+    "W", # Pycodestyle Warning
+    "N", # PEP8 Naming
+    # TODO "UP", # Pyupgrade
+    # TODO "ANN",
+    # TODO "S", # Bandit
+    # "B", # Bugbear
+    "A", # flake-8-builtins
+    "YTT", # flake-8-2020
+    "PLC", # Pylint Convention
+    "PLE", # Pylint Error
+    "PLW", # Pylint Warning
+]
+# Some checks should be enabled for code sanity disabled now
+# to avoid changing too many lines
+ignore = [
+    "F821", # TODO Undefined name
+    "F541", # TODO f-string is missing placeholders
+    "F401", # TODO Module imported but unused
+    "F841", # TODO Local variable is assigned to but never used
+    "E402", # TODO Module level import not at top of file
+    "E741", # TODO ambiguous variable name
+    "E722", # TODO do not use bare 'except'
+    "E501", # TODO line too long
+    "N818", # TODO Error Suffix in exception name
+    "N80", # TODO Invalid Name
+    "ANN10", # Missing type annotation
+    "PLW2901", # TODO Redefined Loop Name
+]
+[lint.per-file-ignores]
+"podman/tests/*.py" = ["S"]
+[lint.flake8-builtins]
+builtins-ignorelist = ["copyright", "all"]
