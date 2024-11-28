@@ -16,14 +16,17 @@ from podman.errors import ImageNotFound
 
 logger = logging.getLogger("podman.containers")
 
-NAMED_VOLUME_PATTERN = re.compile(r'[a-zA-Z0-9][a-zA-Z0-9_.-]*')
+NAMED_VOLUME_PATTERN = re.compile(r"[a-zA-Z0-9][a-zA-Z0-9_.-]*")
 
 
 class CreateMixin:  # pylint: disable=too-few-public-methods
     """Class providing create method for ContainersManager."""
 
     def create(
-        self, image: Union[Image, str], command: Union[str, List[str], None] = None, **kwargs
+        self,
+        image: Union[Image, str],
+        command: Union[str, List[str], None] = None,
+        **kwargs,
     ) -> Container:
         """Create a container.
 
@@ -351,7 +354,9 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         payload = api.prepare_body(payload)
 
         response = self.client.post(
-            "/containers/create", headers={"content-type": "application/json"}, data=payload
+            "/containers/create",
+            headers={"content-type": "application/json"},
+            data=payload,
         )
         response.raise_for_status(not_found=ImageNotFound)
 
@@ -435,9 +440,9 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 try:
                     return int(size)
                 except ValueError as bad_size:
-                    mapping = {'b': 0, 'k': 1, 'm': 2, 'g': 3}
-                    mapping_regex = ''.join(mapping.keys())
-                    search = re.search(rf'^(\d+)([{mapping_regex}])$', size.lower())
+                    mapping = {"b": 0, "k": 1, "m": 2, "g": 3}
+                    mapping_regex = "".join(mapping.keys())
+                    search = re.search(rf"^(\d+)([{mapping_regex}])$", size.lower())
                     if search:
                         return int(search.group(1)) * (1024 ** mapping[search.group(2)])
                     raise TypeError(
@@ -574,7 +579,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 if k in bool_options and v is True:
                     options.append(option_name)
                 elif k in regular_options:
-                    options.append(f'{option_name}={v}')
+                    options.append(f"{option_name}={v}")
                 elif k in simple_options:
                     options.append(v)
 
@@ -674,12 +679,12 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
         for item in args.pop("volumes", {}).items():
             key, value = item
-            extended_mode = value.get('extended_mode', [])
+            extended_mode = value.get("extended_mode", [])
             if not isinstance(extended_mode, list):
                 raise ValueError("'extended_mode' value should be a list")
 
             options = extended_mode
-            mode = value.get('mode')
+            mode = value.get("mode")
             if mode is not None:
                 if not isinstance(mode, str):
                     raise ValueError("'mode' value should be a str")
@@ -694,10 +699,10 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 params["volumes"].append(volume)
             else:
                 mount_point = {
-                    "destination": value['bind'],
+                    "destination": value["bind"],
                     "options": options,
                     "source": key,
-                    "type": 'bind',
+                    "type": "bind",
                 }
                 params["mounts"].append(mount_point)
 

@@ -30,21 +30,21 @@ class SystemIntegrationTest(base.IntegrationTest):
     def test_info(self):
         """integration: system info call"""
         output = self.client.info()
-        self.assertTrue('host' in output)
+        self.assertTrue("host" in output)
 
     def test_version(self):
         """integration: system version call"""
         output = self.client.version()
-        self.assertTrue('Platform' in output)
-        self.assertTrue('Version' in output)
-        self.assertTrue('ApiVersion' in output)
+        self.assertTrue("Platform" in output)
+        self.assertTrue("Version" in output)
+        self.assertTrue("ApiVersion" in output)
 
     def test_show_disk_usage(self):
         """integration: system disk usage call"""
         output = self.client.df()
-        self.assertTrue('Images' in output)
-        self.assertTrue('Containers' in output)
-        self.assertTrue('Volumes' in output)
+        self.assertTrue("Images" in output)
+        self.assertTrue("Containers" in output)
+        self.assertTrue("Volumes" in output)
 
     def test_login(self):
         """integration: system login call"""
@@ -53,7 +53,10 @@ class SystemIntegrationTest(base.IntegrationTest):
         with self.assertRaises(APIError) as e:
             next(
                 self.client.login(
-                    "fake_user", "fake_password", "fake_email@fake_domain.test", "fake_registry"
+                    "fake_user",
+                    "fake_password",
+                    "fake_email@fake_domain.test",
+                    "fake_registry",
                 )
             )
         self.assertRegex(

@@ -56,16 +56,16 @@ class PodmanConfigTestCaseDefault(unittest.TestCase):
 """
 
         # Define the file path
-        self.path_json = os.path.join(self.temp_dir, 'podman-connections.json')
-        self.path_toml = os.path.join(self.temp_dir, 'containers.conf')
+        self.path_json = os.path.join(self.temp_dir, "podman-connections.json")
+        self.path_toml = os.path.join(self.temp_dir, "containers.conf")
 
         # Write data to the JSON file
         j_data = json.loads(self.data_json)
-        with open(self.path_json, 'w+') as file_json:
+        with open(self.path_json, "w+") as file_json:
             json.dump(j_data, file_json)
 
         # Write data to the TOML file
-        with open(self.path_toml, 'w+') as file_toml:
+        with open(self.path_toml, "w+") as file_toml:
             # toml.dump(self.data_toml, file_toml)
             file_toml.write(self.data_toml)
 
@@ -122,7 +122,7 @@ class PodmanConfigTestCaseTOML(unittest.TestCase):
             self.assertEqual(config.services["production"].identity, Path("/home/root/.ssh/id_rsa"))
 
             PodmanConfigTestCaseTOML.opener.assert_called_with(
-                Path("/home/developer/containers.conf"), encoding='utf-8'
+                Path("/home/developer/containers.conf"), encoding="utf-8"
             )
 
 
@@ -150,10 +150,10 @@ class PodmanConfigTestCaseJSON(unittest.TestCase):
 }
 """
 
-        self.path = os.path.join(self.temp_dir, 'podman-connections.json')
+        self.path = os.path.join(self.temp_dir, "podman-connections.json")
         # Write data to the JSON file
         data = json.loads(self.data)
-        with open(self.path, 'w+') as file:
+        with open(self.path, "w+") as file:
             json.dump(data, file)
 
     def test_connections(self):
@@ -166,5 +166,5 @@ class PodmanConfigTestCaseJSON(unittest.TestCase):
         self.assertEqual(config.services["production"].identity, Path("/home/root/.ssh/id_rsa"))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

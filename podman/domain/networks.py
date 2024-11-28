@@ -86,8 +86,8 @@ class Network(PodmanResource):
 
         # TODO Talk with baude on which IPAddress field is needed...
         ipam = {
-            "IPv4Address": kwargs.get('ipv4_address'),
-            "IPv6Address": kwargs.get('ipv6_address'),
+            "IPv4Address": kwargs.get("ipv4_address"),
+            "IPv6Address": kwargs.get("ipv6_address"),
             "Links": kwargs.get("link_local_ips"),
         }
         ipam = {k: v for (k, v) in ipam.items() if not (v is None or len(v) == 0)}

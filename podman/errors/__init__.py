@@ -12,15 +12,15 @@ from http.client import HTTPException
 
 # isort: unique-list
 __all__ = [
-    'APIError',
-    'BuildError',
-    'ContainerError',
-    'DockerException',
-    'ImageNotFound',
-    'InvalidArgument',
-    'NotFound',
-    'NotFoundError',
-    'PodmanError',
+    "APIError",
+    "BuildError",
+    "ContainerError",
+    "DockerException",
+    "ImageNotFound",
+    "InvalidArgument",
+    "NotFound",
+    "NotFoundError",
+    "PodmanError",
 ]
 
 try:

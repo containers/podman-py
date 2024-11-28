@@ -21,7 +21,7 @@ class Secret(PodmanResource):
     def name(self):
         """str: name of the secret."""
         with suppress(KeyError):
-            return self.attrs['Spec']['Name']
+            return self.attrs["Spec"]["Name"]
         return ""
 
     def remove(

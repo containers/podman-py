@@ -21,7 +21,7 @@ def prepare_containerignore(anchor: str) -> List[str]:
         if not ignore.exists():
             continue
 
-        with ignore.open(encoding='utf-8') as file:
+        with ignore.open(encoding="utf-8") as file:
             return list(
                 filter(
                     lambda l: l and not l.startswith("#"),

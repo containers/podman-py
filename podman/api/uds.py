@@ -10,7 +10,12 @@ from urllib.parse import unquote, urlparse
 import urllib3
 import urllib3.connection
 
-from requests.adapters import DEFAULT_POOLBLOCK, DEFAULT_POOLSIZE, DEFAULT_RETRIES, HTTPAdapter
+from requests.adapters import (
+    DEFAULT_POOLBLOCK,
+    DEFAULT_POOLSIZE,
+    DEFAULT_RETRIES,
+    HTTPAdapter,
+)
 
 from ..errors import APIError
 

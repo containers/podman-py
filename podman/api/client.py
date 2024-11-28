@@ -3,7 +3,18 @@
 import json
 import warnings
 import urllib.parse
-from typing import Any, ClassVar, IO, Iterable, List, Mapping, Optional, Tuple, Type, Union
+from typing import (
+    Any,
+    ClassVar,
+    IO,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+)
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -36,7 +47,7 @@ class ParameterDeprecationWarning(DeprecationWarning):
 
 
 # Make the ParameterDeprecationWarning visible for user.
-warnings.simplefilter('always', ParameterDeprecationWarning)
+warnings.simplefilter("always", ParameterDeprecationWarning)
 
 
 class APIResponse:

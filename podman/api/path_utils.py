@@ -14,7 +14,7 @@ def get_runtime_dir() -> str:
 
     """
     try:
-        return os.environ['XDG_RUNTIME_DIR']
+        return os.environ["XDG_RUNTIME_DIR"]
     except KeyError:
         user = getpass.getuser()
         run_user = f'/run/user/{os.getuid()}'

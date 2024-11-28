@@ -56,7 +56,9 @@ def prepare_timestamp(value: Union[datetime, int, None]) -> Optional[int]:
     raise ValueError(f"Type '{type(value)}' is not supported by prepare_timestamp()")
 
 
-def prepare_cidr(value: Union[ipaddress.IPv4Network, ipaddress.IPv6Network]) -> (str, str):
+def prepare_cidr(
+    value: Union[ipaddress.IPv4Network, ipaddress.IPv6Network],
+) -> (str, str):
     """Returns network address and Base64 encoded netmask from CIDR.
 
     The return values are dictated by the Go JSON decoder.

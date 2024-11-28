@@ -1,5 +1,3 @@
-import unittest
-
 import podman.tests.integration.base as base
 from podman import PodmanClient
 
@@ -29,7 +27,7 @@ class ContainersExecIntegrationTests(base.IntegrationTest):
         error_code, stdout = container.exec_run("echo hello")
 
         self.assertEqual(error_code, 0)
-        self.assertEqual(stdout, b'\x01\x00\x00\x00\x00\x00\x00\x06hello\n')
+        self.assertEqual(stdout, b"\x01\x00\x00\x00\x00\x00\x00\x06hello\n")
 
     def test_container_exec_run_errorcode(self):
         """Test a failing command with stdout and stderr in a single bytestring"""
@@ -39,7 +37,8 @@ class ContainersExecIntegrationTests(base.IntegrationTest):
 
         self.assertEqual(error_code, 1)
         self.assertEqual(
-            output, b"\x02\x00\x00\x00\x00\x00\x00+ls: nonexistent: No such file or directory\n"
+            output,
+            b"\x02\x00\x00\x00\x00\x00\x00+ls: nonexistent: No such file or directory\n",
         )
 
     def test_container_exec_run_demux(self):
@@ -58,9 +57,9 @@ class ContainersExecIntegrationTests(base.IntegrationTest):
         container.start()
 
         command = [
-            '/bin/sh',
-            '-c',
-            'echo 0 ; sleep .1 ; echo 1 ; sleep .1 ; echo 2 ; sleep .1 ;',
+            "/bin/sh",
+            "-c",
+            "echo 0 ; sleep .1 ; echo 1 ; sleep .1 ; echo 2 ; sleep .1 ;",
         ]
         error_code, output = container.exec_run(command, stream=True)
 
@@ -68,9 +67,9 @@ class ContainersExecIntegrationTests(base.IntegrationTest):
         self.assertEqual(
             list(output),
             [
-                b'0\n',
-                b'1\n',
-                b'2\n',
+                b"0\n",
+                b"1\n",
+                b"2\n",
             ],
         )
 
@@ -80,11 +79,11 @@ class ContainersExecIntegrationTests(base.IntegrationTest):
         container.start()
 
         command = [
-            '/bin/sh',
-            '-c',
-            'echo 0 ; >&2 echo 1 ; sleep .1 ; '
-            + 'echo 2 ; >&2 echo 3 ; sleep .1 ; '
-            + 'echo 4 ; >&2 echo 5 ; sleep .1 ;',
+            "/bin/sh",
+            "-c",
+            "echo 0 ; >&2 echo 1 ; sleep .1 ; "
+            + "echo 2 ; >&2 echo 3 ; sleep .1 ; "
+            + "echo 4 ; >&2 echo 5 ; sleep .1 ;",
         ]
         error_code, output = container.exec_run(command, stream=True, demux=True)
 
@@ -92,12 +91,12 @@ class ContainersExecIntegrationTests(base.IntegrationTest):
         self.assertEqual(
             list(output),
             [
-                (b'0\n', None),
-                (None, b'1\n'),
-                (b'2\n', None),
-                (None, b'3\n'),
-                (b'4\n', None),
-                (None, b'5\n'),
+                (b"0\n", None),
+                (None, b"1\n"),
+                (b"2\n", None),
+                (None, b"3\n"),
+                (b"4\n", None),
+                (None, b"5\n"),
             ],
         )
 
@@ -107,9 +106,9 @@ class ContainersExecIntegrationTests(base.IntegrationTest):
         container.start()
 
         command = [
-            '/bin/sh',
-            '-c',
-            'echo 0 ; sleep .1 ; echo 1 ; sleep .1 ; echo 2 ; sleep .1 ;',
+            "/bin/sh",
+            "-c",
+            "echo 0 ; sleep .1 ; echo 1 ; sleep .1 ; echo 2 ; sleep .1 ;",
         ]
         error_code, output = container.exec_run(command, stream=True, detach=True)
 
@@ -119,5 +118,5 @@ class ContainersExecIntegrationTests(base.IntegrationTest):
         # The endpoint should return immediately, before we are able to actually get any of the output.
         self.assertEqual(
             output,
-            b'\n',
+            b"\n",
         )

@@ -152,7 +152,9 @@ class ImagesManager(BuildMixin, Manager):
 
         # Make the client request before entering the generator
         response = self.client.post(
-            "/images/load", data=post_data, headers={"Content-type": "application/x-tar"}
+            "/images/load",
+            data=post_data,
+            headers={"Content-type": "application/x-tar"},
         )
         response.raise_for_status()  # Catch any errors before proceeding
 
@@ -255,7 +257,7 @@ class ImagesManager(BuildMixin, Manager):
             "format": kwargs.get("format"),
         }
 
-        name = f'{repository}:{tag}' if tag else repository
+        name = f"{repository}:{tag}" if tag else repository
         name = urllib.parse.quote_plus(name)
         response = self.client.post(f"/images/{name}/push", params=params, headers=headers)
         response.raise_for_status(not_found=ImageNotFound)
@@ -295,7 +297,11 @@ class ImagesManager(BuildMixin, Manager):
 
     # pylint: disable=too-many-locals,too-many-branches
     def pull(
-        self, repository: str, tag: Optional[str] = None, all_tags: bool = False, **kwargs
+        self,
+        repository: str,
+        tag: Optional[str] = None,
+        all_tags: bool = False,
+        **kwargs,
     ) -> Union[Image, List[Image], Iterator[str]]:
         """Request Podman service to pull image(s) from repository.
 
@@ -366,7 +372,7 @@ class ImagesManager(BuildMixin, Manager):
         progress_bar = kwargs.get("progress_bar", False)
         if progress_bar:
             if Progress is None:
-                raise ModuleNotFoundError('progress_bar requires \'rich.progress\' module')
+                raise ModuleNotFoundError("progress_bar requires 'rich.progress' module")
             params["compatMode"] = True
             stream = True
 
@@ -384,7 +390,7 @@ class ImagesManager(BuildMixin, Manager):
             )
             with progress:
                 for line in response.iter_lines():
-                    decoded_line = json.loads(line.decode('utf-8'))
+                    decoded_line = json.loads(line.decode("utf-8"))
                     self.__show_progress_bar(decoded_line, progress, tasks)
             return None
 
@@ -405,10 +411,10 @@ class ImagesManager(BuildMixin, Manager):
 
     def __show_progress_bar(self, line, progress, tasks):
         completed = False
-        if line['status'] == 'Download complete':
+        if line["status"] == "Download complete":
             description = f'[green][Download complete  {line["id"]}]'
             completed = True
-        elif line['status'] == 'Downloading':
+        elif line["status"] == "Downloading":
             description = f'[bold][Downloading {line["id"]}]'
         else:
             # skip other statuses
@@ -423,7 +429,7 @@ class ImagesManager(BuildMixin, Manager):
                 tasks[task_id] = progress.add_task(description, total=100, completed=100)
             else:
                 tasks[task_id] = progress.add_task(
-                    description, total=line['progressDetail']['total']
+                    description, total=line["progressDetail"]["total"]
                 )
         else:
             if completed:
@@ -432,7 +438,7 @@ class ImagesManager(BuildMixin, Manager):
                 # update the progress bar to show 100%
                 progress.update(tasks[task_id], description=description, total=100, completed=100)
             else:
-                progress.update(tasks[task_id], completed=line['progressDetail']['current'])
+                progress.update(tasks[task_id], completed=line["progressDetail"]["current"])
 
     def remove(
         self,

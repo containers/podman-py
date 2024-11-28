@@ -8,7 +8,7 @@ except:
     # Python < 3.10
     from collections import Iterator
 
-from unittest.mock import ANY, DEFAULT, patch, MagicMock
+from unittest.mock import DEFAULT, patch, MagicMock
 
 import requests_mock
 
@@ -64,7 +64,8 @@ class ContainersManagerTestCase(unittest.TestCase):
             "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
         )
         self.assertEqual(
-            actual.id, "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
+            actual.id,
+            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
         )
 
     @requests_mock.Mocker()
@@ -104,10 +105,12 @@ class ContainersManagerTestCase(unittest.TestCase):
         self.assertIsInstance(actual, list)
 
         self.assertEqual(
-            actual[0].id, "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
+            actual[0].id,
+            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
         )
         self.assertEqual(
-            actual[1].id, "6dc84cc0a46747da94e4c1571efcc01a756b4017261440b4b8985d37203c3c03"
+            actual[1].id,
+            "6dc84cc0a46747da94e4c1571efcc01a756b4017261440b4b8985d37203c3c03",
         )
 
     @requests_mock.Mocker()
@@ -132,10 +135,12 @@ class ContainersManagerTestCase(unittest.TestCase):
         self.assertIsInstance(actual, list)
 
         self.assertEqual(
-            actual[0].id, "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
+            actual[0].id,
+            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
         )
         self.assertEqual(
-            actual[1].id, "6dc84cc0a46747da94e4c1571efcc01a756b4017261440b4b8985d37203c3c03"
+            actual[1].id,
+            "6dc84cc0a46747da94e4c1571efcc01a756b4017261440b4b8985d37203c3c03",
         )
 
     @requests_mock.Mocker()
@@ -148,10 +153,12 @@ class ContainersManagerTestCase(unittest.TestCase):
         self.assertIsInstance(actual, list)
 
         self.assertEqual(
-            actual[0].id, "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
+            actual[0].id,
+            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
         )
         self.assertEqual(
-            actual[1].id, "6dc84cc0a46747da94e4c1571efcc01a756b4017261440b4b8985d37203c3c03"
+            actual[1].id,
+            "6dc84cc0a46747da94e4c1571efcc01a756b4017261440b4b8985d37203c3c03",
         )
 
     @requests_mock.Mocker()
@@ -228,8 +235,8 @@ class ContainersManagerTestCase(unittest.TestCase):
             json=FIRST_CONTAINER,
         )
 
-        port_str = {'2233': 3333}
-        port_str_protocol = {'2244/tcp': 3344}
+        port_str = {"2233": 3333}
+        port_str_protocol = {"2244/tcp": 3344}
         port_int = {2255: 3355}
         ports = {**port_str, **port_str_protocol, **port_int}
         self.client.containers.create("fedora", "/usr/bin/ls", ports=ports)
@@ -237,23 +244,23 @@ class ContainersManagerTestCase(unittest.TestCase):
         self.client.containers.client.post.assert_called()
         expected_ports = [
             {
-                'container_port': 2233,
-                'host_port': 3333,
-                'protocol': 'tcp',
+                "container_port": 2233,
+                "host_port": 3333,
+                "protocol": "tcp",
             },
             {
-                'container_port': 2244,
-                'host_port': 3344,
-                'protocol': 'tcp',
+                "container_port": 2244,
+                "host_port": 3344,
+                "protocol": "tcp",
             },
             {
-                'container_port': 2255,
-                'host_port': 3355,
-                'protocol': 'tcp',
+                "container_port": 2255,
+                "host_port": 3355,
+                "protocol": "tcp",
             },
         ]
-        actual_ports = json.loads(self.client.containers.client.post.call_args[1]['data'])[
-            'portmappings'
+        actual_ports = json.loads(self.client.containers.client.post.call_args[1]["data"])[
+            "portmappings"
         ]
         self.assertEqual(expected_ports, actual_ports)
 
@@ -327,7 +334,7 @@ class ContainersManagerTestCase(unittest.TestCase):
 
                 actual = self.client.containers.run("fedora", "/usr/bin/ls")
                 self.assertIsInstance(actual, bytes)
-                self.assertEqual(actual, b'This is a unittest - line 1This is a unittest - line 2')
+                self.assertEqual(actual, b"This is a unittest - line 1This is a unittest - line 2")
 
             # iter() cannot be reset so subtests used to create new instance
             with self.subTest("Stream results"):
@@ -340,5 +347,5 @@ class ContainersManagerTestCase(unittest.TestCase):
                 self.assertEqual(next(actual), b"This is a unittest - line 2")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

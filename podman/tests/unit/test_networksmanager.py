@@ -124,7 +124,8 @@ class NetworksManagerTestCase(unittest.TestCase):
         actual = self.client.networks.get("podman")
         self.assertIsInstance(actual, Network)
         self.assertEqual(
-            actual.id, "2f259bab93aaaaa2542ba43ef33eb990d0999ee1b9924b557b7be53c0b7a1bb9"
+            actual.id,
+            "2f259bab93aaaaa2542ba43ef33eb990d0999ee1b9924b557b7be53c0b7a1bb9",
         )
 
     @requests_mock.Mocker()
@@ -139,13 +140,15 @@ class NetworksManagerTestCase(unittest.TestCase):
 
         self.assertIsInstance(actual[0], Network)
         self.assertEqual(
-            actual[0].id, "2f259bab93aaaaa2542ba43ef33eb990d0999ee1b9924b557b7be53c0b7a1bb9"
+            actual[0].id,
+            "2f259bab93aaaaa2542ba43ef33eb990d0999ee1b9924b557b7be53c0b7a1bb9",
         )
         self.assertEqual(actual[0].attrs["name"], "podman")
 
         self.assertIsInstance(actual[1], Network)
         self.assertEqual(
-            actual[1].id, "3549b0028b75d981cdda2e573e9cb49dedc200185876df299f912b79f69dabd8"
+            actual[1].id,
+            "3549b0028b75d981cdda2e573e9cb49dedc200185876df299f912b79f69dabd8",
         )
         self.assertEqual(actual[1].name, "database")
 
@@ -191,5 +194,5 @@ class NetworksManagerTestCase(unittest.TestCase):
         self.assertListEqual(actual["NetworksDeleted"], ["podman", "database"])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -63,5 +63,5 @@ class EventsManagerTestCase(unittest.TestCase):
             self.assertEqual(event["Type"], "pod")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

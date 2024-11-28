@@ -9,5 +9,5 @@ class ManagerTestCase(unittest.TestCase):
             PodsManager().prepare_model(attrs=("Sets", "Not", "supported"))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -81,7 +81,9 @@ class Manager(ABC):
         """Type[PodmanResource]: Class which the factory method prepare_model() will use."""
 
     def __init__(
-        self, client: Optional[APIClient] = None, podman_client: Optional["PodmanClient"] = None
+        self,
+        client: Optional[APIClient] = None,
+        podman_client: Optional["PodmanClient"] = None,
     ) -> None:
         """Initialize Manager() object.
 
@@ -126,7 +128,10 @@ class Manager(ABC):
             # TODO Determine why pylint is reporting typing.Type not callable
             # pylint: disable=not-callable
             return self.resource(
-                attrs=attrs, client=self.client, podman_client=self.podman_client, collection=self
+                attrs=attrs,
+                client=self.client,
+                podman_client=self.podman_client,
+                collection=self,
             )
 
         # pylint: disable=broad-exception-raised

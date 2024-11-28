@@ -165,17 +165,17 @@ class PodTestCase(unittest.TestCase):
         body = {
             "Processes": [
                 [
-                    'jhonce',
-                    '2417',
-                    '2274',
-                    '0',
-                    'Mar01',
-                    '?',
-                    '00:00:01',
+                    "jhonce",
+                    "2417",
+                    "2274",
+                    "0",
+                    "Mar01",
+                    "?",
+                    "00:00:01",
                     '/usr/bin/ssh-agent /bin/sh -c exec -l /bin/bash -c "/usr/bin/gnome-session"',
                 ],
-                ['jhonce', '5544', '3522', '0', 'Mar01', 'pts/1', '00:00:02', '-bash'],
-                ['jhonce', '6140', '3522', '0', 'Mar01', 'pts/2', '00:00:00', '-bash'],
+                ["jhonce", "5544", "3522", "0", "Mar01", "pts/1", "00:00:02", "-bash"],
+                ["jhonce", "6140", "3522", "0", "Mar01", "pts/2", "00:00:00", "-bash"],
             ],
             "Titles": ["UID", "PID", "PPID", "C", "STIME", "TTY", "TIME CMD"],
         }
@@ -206,5 +206,5 @@ class PodTestCase(unittest.TestCase):
         self.assertTrue(adapter.called_once)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

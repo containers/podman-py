@@ -25,7 +25,7 @@ class Container(PodmanResource):
     def name(self):
         """str: Returns container's name."""
         with suppress(KeyError):
-            if 'Name' in self.attrs:
+            if "Name" in self.attrs:
                 return self.attrs["Name"].lstrip("/")
             return self.attrs["Names"][0].lstrip("/")
         return None
@@ -148,7 +148,8 @@ class Container(PodmanResource):
         workdir: str = None,
         demux: bool = False,
     ) -> Tuple[
-        Optional[int], Union[Iterator[Union[bytes, Tuple[bytes, bytes]]], Any, Tuple[bytes, bytes]]
+        Optional[int],
+        Union[Iterator[Union[bytes, Tuple[bytes, bytes]]], Any, Tuple[bytes, bytes]],
     ]:
         """Run given command inside container and return results.
 
@@ -206,10 +207,12 @@ class Container(PodmanResource):
         # create the exec instance
         response = self.client.post(f"/containers/{self.name}/exec", data=json.dumps(data))
         response.raise_for_status()
-        exec_id = response.json()['Id']
+        exec_id = response.json()["Id"]
         # start the exec instance, this will store command output
         start_resp = self.client.post(
-            f"/exec/{exec_id}/start", data=json.dumps({"Detach": detach, "Tty": tty}), stream=stream
+            f"/exec/{exec_id}/start",
+            data=json.dumps({"Detach": detach, "Tty": tty}),
+            stream=stream,
         )
         start_resp.raise_for_status()
 
@@ -221,8 +224,8 @@ class Container(PodmanResource):
         response.raise_for_status()
         if demux:
             stdout_data, stderr_data = demux_output(start_resp.content)
-            return response.json().get('ExitCode'), (stdout_data, stderr_data)
-        return response.json().get('ExitCode'), start_resp.content
+            return response.json().get("ExitCode"), (stdout_data, stderr_data)
+        return response.json().get("ExitCode"), start_resp.content
 
     def export(self, chunk_size: int = api.DEFAULT_CHUNK_SIZE) -> Iterator[bytes]:
         """Download container's filesystem contents as a tar archive.
@@ -407,7 +410,8 @@ class Container(PodmanResource):
             detach_keys: Override the key sequence for detaching a container (Podman only)
         """
         response = self.client.post(
-            f"/containers/{self.id}/start", params={"detachKeys": kwargs.get("detach_keys")}
+            f"/containers/{self.id}/start",
+            params={"detachKeys": kwargs.get("detach_keys")},
         )
         response.raise_for_status()
 

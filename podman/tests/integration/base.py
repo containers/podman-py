@@ -13,6 +13,7 @@
 #   under the License.
 #
 """Base integration test code"""
+
 import logging
 import os
 import shutil
@@ -56,9 +57,11 @@ class IntegrationTest(fixtures.TestWithFixtures):
 
         self.test_dir = self.useFixture(fixtures.TempDir()).path
         self.socket_file = os.path.join(self.test_dir, uuid.uuid4().hex)
-        self.socket_uri = f'unix://{self.socket_file}'
+        self.socket_uri = f"unix://{self.socket_file}"
         self.service_launcher = utils.PodmanLauncher(
-            self.socket_uri, podman_path=IntegrationTest.podman, log_level=self.log_level
+            self.socket_uri,
+            podman_path=IntegrationTest.podman,
+            log_level=self.log_level,
         )
         self.service_launcher.start()
         self.addCleanup(self.service_launcher.stop)

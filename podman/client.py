@@ -123,16 +123,16 @@ class PodmanClient(AbstractContextManager):
             version = None
 
         kwargs = {
-            'version': version,
-            'timeout': timeout,
-            'tls': False,
-            'credstore_env': credstore_env,
-            'max_pool_size': max_pool_size,
+            "version": version,
+            "timeout": timeout,
+            "tls": False,
+            "credstore_env": credstore_env,
+            "max_pool_size": max_pool_size,
         }
 
         host = environment.get("CONTAINER_HOST") or environment.get("DOCKER_HOST") or None
         if host is not None:
-            kwargs['base_url'] = host
+            kwargs["base_url"] = host
 
         return PodmanClient(**kwargs)
 

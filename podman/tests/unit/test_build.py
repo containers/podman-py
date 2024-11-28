@@ -47,7 +47,7 @@ class TestBuildCase(unittest.TestCase):
             {"stream": " ---\u003e Running in abdc1e6896c6"},
             {"stream": " ---\u003e 713bca62012e"},
             {"stream": "Removing intermediate container abdc1e6896c6"},
-            {"stream": "Step 2 : CMD [\"/bin/sh\"]"},
+            {"stream": 'Step 2 : CMD ["/bin/sh"]'},
             {"stream": " ---\u003e Running in dba30f2a1a7e"},
             {"stream": " ---\u003e 032b8b2855fc"},
             {"stream": "Removing intermediate container dba30f2a1a7e"},
@@ -141,5 +141,5 @@ class TestBuildCase(unittest.TestCase):
             self.client.images.build(path="/root", gzip=True, encoding="utf-8")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -90,5 +90,5 @@ class ParseUtilsTestCase(unittest.TestCase):
             self.assertDictEqual(json.loads(expected), actual)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

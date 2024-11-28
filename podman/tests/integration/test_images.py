@@ -13,14 +13,11 @@
 #   under the License.
 #
 """Images integration tests."""
+
 import io
-import queue
 import tarfile
-import threading
 import types
 import unittest
-from contextlib import suppress
-from datetime import datetime, timedelta
 
 import podman.tests.integration.base as base
 from podman import PodmanClient
@@ -140,7 +137,7 @@ class ImagesIntegrationTest(base.IntegrationTest):
         self.assertIn("payload does not match", e.exception.explanation)
 
     def test_build(self):
-        buffer = io.StringIO(f"""FROM quay.io/libpod/alpine_labels:latest""")
+        buffer = io.StringIO("""FROM quay.io/libpod/alpine_labels:latest""")
 
         image, stream = self.client.images.build(fileobj=buffer)
         self.assertIsNotNone(image)
@@ -154,7 +151,8 @@ class ImagesIntegrationTest(base.IntegrationTest):
         with self.assertRaises(APIError) as e:
             next(
                 self.client.images.scp(
-                    source="randuser@fake.ip.addr:22::quay.io/libpod/alpine", quiet=False
+                    source="randuser@fake.ip.addr:22::quay.io/libpod/alpine",
+                    quiet=False,
                 )
             )
         self.assertRegex(

@@ -1,6 +1,6 @@
 import types
 import unittest
-from unittest.mock import mock_open, patch
+from unittest.mock import patch
 
 try:
     # Python >= 3.10
@@ -94,7 +94,8 @@ class ImagesManagerTestCase(unittest.TestCase):
         self.assertEqual(str(images[0]), "<Image: 'fedora:latest', 'fedora:33'>")
 
         self.assertEqual(
-            images[0].id, "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
+            images[0].id,
+            "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab",
         )
 
         self.assertIsInstance(images[0].labels, dict)
@@ -136,7 +137,8 @@ class ImagesManagerTestCase(unittest.TestCase):
 
         images = self.client.images.list(filters={"dangling": True})
         self.assertEqual(
-            images[0].id, "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
+            images[0].id,
+            "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab",
         )
 
     @requests_mock.Mocker()
@@ -149,7 +151,8 @@ class ImagesManagerTestCase(unittest.TestCase):
 
         images = self.client.images.list(all=True)
         self.assertEqual(
-            images[0].id, "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
+            images[0].id,
+            "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab",
         )
 
     @requests_mock.Mocker()
@@ -325,10 +328,10 @@ class ImagesManagerTestCase(unittest.TestCase):
             self.client.images.load()
 
         with self.assertRaises(PodmanError):
-            self.client.images.load(b'data', b'file_path')
+            self.client.images.load(b"data", b"file_path")
 
         with self.assertRaises(PodmanError):
-            self.client.images.load(data=b'data', file_path=b'file_path')
+            self.client.images.load(data=b"data", file_path=b"file_path")
 
         # Patch Path.read_bytes to mock the file reading behavior
         with patch("pathlib.Path.read_bytes", return_value=b"mock tarball data"):
@@ -361,13 +364,14 @@ class ImagesManagerTestCase(unittest.TestCase):
             json=FIRST_IMAGE,
         )
 
-        gntr = self.client.images.load(b'This is a weird tarball...')
+        gntr = self.client.images.load(b"This is a weird tarball...")
         self.assertIsInstance(gntr, types.GeneratorType)
 
         report = list(gntr)
         self.assertEqual(len(report), 1)
         self.assertEqual(
-            report[0].id, "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
+            report[0].id,
+            "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab",
         )
 
     @requests_mock.Mocker()
@@ -586,7 +590,8 @@ class ImagesManagerTestCase(unittest.TestCase):
 
         self.assertEqual(images[0].id, image_id)
         self.assertEqual(
-            images[1].id, "c4b16966ecd94ffa910eab4e630e24f259bf34a87e924cd4b1434f267b0e354e"
+            images[1].id,
+            "c4b16966ecd94ffa910eab4e630e24f259bf34a87e924cd4b1434f267b0e354e",
         )
 
     @requests_mock.Mocker()
@@ -627,7 +632,8 @@ class ImagesManagerTestCase(unittest.TestCase):
 
         # The name parameter should override the reference filter
         images = self.client.images.list(
-            name="fedora", filters={"reference": "ubuntu"}  # This should be overridden
+            name="fedora",
+            filters={"reference": "ubuntu"},  # This should be overridden
         )
 
         self.assertEqual(len(images), 1)
@@ -668,5 +674,5 @@ class ImagesManagerTestCase(unittest.TestCase):
         self.assertIsInstance(images[0], Image)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

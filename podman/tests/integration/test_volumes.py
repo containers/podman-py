@@ -17,7 +17,8 @@ class VolumesIntegrationTest(base.IntegrationTest):
         """Test Volume CRUD."""
         volume_name = f"volume_{random.getrandbits(160):x}"
         self.assertFalse(
-            self.client.volumes.exists(volume_name), "Storage is corrupt from previous run"
+            self.client.volumes.exists(volume_name),
+            "Storage is corrupt from previous run",
         )
 
         with self.subTest("Create"):
@@ -45,5 +46,5 @@ class VolumesIntegrationTest(base.IntegrationTest):
             self.client.volumes.get("NoSuchVolume")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -24,5 +24,5 @@ class ManifestTestCase(unittest.TestCase):
         self.assertIsNone(manifest.name)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -45,7 +45,7 @@ class PodmanClientTestCase(unittest.TestCase):
 
         self.mocked_open = mocked_open
 
-    @mock.patch('requests.Session.close')
+    @mock.patch("requests.Session.close")
     def test_close(self, mock_close):
         self.client.close()
 
@@ -66,7 +66,9 @@ class PodmanClientTestCase(unittest.TestCase):
         self.assertDictEqual(actual, body)
         self.assertIn("User-Agent", mock.last_request.headers)
         self.assertIn(
-            "PodmanPy/", mock.last_request.headers["User-Agent"], mock.last_request.headers
+            "PodmanPy/",
+            mock.last_request.headers["User-Agent"],
+            mock.last_request.headers,
         )
 
     def test_swarm(self):
@@ -109,5 +111,5 @@ class PodmanClientTestCase(unittest.TestCase):
             PodmanClientTestCase.opener.assert_called_with(expected, encoding="utf-8")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
