@@ -7,11 +7,19 @@ import stat
 
 
 def get_runtime_dir() -> str:
-    """Returns the runtime directory for the current user"""
+    """Returns the runtime directory for the current user
+
+    The value in XDG_RUNTIME_DIR is preferred, but that is not always set, for
+    example, on headless servers. /run/user/$UID is defined in the XDG documentation.
+
+    """
     try:
         return os.environ['XDG_RUNTIME_DIR']
     except KeyError:
         user = getpass.getuser()
+        run_user = f'/run/user/{user}'
+        if os.path.isdir(run_user):
+            return run_user
         fallback = f'/tmp/podmanpy-runtime-dir-fallback-{user}'
 
         try:
