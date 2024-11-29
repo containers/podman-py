@@ -24,7 +24,7 @@ def prepare_containerignore(anchor: str) -> List[str]:
         with ignore.open(encoding='utf-8') as file:
             return list(
                 filter(
-                    lambda l: l and not l.startswith("#"),
+                    lambda L: L and not L.startswith("#"),
                     (line.strip() for line in file.readlines()),
                 )
             )
