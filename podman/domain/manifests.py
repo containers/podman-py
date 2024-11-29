@@ -82,9 +82,11 @@ class Manifest(PodmanResource):
             "operation": "update",
         }
         for item in images:
-            if isinstance(item, Image):
-                item = item.attrs["RepoTags"][0]
-            data["images"].append(item)
+            # avoid redefinition of the loop variable, then ensure it's an image
+            img_item = item
+            if isinstance(img_item, Image):
+                img_item = img_item.attrs["RepoTags"][0]
+            data["images"].append(img_item)
 
         data = api.prepare_body(data)
         response = self.client.put(f"/manifests/{self.quoted_name}", data=data)
@@ -169,9 +171,11 @@ class ManifestsManager(Manager):
         if images is not None:
             params["images"] = []
             for item in images:
-                if isinstance(item, Image):
-                    item = item.attrs["RepoTags"][0]
-                params["images"].append(item)
+                # avoid redefinition of the loop variable, then ensure it's an image
+                img_item = item
+                if isinstance(img_item, Image):
+                    img_item = img_item.attrs["RepoTags"][0]
+                params["images"].append(img_item)
 
         if all is not None:
             params["all"] = all
