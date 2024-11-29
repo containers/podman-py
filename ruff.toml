@@ -21,7 +21,7 @@ select = [
     "UP", # Pyupgrade
     # TODO "ANN",
     # TODO "S", # Bandit
-    # "B", # Bugbear
+    "B", # Bugbear
     "A", # flake-8-builtins
     "YTT", # flake-8-2020
     "PLC", # Pylint Convention
