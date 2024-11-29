@@ -39,10 +39,10 @@ class AdapterIntegrationTest(base.IntegrationTest):
             podman.start(check_socket=False)
             time.sleep(0.5)
 
-            with PodmanClient(base_url=f"tcp:localhost:8889") as client:
+            with PodmanClient(base_url="tcp:localhost:8889") as client:
                 self.assertTrue(client.ping())
 
-            with PodmanClient(base_url=f"http://localhost:8889") as client:
+            with PodmanClient(base_url="http://localhost:8889") as client:
                 self.assertTrue(client.ping())
         finally:
             podman.stop()

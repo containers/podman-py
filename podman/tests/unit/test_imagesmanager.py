@@ -1,6 +1,6 @@
 import types
 import unittest
-from unittest.mock import mock_open, patch
+from unittest.mock import patch
 
 try:
     # Python >= 3.10
