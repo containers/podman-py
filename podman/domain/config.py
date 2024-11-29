@@ -87,7 +87,7 @@ class PodmanConfig:
             try:
                 with open(self.path, encoding='utf-8') as file:
                     self.attrs = json.load(file)
-            except Exception as ex:  # pylint: disable=bare-except
+            except Exception:  # pylint: disable=bare-except
                 # if the user specifies a path, it can either be a JSON file
                 # or a TOML file - so try TOML next
                 try:
