@@ -39,7 +39,9 @@ ignore = [
     "N80", # TODO Invalid Name
     # TODO this error fails on one file and it's necessary to address
     # the issue properly on a specific PR
-    "S108"
+    "S108",
+    # TODO This is probably a false positive
+    "S603",
 ]
 [lint.per-file-ignores]
 "podman/tests/*.py" = ["S"]
