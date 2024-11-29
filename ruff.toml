@@ -20,7 +20,7 @@ select = [
     "N", # PEP8 Naming
     "UP", # Pyupgrade
     # TODO "ANN",
-    # TODO "S", # Bandit
+    "S", # Bandit
     "B", # Bugbear
     "A", # flake-8-builtins
     "YTT", # flake-8-2020
