@@ -10,7 +10,7 @@ from podman.api.client import APIClient
 PodmanResourceType: TypeVar = TypeVar("PodmanResourceType", bound="PodmanResource")
 
 
-class PodmanResource(ABC):
+class PodmanResource:
     """Base class for representing resource of a Podman service.
 
     Attributes:
