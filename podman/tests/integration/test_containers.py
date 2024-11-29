@@ -7,7 +7,7 @@ import tempfile
 try:
     # Python >= 3.10
     from collections.abc import Iterator
-except:
+except ImportError:
     # Python < 3.10
     from collections import Iterator
 
