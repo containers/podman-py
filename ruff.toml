@@ -33,9 +33,11 @@ select = [
 ignore = [
     "F821", # TODO Undefined name
     "E501", # TODO line too long
+    # Some Exceptions such as NotFound and NotFoundError can be ambiguous
+    # This change need to be performed with carefulness
     "N818", # TODO Error Suffix in exception name
+    # This can lead to API breaking changes so it's disabled for now
     "N80", # TODO Invalid Name
-    "ANN10", # Missing type annotation
 ]
 [lint.per-file-ignores]
 "podman/tests/*.py" = ["S"]
