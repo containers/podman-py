@@ -176,7 +176,23 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             pids_limit (int): Tune a container's pids limit. Set -1 for unlimited.
             platform (str): Platform in the format os[/arch[/variant]]. Only used if the method
                 needs to pull the requested image.
-            ports (Dict[Union[int, str], Union[int, Tuple[str, int], List[int], Dict[str, Union[int, Tuple[str, int], List[int]]]]]): Ports to bind inside the container.
+            ports (
+                Dict[
+                    Union[int, str],
+                    Union[
+                        int,
+                        Tuple[str, int],
+                        List[int],
+                        Dict[
+                            str,
+                            Union[
+                                int,
+                                Tuple[str, int],
+                                List[int]
+                            ]
+                        ]
+                    ]
+                ]): Ports to bind inside the container.
 
                 The keys of the dictionary are the ports to bind inside the container, either as an
                 integer or a string in the form port/protocol, where the protocol is either
@@ -297,9 +313,11 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 the corresponding environment variables will be set in the container being built.
             user (Union[str, int]): Username or UID to run commands as inside the container.
             userns_mode (str): Sets the user namespace mode for the container when user namespace
-                remapping option is enabled. Supported values documented `here <https://docs.podman.io/en/latest/markdown/options/userns.container.html#userns-mode>`_
+                remapping option is enabled. Supported values documented
+                `here <https://docs.podman.io/en/latest/markdown/options/userns.container.html#userns-mode>`_
             uts_mode (str): Sets the UTS namespace mode for the container.
-                `These <https://docs.podman.io/en/latest/markdown/options/uts.container.html>`_ are the supported values.
+                `These <https://docs.podman.io/en/latest/markdown/options/uts.container.html>`_
+                are the supported values.
             version (str): The version of the API to use. Set to auto to automatically detect
                 the server's version. Default: 3.0.0
             volume_driver (str): The name of a volume driver/plugin.

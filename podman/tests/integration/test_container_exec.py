@@ -111,10 +111,11 @@ class ContainersExecIntegrationTests(base.IntegrationTest):
         ]
         error_code, output = container.exec_run(command, stream=True, detach=True)
 
-        # Detach should make the ``exec_run`` ignore the ``stream`` flag so we will assert against the standard,
-        # non-streaming behavior.
+        # Detach should make the ``exec_run`` ignore the ``stream`` flag so we will
+        # assert against the standard, non-streaming behavior.
         self.assertEqual(error_code, 0)
-        # The endpoint should return immediately, before we are able to actually get any of the output.
+        # The endpoint should return immediately, before we are able to actually
+        # get any of the output.
         self.assertEqual(
             output,
             b'\n',

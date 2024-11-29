@@ -213,7 +213,8 @@ class ImagesManagerTestCase(unittest.TestCase):
         """Unit test filters param label for Images prune()."""
         mock.post(
             tests.LIBPOD_URL
-            + "/images/prune?filters=%7B%22label%22%3A+%5B%22%7B%27license%27%3A+%27Apache-2.0%27%7D%22%5D%7D",
+            + "/images/prune?filters=%7B%22label%22%3A+%5B%22%7B%27license%27%3A+"
+            + "%27Apache-2.0%27%7D%22%5D%7D",
             json=[
                 {
                     "Id": "326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab",
@@ -242,7 +243,8 @@ class ImagesManagerTestCase(unittest.TestCase):
         """Unit test filters param NOT-label for Images prune()."""
         mock.post(
             tests.LIBPOD_URL
-            + "/images/prune?filters=%7B%22label%21%22%3A+%5B%22%7B%27license%27%3A+%27Apache-2.0%27%7D%22%5D%7D",
+            + "/images/prune?filters=%7B%22label%21%22%3A+%5B%22%7B%27license%27%3A+"
+            + "%27Apache-2.0%27%7D%22%5D%7D",
             json=[
                 {
                     "Id": "c4b16966ecd94ffa910eab4e630e24f259bf34a87e924cd4b1434f267b0e354e",
@@ -666,7 +668,10 @@ class ImagesManagerTestCase(unittest.TestCase):
         """Test that name parameter works alongside other filters"""
         mock.get(
             tests.LIBPOD_URL
-            + "/images/json?filters=%7B%22dangling%22%3A+%5B%22True%22%5D%2C+%22reference%22%3A+%5B%22fedora%22%5D%7D",
+            + (
+                "/images/json?filters=%7B%22dangling%22%3A+%5B%22True%22%5D%2C+"
+                "%22reference%22%3A+%5B%22fedora%22%5D%7D"
+            ),
             json=[FIRST_IMAGE],
         )
 
