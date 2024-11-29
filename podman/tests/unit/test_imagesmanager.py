@@ -613,7 +613,10 @@ class ImagesManagerTestCase(unittest.TestCase):
         """Test that name parameter works alongside other filters"""
         mock.get(
             tests.LIBPOD_URL
-            + "/images/json?filters=%7B%22dangling%22%3A+%5B%22True%22%5D%2C+%22reference%22%3A+%5B%22fedora%22%5D%7D",
+            + (
+                "/images/json?filters=%7B%22dangling%22%3A+%5B%22True%22%5D%2C+"
+                "%22reference%22%3A+%5B%22fedora%22%5D%7D"
+            ),
             json=[FIRST_IMAGE],
         )
 
