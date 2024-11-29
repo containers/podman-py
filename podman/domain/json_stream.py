@@ -14,9 +14,10 @@ def stream_as_text(stream):
     instead of byte streams.
     """
     for data in stream:
+        _data = data
         if not isinstance(data, str):
-            data = data.decode('utf-8', 'replace')
-        yield data
+            _data = data.decode('utf-8', 'replace')
+        yield _data
 
 
 def json_splitter(buffer):
