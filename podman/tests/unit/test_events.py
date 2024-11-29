@@ -44,7 +44,7 @@ class EventsManagerTestCase(unittest.TestCase):
             buffer.write(json.JSONEncoder().encode(item))
             buffer.write("\n")
 
-        adapter = mock.get(tests.LIBPOD_URL + "/events", text=buffer.getvalue())
+        adapter = mock.get(tests.LIBPOD_URL + "/events", text=buffer.getvalue())  # noqa: F841
 
         manager = EventsManager(client=self.client.api)
         actual = manager.list(decode=True)

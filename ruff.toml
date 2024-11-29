@@ -32,9 +32,6 @@ select = [
 # to avoid changing too many lines
 ignore = [
     "F821", # TODO Undefined name
-    "F541", # TODO f-string is missing placeholders
-    "F401", # TODO Module imported but unused
-    "F841", # TODO Local variable is assigned to but never used
     "E501", # TODO line too long
     "N818", # TODO Error Suffix in exception name
     "N80", # TODO Invalid Name
