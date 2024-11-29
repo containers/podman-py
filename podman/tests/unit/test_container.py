@@ -8,7 +8,7 @@ try:
     from collections.abc import Iterable
 except ImportError:
     # Python < 3.10
-    from collections import Iterable
+    from collections.abc import Iterable
 
 import requests_mock
 

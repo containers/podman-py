@@ -91,7 +91,7 @@ def _filter_values(mapping: Mapping[str, Any], recursion=False) -> Dict[str, Any
         else:
             proposal = value
 
-        if not recursion and proposal not in (None, str(), [], {}):
+        if not recursion and proposal not in (None, "", [], {}):
             canonical[key] = proposal
         elif recursion and proposal not in (None, [], {}):
             canonical[key] = proposal
