@@ -5,7 +5,7 @@ from unittest.mock import mock_open, patch
 try:
     # Python >= 3.10
     from collections.abc import Iterable
-except:
+except ImportError:
     # Python < 3.10
     from collections import Iterable
 
