@@ -156,7 +156,7 @@ class APIClient(requests.Session):
             self.mount("http://", HTTPAdapter(**http_adapter_kwargs))
             self.mount("https://", HTTPAdapter(**http_adapter_kwargs))
         else:
-            assert False, "APIClient.supported_schemes changed without adding a branch here."
+            raise PodmanError("APIClient.supported_schemes changed without adding a branch here.")
 
         self.version = version or VERSION
         self.path_prefix = f"/v{self.version}/libpod/"

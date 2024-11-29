@@ -3,7 +3,7 @@ import pathlib
 import unittest
 from typing import Any, Optional
 from unittest import mock
-from unittest.mock import Mock, mock_open, patch
+from unittest.mock import mock_open, patch
 
 from dataclasses import dataclass
 

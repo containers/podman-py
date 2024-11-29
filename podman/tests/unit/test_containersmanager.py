@@ -8,7 +8,7 @@ except ImportError:
     # Python < 3.10
     from collections import Iterator
 
-from unittest.mock import ANY, DEFAULT, patch, MagicMock
+from unittest.mock import DEFAULT, patch, MagicMock
 
 import requests_mock
 

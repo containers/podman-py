@@ -1,5 +1,3 @@
-import unittest
-
 import podman.tests.integration.base as base
 from podman import PodmanClient
 
