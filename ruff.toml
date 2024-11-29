@@ -32,7 +32,6 @@ select = [
 # to avoid changing too many lines
 ignore = [
     "F821", # TODO Undefined name
-    "E501", # TODO line too long
     # Some Exceptions such as NotFound and NotFoundError can be ambiguous
     # This change need to be performed with carefulness
     "N818", # TODO Error Suffix in exception name
