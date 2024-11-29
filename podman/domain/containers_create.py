@@ -624,13 +624,15 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             return result
 
         for container, host in args.pop("ports", {}).items():
-            if isinstance(container, int):
-                container = str(container)
+            # avoid redefinition of the loop variable, then ensure it's a string
+            str_container = container
+            if isinstance(str_container, int):
+                str_container = str(str_container)
 
-            if "/" in container:
-                container_port, protocol = container.split("/")
+            if "/" in str_container:
+                container_port, protocol = str_container.split("/")
             else:
-                container_port, protocol = container, "tcp"
+                container_port, protocol = str_container, "tcp"
 
             port_map_list = parse_host_port(container_port, protocol, host)
             params["portmappings"].extend(port_map_list)

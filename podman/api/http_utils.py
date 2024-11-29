@@ -42,12 +42,12 @@ def _format_dict(filters, criteria):
     for key, value in filters.items():
         if value is None:
             continue
-        value = str(value)
+        str_value = str(value)
 
         if key in criteria:
-            criteria[key].append(value)
+            criteria[key].append(str_value)
         else:
-            criteria[key] = [value]
+            criteria[key] = [str_value]
 
 
 def _format_string(filters, criteria):
