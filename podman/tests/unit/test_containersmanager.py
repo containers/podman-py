@@ -6,7 +6,7 @@ try:
     from collections.abc import Iterator
 except ImportError:
     # Python < 3.10
-    from collections import Iterator
+    from collections.abc import Iterator
 
 from unittest.mock import DEFAULT, patch, MagicMock
 

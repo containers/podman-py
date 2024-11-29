@@ -18,7 +18,7 @@ select = [
     "E", # Pycodestyle Error
     "W", # Pycodestyle Warning
     "N", # PEP8 Naming
-    # TODO "UP", # Pyupgrade
+    "UP", # Pyupgrade
     # TODO "ANN",
     # TODO "S", # Bandit
     # "B", # Bugbear

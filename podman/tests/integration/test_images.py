@@ -133,7 +133,7 @@ class ImagesIntegrationTest(base.IntegrationTest):
     @unittest.skip("Needs Podman 3.1.0")
     def test_corrupt_load(self):
         with self.assertRaises(APIError) as e:
-            next(self.client.images.load("This is a corrupt tarball".encode("utf-8")))
+            next(self.client.images.load(b"This is a corrupt tarball"))
         self.assertIn("payload does not match", e.exception.explanation)
 
     def test_build(self):
