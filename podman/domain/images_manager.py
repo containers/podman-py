@@ -32,6 +32,8 @@ except (ImportError, ModuleNotFoundError):
 
 logger = logging.getLogger("podman.images")
 
+builtin_list = list
+
 
 class ImagesManager(BuildMixin, Manager):
     """Specialized Manager for Image resources."""
@@ -300,7 +302,7 @@ class ImagesManager(BuildMixin, Manager):
 
     @staticmethod
     def _push_helper(
-        decode: bool, body: list[dict[str, Any]]
+        decode: bool, body: builtin_list[dict[str, Any]]
     ) -> Iterator[Union[str, dict[str, Any]]]:
         """Helper needed to allow push() to return either a generator or a str."""
         for entry in body:
@@ -316,7 +318,7 @@ class ImagesManager(BuildMixin, Manager):
         tag: Optional[str] = None,
         all_tags: bool = False,
         **kwargs,
-    ) -> Union[Image, list[Image], Iterator[str]]:
+    ) -> Union[Image, builtin_list[Image], Iterator[str]]:
         """Request Podman service to pull image(s) from repository.
 
         Args:
@@ -459,7 +461,7 @@ class ImagesManager(BuildMixin, Manager):
         image: Union[Image, str],
         force: Optional[bool] = None,
         noprune: bool = False,  # pylint: disable=unused-argument
-    ) -> list[dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[str, int]]]:
+    ) -> builtin_list[dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[str, int]]]:
         """Delete image from Podman service.
 
         Args:
@@ -486,7 +488,7 @@ class ImagesManager(BuildMixin, Manager):
         results.append({"ExitCode": body["ExitCode"]})
         return results
 
-    def search(self, term: str, **kwargs) -> list[dict[str, Any]]:
+    def search(self, term: str, **kwargs) -> builtin_list[dict[str, Any]]:
         """Search Images on registries.
 
         Args:

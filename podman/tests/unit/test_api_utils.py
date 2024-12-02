@@ -22,10 +22,10 @@ class TestUtilsCase(unittest.TestCase):
             TestCase(name="empty str", input="", expected=None),
             TestCase(name="str", input="reference=fedora", expected='{"reference": ["fedora"]}'),
             TestCase(
-                name="List[str]", input=["reference=fedora"], expected='{"reference": ["fedora"]}'
+                name="list[str]", input=["reference=fedora"], expected='{"reference": ["fedora"]}'
             ),
             TestCase(
-                name="Dict[str,str]",
+                name="dict[str,str]",
                 input={"reference": "fedora"},
                 expected='{"reference": ["fedora"]}',
             ),
