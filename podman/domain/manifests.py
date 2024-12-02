@@ -3,7 +3,7 @@
 import logging
 import urllib.parse
 from contextlib import suppress
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 from podman import api
 from podman.domain.images import Image
@@ -38,7 +38,7 @@ class Manifest(PodmanResource):
 
     @property
     def names(self):
-        """List[str]: Returns the identifier of the manifest."""
+        """list[str]: Returns the identifier of the manifest."""
         return self.name
 
     @property
@@ -51,7 +51,7 @@ class Manifest(PodmanResource):
         """int: Returns the schema version type for this manifest."""
         return self.attrs.get("schemaVersion")
 
-    def add(self, images: List[Union[Image, str]], **kwargs) -> None:
+    def add(self, images: list[Union[Image, str]], **kwargs) -> None:
         """Add Image to manifest list.
 
         Args:
@@ -59,9 +59,9 @@ class Manifest(PodmanResource):
 
         Keyword Args:
             all (bool):
-            annotation (Dict[str, str]):
+            annotation (dict[str, str]):
             arch (str):
-            features (List[str]):
+            features (list[str]):
             os (str):
             os_version (str):
             variant (str):
@@ -153,7 +153,7 @@ class ManifestsManager(Manager):
     def create(
         self,
         name: str,
-        images: Optional[List[Union[Image, str]]] = None,
+        images: Optional[list[Union[Image, str]]] = None,
         all: Optional[bool] = None,  # pylint: disable=redefined-builtin
     ) -> Manifest:
         """Create a Manifest.
@@ -167,7 +167,7 @@ class ManifestsManager(Manager):
             ValueError: when no names are provided
             NotFoundImage: when a given image does not exist
         """
-        params: Dict[str, Any] = {}
+        params: dict[str, Any] = {}
         if images is not None:
             params["images"] = []
             for item in images:
@@ -219,12 +219,12 @@ class ManifestsManager(Manager):
             body["names"] = key
         return self.prepare_model(attrs=body)
 
-    def list(self, **kwargs) -> List[Manifest]:
+    def list(self, **kwargs) -> list[Manifest]:
         """Not Implemented."""
 
         raise NotImplementedError("Podman service currently does not support listing manifests.")
 
-    def remove(self, name: Union[Manifest, str]) -> Dict[str, Any]:
+    def remove(self, name: Union[Manifest, str]) -> dict[str, Any]:
         """Delete the manifest list from the Podman service."""
         if isinstance(name, Manifest):
             name = name.name

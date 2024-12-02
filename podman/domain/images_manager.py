@@ -5,7 +5,8 @@ import json
 import logging
 import os
 import urllib.parse
-from typing import Any, Dict, Iterator, List, Mapping, Optional, Union, Generator
+from typing import Any, Optional, Union
+from collections.abc import Iterator, Mapping, Generator
 from pathlib import Path
 import requests
 
@@ -46,17 +47,17 @@ class ImagesManager(BuildMixin, Manager):
         response = self.client.get(f"/images/{key}/exists")
         return response.ok
 
-    def list(self, **kwargs) -> List[Image]:
+    def list(self, **kwargs) -> list[Image]:
         """Report on images.
 
         Keyword Args:
             name (str) – Only show images belonging to the repository name
             all (bool) – Show intermediate image layers. By default, these are filtered out.
-            filters (Mapping[str, Union[str, List[str]]) – Filters to be used on the image list.
+            filters (Mapping[str, Union[str, list[str]]) – Filters to be used on the image list.
                 Available filters:
 
                 - dangling (bool)
-                - label (Union[str, List[str]]): format either "key" or "key=value"
+                - label (Union[str, list[str]]): format either "key" or "key=value"
 
         Raises:
             APIError: when service returns an error
@@ -169,7 +170,7 @@ class ImagesManager(BuildMixin, Manager):
         all: Optional[bool] = False,  # pylint: disable=redefined-builtin
         external: Optional[bool] = False,
         filters: Optional[Mapping[str, Any]] = None,
-    ) -> Dict[Literal["ImagesDeleted", "SpaceReclaimed"], Any]:
+    ) -> dict[Literal["ImagesDeleted", "SpaceReclaimed"], Any]:
         """Delete unused images.
 
         The Untagged keys will always be "".
@@ -200,8 +201,8 @@ class ImagesManager(BuildMixin, Manager):
         response = self.client.post("/images/prune", params=params)
         response.raise_for_status()
 
-        deleted: List[Dict[str, str]] = []
-        error: List[str] = []
+        deleted: list[dict[str, str]] = []
+        error: list[str] = []
         reclaimed: int = 0
         # If the prune doesn't remove images, the API returns "null"
         # and it's interpreted as None (NoneType)
@@ -227,7 +228,7 @@ class ImagesManager(BuildMixin, Manager):
             "SpaceReclaimed": reclaimed,
         }
 
-    def prune_builds(self) -> Dict[Literal["CachesDeleted", "SpaceReclaimed"], Any]:
+    def prune_builds(self) -> dict[Literal["CachesDeleted", "SpaceReclaimed"], Any]:
         """Delete builder cache.
 
         Method included to complete API, the operation always returns empty
@@ -237,7 +238,7 @@ class ImagesManager(BuildMixin, Manager):
 
     def push(
         self, repository: str, tag: Optional[str] = None, **kwargs
-    ) -> Union[str, Iterator[Union[str, Dict[str, Any]]]]:
+    ) -> Union[str, Iterator[Union[str, dict[str, Any]]]]:
         """Push Image or repository to the registry.
 
         Args:
@@ -247,7 +248,7 @@ class ImagesManager(BuildMixin, Manager):
         Keyword Args:
             auth_config (Mapping[str, str]: Override configured credentials. Must include
                 username and password keys.
-            decode (bool): return data from server as Dict[str, Any]. Ignored unless stream=True.
+            decode (bool): return data from server as dict[str, Any]. Ignored unless stream=True.
             destination (str): alternate destination for image. (Podman only)
             stream (bool): return output as blocking generator. Default: False.
             tlsVerify (bool): Require TLS verification.
@@ -257,7 +258,7 @@ class ImagesManager(BuildMixin, Manager):
         Raises:
             APIError: when service returns an error
         """
-        auth_config: Optional[Dict[str, str]] = kwargs.get("auth_config")
+        auth_config: Optional[dict[str, str]] = kwargs.get("auth_config")
 
         headers = {
             # A base64url-encoded auth configuration
@@ -299,8 +300,8 @@ class ImagesManager(BuildMixin, Manager):
 
     @staticmethod
     def _push_helper(
-        decode: bool, body: List[Dict[str, Any]]
-    ) -> Iterator[Union[str, Dict[str, Any]]]:
+        decode: bool, body: list[dict[str, Any]]
+    ) -> Iterator[Union[str, dict[str, Any]]]:
         """Helper needed to allow push() to return either a generator or a str."""
         for entry in body:
             if decode:
@@ -310,8 +311,12 @@ class ImagesManager(BuildMixin, Manager):
 
     # pylint: disable=too-many-locals,too-many-branches
     def pull(
-        self, repository: str, tag: Optional[str] = None, all_tags: bool = False, **kwargs
-    ) -> Union[Image, List[Image], Iterator[str]]:
+        self,
+        repository: str,
+        tag: Optional[str] = None,
+        all_tags: bool = False,
+        **kwargs,
+    ) -> Union[Image, list[Image], Iterator[str]]:
         """Request Podman service to pull image(s) from repository.
 
         Args:
@@ -345,7 +350,7 @@ class ImagesManager(BuildMixin, Manager):
             else:
                 tag = "latest"
 
-        auth_config: Optional[Dict[str, str]] = kwargs.get("auth_config")
+        auth_config: Optional[dict[str, str]] = kwargs.get("auth_config")
 
         headers = {
             # A base64url-encoded auth configuration
@@ -409,7 +414,7 @@ class ImagesManager(BuildMixin, Manager):
         for item in response.iter_lines():
             obj = json.loads(item)
             if all_tags and "images" in obj:
-                images: List[Image] = []
+                images: list[Image] = []
                 for name in obj["images"]:
                     images.append(self.get(name))
                 return images
@@ -454,7 +459,7 @@ class ImagesManager(BuildMixin, Manager):
         image: Union[Image, str],
         force: Optional[bool] = None,
         noprune: bool = False,  # pylint: disable=unused-argument
-    ) -> List[Dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[str, int]]]:
+    ) -> list[dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[str, int]]]:
         """Delete image from Podman service.
 
         Args:
@@ -473,7 +478,7 @@ class ImagesManager(BuildMixin, Manager):
         response.raise_for_status(not_found=ImageNotFound)
 
         body = response.json()
-        results: List[Dict[str, Union[int, str]]] = []
+        results: list[dict[str, Union[int, str]]] = []
         for key in ("Deleted", "Untagged", "Errors"):
             if key in body:
                 for element in body[key]:
@@ -481,14 +486,14 @@ class ImagesManager(BuildMixin, Manager):
         results.append({"ExitCode": body["ExitCode"]})
         return results
 
-    def search(self, term: str, **kwargs) -> List[Dict[str, Any]]:
+    def search(self, term: str, **kwargs) -> list[dict[str, Any]]:
         """Search Images on registries.
 
         Args:
             term: Used to target Image results.
 
         Keyword Args:
-            filters (Mapping[str, List[str]): Refine results of search. Available filters:
+            filters (Mapping[str, list[str]): Refine results of search. Available filters:
 
                 - is-automated (bool): Image build is automated.
                 - is-official (bool): Image build is owned by product provider.

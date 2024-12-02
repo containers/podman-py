@@ -1,7 +1,8 @@
 """Model and Manager for Secrets resources."""
 
 from contextlib import suppress
-from typing import Any, List, Mapping, Optional, Union
+from typing import Any, Optional, Union
+from collections.abc import Mapping
 
 from podman.api import APIClient
 from podman.domain.manager import Manager, PodmanResource
@@ -75,7 +76,7 @@ class SecretsManager(Manager):
         response.raise_for_status()
         return self.prepare_model(attrs=response.json())
 
-    def list(self, **kwargs) -> List[Secret]:
+    def list(self, **kwargs) -> list[Secret]:
         """Report on Secrets.
 
         Keyword Args:
