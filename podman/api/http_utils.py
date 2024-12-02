@@ -100,5 +100,5 @@ def _filter_values(mapping: Mapping[str, Any], recursion=False) -> dict[str, Any
     return canonical
 
 
-def encode_auth_header(auth_config: Dict[str, str]) -> str:
+def encode_auth_header(auth_config: dict[str, str]) -> str:
     return base64.urlsafe_b64encode(json.dumps(auth_config).encode('utf-8'))
