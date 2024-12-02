@@ -17,7 +17,7 @@ def get_runtime_dir() -> str:
         return os.environ['XDG_RUNTIME_DIR']
     except KeyError:
         user = getpass.getuser()
-        run_user = f'/run/user/{user}'
+        run_user = f'/run/user/{os.getuid()}'
         if os.path.isdir(run_user):
             return run_user
         fallback = f'/tmp/podmanpy-runtime-dir-fallback-{user}'
