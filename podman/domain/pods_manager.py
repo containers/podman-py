@@ -11,6 +11,8 @@ from podman.errors import APIError
 
 logger = logging.getLogger("podman.pods")
 
+builtin_list = list
+
 
 class PodsManager(Manager):
     """Specialized Manager for Pod resources."""
@@ -129,7 +131,9 @@ class PodsManager(Manager):
         response = self.client.delete(f"/pods/{pod_id}", params={"force": force})
         response.raise_for_status()
 
-    def stats(self, **kwargs) -> Union[list[dict[str, Any]], [list[dict[str, Any]]]]:
+    def stats(
+        self, **kwargs
+    ) -> Union[builtin_list[dict[str, Any]], [builtin_list[dict[str, Any]]]]:
         """Resource usage statistics for the containers in pods.
 
         Keyword Args:
