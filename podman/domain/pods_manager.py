@@ -1,8 +1,10 @@
 """PodmanResource manager subclassed for Networks."""
 
+import builtins
 import json
 import logging
 from typing import Any, Optional, Union
+from collections.abc import Iterator
 
 from podman import api
 from podman.domain.manager import Manager
@@ -129,7 +131,9 @@ class PodsManager(Manager):
         response = self.client.delete(f"/pods/{pod_id}", params={"force": force})
         response.raise_for_status()
 
-    def stats(self, **kwargs) -> Union[list[dict[str, Any]], [list[dict[str, Any]]]]:
+    def stats(
+        self, **kwargs
+    ) -> Union[builtins.list[dict[str, Any]], Iterator[builtins.list[dict[str, Any]]]]:
         """Resource usage statistics for the containers in pods.
 
         Keyword Args:
