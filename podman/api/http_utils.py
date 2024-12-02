@@ -3,16 +3,17 @@
 import base64
 import collections.abc
 import json
-from typing import Dict, List, Mapping, Optional, Union, Any
+from typing import Optional, Union, Any
+from collections.abc import Mapping
 
 
-def prepare_filters(filters: Union[str, List[str], Mapping[str, str]]) -> Optional[str]:
-    """Return filters as an URL quoted JSON Dict[str, List[Any]]."""
+def prepare_filters(filters: Union[str, list[str], Mapping[str, str]]) -> Optional[str]:
+    """Return filters as an URL quoted JSON dict[str, list[Any]]."""
 
     if filters is None or len(filters) == 0:
         return None
 
-    criteria: Dict[str, List[str]] = {}
+    criteria: dict[str, list[str]] = {}
     if isinstance(filters, str):
         _format_string(filters, criteria)
     elif isinstance(filters, collections.abc.Mapping):
@@ -67,7 +68,7 @@ def prepare_body(body: Mapping[str, Any]) -> str:
     return json.dumps(body, sort_keys=True)
 
 
-def _filter_values(mapping: Mapping[str, Any], recursion=False) -> Dict[str, Any]:
+def _filter_values(mapping: Mapping[str, Any], recursion=False) -> dict[str, Any]:
     """Returns a canonical dictionary with values == None or empty Iterables removed.
 
     Dictionary is walked using recursion.

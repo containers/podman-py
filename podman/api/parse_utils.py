@@ -5,13 +5,14 @@ import ipaddress
 import json
 import struct
 from datetime import datetime
-from typing import Any, Dict, Iterator, Optional, Tuple, Union
+from typing import Any, Optional, Union
+from collections.abc import Iterator
 
 from requests import Response
 from .output_utils import demux_output
 
 
-def parse_repository(name: str) -> Tuple[str, Optional[str]]:
+def parse_repository(name: str) -> tuple[str, Optional[str]]:
     """Parse repository image name from tag or digest
 
     Returns:
@@ -31,7 +32,7 @@ def parse_repository(name: str) -> Tuple[str, Optional[str]]:
     return name, None
 
 
-def decode_header(value: Optional[str]) -> Dict[str, Any]:
+def decode_header(value: Optional[str]) -> dict[str, Any]:
     """Decode a base64 JSON header value."""
     if value is None:
         return {}
@@ -82,7 +83,7 @@ def frames(response: Response) -> Iterator[bytes]:
 
 def stream_frames(
     response: Response, demux: bool = False
-) -> Iterator[Union[bytes, Tuple[bytes, bytes]]]:
+) -> Iterator[Union[bytes, tuple[bytes, bytes]]]:
     """Returns each frame from multiplexed streamed payload.
 
     If ``demux`` then output will be tuples where the first position is ``STDOUT`` and the second
@@ -109,7 +110,7 @@ def stream_frames(
 
 def stream_helper(
     response: Response, decode_to_json: bool = False
-) -> Union[Iterator[bytes], Iterator[Dict[str, Any]]]:
+) -> Union[Iterator[bytes], Iterator[dict[str, Any]]]:
     """Helper to stream results and optionally decode to json"""
     for value in response.iter_lines():
         if decode_to_json:

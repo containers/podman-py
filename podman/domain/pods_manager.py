@@ -2,7 +2,7 @@
 
 import json
 import logging
-from typing import Any, Dict, List, Optional, Union, Iterator
+from typing import Any, Optional, Union
 
 from podman import api
 from podman.domain.manager import Manager
@@ -57,24 +57,24 @@ class PodsManager(Manager):
         response.raise_for_status()
         return self.prepare_model(attrs=response.json())
 
-    def list(self, **kwargs) -> List[Pod]:
+    def list(self, **kwargs) -> list[Pod]:
         """Report on pods.
 
         Keyword Args:
             filters (Mapping[str, str]): Criteria for listing pods. Available filters:
 
-                - ctr-ids (List[str]): List of container ids to filter by.
-                - ctr-names (List[str]): List of container names to filter by.
-                - ctr-number (List[int]): list pods with given number of containers.
-                - ctr-status (List[str]): List pods with containers in given state.
+                - ctr-ids (list[str]): list of container ids to filter by.
+                - ctr-names (list[str]): list of container names to filter by.
+                - ctr-number (list[int]): list pods with given number of containers.
+                - ctr-status (list[str]): list pods with containers in given state.
                   Legal values are: "created", "running", "paused", "stopped",
                   "exited", or "unknown"
                 - id (str) - List pod with this id.
                 - name (str) - List pod with this name.
-                - status (List[str]): List pods in given state. Legal values are:
+                - status (list[str]): List pods in given state. Legal values are:
                   "created", "running", "paused", "stopped", "exited", or "unknown"
-                - label (List[str]): List pods with given labels.
-                - network (List[str]): List pods associated with given Network Ids (not Names).
+                - label (list[str]): List pods with given labels.
+                - network (list[str]): List pods associated with given Network Ids (not Names).
 
         Raises:
             APIError: when an error returned by service
@@ -84,12 +84,12 @@ class PodsManager(Manager):
         response.raise_for_status()
         return [self.prepare_model(attrs=i) for i in response.json()]
 
-    def prune(self, filters: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+    def prune(self, filters: Optional[dict[str, str]] = None) -> dict[str, Any]:
         """Delete unused Pods.
 
         Returns:
             Dictionary Keys:
-                - PodsDeleted (List[str]): List of pod ids deleted.
+                - PodsDeleted (list[str]): List of pod ids deleted.
                 - SpaceReclaimed (int): Always zero.
 
         Raises:
@@ -98,7 +98,7 @@ class PodsManager(Manager):
         response = self.client.post("/pods/prune", params={"filters": api.prepare_filters(filters)})
         response.raise_for_status()
 
-        deleted: List[str] = []
+        deleted: list[str] = []
         for item in response.json():
             if item["Err"] is not None:
                 raise APIError(
@@ -129,12 +129,12 @@ class PodsManager(Manager):
         response = self.client.delete(f"/pods/{pod_id}", params={"force": force})
         response.raise_for_status()
 
-    def stats(self, **kwargs) -> Union[List[Dict[str, Any]], Iterator[List[Dict[str, Any]]]]:
+    def stats(self, **kwargs) -> Union[list[dict[str, Any]], [list[dict[str, Any]]]]:
         """Resource usage statistics for the containers in pods.
 
         Keyword Args:
             all (bool): Provide statistics for all running pods.
-            name (Union[str, List[str]]): Pods to include in report.
+            name (Union[str, list[str]]): Pods to include in report.
             stream (bool): Stream statistics until cancelled. Default: False.
             decode (bool): If True, response will be decoded into dict. Default: False.
 
