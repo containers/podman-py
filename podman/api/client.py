@@ -7,14 +7,10 @@ from typing import (
     Any,
     ClassVar,
     IO,
-    Iterable,
-    List,
-    Mapping,
     Optional,
-    Tuple,
-    Type,
     Union,
 )
+from collections.abc import Iterable, Mapping
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -31,12 +27,12 @@ _Data = Union[
     str,
     bytes,
     Mapping[str, Any],
-    Iterable[Tuple[str, Optional[str]]],
+    Iterable[tuple[str, Optional[str]]],
     IO,
 ]
 """Type alias for request data parameter."""
 
-_Timeout = Union[None, float, Tuple[float, float], Tuple[float, None]]
+_Timeout = Union[None, float, tuple[float, float], tuple[float, None]]
 """Type alias for request timeout parameter."""
 
 
@@ -69,7 +65,7 @@ class APIResponse:
         """Forward any query for an attribute not defined in this proxy class to wrapped class."""
         return getattr(self._response, item)
 
-    def raise_for_status(self, not_found: Type[APIError] = NotFound) -> None:
+    def raise_for_status(self, not_found: type[APIError] = NotFound) -> None:
         """Raises exception when Podman service reports one."""
         if self.status_code < 400:
             return
@@ -92,7 +88,7 @@ class APIClient(requests.Session):
     # Abstract methods (delete,get,head,post) are specialized and pylint cannot walk hierarchy.
     # pylint: disable=too-many-instance-attributes,arguments-differ,arguments-renamed
 
-    supported_schemes: ClassVar[List[str]] = (
+    supported_schemes: ClassVar[list[str]] = (
         "unix",
         "http+unix",
         "ssh",
@@ -246,7 +242,7 @@ class APIClient(requests.Session):
         self,
         path: Union[str, bytes],
         *,
-        params: Union[None, bytes, Mapping[str, List[str]]] = None,
+        params: Union[None, bytes, Mapping[str, list[str]]] = None,
         headers: Optional[Mapping[str, str]] = None,
         timeout: _Timeout = None,
         stream: Optional[bool] = False,

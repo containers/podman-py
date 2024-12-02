@@ -1,7 +1,7 @@
 """Model and Manager for Volume resources."""
 
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 import requests
 
@@ -92,14 +92,14 @@ class VolumesManager(Manager):
         response.raise_for_status()
         return self.prepare_model(attrs=response.json())
 
-    def list(self, *_, **kwargs) -> List[Volume]:
+    def list(self, *_, **kwargs) -> list[Volume]:
         """Report on volumes.
 
         Keyword Args:
-            filters (Dict[str, str]): criteria to filter Volume list
+            filters (dict[str, str]): criteria to filter Volume list
 
                 - driver (str): filter volumes by their driver
-                - label (Dict[str, str]): filter by label and/or value
+                - label (dict[str, str]): filter by label and/or value
                 - name (str): filter by volume's name
         """
         filters = api.prepare_filters(kwargs.get("filters"))
@@ -113,8 +113,8 @@ class VolumesManager(Manager):
 
     def prune(
         self,
-        filters: Optional[Dict[str, str]] = None,  # pylint: disable=unused-argument
-    ) -> Dict[Literal["VolumesDeleted", "SpaceReclaimed"], Any]:
+        filters: Optional[dict[str, str]] = None,  # pylint: disable=unused-argument
+    ) -> dict[Literal["VolumesDeleted", "SpaceReclaimed"], Any]:
         """Delete unused volumes.
 
         Args:
@@ -127,7 +127,7 @@ class VolumesManager(Manager):
         data = response.json()
         response.raise_for_status()
 
-        volumes: List[str] = []
+        volumes: list[str] = []
         space_reclaimed = 0
         for item in data:
             if "Err" in item:
