@@ -12,7 +12,7 @@ Example:
 import ipaddress
 import logging
 from contextlib import suppress
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from podman import api
 from podman.api import http_utils
@@ -46,8 +46,8 @@ class NetworksManager(Manager):
             ingress (bool): Ignored, always False.
             internal (bool): Restrict external access to the network.
             ipam (IPAMConfig): Optional custom IP scheme for the network.
-            labels (Dict[str, str]):  Map of labels to set on the network.
-            options (Dict[str, Any]): Driver options.
+            labels (dict[str, str]):  Map of labels to set on the network.
+            options (dict[str, Any]): Driver options.
             scope (str): Ignored, always "local".
 
         Raises:
@@ -75,7 +75,7 @@ class NetworksManager(Manager):
         response.raise_for_status()
         return self.prepare_model(attrs=response.json())
 
-    def _prepare_ipam(self, data: Dict[str, Any], ipam: Dict[str, Any]):
+    def _prepare_ipam(self, data: dict[str, Any], ipam: dict[str, Any]):
         if "Driver" in ipam:
             data["ipam_options"] = {"driver": ipam["Driver"]}
 
@@ -117,23 +117,23 @@ class NetworksManager(Manager):
 
         return self.prepare_model(attrs=response.json())
 
-    def list(self, **kwargs) -> List[Network]:
+    def list(self, **kwargs) -> list[Network]:
         """Report on networks.
 
         Keyword Args:
-            names (List[str]): List of names to filter by.
-            ids (List[str]): List of identifiers to filter by.
+            names (list[str]): List of names to filter by.
+            ids (list[str]): List of identifiers to filter by.
             filters (Mapping[str,str]): Criteria for listing networks. Available filters:
 
                 - driver="bridge": Matches a network's driver. Only "bridge" is supported.
-                - label=(Union[str, List[str]]): format either "key", "key=value"
+                - label=(Union[str, list[str]]): format either "key", "key=value"
                   or a list of such.
                 - type=(str): Filters networks by type, legal values are:
 
                     - "custom"
                     - "builtin"
 
-                - plugin=(List[str]]): Matches CNI plugins included in a network, legal
+                - plugin=(list[str]]): Matches CNI plugins included in a network, legal
                   values are (Podman only):
 
                         - bridge
@@ -161,8 +161,8 @@ class NetworksManager(Manager):
         return [self.prepare_model(i) for i in response.json()]
 
     def prune(
-        self, filters: Optional[Dict[str, Any]] = None
-    ) -> Dict[api.Literal["NetworksDeleted", "SpaceReclaimed"], Any]:
+        self, filters: Optional[dict[str, Any]] = None
+    ) -> dict[api.Literal["NetworksDeleted", "SpaceReclaimed"], Any]:
         """Delete unused Networks.
 
         SpaceReclaimed always reported as 0
@@ -177,7 +177,7 @@ class NetworksManager(Manager):
         response = self.client.post("/networks/prune", params=params)
         response.raise_for_status()
 
-        deleted: List[str] = []
+        deleted: list[str] = []
         for item in response.json():
             if item["Error"] is not None:
                 raise APIError(

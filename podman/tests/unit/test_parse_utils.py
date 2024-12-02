@@ -3,7 +3,8 @@ import ipaddress
 import json
 import unittest
 from dataclasses import dataclass
-from typing import Any, Iterable, Optional, Tuple
+from typing import Any, Optional
+from collections.abc import Iterable
 from unittest import mock
 
 from requests import Response
@@ -17,7 +18,7 @@ class ParseUtilsTestCase(unittest.TestCase):
         class TestCase:
             name: str
             input: Any
-            expected: Tuple[str, Optional[str]]
+            expected: tuple[str, Optional[str]]
 
         cases = [
             TestCase(name="empty str", input="", expected=("", None)),

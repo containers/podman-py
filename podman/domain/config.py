@@ -3,7 +3,7 @@
 import sys
 import urllib
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Optional
 import json
 
 from podman.api import cached_property
@@ -24,7 +24,7 @@ else:
 class ServiceConnection:
     """ServiceConnection defines a connection to the Podman service."""
 
-    def __init__(self, name: str, attrs: Dict[str, str]):
+    def __init__(self, name: str, attrs: dict[str, str]):
         """Create a Podman ServiceConnection."""
         self.name = name
         self.attrs = attrs
@@ -122,14 +122,14 @@ class PodmanConfig:
 
     @cached_property
     def services(self):
-        """Dict[str, ServiceConnection]: Returns list of service connections.
+        """dict[str, ServiceConnection]: Returns list of service connections.
 
         Examples:
             podman_config = PodmanConfig()
             address = podman_config.services["testing"]
             print(f"Testing service address {address}")
         """
-        services: Dict[str, ServiceConnection] = {}
+        services: dict[str, ServiceConnection] = {}
 
         # read the keys of the toml file first
         engine = self.attrs.get("engine")

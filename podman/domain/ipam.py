@@ -3,7 +3,8 @@
 Provided for compatibility
 """
 
-from typing import Any, List, Mapping, Optional
+from typing import Any, Optional
+from collections.abc import Mapping
 
 
 class IPAMPool(dict):
@@ -41,7 +42,7 @@ class IPAMConfig(dict):
     def __init__(
         self,
         driver: Optional[str] = "host-local",
-        pool_configs: Optional[List[IPAMPool]] = None,
+        pool_configs: Optional[list[IPAMPool]] = None,
         options: Optional[Mapping[str, Any]] = None,
     ):
         """Create IPAMConfig.

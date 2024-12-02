@@ -6,12 +6,12 @@ import shutil
 import tarfile
 import tempfile
 from fnmatch import fnmatch
-from typing import BinaryIO, List, Optional
+from typing import BinaryIO, Optional
 
 import sys
 
 
-def prepare_containerignore(anchor: str) -> List[str]:
+def prepare_containerignore(anchor: str) -> list[str]:
     """Return the list of patterns for filenames to exclude.
 
     .containerignore takes precedence over .dockerignore.
@@ -53,7 +53,7 @@ def prepare_containerfile(anchor: str, dockerfile: str) -> str:
 
 
 def create_tar(
-    anchor: str, name: str = None, exclude: List[str] = None, gzip: bool = False
+    anchor: str, name: str = None, exclude: list[str] = None, gzip: bool = False
 ) -> BinaryIO:
     """Create a tarfile from context_dir to send to Podman service.
 
@@ -119,7 +119,7 @@ def create_tar(
     return open(name.name, "rb")  # pylint: disable=consider-using-with
 
 
-def _exclude_matcher(path: str, exclude: List[str]) -> bool:
+def _exclude_matcher(path: str, exclude: list[str]) -> bool:
     """Returns True if path matches an entry in exclude.
 
     Note:

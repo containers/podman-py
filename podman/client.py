@@ -4,7 +4,7 @@ import logging
 import os
 from contextlib import AbstractContextManager
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from podman.api import cached_property
 from podman.api.client import APIClient
@@ -88,8 +88,8 @@ class PodmanClient(AbstractContextManager):
         max_pool_size: Optional[int] = None,
         ssl_version: Optional[int] = None,  # pylint: disable=unused-argument
         assert_hostname: bool = False,  # pylint: disable=unused-argument
-        environment: Optional[Dict[str, str]] = None,
-        credstore_env: Optional[Dict[str, str]] = None,
+        environment: Optional[dict[str, str]] = None,
+        credstore_env: Optional[dict[str, str]] = None,
         use_ssh_client: bool = True,  # pylint: disable=unused-argument
     ) -> "PodmanClient":
         """Returns connection to service using environment variables and parameters.
@@ -175,7 +175,7 @@ class PodmanClient(AbstractContextManager):
     def system(self):
         return SystemManager(client=self.api)
 
-    def df(self) -> Dict[str, Any]:  # pylint: disable=missing-function-docstring,invalid-name
+    def df(self) -> dict[str, Any]:  # pylint: disable=missing-function-docstring,invalid-name
         return self.system.df()
 
     df.__doc__ = SystemManager.df.__doc__
