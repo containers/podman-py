@@ -1,5 +1,6 @@
 """PodmanResource manager subclassed for Images."""
 
+import builtins
 import io
 import json
 import logging
@@ -49,7 +50,7 @@ class ImagesManager(BuildMixin, Manager):
         response = self.client.get(f"/images/{key}/exists")
         return response.ok
 
-    def list(self, **kwargs) -> list[Image]:
+    def list(self, **kwargs) -> builtins.list[Image]:
         """Report on images.
 
         Keyword Args:
@@ -203,8 +204,8 @@ class ImagesManager(BuildMixin, Manager):
         response = self.client.post("/images/prune", params=params)
         response.raise_for_status()
 
-        deleted: list[dict[str, str]] = []
-        error: list[str] = []
+        deleted: builtins.list[dict[str, str]] = []
+        error: builtins.list[str] = []
         reclaimed: int = 0
         # If the prune doesn't remove images, the API returns "null"
         # and it's interpreted as None (NoneType)
@@ -302,7 +303,7 @@ class ImagesManager(BuildMixin, Manager):
 
     @staticmethod
     def _push_helper(
-        decode: bool, body: list[dict[str, Any]]
+        decode: bool, body: builtins.list[dict[str, Any]]
     ) -> Iterator[Union[str, dict[str, Any]]]:
         """Helper needed to allow push() to return either a generator or a str."""
         for entry in body:
@@ -318,7 +319,7 @@ class ImagesManager(BuildMixin, Manager):
         tag: Optional[str] = None,
         all_tags: bool = False,
         **kwargs,
-    ) -> Union[Image, list[Image], Iterator[str]]:
+    ) -> Union[Image, builtins.list[Image], Iterator[str]]:
         """Request Podman service to pull image(s) from repository.
 
         Args:
@@ -420,7 +421,7 @@ class ImagesManager(BuildMixin, Manager):
         for item in reversed(list(response.iter_lines())):
             obj = json.loads(item)
             if all_tags and "images" in obj:
-                images: list[Image] = []
+                images: builtins.list[Image] = []
                 for name in obj["images"]:
                     images.append(self.get(name))
                 return images
@@ -465,7 +466,7 @@ class ImagesManager(BuildMixin, Manager):
         image: Union[Image, str],
         force: Optional[bool] = None,
         noprune: bool = False,  # pylint: disable=unused-argument
-    ) -> list[dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[str, int]]]:
+    ) -> builtins.list[dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[str, int]]]:
         """Delete image from Podman service.
 
         Args:
@@ -484,7 +485,7 @@ class ImagesManager(BuildMixin, Manager):
         response.raise_for_status(not_found=ImageNotFound)
 
         body = response.json()
-        results: list[dict[str, Union[int, str]]] = []
+        results: builtins.list[dict[str, Union[int, str]]] = []
         for key in ("Deleted", "Untagged", "Errors"):
             if key in body:
                 for element in body[key]:
@@ -492,7 +493,7 @@ class ImagesManager(BuildMixin, Manager):
         results.append({"ExitCode": body["ExitCode"]})
         return results
 
-    def search(self, term: str, **kwargs) -> list[dict[str, Any]]:
+    def search(self, term: str, **kwargs) -> builtins.list[dict[str, Any]]:
         """Search Images on registries.
 
         Args:

@@ -53,8 +53,8 @@ class VolumesManager(Manager):
 
         Keyword Args:
             driver (str): Volume driver to use
-            driver_opts (Dict[str, str]): Options to use with driver
-            labels (Dict[str, str]): Labels to apply to volume
+            driver_opts (dict[str, str]): Options to use with driver
+            labels (dict[str, str]): Labels to apply to volume
 
         Raises:
             APIError: when service reports error

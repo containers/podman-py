@@ -80,7 +80,7 @@ class SecretsManager(Manager):
         """Report on Secrets.
 
         Keyword Args:
-            filters (Dict[str, Any]): Ignored.
+            filters (dict[str, Any]): Ignored.
 
         Raises:
             APIError: when error returned by service
