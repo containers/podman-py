@@ -20,9 +20,9 @@ sys.path.insert(0, os.path.abspath('../..'))
 
 # -- Project information -----------------------------------------------------
 
-project = u'Podman Python SDK'
-copyright = u'2021, Red Hat Inc'
-author = u'Red Hat Inc'
+project = 'Podman Python SDK'
+copyright = '2021, Red Hat Inc'
+author = 'Red Hat Inc'
 
 # The full version, including alpha/beta/rc tags
 version = '3.2.1.0'

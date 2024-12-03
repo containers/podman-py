@@ -627,7 +627,8 @@ class ImagesManagerTestCase(unittest.TestCase):
 
         # The name parameter should override the reference filter
         images = self.client.images.list(
-            name="fedora", filters={"reference": "ubuntu"}  # This should be overridden
+            name="fedora",
+            filters={"reference": "ubuntu"},  # This should be overridden
         )
 
         self.assertEqual(len(images), 1)
