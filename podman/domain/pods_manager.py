@@ -3,6 +3,7 @@
 import json
 import logging
 from typing import Any, Optional, Union
+from collections.abc import Iterator
 
 from podman import api
 from podman.domain.manager import Manager
@@ -133,7 +134,7 @@ class PodsManager(Manager):
 
     def stats(
         self, **kwargs
-    ) -> Union[builtin_list[dict[str, Any]], [builtin_list[dict[str, Any]]]]:
+    ) -> Union[builtin_list[dict[str, Any]], Iterator[builtin_list[dict[str, Any]]]]:
         """Resource usage statistics for the containers in pods.
 
         Keyword Args:
