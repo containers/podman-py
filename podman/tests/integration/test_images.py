@@ -13,6 +13,7 @@
 #   under the License.
 #
 """Images integration tests."""
+
 import io
 import queue
 import tarfile

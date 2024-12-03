@@ -57,7 +57,7 @@ class ContainersIntegrationTest(base.IntegrationTest):
         with self.subTest("Check bind mount"):
             volumes = {
                 "/etc/hosts": dict(bind="/test_ro", mode='ro'),
-                "/etc/hosts": dict(bind="/test_rw", mode='rw'),
+                "/etc/hosts": dict(bind="/test_rw", mode='rw'),  # noqa: F601
             }
             container = self.client.containers.create(
                 self.alpine_image, command=["cat", "/test_ro", "/test_rw"], volumes=volumes

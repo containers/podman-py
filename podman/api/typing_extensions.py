@@ -1604,6 +1604,7 @@ elif PEP_560:
                 def meth(self) -> T:
                     ...
         """
+
         __slots__ = ()
         _is_protocol = True
 
