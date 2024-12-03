@@ -3,7 +3,7 @@ import pathlib
 import unittest
 from typing import Any, Optional
 from unittest import mock
-from unittest.mock import Mock, mock_open, patch
+from unittest.mock import mock_open, patch
 
 from dataclasses import dataclass
 
@@ -20,9 +20,15 @@ class TestUtilsCase(unittest.TestCase):
 
         cases = [
             TestCase(name="empty str", input="", expected=None),
-            TestCase(name="str", input="reference=fedora", expected='{"reference": ["fedora"]}'),
             TestCase(
-                name="List[str]", input=["reference=fedora"], expected='{"reference": ["fedora"]}'
+                name="str",
+                input="reference=fedora",
+                expected='{"reference": ["fedora"]}',
+            ),
+            TestCase(
+                name="List[str]",
+                input=["reference=fedora"],
+                expected='{"reference": ["fedora"]}',
             ),
             TestCase(
                 name="Dict[str,str]",
@@ -165,5 +171,5 @@ class TestUtilsCase(unittest.TestCase):
         self.assertDictEqual(payload, actual_dict)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

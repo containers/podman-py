@@ -74,5 +74,5 @@ class ManifestsIntegrationTest(base.IntegrationTest):
             self.client.manifests.create(self.invalid_manifest_name)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

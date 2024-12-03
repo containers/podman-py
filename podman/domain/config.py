@@ -3,7 +3,7 @@
 import sys
 import urllib
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Optional
 import json
 
 from podman.api import cached_property
@@ -24,7 +24,7 @@ else:
 class ServiceConnection:
     """ServiceConnection defines a connection to the Podman service."""
 
-    def __init__(self, name: str, attrs: Dict[str, str]):
+    def __init__(self, name: str, attrs: dict[str, str]):
         """Create a Podman ServiceConnection."""
         self.name = name
         self.attrs = attrs
@@ -74,7 +74,7 @@ class PodmanConfig:
             self.is_default = True
         # this elif is only for testing purposes
         elif "@@is_test@@" in path:
-            test_path = path.replace("@@is_test@@", '')
+            test_path = path.replace("@@is_test@@", "")
             self.path = Path(test_path) / "podman-connections.json"
             old_toml_file = Path(test_path) / "containers.conf"
             self.is_default = True
@@ -85,13 +85,13 @@ class PodmanConfig:
         self.attrs = {}
         if self.path.exists():
             try:
-                with open(self.path, encoding='utf-8') as file:
+                with open(self.path, encoding="utf-8") as file:
                     self.attrs = json.load(file)
-            except:  # pylint: disable=bare-except
+            except Exception:
                 # if the user specifies a path, it can either be a JSON file
                 # or a TOML file - so try TOML next
                 try:
-                    with self.path.open(encoding='utf-8') as file:
+                    with self.path.open(encoding="utf-8") as file:
                         buffer = file.read()
                     loaded_toml = toml_loads(buffer)
                     self.attrs.update(loaded_toml)
@@ -102,7 +102,7 @@ class PodmanConfig:
 
         # Read the old toml file configuration
         if self.is_default and old_toml_file.exists():
-            with old_toml_file.open(encoding='utf-8') as file:
+            with old_toml_file.open(encoding="utf-8") as file:
                 buffer = file.read()
             loaded_toml = toml_loads(buffer)
             self.attrs.update(loaded_toml)
@@ -122,14 +122,14 @@ class PodmanConfig:
 
     @cached_property
     def services(self):
-        """Dict[str, ServiceConnection]: Returns list of service connections.
+        """dict[str, ServiceConnection]: Returns list of service connections.
 
         Examples:
             podman_config = PodmanConfig()
             address = podman_config.services["testing"]
             print(f"Testing service address {address}")
         """
-        services: Dict[str, ServiceConnection] = {}
+        services: dict[str, ServiceConnection] = {}
 
         # read the keys of the toml file first
         engine = self.attrs.get("engine")

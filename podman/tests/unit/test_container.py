@@ -6,9 +6,9 @@ import unittest
 try:
     # Python >= 3.10
     from collections.abc import Iterable
-except:
+except ImportError:
     # Python < 3.10
-    from collections import Iterable
+    from collections.abc import Iterable
 
 import requests_mock
 
@@ -108,7 +108,9 @@ class ContainersTestCase(unittest.TestCase):
                 "Error": None,
                 "Stats": [
                     {
-                        "ContainerId": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
+                        "ContainerId": (
+                            "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
+                        ),
                         "Name": "evil_ptolemy",
                         "CPU": 1000.0,
                     }
@@ -251,7 +253,7 @@ class ContainersTestCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_export(self, mock):
-        tarball = b'Yet another weird tarball...'
+        tarball = b"Yet another weird tarball..."
         body = io.BytesIO(tarball)
         adapter = mock.get(
             tests.LIBPOD_URL
@@ -268,7 +270,7 @@ class ContainersTestCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_get_archive(self, mock):
-        tarball = b'Yet another weird tarball...'
+        tarball = b"Yet another weird tarball..."
         body = io.BytesIO(tarball)
 
         header_value = {
@@ -341,7 +343,7 @@ class ContainersTestCase(unittest.TestCase):
         )
         container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
 
-        tarball = b'Yet another weird tarball...'
+        tarball = b"Yet another weird tarball..."
         body = io.BytesIO(tarball)
         actual = container.put_archive(path="/etc/motd", data=body.getvalue())
         self.assertTrue(actual)
@@ -362,7 +364,7 @@ class ContainersTestCase(unittest.TestCase):
         )
         container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
 
-        tarball = b'Yet another weird tarball...'
+        tarball = b"Yet another weird tarball..."
         body = io.BytesIO(tarball)
         actual = container.put_archive(path="deadbeef", data=body.getvalue())
         self.assertFalse(actual)
@@ -373,17 +375,17 @@ class ContainersTestCase(unittest.TestCase):
         body = {
             "Processes": [
                 [
-                    'jhonce',
-                    '2417',
-                    '2274',
-                    '0',
-                    'Mar01',
-                    '?',
-                    '00:00:01',
+                    "jhonce",
+                    "2417",
+                    "2274",
+                    "0",
+                    "Mar01",
+                    "?",
+                    "00:00:01",
                     '/usr/bin/ssh-agent /bin/sh -c exec -l /bin/bash -c "/usr/bin/gnome-session"',
                 ],
-                ['jhonce', '5544', '3522', '0', 'Mar01', 'pts/1', '00:00:02', '-bash'],
-                ['jhonce', '6140', '3522', '0', 'Mar01', 'pts/2', '00:00:00', '-bash'],
+                ["jhonce", "5544", "3522", "0", "Mar01", "pts/1", "00:00:02", "-bash"],
+                ["jhonce", "6140", "3522", "0", "Mar01", "pts/2", "00:00:00", "-bash"],
             ],
             "Titles": ["UID", "PID", "PPID", "C", "STIME", "TTY", "TIME CMD"],
         }
@@ -403,17 +405,36 @@ class ContainersTestCase(unittest.TestCase):
             {
                 "Processes": [
                     [
-                        'jhonce',
-                        '2417',
-                        '2274',
-                        '0',
-                        'Mar01',
-                        '?',
-                        '00:00:01',
-                        '/usr/bin/ssh-agent /bin/sh -c exec -l /bin/bash -c "/usr/bin/gnome-session"',
+                        "jhonce",
+                        "2417",
+                        "2274",
+                        "0",
+                        "Mar01",
+                        "?",
+                        "00:00:01",
+                        '/usr/bin/ssh-agent /bin/sh -c exec -l /bin/bash'
+                        + '-c "/usr/bin/gnome-session"',
                     ],
-                    ['jhonce', '5544', '3522', '0', 'Mar01', 'pts/1', '00:00:02', '-bash'],
-                    ['jhonce', '6140', '3522', '0', 'Mar01', 'pts/2', '00:00:00', '-bash'],
+                    [
+                        "jhonce",
+                        "5544",
+                        "3522",
+                        "0",
+                        "Mar01",
+                        "pts/1",
+                        "00:00:02",
+                        "-bash",
+                    ],
+                    [
+                        "jhonce",
+                        "6140",
+                        "3522",
+                        "0",
+                        "Mar01",
+                        "pts/2",
+                        "00:00:00",
+                        "-bash",
+                    ],
                 ],
                 "Titles": ["UID", "PID", "PPID", "C", "STIME", "TTY", "TIME CMD"],
             }
@@ -442,5 +463,5 @@ class ContainersTestCase(unittest.TestCase):
         self.assertTrue(adapter.called_once)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

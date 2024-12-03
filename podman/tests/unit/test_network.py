@@ -67,7 +67,8 @@ class NetworkTestCase(unittest.TestCase):
 
         actual = Network(attrs={"name": "database"})
         self.assertEqual(
-            actual.id, "3549b0028b75d981cdda2e573e9cb49dedc200185876df299f912b79f69dabd8"
+            actual.id,
+            "3549b0028b75d981cdda2e573e9cb49dedc200185876df299f912b79f69dabd8",
         )
 
     def test_name(self):
@@ -104,12 +105,12 @@ class NetworkTestCase(unittest.TestCase):
         self.assertDictEqual(
             adapter.last_request.json(),
             {
-                'Container': 'podman_ctnr',
+                "Container": "podman_ctnr",
                 "EndpointConfig": {
-                    'Aliases': ['production'],
-                    'IPAMConfig': {'IPv4Address': '172.16.0.1'},
-                    'IPAddress': '172.16.0.1',
-                    'NetworkID': '2f259bab93aaaaa2542ba43ef33eb990d0999ee1b9924b557b7be53c0b7a1bb9',
+                    "Aliases": ["production"],
+                    "IPAMConfig": {"IPv4Address": "172.16.0.1"},
+                    "IPAddress": "172.16.0.1",
+                    "NetworkID": "2f259bab93aaaaa2542ba43ef33eb990d0999ee1b9924b557b7be53c0b7a1bb9",
                 },
             },
         )
@@ -124,11 +125,11 @@ class NetworkTestCase(unittest.TestCase):
         self.assertDictEqual(
             adapter.last_request.json(),
             {
-                'Container': 'podman_ctnr',
+                "Container": "podman_ctnr",
                 "Force": True,
             },
         )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

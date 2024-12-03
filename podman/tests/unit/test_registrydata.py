@@ -56,7 +56,8 @@ class RegistryDataTestCase(unittest.TestCase):
             collection=ImagesManager(client=self.client.api),
         )
         self.assertEqual(
-            actual.id, "326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
+            actual.id,
+            "326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab",
         )
 
     def test_platform(self):
@@ -106,5 +107,5 @@ class RegistryDataTestCase(unittest.TestCase):
             rd.has_platform("This/is/not/a/legal/image/name")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

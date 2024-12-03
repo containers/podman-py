@@ -13,13 +13,14 @@
 #   under the License.
 #
 """Integration Test Utils"""
+
 import logging
 import os
 import shutil
 import subprocess
 import threading
 from contextlib import suppress
-from typing import List, Optional
+from typing import Optional
 
 import time
 
@@ -42,19 +43,19 @@ class PodmanLauncher:
         """create a launcher and build podman command"""
         podman_exe: str = podman_path
         if not podman_exe:
-            podman_exe = shutil.which('podman')
+            podman_exe = shutil.which("podman")
         if podman_exe is None:
             raise errors.PodmanNotInstalled()
 
-        self.socket_file: str = socket_uri.replace('unix://', '')
+        self.socket_file: str = socket_uri.replace("unix://", "")
         self.log_level = log_level
 
         self.proc = None
         self.reference_id = hash(time.monotonic())
 
-        self.cmd: List[str] = []
+        self.cmd: list[str] = []
         if privileged:
-            self.cmd.append('sudo')
+            self.cmd.append("sudo")
 
         self.cmd.append(podman_exe)
 
@@ -76,7 +77,10 @@ class PodmanLauncher:
         )
 
         process = subprocess.run(
-            [podman_exe, "--version"], check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            [podman_exe, "--version"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
         )
         self.version = str(process.stdout.decode("utf-8")).strip().split()[2]
 
@@ -85,7 +89,7 @@ class PodmanLauncher:
         logger.info(
             "Launching(%s) %s refid=%s",
             self.version,
-            ' '.join(self.cmd),
+            " ".join(self.cmd),
             self.reference_id,
         )
 
@@ -97,9 +101,7 @@ class PodmanLauncher:
         def consume(line: str):
             logger.debug(line.strip("\n") + f" refid={self.reference_id}")
 
-        self.proc = subprocess.Popen(
-            self.cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-        )  # pylint: disable=consider-using-with
+        self.proc = subprocess.Popen(self.cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)  # pylint: disable=consider-using-with
         threading.Thread(target=consume_lines, args=[self.proc.stdout, consume]).start()
 
         if not check_socket:

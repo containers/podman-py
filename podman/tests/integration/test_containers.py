@@ -7,9 +7,9 @@ import tempfile
 try:
     # Python >= 3.10
     from collections.abc import Iterator
-except:
+except ImportError:
     # Python < 3.10
-    from collections import Iterator
+    from collections.abc import Iterator
 
 import podman.tests.integration.base as base
 from podman import PodmanClient
@@ -45,7 +45,7 @@ class ContainersIntegrationTest(base.IntegrationTest):
             container = self.client.containers.create(
                 self.alpine_image,
                 command=["echo", random_string],
-                ports={'2222/tcp': 3333, 2244: 3344},
+                ports={"2222/tcp": 3333, 2244: 3344},
             )
             self.assertIsInstance(container, Container)
             self.assertGreater(len(container.attrs), 0)
@@ -63,11 +63,13 @@ class ContainersIntegrationTest(base.IntegrationTest):
 
             self.assertIn("2222/tcp", container.attrs["NetworkSettings"]["Ports"])
             self.assertEqual(
-                "3333", container.attrs["NetworkSettings"]["Ports"]["2222/tcp"][0]["HostPort"]
+                "3333",
+                container.attrs["NetworkSettings"]["Ports"]["2222/tcp"][0]["HostPort"],
             )
             self.assertIn("2244/tcp", container.attrs["NetworkSettings"]["Ports"])
             self.assertEqual(
-                "3344", container.attrs["NetworkSettings"]["Ports"]["2244/tcp"][0]["HostPort"]
+                "3344",
+                container.attrs["NetworkSettings"]["Ports"]["2244/tcp"][0]["HostPort"],
             )
 
         file_contents = b"This is an integration test for archive."
@@ -173,7 +175,7 @@ VOLUME myvol
 ENV foo=bar
 """
             tmp_file = tempfile.mktemp()
-            file = open(tmp_file, 'w')
+            file = open(tmp_file, "w")
             file.write(container_file)
             file.close()
             self.client.images.build(dockerfile=tmp_file, tag="test-img", path=".")
@@ -196,7 +198,7 @@ ENV foo=bar
             self.assertEqual(len(volume_list), len(existing_volumes))
 
     def test_container_labels(self):
-        labels = {'label1': 'value1', 'label2': 'value2'}
+        labels = {"label1": "value1", "label2": "value2"}
         labeled_container = self.client.containers.create(self.alpine_image, labels=labels)
         unlabeled_container = self.client.containers.create(
             self.alpine_image,
@@ -221,5 +223,5 @@ ENV foo=bar
             unlabeled_container.remove(v=True)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

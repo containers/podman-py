@@ -20,5 +20,5 @@ class SecretsTestCase(unittest.TestCase):
         self.assertIsInstance(manager, SecretsManager)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

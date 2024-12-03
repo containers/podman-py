@@ -1,7 +1,7 @@
 """SystemManager to provide system level information from Podman service."""
 
 import logging
-from typing import Any, Dict, Optional, Union
+from typing import Any, Optional, Union
 
 from podman.api.client import APIClient
 from podman import api
@@ -20,7 +20,7 @@ class SystemManager:
         """
         self.client = client
 
-    def df(self) -> Dict[str, Any]:  # pylint: disable=invalid-name
+    def df(self) -> dict[str, Any]:  # pylint: disable=invalid-name
         """Disk usage by Podman resources.
 
         Returns:
@@ -30,7 +30,7 @@ class SystemManager:
         response.raise_for_status()
         return response.json()
 
-    def info(self, *_, **__) -> Dict[str, Any]:
+    def info(self, *_, **__) -> dict[str, Any]:
         """Returns information on Podman service."""
         response = self.client.get("/info")
         response.raise_for_status()
@@ -48,7 +48,7 @@ class SystemManager:
         identitytoken: Optional[str] = None,
         registrytoken: Optional[str] = None,
         tls_verify: Optional[Union[bool, str]] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Log into Podman service.
 
         Args:
@@ -91,7 +91,7 @@ class SystemManager:
         response = self.client.head("/_ping")
         return response.ok
 
-    def version(self, **kwargs) -> Dict[str, Any]:
+    def version(self, **kwargs) -> dict[str, Any]:
         """Get version information from service.
 
         Keyword Args:

@@ -48,5 +48,5 @@ class SecretsIntegrationTest(base.IntegrationTest):
                 self.client.secrets.get(secret.id)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

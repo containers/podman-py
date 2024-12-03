@@ -3,7 +3,8 @@
 import logging
 import threading
 from contextlib import suppress
-from typing import Generator, Iterator, List, Union
+from typing import Union
+from collections.abc import Generator, Iterator
 
 from podman.domain.containers import Container
 from podman.domain.images import Image
@@ -18,7 +19,7 @@ class RunMixin:  # pylint: disable=too-few-public-methods
     def run(
         self,
         image: Union[str, Image],
-        command: Union[str, List[str], None] = None,
+        command: Union[str, list[str], None] = None,
         *,
         stdout=True,
         stderr=False,

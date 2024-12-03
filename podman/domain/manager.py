@@ -2,7 +2,8 @@
 
 from abc import ABC, abstractmethod
 from collections import abc
-from typing import Any, List, Mapping, Optional, TypeVar, Union
+from typing import Any, Optional, TypeVar, Union
+from collections.abc import Mapping
 
 from podman.api.client import APIClient
 
@@ -10,7 +11,7 @@ from podman.api.client import APIClient
 PodmanResourceType: TypeVar = TypeVar("PodmanResourceType", bound="PodmanResource")
 
 
-class PodmanResource(ABC):
+class PodmanResource:
     """Base class for representing resource of a Podman service.
 
     Attributes:
@@ -81,7 +82,9 @@ class Manager(ABC):
         """Type[PodmanResource]: Class which the factory method prepare_model() will use."""
 
     def __init__(
-        self, client: Optional[APIClient] = None, podman_client: Optional["PodmanClient"] = None
+        self,
+        client: Optional[APIClient] = None,
+        podman_client: Optional["PodmanClient"] = None,
     ) -> None:
         """Initialize Manager() object.
 
@@ -108,7 +111,7 @@ class Manager(ABC):
         """Returns representation of resource."""
 
     @abstractmethod
-    def list(self, **kwargs) -> List[PodmanResourceType]:
+    def list(self, **kwargs) -> list[PodmanResourceType]:
         """Returns list of resources."""
 
     def prepare_model(self, attrs: Union[PodmanResource, Mapping[str, Any]]) -> PodmanResourceType:
@@ -126,7 +129,10 @@ class Manager(ABC):
             # TODO Determine why pylint is reporting typing.Type not callable
             # pylint: disable=not-callable
             return self.resource(
-                attrs=attrs, client=self.client, podman_client=self.podman_client, collection=self
+                attrs=attrs,
+                client=self.client,
+                podman_client=self.podman_client,
+                collection=self,
             )
 
         # pylint: disable=broad-exception-raised

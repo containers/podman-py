@@ -71,5 +71,5 @@ class SystemTestCase(unittest.TestCase):
         self.assertDictEqual(self.client.version(), body)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
