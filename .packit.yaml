@@ -77,3 +77,13 @@ jobs:
     packages: [python-podman-fedora]
     dist_git_branches:
       - fedora-branched # rawhide updates are created automatically
+
+  # Test linting on the codebase
+  # This test might break based on the OS and lint used, so we follow fedora-latest as a reference
+  - job: tests
+    trigger: pull_request
+    tmt_plan: /upstream/sanity
+    packages: [python-podman-fedora]
+    targets:
+      - fedora-latest-stable
+    skip_build: true
