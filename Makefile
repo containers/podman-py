@@ -19,7 +19,7 @@ podman:
 
 .PHONY: lint
 lint: tox
-	$(PYTHON) -m tox -e black,pylint
+	$(PYTHON) -m tox -e format,lint
 
 .PHONY: tests
 tests: tox
