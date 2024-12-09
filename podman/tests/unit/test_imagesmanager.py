@@ -209,6 +209,64 @@ class ImagesManagerTestCase(unittest.TestCase):
         self.assertEqual(len("".join(untagged)), 0)
 
     @requests_mock.Mocker()
+    def test_prune_filters_label(self, mock):
+        """Unit test filters param label for Images prune()."""
+        mock.post(
+            tests.LIBPOD_URL
+            + "/images/prune?filters=%7B%22label%22%3A+%5B%22%7B%27license%27%3A+%27Apache-2.0%27%7D%22%5D%7D",
+            json=[
+                {
+                    "Id": "326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab",
+                    "Size": 1024,
+                },
+            ],
+        )
+
+        report = self.client.images.prune(filters={"label": {"license": "Apache-2.0"}})
+        self.assertIn("ImagesDeleted", report)
+        self.assertIn("SpaceReclaimed", report)
+
+        self.assertEqual(report["SpaceReclaimed"], 1024)
+
+        deleted = [r["Deleted"] for r in report["ImagesDeleted"] if "Deleted" in r]
+        self.assertEqual(len(deleted), 1)
+        self.assertIn("326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab", deleted)
+        self.assertGreater(len("".join(deleted)), 0)
+
+        untagged = [r["Untagged"] for r in report["ImagesDeleted"] if "Untagged" in r]
+        self.assertEqual(len(untagged), 1)
+        self.assertEqual(len("".join(untagged)), 0)
+
+    @requests_mock.Mocker()
+    def test_prune_filters_not_label(self, mock):
+        """Unit test filters param NOT-label for Images prune()."""
+        mock.post(
+            tests.LIBPOD_URL
+            + "/images/prune?filters=%7B%22label%21%22%3A+%5B%22%7B%27license%27%3A+%27Apache-2.0%27%7D%22%5D%7D",
+            json=[
+                {
+                    "Id": "c4b16966ecd94ffa910eab4e630e24f259bf34a87e924cd4b1434f267b0e354e",
+                    "Size": 1024,
+                },
+            ],
+        )
+
+        report = self.client.images.prune(filters={"label!": {"license": "Apache-2.0"}})
+        self.assertIn("ImagesDeleted", report)
+        self.assertIn("SpaceReclaimed", report)
+
+        self.assertEqual(report["SpaceReclaimed"], 1024)
+
+        deleted = [r["Deleted"] for r in report["ImagesDeleted"] if "Deleted" in r]
+        self.assertEqual(len(deleted), 1)
+        self.assertIn("c4b16966ecd94ffa910eab4e630e24f259bf34a87e924cd4b1434f267b0e354e", deleted)
+        self.assertGreater(len("".join(deleted)), 0)
+
+        untagged = [r["Untagged"] for r in report["ImagesDeleted"] if "Untagged" in r]
+        self.assertEqual(len(untagged), 1)
+        self.assertEqual(len("".join(untagged)), 0)
+
+    @requests_mock.Mocker()
     def test_prune_failure(self, mock):
         """Unit test to report error carried in response body."""
         mock.post(
