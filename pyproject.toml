@@ -1,32 +1,128 @@
-[tool.black]
-line-length = 100
-skip-string-normalization = true
-preview = true
-target-version = ["py39"]
-include = '\.pyi?$'
-exclude = '''
-/(
-    \.git
-  | \.tox
-  | \.venv
-  | \.history
-  | build
-  | dist
-  | docs
-  | hack
-)/
-'''
-[tool.isort]
-profile = "black"
-line_length = 100
 [build-system]
-# Any changes should be copied into requirements.txt, setup.cfg, and/or test-requirements.txt
-requires = [
-    "setuptools>=46.4",
-]
+requires = ["setuptools>=46.4"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "podman"
+dynamic = ["version"]
+description = "Bindings for Podman RESTful API"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.9"
+authors = [
+    { name = "Brent Baude" },
+    { name = "Jhon Honce", email = "jhonce@redhat.com" },
+    { name = "Urvashi Mohnani" },
+    { name = "Nicola Sella", email = "nsella@redhat.com" },
+]
+keywords = [
+    "libpod",
+    "podman",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+# compatible releases
+# ~= with version numbers
+dependencies = [
+    "requests >=2.24",
+    "tomli>=1.2.3; python_version<'3.11'",
+    "urllib3",
+]
+
+[project.optional-dependencies]
+progress_bar = [
+    "rich >= 12.5.1",
+]
+docs = [
+    "sphinx"
+]
+test = [
+    "coverage",
+    "fixtures",
+    "pytest",
+    "requests-mock",
+]
+
+[project.urls]
+"Bug Tracker" = "https://github.com/containers/podman-py/issues"
+Homepage = "https://github.com/containers/podman-py"
+"Libpod API" = "https://docs.podman.io/en/latest/_static/api.html"
+
 [tool.pytest.ini_options]
 log_cli = true
 log_cli_level = "DEBUG"
 log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
 log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+
+[tool.setuptools]
+packages = ["podman"]
+
+[tool.setuptools.dynamic]
+version = {attr = "podman.version.__version__"}
+
+[tool.ruff]
+line-length = 100
+src = ["podman"]
+
+# This is the section where Black is mostly replaced with Ruff
+[tool.ruff.format]
+exclude = [
+    ".git",
+    ".history",
+    ".tox",
+    ".venv",
+    "build",
+    "dist",
+    "docs",
+    "hack",
+]
+quote-style = "preserve"
+
+[tool.ruff.lint]
+select = [
+    # More stuff here https://docs.astral.sh/ruff/rules/
+    "F", # Pyflakes
+    "E", # Pycodestyle Error
+    "W", # Pycodestyle Warning
+    "N", # PEP8 Naming
+    # TODO "UP", # Pyupgrade
+    # TODO "ANN",
+    # TODO "S", # Bandit
+    # "B", # Bugbear
+    "A", # flake-8-builtins
+    "YTT", # flake-8-2020
+    "PLC", # Pylint Convention
+    "PLE", # Pylint Error
+    "PLW", # Pylint Warning
+]
+# Some checks should be enabled for code sanity disabled now
+# to avoid changing too many lines
+ignore = [
+    "F821", # TODO Undefined name
+    "F541", # TODO f-string is missing placeholders
+    "F401", # TODO Module imported but unused
+    "F841", # TODO Local variable is assigned to but never used
+    "E402", # TODO Module level import not at top of file
+    "E741", # TODO ambiguous variable name
+    "E722", # TODO do not use bare 'except'
+    "E501", # TODO line too long
+    "N818", # TODO Error Suffix in exception name
+    "N80", # TODO Invalid Name
+    "ANN10", # Missing type annotation
+    "PLW2901", # TODO Redefined Loop Name
+]
+[tool.ruff.lint.flake8-builtins]
+builtins-ignorelist = ["copyright", "all"]
+[tool.ruff.lint.per-file-ignores]
+"podman/tests/*.py" = ["S"]
