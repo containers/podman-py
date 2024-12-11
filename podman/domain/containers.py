@@ -4,7 +4,8 @@ import json
 import logging
 import shlex
 from contextlib import suppress
-from typing import Any, Dict, Iterable, Iterator, List, Mapping, Optional, Tuple, Union
+from typing import Any, Optional, Union
+from collections.abc import Iterable, Iterator, Mapping
 
 import requests
 
@@ -97,7 +98,7 @@ class Container(PodmanResource):
 
         Keyword Args:
             author (str): Name of commit author
-            changes (List[str]): Instructions to apply during commit
+            changes (list[str]): Instructions to apply during commit
             comment (str): Commit message to include with Image, overrides keyword message
             conf (dict[str, Any]): Ignored.
             format (str): Format of the image manifest and metadata
@@ -120,7 +121,7 @@ class Container(PodmanResource):
         body = response.json()
         return ImagesManager(client=self.client).get(body["Id"])
 
-    def diff(self) -> List[Dict[str, int]]:
+    def diff(self) -> list[dict[str, int]]:
         """Report changes of a container's filesystem.
 
         Raises:
@@ -133,7 +134,7 @@ class Container(PodmanResource):
     # pylint: disable=too-many-arguments
     def exec_run(
         self,
-        cmd: Union[str, List[str]],
+        cmd: Union[str, list[str]],
         *,
         stdout: bool = True,
         stderr: bool = True,
@@ -144,11 +145,12 @@ class Container(PodmanResource):
         detach: bool = False,
         stream: bool = False,
         socket: bool = False,  # pylint: disable=unused-argument
-        environment: Union[Mapping[str, str], List[str]] = None,
+        environment: Union[Mapping[str, str], list[str]] = None,
         workdir: str = None,
         demux: bool = False,
-    ) -> Tuple[
-        Optional[int], Union[Iterator[Union[bytes, Tuple[bytes, bytes]]], Any, Tuple[bytes, bytes]]
+    ) -> tuple[
+        Optional[int],
+        Union[Iterator[Union[bytes, tuple[bytes, bytes]]], Any, tuple[bytes, bytes]],
     ]:
         """Run given command inside container and return results.
 
@@ -165,7 +167,7 @@ class Container(PodmanResource):
             stream: Stream response data. Ignored if ``detach`` is ``True``. Default: False
             socket: Return the connection socket to allow custom
                 read/write operations. Default: False
-            environment: A dictionary or a List[str] in
+            environment: A dictionary or a list[str] in
                 the following format ["PASSWORD=xxx"] or
                 {"PASSWORD": "xxx"}.
             workdir: Path to working directory for this exec session
@@ -244,7 +246,7 @@ class Container(PodmanResource):
 
     def get_archive(
         self, path: str, chunk_size: int = api.DEFAULT_CHUNK_SIZE
-    ) -> Tuple[Iterable, Dict[str, Any]]:
+    ) -> tuple[Iterable, dict[str, Any]]:
         """Download a file or folder from the container's filesystem.
 
         Args:
@@ -262,7 +264,7 @@ class Container(PodmanResource):
         stat = api.decode_header(stat)
         return response.iter_content(chunk_size=chunk_size), stat
 
-    def inspect(self) -> Dict:
+    def inspect(self) -> dict:
         """Inspect a container.
 
         Raises:
@@ -413,7 +415,7 @@ class Container(PodmanResource):
 
     def stats(
         self, **kwargs
-    ) -> Union[bytes, Dict[str, Any], Iterator[bytes], Iterator[Dict[str, Any]]]:
+    ) -> Union[bytes, dict[str, Any], Iterator[bytes], Iterator[dict[str, Any]]]:
         """Return statistics for container.
 
         Keyword Args:
@@ -468,7 +470,7 @@ class Container(PodmanResource):
         body = response.json()
         raise APIError(body["cause"], response=response, explanation=body["message"])
 
-    def top(self, **kwargs) -> Union[Iterator[Dict[str, Any]], Dict[str, Any]]:
+    def top(self, **kwargs) -> Union[Iterator[dict[str, Any]], dict[str, Any]]:
         """Report on running processes in the container.
 
         Keyword Args:
@@ -510,7 +512,7 @@ class Container(PodmanResource):
         """Block until the container enters given state.
 
         Keyword Args:
-            condition (Union[str, List[str]]): Container state on which to release.
+            condition (Union[str, list[str]]): Container state on which to release.
                 One or more of: "configured", "created", "running", "stopped",
                 "paused", "exited", "removing", "stopping".
             interval (int): Time interval to wait before polling for completion.

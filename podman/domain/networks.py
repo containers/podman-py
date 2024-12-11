@@ -24,7 +24,7 @@ class Network(PodmanResource):
     """Details and configuration for a networks managed by the Podman service.
 
     Attributes:
-        attrs (Dict[str, Any]): Attributes of Network reported from Podman service
+        attrs (dict[str, Any]): Attributes of Network reported from Podman service
     """
 
     @property
@@ -41,7 +41,7 @@ class Network(PodmanResource):
 
     @property
     def containers(self):
-        """List[Container]: Returns list of Containers connected to network."""
+        """list[Container]: Returns list of Containers connected to network."""
         with suppress(KeyError):
             container_manager = ContainersManager(client=self.client)
             return [container_manager.get(ident) for ident in self.attrs["Containers"].keys()]
@@ -71,12 +71,12 @@ class Network(PodmanResource):
             container: To add to this Network
 
         Keyword Args:
-            aliases (List[str]): Aliases to add for this endpoint
-            driver_opt (Dict[str, Any]): Options to provide to network driver
+            aliases (list[str]): Aliases to add for this endpoint
+            driver_opt (dict[str, Any]): Options to provide to network driver
             ipv4_address (str): IPv4 address for given Container on this network
             ipv6_address (str): IPv6 address for given Container on this network
-            link_local_ips (List[str]): list of link-local addresses
-            links (List[Union[str, Containers]]): Ignored
+            link_local_ips (list[str]): list of link-local addresses
+            links (list[Union[str, Containers]]): Ignored
 
         Raises:
             APIError: when Podman service reports an error
