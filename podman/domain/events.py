@@ -3,7 +3,8 @@
 import json
 import logging
 from datetime import datetime
-from typing import Any, Dict, Optional, Union, Iterator
+from typing import Any, Optional, Union
+from collections.abc import Iterator
 
 from podman import api
 from podman.api.client import APIClient
@@ -26,9 +27,9 @@ class EventsManager:  # pylint: disable=too-few-public-methods
         self,
         since: Union[datetime, int, None] = None,
         until: Union[datetime, int, None] = None,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: Optional[dict[str, Any]] = None,
         decode: bool = False,
-    ) -> Iterator[Union[str, Dict[str, Any]]]:
+    ) -> Iterator[Union[str, dict[str, Any]]]:
         """Report on networks.
 
         Args:
@@ -38,7 +39,7 @@ class EventsManager:  # pylint: disable=too-few-public-methods
             until: Get events older than this time.
 
         Yields:
-            When decode is True, Iterator[Dict[str, Any]]
+            When decode is True, Iterator[dict[str, Any]]
 
             When decode is False, Iterator[str]
         """

@@ -2,7 +2,8 @@
 
 import logging
 import urllib
-from typing import Any, Dict, List, Mapping, Union
+from typing import Any, Union
+from collections.abc import Mapping
 
 from podman import api
 from podman.domain.containers import Container
@@ -44,7 +45,7 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
         response.raise_for_status()
         return self.prepare_model(attrs=response.json())
 
-    def list(self, **kwargs) -> List[Container]:
+    def list(self, **kwargs) -> list[Container]:
         """Report on containers.
 
         Keyword Args:
@@ -57,7 +58,7 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
 
                 - exited (int): Only containers with specified exit code
                 - status (str): One of restarting, running, paused, exited
-                - label (Union[str, List[str]]): Format either "key", "key=value" or a list of such.
+                - label (Union[str, list[str]]): Format either "key", "key=value" or a list of such.
                 - id (str): The id of the container.
                 - name (str): The name of the container.
                 - ancestor (str): Filter by container ancestor. Format of
@@ -90,17 +91,17 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
 
         return [self.prepare_model(attrs=i) for i in response.json()]
 
-    def prune(self, filters: Mapping[str, str] = None) -> Dict[str, Any]:
+    def prune(self, filters: Mapping[str, str] = None) -> dict[str, Any]:
         """Delete stopped containers.
 
         Args:
             filters: Criteria for determining containers to remove. Available keys are:
                 - until (str): Delete containers before this time
-                - label (List[str]): Labels associated with containers
+                - label (list[str]): Labels associated with containers
 
         Returns:
             Keys:
-                - ContainersDeleted (List[str]): Identifiers of deleted containers.
+                - ContainersDeleted (list[str]): Identifiers of deleted containers.
                 - SpaceReclaimed (int): Amount of disk space reclaimed in bytes.
 
         Raises:

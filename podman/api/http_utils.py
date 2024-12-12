@@ -3,16 +3,17 @@
 import base64
 import collections.abc
 import json
-from typing import Dict, List, Mapping, Optional, Union, Any
+from typing import Optional, Union, Any
+from collections.abc import Mapping
 
 
-def prepare_filters(filters: Union[str, List[str], Mapping[str, str]]) -> Optional[str]:
-    """Return filters as an URL quoted JSON Dict[str, List[Any]]."""
+def prepare_filters(filters: Union[str, list[str], Mapping[str, str]]) -> Optional[str]:
+    """Return filters as an URL quoted JSON dict[str, list[Any]]."""
 
     if filters is None or len(filters) == 0:
         return None
 
-    criteria: Dict[str, List[str]] = {}
+    criteria: dict[str, list[str]] = {}
     if isinstance(filters, str):
         _format_string(filters, criteria)
     elif isinstance(filters, collections.abc.Mapping):
@@ -42,12 +43,12 @@ def _format_dict(filters, criteria):
     for key, value in filters.items():
         if value is None:
             continue
-        value = str(value)
+        str_value = str(value)
 
         if key in criteria:
-            criteria[key].append(value)
+            criteria[key].append(str_value)
         else:
-            criteria[key] = [value]
+            criteria[key] = [str_value]
 
 
 def _format_string(filters, criteria):
@@ -67,7 +68,7 @@ def prepare_body(body: Mapping[str, Any]) -> str:
     return json.dumps(body, sort_keys=True)
 
 
-def _filter_values(mapping: Mapping[str, Any], recursion=False) -> Dict[str, Any]:
+def _filter_values(mapping: Mapping[str, Any], recursion=False) -> dict[str, Any]:
     """Returns a canonical dictionary with values == None or empty Iterables removed.
 
     Dictionary is walked using recursion.
@@ -91,7 +92,7 @@ def _filter_values(mapping: Mapping[str, Any], recursion=False) -> Dict[str, Any
         else:
             proposal = value
 
-        if not recursion and proposal not in (None, str(), [], {}):
+        if not recursion and proposal not in (None, "", [], {}):
             canonical[key] = proposal
         elif recursion and proposal not in (None, [], {}):
             canonical[key] = proposal
@@ -99,5 +100,5 @@ def _filter_values(mapping: Mapping[str, Any], recursion=False) -> Dict[str, Any
     return canonical
 
 
-def encode_auth_header(auth_config: Dict[str, str]) -> str:
+def encode_auth_header(auth_config: dict[str, str]) -> str:
     return base64.urlsafe_b64encode(json.dumps(auth_config).encode('utf-8'))
