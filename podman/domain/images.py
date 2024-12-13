@@ -1,7 +1,8 @@
 """Model and Manager for Image resources."""
 
 import logging
-from typing import Any, Dict, Iterator, List, Optional, Union
+from typing import Any, Optional, Union
+from collections.abc import Iterator
 
 import urllib.parse
 
@@ -36,7 +37,7 @@ class Image(PodmanResource):
 
         return [tag for tag in repo_tags if tag != "<none>:<none>"]
 
-    def history(self) -> List[Dict[str, Any]]:
+    def history(self) -> list[dict[str, Any]]:
         """Returns history of the Image.
 
         Raises:
@@ -49,7 +50,7 @@ class Image(PodmanResource):
 
     def remove(
         self, **kwargs
-    ) -> List[Dict[api.Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[str, int]]]:
+    ) -> list[dict[api.Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[str, int]]]:
         """Delete image from Podman service.
 
         Podman only

@@ -46,7 +46,9 @@ class NotFoundError(HTTPException):
     def __init__(self, message, response=None):
         super().__init__(message)
         self.response = response
-        warnings.warn("APIConnection() and supporting classes.", PendingDeprecationWarning)
+        warnings.warn(
+            "APIConnection() and supporting classes.", PendingDeprecationWarning, stacklevel=2
+        )
 
 
 # If found, use new ImageNotFound otherwise old class
@@ -98,7 +100,9 @@ class RequestError(HTTPException):
     def __init__(self, message, response=None):
         super().__init__(message)
         self.response = response
-        warnings.warn("APIConnection() and supporting classes.", PendingDeprecationWarning)
+        warnings.warn(
+            "APIConnection() and supporting classes.", PendingDeprecationWarning, stacklevel=2
+        )
 
 
 class InternalServerError(HTTPException):
@@ -110,4 +114,6 @@ class InternalServerError(HTTPException):
     def __init__(self, message, response=None):
         super().__init__(message)
         self.response = response
-        warnings.warn("APIConnection() and supporting classes.", PendingDeprecationWarning)
+        warnings.warn(
+            "APIConnection() and supporting classes.", PendingDeprecationWarning, stacklevel=2
+        )
