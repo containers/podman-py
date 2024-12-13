@@ -6,13 +6,12 @@ import json
 import logging
 import os
 import urllib.parse
-from typing import Any, Optional, Union
+from typing import Any, Literal, Optional, Union
 from collections.abc import Iterator, Mapping, Generator
 from pathlib import Path
 import requests
 
 from podman import api
-from podman.api import Literal
 from podman.api.parse_utils import parse_repository
 from podman.api.http_utils import encode_auth_header
 from podman.domain.images import Image

@@ -1,12 +1,11 @@
 """Model and Manager for Volume resources."""
 
 import logging
-from typing import Any, Optional, Union
+from typing import Any, Literal, Optional, Union
 
 import requests
 
 from podman import api
-from podman.api import Literal
 from podman.domain.manager import Manager, PodmanResource
 from podman.errors import APIError
 
