@@ -4,11 +4,11 @@ import unittest
 try:
     # Python >= 3.10
     from collections.abc import Iterator
-except:
+except ImportError:
     # Python < 3.10
-    from collections import Iterator
+    from collections.abc import Iterator
 
-from unittest.mock import ANY, DEFAULT, patch, MagicMock
+from unittest.mock import DEFAULT, patch, MagicMock
 
 import requests_mock
 
@@ -258,11 +258,11 @@ class ContainersManagerTestCase(unittest.TestCase):
         self.assertEqual(expected_ports, actual_ports)
 
     def test_create_unsupported_key(self):
-        with self.assertRaises(TypeError) as e:
+        with self.assertRaises(TypeError):
             self.client.containers.create("fedora", "/usr/bin/ls", blkio_weight=100.0)
 
     def test_create_unknown_key(self):
-        with self.assertRaises(TypeError) as e:
+        with self.assertRaises(TypeError):
             self.client.containers.create("fedora", "/usr/bin/ls", unknown_key=100.0)
 
     @requests_mock.Mocker()

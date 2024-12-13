@@ -2,7 +2,8 @@
 
 from abc import ABC, abstractmethod
 from collections import abc
-from typing import Any, List, Mapping, Optional, TypeVar, Union
+from typing import Any, Optional, TypeVar, Union
+from collections.abc import Mapping
 
 from podman.api.client import APIClient
 
@@ -10,7 +11,7 @@ from podman.api.client import APIClient
 PodmanResourceType: TypeVar = TypeVar("PodmanResourceType", bound="PodmanResource")
 
 
-class PodmanResource(ABC):
+class PodmanResource(ABC):  # noqa: B024
     """Base class for representing resource of a Podman service.
 
     Attributes:
@@ -108,7 +109,7 @@ class Manager(ABC):
         """Returns representation of resource."""
 
     @abstractmethod
-    def list(self, **kwargs) -> List[PodmanResourceType]:
+    def list(self, **kwargs) -> list[PodmanResourceType]:
         """Returns list of resources."""
 
     def prepare_model(self, attrs: Union[PodmanResource, Mapping[str, Any]]) -> PodmanResourceType:

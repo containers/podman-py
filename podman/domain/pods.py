@@ -1,11 +1,11 @@
 """Model and Manager for Pod resources."""
 
 import logging
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 from podman.domain.manager import PodmanResource
 
-_Timeout = Union[None, float, Tuple[float, float], Tuple[float, None]]
+_Timeout = Union[None, float, tuple[float, float], tuple[float, None]]
 
 logger = logging.getLogger("podman.pods")
 
@@ -88,7 +88,7 @@ class Pod(PodmanResource):
         response = self.client.post(f"/pods/{self.id}/stop", params=params)
         response.raise_for_status()
 
-    def top(self, **kwargs) -> Dict[str, Any]:
+    def top(self, **kwargs) -> dict[str, Any]:
         """Report on running processes in pod.
 
         Keyword Args:

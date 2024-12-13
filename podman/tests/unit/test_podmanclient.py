@@ -59,7 +59,7 @@ class PodmanClientTestCase(unittest.TestCase):
                 "os": "linux",
             }
         }
-        adapter = mock.get(tests.LIBPOD_URL + "/info", json=body)
+        adapter = mock.get(tests.LIBPOD_URL + "/info", json=body)  # noqa: F841
 
         with PodmanClient(base_url=tests.BASE_SOCK) as client:
             actual = client.info()
