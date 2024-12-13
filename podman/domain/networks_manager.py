@@ -12,10 +12,9 @@ Example:
 import ipaddress
 import logging
 from contextlib import suppress
-from typing import Any, Optional
+from typing import Any, Optional, Literal
 
-from podman import api
-from podman.api import http_utils
+from podman.api import http_utils, prepare_filters
 from podman.domain.manager import Manager
 from podman.domain.networks import Network
 from podman.errors import APIError
@@ -152,7 +151,7 @@ class NetworksManager(Manager):
         filters = kwargs.get("filters", {})
         filters["name"] = kwargs.get("names")
         filters["id"] = kwargs.get("ids")
-        filters = api.prepare_filters(filters)
+        filters = prepare_filters(filters)
 
         params = {"filters": filters}
         response = self.client.get("/networks/json", params=params)
@@ -162,7 +161,7 @@ class NetworksManager(Manager):
 
     def prune(
         self, filters: Optional[dict[str, Any]] = None
-    ) -> dict[api.Literal["NetworksDeleted", "SpaceReclaimed"], Any]:
+    ) -> dict[Literal["NetworksDeleted", "SpaceReclaimed"], Any]:
         """Delete unused Networks.
 
         SpaceReclaimed always reported as 0
@@ -173,7 +172,7 @@ class NetworksManager(Manager):
         Raises:
             APIError: when service reports error
         """
-        params = {"filters": api.prepare_filters(filters)}
+        params = {"filters": prepare_filters(filters)}
         response = self.client.post("/networks/prune", params=params)
         response.raise_for_status()
 

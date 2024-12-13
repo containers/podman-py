@@ -1,12 +1,12 @@
 """Model and Manager for Image resources."""
 
 import logging
-from typing import Any, Optional, Union
+from typing import Any, Optional, Literal, Union
 from collections.abc import Iterator
 
 import urllib.parse
 
-from podman import api
+from podman.api import DEFAULT_CHUNK_SIZE
 from podman.domain.manager import PodmanResource
 from podman.errors import ImageNotFound, InvalidArgument
 
@@ -50,7 +50,7 @@ class Image(PodmanResource):
 
     def remove(
         self, **kwargs
-    ) -> list[dict[api.Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[str, int]]]:
+    ) -> list[dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[str, int]]]:
         """Delete image from Podman service.
 
         Podman only
@@ -70,7 +70,7 @@ class Image(PodmanResource):
 
     def save(
         self,
-        chunk_size: Optional[int] = api.DEFAULT_CHUNK_SIZE,
+        chunk_size: Optional[int] = DEFAULT_CHUNK_SIZE,
         named: Union[str, bool] = False,
     ) -> Iterator[bytes]:
         """Returns Image as tarball.
