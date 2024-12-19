@@ -553,11 +553,12 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             args.pop("log_config")
 
         for item in args.pop("mounts", []):
+            normalized_item = {key.lower(): value for key, value in item.items()}
             mount_point = {
-                "destination": item.get("target"),
+                "destination": normalized_item.get("target"),
                 "options": [],
-                "source": item.get("source"),
-                "type": item.get("type"),
+                "source": normalized_item.get("source"),
+                "type": normalized_item.get("type"),
             }
 
             # some names are different for podman-py vs REST API due to compatibility with docker
@@ -570,6 +571,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             regular_options = ["consistency", "mode", "size"]
 
             for k, v in item.items():
+                k = k.lower()
                 option_name = names_dict.get(k, k)
                 if k in bool_options and v is True:
                     options.append(option_name)
