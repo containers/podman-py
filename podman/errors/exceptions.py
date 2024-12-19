@@ -142,3 +142,8 @@ class ContainerError(PodmanError):
 
 class InvalidArgument(PodmanError):
     """Parameter to method/function was not valid."""
+
+
+class StreamParseError(RuntimeError):
+    def __init__(self, reason):
+        self.msg = reason

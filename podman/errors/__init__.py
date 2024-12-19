@@ -21,6 +21,7 @@ __all__ = [
     'NotFound',
     'NotFoundError',
     'PodmanError',
+    'StreamParseError',
 ]
 
 try:
@@ -32,6 +33,7 @@ try:
         InvalidArgument,
         NotFound,
         PodmanError,
+        StreamParseError,
     )
 except ImportError:
     pass
