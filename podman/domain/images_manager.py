@@ -14,6 +14,7 @@ from podman.api import Literal
 from podman.api.http_utils import encode_auth_header
 from podman.domain.images import Image
 from podman.domain.images_build import BuildMixin
+from podman.domain.json_stream import json_stream
 from podman.domain.manager import Manager
 from podman.domain.registry_data import RegistryData
 from podman.errors import APIError, ImageNotFound, PodmanError
@@ -323,6 +324,8 @@ class ImagesManager(BuildMixin, Manager):
             auth_config (Mapping[str, str]) – Override the credentials that are found in the
                 config for this request. auth_config should contain the username and password
                 keys to be valid.
+            decode (bool) – Decode the JSON data from the server into dicts.
+                Only applies with ``stream=True``
             platform (str) – Platform in the format os[/arch[/variant]]
             progress_bar (bool) - Display a progress bar with the image pull progress (uses
                 the compat endpoint). Default: False
@@ -404,7 +407,7 @@ class ImagesManager(BuildMixin, Manager):
             return None
 
         if stream:
-            return response.iter_lines()
+            return self._stream_helper(response, decode=kwargs.get("decode"))
 
         for item in response.iter_lines():
             obj = json.loads(item)
@@ -541,3 +544,24 @@ class ImagesManager(BuildMixin, Manager):
         response = self.client.post(f"/images/scp/{source}", params=params)
         response.raise_for_status()
         return response.json()
+
+    def _stream_helper(self, response, decode=False):
+        """Generator for data coming from a chunked-encoded HTTP response."""
+
+        if response.raw._fp.chunked:
+            if decode:
+                yield from json_stream(self._stream_helper(response, False))
+            else:
+                reader = response.raw
+                while not reader.closed:
+                    # this read call will block until we get a chunk
+                    data = reader.read(1)
+                    if not data:
+                        break
+                    if reader._fp.chunk_left:
+                        data += reader.read(reader._fp.chunk_left)
+                    yield data
+        else:
+            # Response isn't chunked, meaning we probably
+            # encountered an error immediately
+            yield self._result(response, json=decode)

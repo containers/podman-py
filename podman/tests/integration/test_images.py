@@ -151,6 +151,10 @@ class ImagesIntegrationTest(base.IntegrationTest):
         generator = self.client.images.pull("ubi8", tag="latest", stream=True)
         self.assertIsInstance(generator, types.GeneratorType)
 
+    def test_pull_stream_decode(self):
+        generator = self.client.images.pull("ubi8", tag="latest", stream=True, decode=True)
+        self.assertIsInstance(generator, types.GeneratorType)
+
     def test_scp(self):
         with self.assertRaises(APIError) as e:
             next(
