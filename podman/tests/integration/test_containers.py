@@ -143,6 +143,24 @@ class ContainersIntegrationTest(base.IntegrationTest):
             top_ctnr.reload()
             self.assertIn(top_ctnr.status, ("exited", "stopped"))
 
+        with self.subTest("Create-Init-Start Container"):
+            top_ctnr = self.client.containers.create(
+                self.alpine_image, ["/usr/bin/top"], name="TestInitPs", detach=True
+            )
+            self.assertEqual(top_ctnr.status, "created")
+
+            top_ctnr.init()
+            top_ctnr.reload()
+            self.assertEqual(top_ctnr.status, "initialized")
+
+            top_ctnr.start()
+            top_ctnr.reload()
+            self.assertEqual(top_ctnr.status, "running")
+
+            top_ctnr.stop()
+            top_ctnr.reload()
+            self.assertIn(top_ctnr.status, ("exited", "stopped"))
+
         with self.subTest("Prune Containers"):
             report = self.client.containers.prune()
             self.assertIn(top_ctnr.id, report["ContainersDeleted"])

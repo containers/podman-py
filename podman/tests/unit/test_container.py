@@ -102,6 +102,17 @@ class ContainersTestCase(unittest.TestCase):
         self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
+    def test_init(self, mock):
+        adapter = mock.post(
+            tests.LIBPOD_URL
+            + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/init",
+            status_code=204,
+        )
+        container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
+        container.init()
+        self.assertTrue(adapter.called_once)
+
+    @requests_mock.Mocker()
     def test_stats(self, mock):
         stream = [
             {

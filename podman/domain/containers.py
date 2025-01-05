@@ -54,7 +54,7 @@ class Container(PodmanResource):
 
     @property
     def status(self):
-        """Literal["running", "stopped", "exited", "unknown"]: Returns status of container."""
+        """Literal["created", "initialized", "running", "stopped", "exited", "unknown"]: Returns status of container."""
         with suppress(KeyError):
             return self.attrs["State"]["Status"]
         return "unknown"
@@ -261,6 +261,11 @@ class Container(PodmanResource):
         stat = response.headers.get("x-docker-container-path-stat", None)
         stat = api.decode_header(stat)
         return response.iter_content(chunk_size=chunk_size), stat
+
+    def init(self) -> None:
+        """Initialize the container."""
+        response = self.client.post(f"/containers/{self.id}/init")
+        response.raise_for_status()
 
     def inspect(self) -> Dict:
         """Inspect a container.
