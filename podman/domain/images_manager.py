@@ -323,6 +323,8 @@ class ImagesManager(BuildMixin, Manager):
             auth_config (Mapping[str, str]) – Override the credentials that are found in the
                 config for this request. auth_config should contain the username and password
                 keys to be valid.
+            compatMode (bool) – Return the same JSON payload as the Docker-compat endpoint.
+                Default: True.
             platform (str) – Platform in the format os[/arch[/variant]]
             progress_bar (bool) - Display a progress bar with the image pull progress (uses
                 the compat endpoint). Default: False
@@ -354,7 +356,8 @@ class ImagesManager(BuildMixin, Manager):
 
         params = {
             "reference": repository,
-            "tlsVerify": kwargs.get("tls_verify"),
+            "tlsVerify": kwargs.get("tls_verify", True),
+            "compatMode": kwargs.get("compatMode", True),
         }
 
         if all_tags:
