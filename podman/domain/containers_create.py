@@ -225,7 +225,6 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             read_only (bool): Mount the container's root filesystem as read only.
             read_write_tmpfs (bool): Mount temporary file systems as read write,
                 in case of read_only options set to True. Default: False
-            remove (bool): Remove the container when it has finished running. Default: False.
             restart_policy (Dict[str, Union[str, int]]): Restart the container when it exits.
                 Configured as a dictionary with keys:
 
