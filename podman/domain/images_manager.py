@@ -324,6 +324,8 @@ class ImagesManager(BuildMixin, Manager):
             auth_config (Mapping[str, str]) – Override the credentials that are found in the
                 config for this request. auth_config should contain the username and password
                 keys to be valid.
+            compatMode (bool) – Return the same JSON payload as the Docker-compat endpoint.
+                Default: True.
             decode (bool) – Decode the JSON data from the server into dicts.
                 Only applies with ``stream=True``
             platform (str) – Platform in the format os[/arch[/variant]]
@@ -357,7 +359,8 @@ class ImagesManager(BuildMixin, Manager):
 
         params = {
             "reference": repository,
-            "tlsVerify": kwargs.get("tls_verify"),
+            "tlsVerify": kwargs.get("tls_verify", True),
+            "compatMode": kwargs.get("compatMode", True),
         }
 
         if all_tags:
@@ -409,7 +412,7 @@ class ImagesManager(BuildMixin, Manager):
         if stream:
             return self._stream_helper(response, decode=kwargs.get("decode"))
 
-        for item in response.iter_lines():
+        for item in reversed(list(response.iter_lines())):
             obj = json.loads(item)
             if all_tags and "images" in obj:
                 images: List[Image] = []
