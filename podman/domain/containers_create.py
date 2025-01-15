@@ -344,6 +344,8 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         """
         if isinstance(image, Image):
             image = image.id
+        if isinstance(command, str):
+            command = [command]
 
         payload = {"image": image, "command": command}
         payload.update(kwargs)
