@@ -36,6 +36,21 @@ class ParseUtilsTestCase(unittest.TestCase):
                 input="quay.io/libpod/testimage:latest",
                 expected=("quay.io/libpod/testimage", "latest"),
             ),
+            TestCase(
+                name=":port",
+                input="quay.io:5000/libpod/testimage",
+                expected=("quay.io:5000/libpod/testimage", None),
+            ),
+            TestCase(
+                name=":port@digest",
+                input="quay.io:5000/libpod/testimage@71f1b47263fc",
+                expected=("quay.io:5000/libpod/testimage", "71f1b47263fc"),
+            ),
+            TestCase(
+                name=":port:tag",
+                input="quay.io:5000/libpod/testimage:latest",
+                expected=("quay.io:5000/libpod/testimage", "latest"),
+            ),
         ]
 
         for case in cases:
