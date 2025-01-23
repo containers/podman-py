@@ -11,6 +11,7 @@ import requests
 
 from podman import api
 from podman.api import Literal
+from podman.api.parse_utils import parse_repository
 from podman.api.http_utils import encode_auth_header
 from podman.domain.images import Image
 from podman.domain.images_build import BuildMixin
@@ -343,10 +344,9 @@ class ImagesManager(BuildMixin, Manager):
             APIError: when service returns an error
         """
         if tag is None or len(tag) == 0:
-            tokens = repository.split(":")
-            if len(tokens) == 2:
-                repository = tokens[0]
-                tag = tokens[1]
+            repository, parsed_tag = parse_repository(repository)
+            if parsed_tag is not None:
+                tag = parsed_tag
             else:
                 tag = "latest"
 

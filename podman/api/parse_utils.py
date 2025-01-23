@@ -24,7 +24,9 @@ def parse_repository(name: str) -> Tuple[str, Optional[str]]:
         return elements[0], elements[1]
 
     # split repository and image name from tag
-    elements = name.split(":", 1)
+    # tags need to be split from the right since
+    # a port number might increase the split list len by 1
+    elements = name.rsplit(":", 1)
     if len(elements) == 2 and "/" not in elements[1]:
         return elements[0], elements[1]
 
