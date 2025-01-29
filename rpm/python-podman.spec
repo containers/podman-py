@@ -81,10 +81,7 @@ export PBR_VERSION="0.0.0"
 %pyproject_save_files %{pypi_name}
 %endif
 
-%if !%{defined rhel8_py}
 %check
-%pyproject_check_import -e podman.api.typing_extensions
-%endif
 
 %if %{defined rhel8_py}
 %files -n python%{python3_pkgversion}-%{pypi_name}

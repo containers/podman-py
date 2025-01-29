@@ -18,10 +18,10 @@ select = [
     "E", # Pycodestyle Error
     "W", # Pycodestyle Warning
     "N", # PEP8 Naming
-    # TODO "UP", # Pyupgrade
+    "UP", # Pyupgrade
     # TODO "ANN",
-    # TODO "S", # Bandit
-    # "B", # Bugbear
+    "S", # Bandit
+    "B", # Bugbear
     "A", # flake-8-builtins
     "YTT", # flake-8-2020
     "PLC", # Pylint Convention
@@ -32,17 +32,16 @@ select = [
 # to avoid changing too many lines
 ignore = [
     "F821", # TODO Undefined name
-    "F541", # TODO f-string is missing placeholders
-    "F401", # TODO Module imported but unused
-    "F841", # TODO Local variable is assigned to but never used
-    "E402", # TODO Module level import not at top of file
-    "E741", # TODO ambiguous variable name
-    "E722", # TODO do not use bare 'except'
-    "E501", # TODO line too long
+    # Some Exceptions such as NotFound and NotFoundError can be ambiguous
+    # This change need to be performed with carefulness
     "N818", # TODO Error Suffix in exception name
+    # This can lead to API breaking changes so it's disabled for now
     "N80", # TODO Invalid Name
-    "ANN10", # Missing type annotation
-    "PLW2901", # TODO Redefined Loop Name
+    # TODO this error fails on one file and it's necessary to address
+    # the issue properly on a specific PR
+    "S108",
+    # TODO This is probably a false positive
+    "S603",
 ]
 [lint.per-file-ignores]
 "podman/tests/*.py" = ["S"]

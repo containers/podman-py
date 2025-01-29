@@ -1,7 +1,8 @@
 """Module for tracking registry metadata."""
 
 import logging
-from typing import Any, Mapping, Optional, Union
+from typing import Any, Optional, Union
+from collections.abc import Mapping
 
 from podman import api
 from podman.domain.images import Image

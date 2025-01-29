@@ -17,20 +17,12 @@ from podman.api.tar_utils import create_tar, prepare_containerfile, prepare_cont
 
 DEFAULT_CHUNK_SIZE = 2 * 1024 * 1024
 
-try:
-    from typing import Literal
-except (ImportError, ModuleNotFoundError):
-    try:
-        from typing_extensions import Literal
-    except (ImportError, ModuleNotFoundError):
-        from podman.api.typing_extensions import Literal  # pylint: disable=ungrouped-imports
 
 # isort: unique-list
 __all__ = [
     'APIClient',
     'COMPATIBLE_VERSION',
     'DEFAULT_CHUNK_SIZE',
-    'Literal',
     'VERSION',
     'cached_property',
     'create_tar',

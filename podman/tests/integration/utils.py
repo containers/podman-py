@@ -20,7 +20,7 @@ import shutil
 import subprocess
 import threading
 from contextlib import suppress
-from typing import List, Optional
+from typing import Optional
 
 import time
 
@@ -53,7 +53,7 @@ class PodmanLauncher:
         self.proc = None
         self.reference_id = hash(time.monotonic())
 
-        self.cmd: List[str] = []
+        self.cmd: list[str] = []
         if privileged:
             self.cmd.append('sudo')
 

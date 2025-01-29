@@ -1,7 +1,7 @@
 import io
 import json
 import unittest
-from typing import Iterable
+from collections.abc import Iterable
 
 import requests_mock
 

@@ -5,9 +5,9 @@ import unittest
 try:
     # Python >= 3.10
     from collections.abc import Iterable
-except:
+except ImportError:
     # Python < 3.10
-    from collections import Iterable
+    from collections.abc import Iterable
 from unittest.mock import patch
 
 import requests_mock

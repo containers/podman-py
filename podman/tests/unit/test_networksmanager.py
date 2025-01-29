@@ -171,6 +171,8 @@ class NetworksManagerTestCase(unittest.TestCase):
         adapter = mock.post(tests.LIBPOD_URL + "/networks/create", json=FIRST_NETWORK_LIBPOD)
 
         network = self.client.networks.create("podman")
+        self.assertIsInstance(network, Network)
+
         self.assertEqual(adapter.call_count, 1)
         self.assertDictEqual(
             adapter.last_request.json(),

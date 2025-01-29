@@ -1,6 +1,7 @@
 """Podman API Errors."""
 
-from typing import Iterable, List, Optional, Union, TYPE_CHECKING
+from typing import Optional, Union, TYPE_CHECKING
+from collections.abc import Iterable
 
 from requests import Response
 from requests.exceptions import HTTPError
@@ -112,7 +113,7 @@ class ContainerError(PodmanError):
         self,
         container: "Container",
         exit_status: int,
-        command: Union[str, List[str]],
+        command: Union[str, list[str]],
         image: str,
         stderr: Optional[Iterable[str]] = None,
     ):  # pylint: disable=too-many-positional-arguments
