@@ -1,0 +1,23 @@
+require:
+    - make
+    - python3-pip
+
+/lint:
+    tag: [ stable, lint ]
+    summary: Run linting on the whole codebase
+    test: cd .. && make lint
+
+/coverage_integration:
+    tag: [ stable, coverage ]
+    summary: Run integration tests coverage check
+    test: cd .. && make integration
+
+/coverage_unittest:
+    tag: [ stable, coverage ]
+    summary: Run unit tests coverage check
+    test: cd .. && make unittest
+
+/tests:
+    tag: [ upstream, downstream ]
+    summary: Run all tests
+    test: cd .. && make tests
