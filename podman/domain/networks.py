@@ -111,6 +111,7 @@ class Network(PodmanResource):
             f"/networks/{self.name}/connect",
             data=json.dumps(data),
             headers={"Content-type": "application/json"},
+            **kwargs,
         )
         response.raise_for_status()
 
