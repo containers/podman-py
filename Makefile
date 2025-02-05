@@ -13,9 +13,9 @@ export PODMAN_VERSION ?= "5.3.0"
 .PHONY: podman
 podman:
 	rm dist/* || :
-	$(PYTHON) -m pip install --user -r requirements.txt
+	$(PYTHON) -m pip install -q build
 	PODMAN_VERSION=$(PODMAN_VERSION) \
-	$(PYTHON) setup.py sdist bdist bdist_wheel
+	$(PYTHON) -m build
 
 .PHONY: lint
 lint: tox

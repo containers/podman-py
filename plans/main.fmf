@@ -20,7 +20,7 @@ prepare:
   - name: pip dependencies
     how: shell
     script:
-      - pip3 install -r test-requirements.txt
+      - pip3 install .[test]
 
   - name: ssh configuration
     how: shell
