@@ -87,3 +87,25 @@ jobs:
     targets:
       - fedora-latest-stable
     skip_build: true
+
+  - job: tests
+    trigger: pull_request
+    tmt_plan: /upstream/all
+    packages: [python-podman-fedora]
+    targets:
+      - fedora-all
+
+  - job: tests
+    trigger: pull_request
+    tmt_plan: /upstream/base
+    packages: [python-podman-centos]
+    targets:
+      - centos-stream-9
+      - centos-stream-10
+
+  - job: tests
+    trigger: pull_request
+    tmt_plan: /upstream/base
+    packages: [python-podman-rhel]
+    targets:
+      - epel-9

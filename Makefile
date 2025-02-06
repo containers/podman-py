@@ -26,6 +26,14 @@ tests: tox
 	# see tox.ini for environment variable settings
 	$(PYTHON) -m tox -e coverage,py39,py310,py311,py312,py313
 
+.PHONY: tests-ci-base-python
+tests-ci-base-python:
+	$(PYTHON) -m tox -e coverage,py
+
+.PHONY: tests-ci-all-python
+tests-ci-all-python:
+	$(PYTHON) -m tox -e coverage,py39,py310,py311,py312,py313
+
 .PHONY: unittest
 unittest:
 	coverage run -m unittest discover -s podman/tests/unit

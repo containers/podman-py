@@ -52,6 +52,7 @@ test = [
     "fixtures",
     "pytest",
     "requests-mock",
+    "tox",
 ]
 
 [project.urls]

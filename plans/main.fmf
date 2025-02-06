@@ -11,11 +11,6 @@ prepare:
       - make
       - podman
       - python3-pip
-      - python3.9
-      - python3.10
-      - python3.11
-      - python3.12
-      - python3.13
 
   - name: pip dependencies
     how: shell
@@ -36,20 +31,34 @@ prepare:
             # we want to change this to tag:stable once all the coverage tests are fixed
             filter: tag:lint
 
-    /tests:
-        summary: Run Python Podman Tests on upstream PRs
+    /base:
+        summary: Run Python Podman Tests on Upstream PRs for base Python
         discover+:
-            filter: tag:upstream
+            filter: tag:base
+
+    /all:
+        summary: Run Python Podman Tests on Upstream PRs for all Python versions
+        prepare+:
+            - name: install all python versions
+              how: install
+              package:
+                - python3.9
+                - python3.10
+                - python3.11
+                - python3.12
+                - python3.13
+        discover+:
+            filter: tag:matrix
 
     adjust+:
         enabled: false
         when: initiator is not defined or initiator != packit
 
 /downstream:
-    /tests:
+    /all:
       summary: Run Python Podman Tests on bodhi / errata and dist-git PRs
       discover+:
-          filter: tag:downstream
+          filter: tag:matrix
 
       adjust+:
           enabled: false
