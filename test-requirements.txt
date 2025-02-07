@@ -1,8 +1,0 @@
-# Any changes should be copied into pyproject.toml
--r requirements.txt
-ruff
-coverage
-fixtures
-pytest
-requests-mock >= 1.11.0
-tox

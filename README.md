@@ -24,8 +24,9 @@ pip install podman
 
 ## Dependencies
 
-* For runtime dependencies, see [requirements.txt](https://github.com/containers/podman-py/blob/main/requirements.txt).
-* For testing and development dependencies, see [test-requirements.txt](https://github.com/containers/podman-py/blob/main/test-requirements.txt).
+* For runtime dependencies, see \[dependencies\] in [pyproject.toml](https://github.com/containers/podman-py/blob/main/pyproject.toml)
+* For testing and development dependencies, see \[project.optional.dependencies\] in [pyproject.toml](https://github.com/containers/podman-py/blob/main/pyproject.toml)
+  * The package is split in \[progress\_bar\], \[docs\], and \[test\]
 
 ## Example usage
 
