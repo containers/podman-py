@@ -18,6 +18,14 @@ require:
     test: cd .. && make unittest
 
 /tests:
-    tag: [ upstream, downstream ]
-    summary: Run all tests
-    test: cd .. && make tests
+    /base_python:
+        tag: [ base ]
+        summary: Run all tests on the base python version
+        test: cd .. && make tests-ci-base-python
+        duration: 10m
+
+    /all_python:
+        tag: [ matrix]
+        summary: Run all tests for all ptyhon versions available
+        test: cd .. && make tests-ci-all-python
+        duration: 10m
