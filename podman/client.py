@@ -6,6 +6,7 @@ from contextlib import AbstractContextManager
 from pathlib import Path
 from typing import Any, Optional
 
+from podman.errors import PodmanConnectionError
 from podman.api import cached_property
 from podman.api.client import APIClient
 from podman.api.path_utils import get_runtime_dir
@@ -73,6 +74,18 @@ class PodmanClient(AbstractContextManager):
             api_kwargs["base_url"] = "http+unix://" + path
         self.api = APIClient(**api_kwargs)
 
+        # Check if the connection to the Podman service is successful
+        try:
+            SystemManager(client=self.api).version()
+        except Exception as e:
+            error_msg = "Failed to connect to Podman service"
+            raise PodmanConnectionError(
+                message=error_msg,
+                environment=os.environ,
+                host=api_kwargs.get("base_url"),
+                original_error=e,
+            )
+
     def __enter__(self) -> "PodmanClient":
         return self
 
@@ -116,25 +129,45 @@ class PodmanClient(AbstractContextManager):
         Raises:
             ValueError when required environment variable is not set
         """
-        environment = environment or os.environ
-        credstore_env = credstore_env or {}
+        try:
+            environment = environment or os.environ
+            credstore_env = credstore_env or {}
 
-        if version == "auto":
-            version = None
+            if version == "auto":
+                version = None
 
-        kwargs = {
-            'version': version,
-            'timeout': timeout,
-            'tls': False,
-            'credstore_env': credstore_env,
-            'max_pool_size': max_pool_size,
-        }
+            kwargs = {
+                "version": version,
+                "timeout": timeout,
+                "tls": False,
+                "credstore_env": credstore_env,
+                "max_pool_size": max_pool_size,
+            }
 
-        host = environment.get("CONTAINER_HOST") or environment.get("DOCKER_HOST") or None
-        if host is not None:
-            kwargs['base_url'] = host
+            host = (
+                environment.get("CONTAINER_HOST")
+                or environment.get("DOCKER_HOST")
+                or None
+            )
+            if host is not None:
+                kwargs["base_url"] = host
 
-        return PodmanClient(**kwargs)
+            return PodmanClient(**kwargs)
+        except ValueError as e:
+            error_msg = "Invalid environment configuration for Podman client"
+            raise PodmanConnectionError(
+                message=error_msg, environment=environment, host=host, original_error=e
+            )
+        except (ConnectionError, TimeoutError) as e:
+            error_msg = "Failed to connect to Podman service"
+            raise PodmanConnectionError(
+                message=error_msg, environment=environment, host=host, original_error=e
+            )
+        except Exception as e:
+            error_msg = "Failed to initialize Podman client from environment"
+            raise PodmanConnectionError(
+                message=error_msg, environment=environment, host=host, original_error=e
+            )
 
     @cached_property
     def containers(self) -> ContainersManager:
