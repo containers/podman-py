@@ -137,16 +137,21 @@ class PodmanClient(AbstractContextManager):
                 kwargs['base_url'] = host
 
             return PodmanClient(**kwargs)
-        except Exception as exc:
-            error_msg = "Failed to initialize Podman client from environment"
-            if isinstance(exc, ValueError):
-                error_msg = "Invalid environment configuration for Podman client"
-            elif isinstance(exc, (ConnectionError, TimeoutError)):
-                error_msg = "Failed to connect to Podman service"
-
+        except ValueError as e:
+            error_msg = "Invalid environment configuration for Podman client"
             raise PodmanConnectionError(
-                message=error_msg, environment=environment, host=host, original_error=exc
-            ) from exc
+                message=error_msg, environment=environment, host=host, original_error=e
+            )
+        except (ConnectionError, TimeoutError) as e:
+            error_msg = "Failed to connect to Podman service"
+            raise PodmanConnectionError(
+                message=error_msg, environment=environment, host=host, original_error=e
+            )
+        except Exception as e:
+            error_msg = "Failed to initialize Podman client from environment"
+            raise PodmanConnectionError(
+                message=error_msg, environment=environment, host=host, original_error=e
+            )
 
     @cached_property
     def containers(self) -> ContainersManager:
