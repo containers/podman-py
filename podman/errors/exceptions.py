@@ -151,7 +151,7 @@ class PodmanConnectionError(PodmanError):
     def __init__(
         self,
         message: str,
-        environment: Optional[Dict[str, str]] = None,
+        environment: Optional[dict[str, str]] = None,
         host: Optional[str] = None,
         original_error: Optional[Exception] = None,
     ):
