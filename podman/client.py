@@ -144,11 +144,7 @@ class PodmanClient(AbstractContextManager):
                 "max_pool_size": max_pool_size,
             }
 
-            host = (
-                environment.get("CONTAINER_HOST")
-                or environment.get("DOCKER_HOST")
-                or None
-            )
+            host = environment.get("CONTAINER_HOST") or environment.get("DOCKER_HOST") or None
             if host is not None:
                 kwargs["base_url"] = host
 

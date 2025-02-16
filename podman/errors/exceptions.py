@@ -144,6 +144,7 @@ class ContainerError(PodmanError):
 class InvalidArgument(PodmanError):
     """Parameter to method/function was not valid."""
 
+
 class PodmanConnectionError(PodmanError):
     """Exception raised when connection to Podman service fails using environment configuration."""
 
