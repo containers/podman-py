@@ -7,7 +7,8 @@ import random
 import re
 import shutil
 import tempfile
-from typing import Any, Dict, Iterator, List, Tuple
+from typing import Any
+from collections.abc import Iterator
 
 import itertools
 
@@ -22,7 +23,7 @@ class BuildMixin:
     """Class providing build method for ImagesManager."""
 
     # pylint: disable=too-many-locals,too-many-branches,too-few-public-methods,too-many-statements
-    def build(self, **kwargs) -> Tuple[Image, Iterator[bytes]]:
+    def build(self, **kwargs) -> tuple[Image, Iterator[bytes]]:
         """Returns built image.
 
         Keyword Args:
@@ -39,7 +40,7 @@ class BuildMixin:
             forcerm (bool) – Always remove intermediate containers, even after unsuccessful builds
             dockerfile (str) – full path to the Dockerfile / Containerfile
             buildargs (Mapping[str,str) – A dictionary of build arguments
-            container_limits (Dict[str, Union[int,str]]) –
+            container_limits (dict[str, Union[int,str]]) –
                 A dictionary of limits applied to each container created by the build process.
                     Valid keys:
 
@@ -52,11 +53,11 @@ class BuildMixin:
             shmsize (int) – Size of /dev/shm in bytes. The size must be greater than 0.
                 If omitted the system uses 64MB
             labels (Mapping[str,str]) – A dictionary of labels to set on the image
-            cache_from (List[str]) – A list of image's identifier used for build cache resolution
+            cache_from (list[str]) – A list of image's identifier used for build cache resolution
             target (str) – Name of the build-stage to build in a multi-stage Dockerfile
             network_mode (str) – networking mode for the run commands during build
             squash (bool) – Squash the resulting images layers into a single layer.
-            extra_hosts (Dict[str,str]) – Extra hosts to add to /etc/hosts in building
+            extra_hosts (dict[str,str]) – Extra hosts to add to /etc/hosts in building
                 containers, as a mapping of hostname to IP address.
             platform (str) – Platform in the format os[/arch[/variant]].
             isolation (str) – Isolation technology used during build. (ignored)
@@ -140,7 +141,7 @@ class BuildMixin:
         raise BuildError(unknown or "Unknown", report_stream)
 
     @staticmethod
-    def _render_params(kwargs) -> Dict[str, List[Any]]:
+    def _render_params(kwargs) -> dict[str, list[Any]]:
         """Map kwargs to query parameters.
 
         All unsupported kwargs are silently ignored.

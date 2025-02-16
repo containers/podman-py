@@ -3,7 +3,8 @@ import ipaddress
 import json
 import unittest
 from dataclasses import dataclass
-from typing import Any, Iterable, Optional, Tuple
+from typing import Any, Optional
+from collections.abc import Iterable
 from unittest import mock
 
 from requests import Response
@@ -17,7 +18,7 @@ class ParseUtilsTestCase(unittest.TestCase):
         class TestCase:
             name: str
             input: Any
-            expected: Tuple[str, Optional[str]]
+            expected: tuple[str, Optional[str]]
 
         cases = [
             TestCase(name="empty str", input="", expected=("", None)),
@@ -35,6 +36,21 @@ class ParseUtilsTestCase(unittest.TestCase):
                 name=":tag",
                 input="quay.io/libpod/testimage:latest",
                 expected=("quay.io/libpod/testimage", "latest"),
+            ),
+            TestCase(
+                name=":port",
+                input="quay.io:5000/libpod/testimage",
+                expected=("quay.io:5000/libpod/testimage", None),
+            ),
+            TestCase(
+                name=":port@digest",
+                input="quay.io:5000/libpod/testimage@71f1b47263fc",
+                expected=("quay.io:5000/libpod/testimage", "71f1b47263fc"),
+            ),
+            TestCase(
+                name=":port:tag",
+                input="quay.io:5000/libpod/testimage:latest",
+                expected=("quay.io:5000/libpod/testimage", "latest"),
             ),
         ]
 

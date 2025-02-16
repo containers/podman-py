@@ -1,6 +1,7 @@
 """Podman API Errors."""
 
-from typing import Iterable, List, Optional, Union, TYPE_CHECKING
+from typing import Optional, Union, TYPE_CHECKING, Dict
+from collections.abc import Iterable
 
 from requests import Response
 from requests.exceptions import HTTPError
@@ -112,7 +113,7 @@ class ContainerError(PodmanError):
         self,
         container: "Container",
         exit_status: int,
-        command: Union[str, List[str]],
+        command: Union[str, list[str]],
         image: str,
         stderr: Optional[Iterable[str]] = None,
     ):  # pylint: disable=too-many-positional-arguments
@@ -197,3 +198,16 @@ class PodmanConnectionError(PodmanError):
             msg.append(f"Caused by: {str(self.original_error)}")
 
         return " | ".join(msg)
+
+
+class StreamParseError(RuntimeError):
+    """Error parsing stream data."""
+    
+    def __init__(self, reason):
+        """Initialize StreamParseError.
+        
+        Args:
+            reason: Description of the parsing error
+        """
+        super().__init__(reason)
+        self.msg = reason

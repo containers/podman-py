@@ -1,19 +1,22 @@
 """PodmanResource manager subclassed for Images."""
 
+import builtins
 import io
 import json
 import logging
 import os
 import urllib.parse
-from typing import Any, Dict, Iterator, List, Mapping, Optional, Union, Generator
+from typing import Any, Literal, Optional, Union
+from collections.abc import Iterator, Mapping, Generator
 from pathlib import Path
 import requests
 
 from podman import api
-from podman.api import Literal
+from podman.api.parse_utils import parse_repository
 from podman.api.http_utils import encode_auth_header
 from podman.domain.images import Image
 from podman.domain.images_build import BuildMixin
+from podman.domain.json_stream import json_stream
 from podman.domain.manager import Manager
 from podman.domain.registry_data import RegistryData
 from podman.errors import APIError, ImageNotFound, PodmanError
@@ -46,25 +49,28 @@ class ImagesManager(BuildMixin, Manager):
         response = self.client.get(f"/images/{key}/exists")
         return response.ok
 
-    def list(self, **kwargs) -> List[Image]:
+    def list(self, **kwargs) -> builtins.list[Image]:
         """Report on images.
 
         Keyword Args:
             name (str) – Only show images belonging to the repository name
             all (bool) – Show intermediate image layers. By default, these are filtered out.
-            filters (Mapping[str, Union[str, List[str]]) – Filters to be used on the image list.
+            filters (Mapping[str, Union[str, list[str]]) – Filters to be used on the image list.
                 Available filters:
 
                 - dangling (bool)
-                - label (Union[str, List[str]]): format either "key" or "key=value"
+                - label (Union[str, list[str]]): format either "key" or "key=value"
 
         Raises:
             APIError: when service returns an error
         """
+        filters = kwargs.get("filters", {}).copy()
+        if name := kwargs.get("name"):
+            filters["reference"] = name
+
         params = {
             "all": kwargs.get("all"),
-            "name": kwargs.get("name"),
-            "filters": api.prepare_filters(kwargs.get("filters")),
+            "filters": api.prepare_filters(filters=filters),
         }
         response = self.client.get("/images/json", params=params)
         if response.status_code == requests.codes.not_found:
@@ -162,28 +168,43 @@ class ImagesManager(BuildMixin, Manager):
         return _generator(response.json())
 
     def prune(
-        self, filters: Optional[Mapping[str, Any]] = None
-    ) -> Dict[Literal["ImagesDeleted", "SpaceReclaimed"], Any]:
+        self,
+        all: Optional[bool] = False,  # pylint: disable=redefined-builtin
+        external: Optional[bool] = False,
+        filters: Optional[Mapping[str, Any]] = None,
+    ) -> dict[Literal["ImagesDeleted", "SpaceReclaimed"], Any]:
         """Delete unused images.
 
         The Untagged keys will always be "".
 
         Args:
+            all: Remove all images not in use by containers, not just dangling ones.
+            external: Remove images even when they are used by external containers
+            (e.g, by build containers).
             filters: Qualify Images to prune. Available filters:
 
                 - dangling (bool): when true, only delete unused and untagged images.
+                - label: (dict): filter by label.
+                         Examples:
+                         filters={"label": {"key": "value"}}
+                         filters={"label!": {"key": "value"}}
                 - until (str): Delete images older than this timestamp.
 
         Raises:
             APIError: when service returns an error
         """
-        response = self.client.post(
-            "/images/prune", params={"filters": api.prepare_filters(filters)}
-        )
+
+        params = {
+            "all": all,
+            "external": external,
+            "filters": api.prepare_filters(filters),
+        }
+
+        response = self.client.post("/images/prune", params=params)
         response.raise_for_status()
 
-        deleted: List[Dict[str, str]] = []
-        error: List[str] = []
+        deleted: builtins.list[dict[str, str]] = []
+        error: builtins.list[str] = []
         reclaimed: int = 0
         # If the prune doesn't remove images, the API returns "null"
         # and it's interpreted as None (NoneType)
@@ -209,7 +230,7 @@ class ImagesManager(BuildMixin, Manager):
             "SpaceReclaimed": reclaimed,
         }
 
-    def prune_builds(self) -> Dict[Literal["CachesDeleted", "SpaceReclaimed"], Any]:
+    def prune_builds(self) -> dict[Literal["CachesDeleted", "SpaceReclaimed"], Any]:
         """Delete builder cache.
 
         Method included to complete API, the operation always returns empty
@@ -219,7 +240,7 @@ class ImagesManager(BuildMixin, Manager):
 
     def push(
         self, repository: str, tag: Optional[str] = None, **kwargs
-    ) -> Union[str, Iterator[Union[str, Dict[str, Any]]]]:
+    ) -> Union[str, Iterator[Union[str, dict[str, Any]]]]:
         """Push Image or repository to the registry.
 
         Args:
@@ -229,7 +250,7 @@ class ImagesManager(BuildMixin, Manager):
         Keyword Args:
             auth_config (Mapping[str, str]: Override configured credentials. Must include
                 username and password keys.
-            decode (bool): return data from server as Dict[str, Any]. Ignored unless stream=True.
+            decode (bool): return data from server as dict[str, Any]. Ignored unless stream=True.
             destination (str): alternate destination for image. (Podman only)
             stream (bool): return output as blocking generator. Default: False.
             tlsVerify (bool): Require TLS verification.
@@ -239,7 +260,7 @@ class ImagesManager(BuildMixin, Manager):
         Raises:
             APIError: when service returns an error
         """
-        auth_config: Optional[Dict[str, str]] = kwargs.get("auth_config")
+        auth_config: Optional[dict[str, str]] = kwargs.get("auth_config")
 
         headers = {
             # A base64url-encoded auth configuration
@@ -281,8 +302,8 @@ class ImagesManager(BuildMixin, Manager):
 
     @staticmethod
     def _push_helper(
-        decode: bool, body: List[Dict[str, Any]]
-    ) -> Iterator[Union[str, Dict[str, Any]]]:
+        decode: bool, body: builtins.list[dict[str, Any]]
+    ) -> Iterator[Union[str, dict[str, Any]]]:
         """Helper needed to allow push() to return either a generator or a str."""
         for entry in body:
             if decode:
@@ -292,8 +313,12 @@ class ImagesManager(BuildMixin, Manager):
 
     # pylint: disable=too-many-locals,too-many-branches
     def pull(
-        self, repository: str, tag: Optional[str] = None, all_tags: bool = False, **kwargs
-    ) -> Union[Image, List[Image], Iterator[str]]:
+        self,
+        repository: str,
+        tag: Optional[str] = None,
+        all_tags: bool = False,
+        **kwargs,
+    ) -> Union[Image, builtins.list[Image], Iterator[str]]:
         """Request Podman service to pull image(s) from repository.
 
         Args:
@@ -305,6 +330,10 @@ class ImagesManager(BuildMixin, Manager):
             auth_config (Mapping[str, str]) – Override the credentials that are found in the
                 config for this request. auth_config should contain the username and password
                 keys to be valid.
+            compatMode (bool) – Return the same JSON payload as the Docker-compat endpoint.
+                Default: True.
+            decode (bool) – Decode the JSON data from the server into dicts.
+                Only applies with ``stream=True``
             platform (str) – Platform in the format os[/arch[/variant]]
             progress_bar (bool) - Display a progress bar with the image pull progress (uses
                 the compat endpoint). Default: False
@@ -320,14 +349,13 @@ class ImagesManager(BuildMixin, Manager):
             APIError: when service returns an error
         """
         if tag is None or len(tag) == 0:
-            tokens = repository.split(":")
-            if len(tokens) == 2:
-                repository = tokens[0]
-                tag = tokens[1]
+            repository, parsed_tag = parse_repository(repository)
+            if parsed_tag is not None:
+                tag = parsed_tag
             else:
                 tag = "latest"
 
-        auth_config: Optional[Dict[str, str]] = kwargs.get("auth_config")
+        auth_config: Optional[dict[str, str]] = kwargs.get("auth_config")
 
         headers = {
             # A base64url-encoded auth configuration
@@ -336,7 +364,8 @@ class ImagesManager(BuildMixin, Manager):
 
         params = {
             "reference": repository,
-            "tlsVerify": kwargs.get("tls_verify"),
+            "tlsVerify": kwargs.get("tls_verify", True),
+            "compatMode": kwargs.get("compatMode", True),
         }
 
         if all_tags:
@@ -386,12 +415,12 @@ class ImagesManager(BuildMixin, Manager):
             return None
 
         if stream:
-            return response.iter_lines()
+            return self._stream_helper(response, decode=kwargs.get("decode"))
 
-        for item in response.iter_lines():
+        for item in reversed(list(response.iter_lines())):
             obj = json.loads(item)
             if all_tags and "images" in obj:
-                images: List[Image] = []
+                images: builtins.list[Image] = []
                 for name in obj["images"]:
                     images.append(self.get(name))
                 return images
@@ -436,7 +465,7 @@ class ImagesManager(BuildMixin, Manager):
         image: Union[Image, str],
         force: Optional[bool] = None,
         noprune: bool = False,  # pylint: disable=unused-argument
-    ) -> List[Dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[str, int]]]:
+    ) -> builtins.list[dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[str, int]]]:
         """Delete image from Podman service.
 
         Args:
@@ -455,7 +484,7 @@ class ImagesManager(BuildMixin, Manager):
         response.raise_for_status(not_found=ImageNotFound)
 
         body = response.json()
-        results: List[Dict[str, Union[int, str]]] = []
+        results: builtins.list[dict[str, Union[int, str]]] = []
         for key in ("Deleted", "Untagged", "Errors"):
             if key in body:
                 for element in body[key]:
@@ -463,14 +492,14 @@ class ImagesManager(BuildMixin, Manager):
         results.append({"ExitCode": body["ExitCode"]})
         return results
 
-    def search(self, term: str, **kwargs) -> List[Dict[str, Any]]:
+    def search(self, term: str, **kwargs) -> builtins.list[dict[str, Any]]:
         """Search Images on registries.
 
         Args:
             term: Used to target Image results.
 
         Keyword Args:
-            filters (Mapping[str, List[str]): Refine results of search. Available filters:
+            filters (Mapping[str, list[str]): Refine results of search. Available filters:
 
                 - is-automated (bool): Image build is automated.
                 - is-official (bool): Image build is owned by product provider.
@@ -523,3 +552,24 @@ class ImagesManager(BuildMixin, Manager):
         response = self.client.post(f"/images/scp/{source}", params=params)
         response.raise_for_status()
         return response.json()
+
+    def _stream_helper(self, response, decode=False):
+        """Generator for data coming from a chunked-encoded HTTP response."""
+
+        if response.raw._fp.chunked:
+            if decode:
+                yield from json_stream(self._stream_helper(response, False))
+            else:
+                reader = response.raw
+                while not reader.closed:
+                    # this read call will block until we get a chunk
+                    data = reader.read(1)
+                    if not data:
+                        break
+                    if reader._fp.chunk_left:
+                        data += reader.read(reader._fp.chunk_left)
+                    yield data
+        else:
+            # Response isn't chunked, meaning we probably
+            # encountered an error immediately
+            yield self._result(response, json=decode)

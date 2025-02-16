@@ -3,7 +3,8 @@
 import logging
 import threading
 from contextlib import suppress
-from typing import Generator, Iterator, List, Union
+from typing import Union
+from collections.abc import Generator, Iterator
 
 from podman.domain.containers import Container
 from podman.domain.images import Image
@@ -18,7 +19,7 @@ class RunMixin:  # pylint: disable=too-few-public-methods
     def run(
         self,
         image: Union[str, Image],
-        command: Union[str, List[str], None] = None,
+        command: Union[str, list[str], None] = None,
         *,
         stdout=True,
         stderr=False,
@@ -30,14 +31,17 @@ class RunMixin:  # pylint: disable=too-few-public-methods
         By default, run() will wait for the container to finish and return its logs.
 
         If detach=True, run() will start the container and return a Container object rather
-            than logs.
+            than logs. In this case, if remove=True, run() will monitor and remove the
+            container after it finishes running; the logs will be lost in this case.
 
         Args:
             image: Image to run.
             command: Command to run in the container.
             stdout: Include stdout. Default: True.
             stderr: Include stderr. Default: False.
-            remove: Delete container when the container's processes exit. Default: False.
+            remove: Delete container on the client side when the container's processes exit.
+                The `auto_remove` flag is also available to manage the removal on the daemon
+                side. Default: False.
 
         Keyword Args:
             - See the create() method for keyword arguments.

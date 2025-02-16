@@ -1,0 +1,65 @@
+summary: Run Python Podman Tests
+
+discover:
+    how: fmf
+execute:
+    how: tmt
+prepare:
+  - name: pkg dependencies
+    how: install
+    package:
+      - make
+      - podman
+      - python3-pip
+
+  - name: pip dependencies
+    how: shell
+    script:
+      - pip3 install .[test]
+
+  - name: ssh configuration
+    how: shell
+    script:
+        - ssh-keygen -t ecdsa -b 521 -f /root/.ssh/id_ecdsa -P ""
+        - cp /root/.ssh/authorized_keys /root/.ssh/authorized_keys%
+        - cat /root/.ssh/id_ecdsa.pub >>/root/.ssh/authorized_keys
+
+/upstream:
+    /sanity:
+        summary: Run Sanity and Coverage checks on Python Podman
+        discover+:
+            # we want to change this to tag:stable once all the coverage tests are fixed
+            filter: tag:lint
+
+    /base:
+        summary: Run Python Podman Tests on Upstream PRs for base Python
+        discover+:
+            filter: tag:base
+
+    /all:
+        summary: Run Python Podman Tests on Upstream PRs for all Python versions
+        prepare+:
+            - name: install all python versions
+              how: install
+              package:
+                - python3.9
+                - python3.10
+                - python3.11
+                - python3.12
+                - python3.13
+        discover+:
+            filter: tag:matrix
+
+    adjust+:
+        enabled: false
+        when: initiator is not defined or initiator != packit
+
+/downstream:
+    /all:
+      summary: Run Python Podman Tests on bodhi / errata and dist-git PRs
+      discover+:
+          filter: tag:matrix
+
+      adjust+:
+          enabled: false
+          when: initiator == packit

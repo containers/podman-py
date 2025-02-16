@@ -7,9 +7,9 @@ import tempfile
 try:
     # Python >= 3.10
     from collections.abc import Iterator
-except:
+except ImportError:
     # Python < 3.10
-    from collections import Iterator
+    from collections.abc import Iterator
 
 import podman.tests.integration.base as base
 from podman import PodmanClient
@@ -138,6 +138,24 @@ class ContainersIntegrationTest(base.IntegrationTest):
             #   side fix requires podman >= 3.2
             # processes = [i.strip() for i in report["Processes"][0]]
             self.assertIn("/usr/bin/top", report["Processes"][0][-1])
+
+            top_ctnr.stop()
+            top_ctnr.reload()
+            self.assertIn(top_ctnr.status, ("exited", "stopped"))
+
+        with self.subTest("Create-Init-Start Container"):
+            top_ctnr = self.client.containers.create(
+                self.alpine_image, ["/usr/bin/top"], name="TestInitPs", detach=True
+            )
+            self.assertEqual(top_ctnr.status, "created")
+
+            top_ctnr.init()
+            top_ctnr.reload()
+            self.assertEqual(top_ctnr.status, "initialized")
+
+            top_ctnr.start()
+            top_ctnr.reload()
+            self.assertEqual(top_ctnr.status, "running")
 
             top_ctnr.stop()
             top_ctnr.reload()

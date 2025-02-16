@@ -8,23 +8,31 @@ DESTDIR ?=
 EPOCH_TEST_COMMIT ?= $(shell git merge-base $${DEST_BRANCH:-main} HEAD)
 HEAD ?= HEAD
 
-export PODMAN_VERSION ?= "5.2.0"
+export PODMAN_VERSION ?= "5.3.0"
 
 .PHONY: podman
 podman:
 	rm dist/* || :
-	$(PYTHON) -m pip install --user -r requirements.txt
+	$(PYTHON) -m pip install -q build
 	PODMAN_VERSION=$(PODMAN_VERSION) \
-	$(PYTHON) setup.py sdist bdist bdist_wheel
+	$(PYTHON) -m build
 
 .PHONY: lint
 lint: tox
-	$(PYTHON) -m tox -e black,pylint
+	$(PYTHON) -m tox -e format,lint
 
 .PHONY: tests
 tests: tox
 	# see tox.ini for environment variable settings
-	$(PYTHON) -m tox -e coverage,py36,py38,py39,py310,py311
+	$(PYTHON) -m tox -e coverage,py39,py310,py311,py312,py313
+
+.PHONY: tests-ci-base-python
+tests-ci-base-python:
+	$(PYTHON) -m tox -e coverage,py
+
+.PHONY: tests-ci-all-python
+tests-ci-all-python:
+	$(PYTHON) -m tox -e coverage,py39,py310,py311,py312,py313
 
 .PHONY: unittest
 unittest:
@@ -39,9 +47,9 @@ integration:
 .PHONY: tox
 tox:
 ifeq (, $(shell which dnf))
-	brew install python@3.8 python@3.9 python@3.10 python@3.11
+	brew install python@3.9 python@3.10 python@3.11 python@3.12 python@3.13
 else
-	-dnf install -y python3 python3.6 python3.8 python3.9
+	-dnf install -y python3 python3.9 python3.10 python3.11 python3.12 python3.13
 endif
 	# ensure tox is available. It will take care of other testing requirements
 	$(PYTHON) -m pip install --user tox

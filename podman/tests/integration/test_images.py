@@ -13,14 +13,11 @@
 #   under the License.
 #
 """Images integration tests."""
+
 import io
-import queue
 import tarfile
-import threading
 import types
 import unittest
-from contextlib import suppress
-from datetime import datetime, timedelta
 
 import podman.tests.integration.base as base
 from podman import PodmanClient
@@ -136,11 +133,11 @@ class ImagesIntegrationTest(base.IntegrationTest):
     @unittest.skip("Needs Podman 3.1.0")
     def test_corrupt_load(self):
         with self.assertRaises(APIError) as e:
-            next(self.client.images.load("This is a corrupt tarball".encode("utf-8")))
+            next(self.client.images.load(b"This is a corrupt tarball"))
         self.assertIn("payload does not match", e.exception.explanation)
 
     def test_build(self):
-        buffer = io.StringIO(f"""FROM quay.io/libpod/alpine_labels:latest""")
+        buffer = io.StringIO("""FROM quay.io/libpod/alpine_labels:latest""")
 
         image, stream = self.client.images.build(fileobj=buffer)
         self.assertIsNotNone(image)
@@ -148,6 +145,10 @@ class ImagesIntegrationTest(base.IntegrationTest):
 
     def test_pull_stream(self):
         generator = self.client.images.pull("ubi8", tag="latest", stream=True)
+        self.assertIsInstance(generator, types.GeneratorType)
+
+    def test_pull_stream_decode(self):
+        generator = self.client.images.pull("ubi8", tag="latest", stream=True, decode=True)
         self.assertIsInstance(generator, types.GeneratorType)
 
     def test_scp(self):

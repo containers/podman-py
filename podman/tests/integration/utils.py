@@ -13,13 +13,14 @@
 #   under the License.
 #
 """Integration Test Utils"""
+
 import logging
 import os
 import shutil
 import subprocess
 import threading
 from contextlib import suppress
-from typing import List, Optional
+from typing import Optional
 
 import time
 
@@ -52,7 +53,7 @@ class PodmanLauncher:
         self.proc = None
         self.reference_id = hash(time.monotonic())
 
-        self.cmd: List[str] = []
+        self.cmd: list[str] = []
         if privileged:
             self.cmd.append('sudo')
 
@@ -97,9 +98,7 @@ class PodmanLauncher:
         def consume(line: str):
             logger.debug(line.strip("\n") + f" refid={self.reference_id}")
 
-        self.proc = subprocess.Popen(
-            self.cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-        )  # pylint: disable=consider-using-with
+        self.proc = subprocess.Popen(self.cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)  # pylint: disable=consider-using-with
         threading.Thread(target=consume_lines, args=[self.proc.stdout, consume]).start()
 
         if not check_socket:

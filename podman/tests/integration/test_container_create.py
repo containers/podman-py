@@ -57,7 +57,7 @@ class ContainersIntegrationTest(base.IntegrationTest):
         with self.subTest("Check bind mount"):
             volumes = {
                 "/etc/hosts": dict(bind="/test_ro", mode='ro'),
-                "/etc/hosts": dict(bind="/test_rw", mode='rw'),
+                "/etc/hosts": dict(bind="/test_rw", mode='rw'),  # noqa: F601
             }
             container = self.client.containers.create(
                 self.alpine_image, command=["cat", "/test_ro", "/test_rw"], volumes=volumes
@@ -287,6 +287,29 @@ class ContainersIntegrationTest(base.IntegrationTest):
                     flags=re.MULTILINE,
                 )
             )
+
+        with self.subTest("Check uppercase mount option attributes"):
+            mount = {
+                "TypE": "bind",
+                "SouRce": "/etc/hosts",
+                "TarGet": "/test",
+                "Read_Only": True,
+                "ReLabel": "Z",
+            }
+            container = self.client.containers.create(
+                self.alpine_image, command=["cat", "/test"], mounts=[mount]
+            )
+            self.containers.append(container)
+            self.assertIn(
+                f"{mount['SouRce']}:{mount['TarGet']}:ro,Z,rprivate,rbind",
+                container.attrs.get('HostConfig', {}).get('Binds', list()),
+            )
+
+            # check if container can be started and exits with EC == 0
+            container.start()
+            container.wait()
+
+            self.assertEqual(container.attrs.get('State', dict()).get('ExitCode', 256), 0)
 
     def test_container_devices(self):
         devices = ["/dev/null:/dev/foo", "/dev/zero:/dev/bar"]

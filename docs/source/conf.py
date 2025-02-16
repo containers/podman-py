@@ -20,9 +20,9 @@ sys.path.insert(0, os.path.abspath('../..'))
 
 # -- Project information -----------------------------------------------------
 
-project = u'Podman Python SDK'
-copyright = u'2021, Red Hat Inc'
-author = u'Red Hat Inc'
+project = 'Podman Python SDK'
+copyright = '2021, Red Hat Inc'
+author = 'Red Hat Inc'
 
 # The full version, including alpha/beta/rc tags
 version = '3.2.1.0'
@@ -125,9 +125,7 @@ class PatchedPythonDomain(PythonDomain):
     def resolve_xref(self, env, fromdocname, builder, typ, target, node, contnode):
         if 'refspecific' in node:
             del node['refspecific']
-        return super(PatchedPythonDomain, self).resolve_xref(
-            env, fromdocname, builder, typ, target, node, contnode
-        )
+        return super().resolve_xref(env, fromdocname, builder, typ, target, node, contnode)
 
 
 def skip(app, what, name, obj, would_skip, options):

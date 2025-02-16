@@ -13,7 +13,7 @@
 #   under the License.
 #
 """Network integration tests."""
-import os
+
 import random
 import unittest
 from contextlib import suppress

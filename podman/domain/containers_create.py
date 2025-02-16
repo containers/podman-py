@@ -5,7 +5,8 @@ import copy
 import logging
 import re
 from contextlib import suppress
-from typing import Any, Dict, List, MutableMapping, Union
+from typing import Any, Union
+from collections.abc import MutableMapping
 
 from podman import api
 from podman.domain.containers import Container
@@ -23,7 +24,10 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
     """Class providing create method for ContainersManager."""
 
     def create(
-        self, image: Union[Image, str], command: Union[str, List[str], None] = None, **kwargs
+        self,
+        image: Union[Image, str],
+        command: Union[str, list[str], None] = None,
+        **kwargs,
     ) -> Container:
         """Create a container.
 
@@ -34,12 +38,12 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         Keyword Args:
             auto_remove (bool): Enable auto-removal of the container on daemon side when the
                 container's process exits.
-            blkio_weight_device (Dict[str, Any]): Block IO weight (relative device weight)
+            blkio_weight_device (dict[str, Any]): Block IO weight (relative device weight)
                 in the form of: [{"Path": "device_path", "Weight": weight}].
             blkio_weight (int): Block IO weight (relative weight), accepts a weight value
                 between 10 and 1000.
-            cap_add (List[str]): Add kernel capabilities. For example: ["SYS_ADMIN", "MKNOD"]
-            cap_drop (List[str]): Drop kernel capabilities.
+            cap_add (list[str]): Add kernel capabilities. For example: ["SYS_ADMIN", "MKNOD"]
+            cap_drop (list[str]): Drop kernel capabilities.
             cgroup_parent (str): Override the default parent cgroup.
             cpu_count (int): Number of usable CPUs (Windows only).
             cpu_percent (int): Usable percentage of the available CPUs (Windows only).
@@ -52,32 +56,32 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             cpuset_mems (str): Memory nodes (MEMs) in which to allow execution (0-3, 0,1).
                 Only effective on NUMA systems.
             detach (bool): Run container in the background and return a Container object.
-            device_cgroup_rules (List[str]): A list of cgroup rules to apply to the container.
+            device_cgroup_rules (list[str]): A list of cgroup rules to apply to the container.
             device_read_bps: Limit read rate (bytes per second) from a device in the form of:
                 `[{"Path": "device_path", "Rate": rate}]`
             device_read_iops: Limit read rate (IO per second) from a device.
             device_write_bps: Limit write rate (bytes per second) from a device.
             device_write_iops: Limit write rate (IO per second) from a device.
-            devices (List[str]): Expose host devices to the container, as a List[str] in the form
+            devices (list[str]): Expose host devices to the container, as a list[str] in the form
                 <path_on_host>:<path_in_container>:<cgroup_permissions>.
 
                 For example:
                     /dev/sda:/dev/xvda:rwm allows the container to have read-write access to the
                     host's /dev/sda via a node named /dev/xvda inside the container.
 
-            dns (List[str]): Set custom DNS servers.
-            dns_opt (List[str]): Additional options to be added to the container's resolv.conf file.
-            dns_search (List[str]): DNS search domains.
-            domainname (Union[str, List[str]]): Set custom DNS search domains.
-            entrypoint (Union[str, List[str]]): The entrypoint for the container.
-            environment (Union[Dict[str, str], List[str]): Environment variables to set inside
-                the container, as a dictionary or a List[str] in the format
+            dns (list[str]): Set custom DNS servers.
+            dns_opt (list[str]): Additional options to be added to the container's resolv.conf file.
+            dns_search (list[str]): DNS search domains.
+            domainname (Union[str, list[str]]): Set custom DNS search domains.
+            entrypoint (Union[str, list[str]]): The entrypoint for the container.
+            environment (Union[dict[str, str], list[str]): Environment variables to set inside
+                the container, as a dictionary or a list[str] in the format
                 ["SOMEVARIABLE=xxx", "SOMEOTHERVARIABLE=xyz"].
-            extra_hosts (Dict[str, str]): Additional hostnames to resolve inside the container,
+            extra_hosts (dict[str, str]): Additional hostnames to resolve inside the container,
                 as a mapping of hostname to IP address.
-            group_add (List[str]): List of additional group names and/or IDs that the container
+            group_add (list[str]): List of additional group names and/or IDs that the container
                 process will run as.
-            healthcheck (Dict[str,Any]): Specify a test to perform to check that the
+            healthcheck (dict[str,Any]): Specify a test to perform to check that the
                 container is healthy.
             health_check_on_failure_action (int): Specify an action if a healthcheck fails.
             hostname (str): Optional hostname for the container.
@@ -86,14 +90,14 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             ipc_mode (str): Set the IPC mode for the container.
             isolation (str): Isolation technology to use. Default: `None`.
             kernel_memory (int or str): Kernel memory limit
-            labels (Union[Dict[str, str], List[str]): A dictionary of name-value labels (e.g.
+            labels (Union[dict[str, str], list[str]): A dictionary of name-value labels (e.g.
                 {"label1": "value1", "label2": "value2"}) or a list of names of labels to set
                 with empty values (e.g. ["label1", "label2"])
-            links (Optional[Dict[str, str]]): Mapping of links using the {'container': 'alias'}
+            links (Optional[dict[str, str]]): Mapping of links using the {'container': 'alias'}
                 format. The alias is optional. Containers declared in this dict will be linked to
                 the new container using the provided alias. Default: None.
             log_config (LogConfig): Logging configuration.
-            lxc_config (Dict[str, str]): LXC config.
+            lxc_config (dict[str, str]): LXC config.
             mac_address (str): MAC address to assign to the container.
             mem_limit (Union[int, str]): Memory limit. Accepts float values (which represent the
                 memory limit of the created container in bytes) or a string with a units
@@ -104,7 +108,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 between 0 and 100.
             memswap_limit (Union[int, str]): Maximum amount of memory + swap a container is allowed
                 to consume.
-            mounts (List[Mount]): Specification for mounts to be added to the container. More
+            mounts (list[Mount]): Specification for mounts to be added to the container. More
                 powerful alternative to volumes. Each item in the list is expected to be a
                 Mount object.
                 For example:
@@ -150,7 +154,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 ]
             name (str): The name for this container.
             nano_cpus (int):  CPU quota in units of 1e-9 CPUs.
-            networks (Dict[str, Dict[str, Union[str, List[str]]):
+            networks (dict[str, dict[str, Union[str, list[str]]):
                 Networks which will be connected to container during container creation
                 Values of the network configuration can be :
 
@@ -176,7 +180,23 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             pids_limit (int): Tune a container's pids limit. Set -1 for unlimited.
             platform (str): Platform in the format os[/arch[/variant]]. Only used if the method
                 needs to pull the requested image.
-            ports (Dict[Union[int, str], Union[int, Tuple[str, int], List[int], Dict[str, Union[int, Tuple[str, int], List[int]]]]]): Ports to bind inside the container.
+            ports (
+                dict[
+                    Union[int, str],
+                    Union[
+                        int,
+                        Tuple[str, int],
+                        list[int],
+                        dict[
+                            str,
+                            Union[
+                                int,
+                                Tuple[str, int],
+                                list[int]
+                            ]
+                        ]
+                    ]
+                ]): Ports to bind inside the container.
 
                 The keys of the dictionary are the ports to bind inside the container, either as an
                 integer or a string in the form port/protocol, where the protocol is either
@@ -226,7 +246,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             read_write_tmpfs (bool): Mount temporary file systems as read write,
                 in case of read_only options set to True. Default: False
             remove (bool): Remove the container when it has finished running. Default: False.
-            restart_policy (Dict[str, Union[str, int]]): Restart the container when it exits.
+            restart_policy (dict[str, Union[str, int]]): Restart the container when it exits.
                 Configured as a dictionary with keys:
 
                 - Name: One of on-failure, or always.
@@ -234,7 +254,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
                 For example: {"Name": "on-failure", "MaximumRetryCount": 5}
             runtime (str): Runtime to use with this container.
-            secrets (List[Union[str, Secret, Dict[str, Union[str, int]]]]): Secrets to
+            secrets (list[Union[str, Secret, dict[str, Union[str, int]]]]): Secrets to
                 mount to this container.
 
                 For example:
@@ -268,42 +288,44 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                         },
 
                     ]
-            secret_env (Dict[str, str]): Secrets to add as environment variables available in the
+            secret_env (dict[str, str]): Secrets to add as environment variables available in the
                 container.
 
                 For example: {"VARIABLE1": "NameOfSecret", "VARIABLE2": "NameOfAnotherSecret"}
 
-            security_opt (List[str]): A List[str]ing values to customize labels for MLS systems,
+            security_opt (list[str]): A list[str]ing values to customize labels for MLS systems,
                 such as SELinux.
             shm_size (Union[str, int]): Size of /dev/shm (e.g. 1G).
             stdin_open (bool): Keep STDIN open even if not attached.
             stdout (bool): Return logs from STDOUT when detach=False. Default: True.
             stderr (bool): Return logs from STDERR when detach=False. Default: False.
             stop_signal (str): The stop signal to use to stop the container (e.g. SIGINT).
-            storage_opt (Dict[str, str]): Storage driver options per container as a
+            storage_opt (dict[str, str]): Storage driver options per container as a
                 key-value mapping.
             stream (bool): If true and detach is false, return a log generator instead of a string.
                 Ignored if detach is true. Default: False.
-            sysctls (Dict[str, str]): Kernel parameters to set in the container.
-            tmpfs (Dict[str, str]): Temporary filesystems to mount, as a dictionary mapping a
+            sysctls (dict[str, str]): Kernel parameters to set in the container.
+            tmpfs (dict[str, str]): Temporary filesystems to mount, as a dictionary mapping a
                 path inside the container to options for that path.
 
                 For example: {'/mnt/vol2': '', '/mnt/vol1': 'size=3G,uid=1000'}
 
             tty (bool): Allocate a pseudo-TTY.
-            ulimits (List[Ulimit]): Ulimits to set inside the container.
+            ulimits (list[Ulimit]): Ulimits to set inside the container.
             use_config_proxy (bool): If True, and if the docker client configuration
                 file (~/.config/containers/config.json by default) contains a proxy configuration,
                 the corresponding environment variables will be set in the container being built.
             user (Union[str, int]): Username or UID to run commands as inside the container.
             userns_mode (str): Sets the user namespace mode for the container when user namespace
-                remapping option is enabled. Supported values documented `here <https://docs.podman.io/en/latest/markdown/options/userns.container.html#userns-mode>`_
+                remapping option is enabled. Supported values documented
+                `here <https://docs.podman.io/en/latest/markdown/options/userns.container.html#userns-mode>`_
             uts_mode (str): Sets the UTS namespace mode for the container.
-                `These <https://docs.podman.io/en/latest/markdown/options/uts.container.html>`_ are the supported values.
+                `These <https://docs.podman.io/en/latest/markdown/options/uts.container.html>`_
+                are the supported values.
             version (str): The version of the API to use. Set to auto to automatically detect
                 the server's version. Default: 3.0.0
             volume_driver (str): The name of a volume driver/plugin.
-            volumes (Dict[str, Dict[str, Union[str, list]]]): A dictionary to configure
+            volumes (dict[str, dict[str, Union[str, list]]]): A dictionary to configure
                 volumes mounted inside the container.
                 The key is either the host path or a volume name, and the value is
                 a dictionary with the keys:
@@ -331,7 +353,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
                     }
 
-            volumes_from (List[str]): List of container names or IDs to get volumes from.
+            volumes_from (list[str]): List of container names or IDs to get volumes from.
             working_dir (str): Path to the working directory.
             workdir (str): Alias of working_dir - Path to the working directory.
 
@@ -344,6 +366,8 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         """
         if isinstance(image, Image):
             image = image.id
+        if isinstance(command, str):
+            command = [command]
 
         payload = {"image": image, "command": command}
         payload.update(kwargs)
@@ -361,7 +385,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
     # pylint: disable=too-many-locals,too-many-statements,too-many-branches
     @staticmethod
-    def _render_payload(kwargs: MutableMapping[str, Any]) -> Dict[str, Any]:
+    def _render_payload(kwargs: MutableMapping[str, Any]) -> dict[str, Any]:
         """Map create/run kwargs into body parameters."""
         args = copy.copy(kwargs)
 
@@ -553,11 +577,12 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             args.pop("log_config")
 
         for item in args.pop("mounts", []):
+            normalized_item = {key.lower(): value for key, value in item.items()}
             mount_point = {
-                "destination": item.get("target"),
+                "destination": normalized_item.get("target"),
                 "options": [],
-                "source": item.get("source"),
-                "type": item.get("type"),
+                "source": normalized_item.get("source"),
+                "type": normalized_item.get("type"),
             }
 
             # some names are different for podman-py vs REST API due to compatibility with docker
@@ -570,12 +595,13 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             regular_options = ["consistency", "mode", "size"]
 
             for k, v in item.items():
-                option_name = names_dict.get(k, k)
-                if k in bool_options and v is True:
+                _k = k.lower()
+                option_name = names_dict.get(_k, _k)
+                if _k in bool_options and v is True:
                     options.append(option_name)
-                elif k in regular_options:
+                elif _k in regular_options:
                     options.append(f'{option_name}={v}')
-                elif k in simple_options:
+                elif _k in simple_options:
                     options.append(v)
 
             mount_point["options"] = options
@@ -624,13 +650,15 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             return result
 
         for container, host in args.pop("ports", {}).items():
-            if isinstance(container, int):
-                container = str(container)
+            # avoid redefinition of the loop variable, then ensure it's a string
+            str_container = container
+            if isinstance(str_container, int):
+                str_container = str(str_container)
 
-            if "/" in container:
-                container_port, protocol = container.split("/")
+            if "/" in str_container:
+                container_port, protocol = str_container.split("/")
             else:
-                container_port, protocol = container, "tcp"
+                container_port, protocol = str_container, "tcp"
 
             port_map_list = parse_host_port(container_port, protocol, host)
             params["portmappings"].extend(port_map_list)
