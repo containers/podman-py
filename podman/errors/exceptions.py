@@ -144,6 +144,59 @@ class ContainerError(PodmanError):
 class InvalidArgument(PodmanError):
     """Parameter to method/function was not valid."""
 
+class PodmanConnectionError(PodmanError):
+    """Exception raised when connection to Podman service fails using environment configuration."""
+
+    def __init__(
+        self,
+        message: str,
+        environment: Optional[dict[str, str]] = None,
+        host: Optional[str] = None,
+        original_error: Optional[Exception] = None,
+    ):
+        """Initialize PodmanConnectionError.
+        Args:
+            message: Description of the error
+            environment: Environment variables used in connection attempt
+            host: URL to Podman service that failed
+            original_error: Original exception that caused this error
+        """
+        super().__init__(message)
+        self.environment = environment
+        self.host = host
+        self.original_error = original_error
+
+    def __str__(self) -> str:
+        """Format error message with details about connection attempt."""
+        msg = [super().__str__()]
+
+        if self.host:
+            msg.append(f"Host: {self.host}")
+
+        if self.environment:
+            relevant_vars = {
+                k: v
+                for k, v in self.environment.items()
+                if k
+                in (
+                    'DOCKER_HOST',
+                    'CONTAINER_HOST',
+                    'DOCKER_TLS_VERIFY',
+                    'CONTAINER_TLS_VERIFY',
+                    'DOCKER_CERT_PATH',
+                    'CONTAINER_CERT_PATH',
+                )
+            }
+            if relevant_vars:
+                msg.append("Environment:")
+                for key, value in relevant_vars.items():
+                    msg.append(f"  {key}={value}")
+
+        if self.original_error:
+            msg.append(f"Caused by: {str(self.original_error)}")
+
+        return " | ".join(msg)
+
 
 class StreamParseError(RuntimeError):
     def __init__(self, reason):
