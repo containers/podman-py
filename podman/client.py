@@ -6,6 +6,7 @@ from contextlib import AbstractContextManager
 from pathlib import Path
 from typing import Any, Optional
 
+from podman.errors import PodmanConnectionError
 from podman.api import cached_property
 from podman.api.client import APIClient
 from podman.api.path_utils import get_runtime_dir
@@ -60,18 +61,38 @@ class PodmanClient(AbstractContextManager):
         super().__init__()
         config = PodmanConfig()
 
-        api_kwargs = kwargs.copy()
+        self.api_kwargs = kwargs.copy()
 
-        if "connection" in api_kwargs:
-            connection = config.services[api_kwargs.get("connection")]
-            api_kwargs["base_url"] = connection.url.geturl()
+        if "connection" in self.api_kwargs:
+            connection = config.services[self.api_kwargs.get("connection")]
+            self.api_kwargs["base_url"] = connection.url.geturl()
 
             # Override configured identity, if provided in arguments
-            api_kwargs["identity"] = kwargs.get("identity", str(connection.identity))
-        elif "base_url" not in api_kwargs:
+            self.api_kwargs["identity"] = kwargs.get("identity", str(connection.identity))
+        elif "base_url" not in self.api_kwargs:
             path = str(Path(get_runtime_dir()) / "podman" / "podman.sock")
-            api_kwargs["base_url"] = "http+unix://" + path
-        self.api = APIClient(**api_kwargs)
+            self.api_kwargs["base_url"] = "http+unix://" + path
+
+        try:
+            self.api = APIClient(**self.api_kwargs)
+            response = self.api.get("_ping")
+
+            if response.status_code != 200:
+                raise PodmanConnectionError(
+                    message=f"Unexpected response from Podman service: {response.status_code}",
+                    environment=os.environ,
+                    host=self.api_kwargs.get("base_url"),
+                    original_error=None,
+                )
+        except PodmanConnectionError:
+            raise
+        except Exception as e:
+            raise PodmanConnectionError(
+                message=f"Failed to connect to Podman service: {str(e)}",
+                environment=os.environ,
+                host=self.api_kwargs.get("base_url"),
+                original_error=e,
+            ) from e
 
     def __enter__(self) -> "PodmanClient":
         return self
@@ -116,25 +137,41 @@ class PodmanClient(AbstractContextManager):
         Raises:
             ValueError when required environment variable is not set
         """
-        environment = environment or os.environ
-        credstore_env = credstore_env or {}
+        try:
+            environment = environment or os.environ
+            credstore_env = credstore_env or {}
 
-        if version == "auto":
-            version = None
+            if version == "auto":
+                version = None
 
-        kwargs = {
-            'version': version,
-            'timeout': timeout,
-            'tls': False,
-            'credstore_env': credstore_env,
-            'max_pool_size': max_pool_size,
-        }
+            kwargs = {
+                "version": version,
+                "timeout": timeout,
+                "tls": False,
+                "credstore_env": credstore_env,
+                "max_pool_size": max_pool_size,
+            }
 
-        host = environment.get("CONTAINER_HOST") or environment.get("DOCKER_HOST") or None
-        if host is not None:
-            kwargs['base_url'] = host
+            host = environment.get("CONTAINER_HOST") or environment.get("DOCKER_HOST") or None
+            if host is not None:
+                kwargs["base_url"] = host
 
-        return PodmanClient(**kwargs)
+            return PodmanClient(**kwargs)
+        except ValueError as e:
+            error_msg = "Invalid environment configuration for Podman client"
+            raise PodmanConnectionError(
+                message=error_msg, environment=environment, host=host, original_error=e
+            )
+        except (ConnectionError, TimeoutError) as e:
+            error_msg = "Failed to connect to Podman service"
+            raise PodmanConnectionError(
+                message=error_msg, environment=environment, host=host, original_error=e
+            )
+        except Exception as e:
+            error_msg = "Failed to initialize Podman client from environment"
+            raise PodmanConnectionError(
+                message=error_msg, environment=environment, host=host, original_error=e
+            )
 
     @cached_property
     def containers(self) -> ContainersManager:
