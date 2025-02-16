@@ -74,6 +74,18 @@ class PodmanClient(AbstractContextManager):
             api_kwargs["base_url"] = "http+unix://" + path
         self.api = APIClient(**api_kwargs)
 
+        # Check if the connection to the Podman service is successful
+        try:
+            SystemManager(client=self.api).version()
+        except Exception as e:
+            error_msg = "Failed to connect to Podman service"
+            raise PodmanConnectionError(
+                message=error_msg,
+                environment=os.environ,
+                host=api_kwargs.get("base_url"),
+                original_error=e,
+            )
+
     def __enter__(self) -> "PodmanClient":
         return self
 
@@ -125,16 +137,20 @@ class PodmanClient(AbstractContextManager):
                 version = None
 
             kwargs = {
-                'version': version,
-                'timeout': timeout,
-                'tls': False,
-                'credstore_env': credstore_env,
-                'max_pool_size': max_pool_size,
+                "version": version,
+                "timeout": timeout,
+                "tls": False,
+                "credstore_env": credstore_env,
+                "max_pool_size": max_pool_size,
             }
 
-            host = environment.get("CONTAINER_HOST") or environment.get("DOCKER_HOST") or None
+            host = (
+                environment.get("CONTAINER_HOST")
+                or environment.get("DOCKER_HOST")
+                or None
+            )
             if host is not None:
-                kwargs['base_url'] = host
+                kwargs["base_url"] = host
 
             return PodmanClient(**kwargs)
         except ValueError as e:
@@ -192,7 +208,9 @@ class PodmanClient(AbstractContextManager):
     def system(self):
         return SystemManager(client=self.api)
 
-    def df(self) -> dict[str, Any]:  # pylint: disable=missing-function-docstring,invalid-name
+    def df(
+        self,
+    ) -> dict[str, Any]:  # pylint: disable=missing-function-docstring,invalid-name
         return self.system.df()
 
     df.__doc__ = SystemManager.df.__doc__
@@ -234,7 +252,9 @@ class PodmanClient(AbstractContextManager):
         Raises:
             NotImplemented: Swarm not supported by Podman service
         """
-        raise NotImplementedError("Swarm operations are not supported by Podman service.")
+        raise NotImplementedError(
+            "Swarm operations are not supported by Podman service."
+        )
 
     # Aliases to cover all swarm methods
     services = swarm
