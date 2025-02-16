@@ -64,7 +64,7 @@ class SystemIntegrationTest(base.IntegrationTest):
     def test_from_env(self):
         """integration: from_env() no error"""
         PodmanClient.from_env()
-    
+
     def test_from_env_exceptions(self):
         """integration: from_env() returns exceptions"""
         with self.assertRaises(PodmanConnectionError):
