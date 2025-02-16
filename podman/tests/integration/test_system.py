@@ -16,7 +16,7 @@
 
 import podman.tests.integration.base as base
 from podman import PodmanClient
-from podman.errors import APIError
+from podman.errors import APIError, PodmanConnectionError
 
 
 class SystemIntegrationTest(base.IntegrationTest):
@@ -64,3 +64,8 @@ class SystemIntegrationTest(base.IntegrationTest):
     def test_from_env(self):
         """integration: from_env() no error"""
         PodmanClient.from_env()
+    
+    def test_from_env_exceptions(self):
+        """integration: from_env() returns exceptions"""
+        with self.assertRaises(PodmanConnectionError):
+            PodmanClient.from_env(base_url="unix:///path/to/nonexistent.sock")
