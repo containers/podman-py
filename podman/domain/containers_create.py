@@ -383,6 +383,30 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
         return self.get(container_id)
 
+    @staticmethod
+    def _convert_env_list_to_dict(env_list):
+        """Convert a list of environment variables to a dictionary.
+
+        Args:
+            env_list (List[str]): List of environment variables in the format ["KEY=value"]
+
+        Returns:
+            Dict[str, str]: Dictionary of environment variables
+
+        Raises:
+            ValueError: If any environment variable is not in the correct format
+        """
+        env_dict = {}
+        for env_var in env_list:
+            if '=' not in env_var:
+                raise ValueError(
+                    f"Environment variable '{env_var}' is not in the correct format. "
+                    "Expected format: 'KEY=value'"
+                )
+            key, value = env_var.split('=', 1)  # Split on first '=' only
+            env_dict[key] = value
+        return env_dict
+
     # pylint: disable=too-many-locals,too-many-statements,too-many-branches
     @staticmethod
     def _render_payload(kwargs: MutableMapping[str, Any]) -> dict[str, Any]:
@@ -409,6 +433,23 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         ):
             with suppress(KeyError):
                 del args[key]
+
+        # Handle environment variables
+        environment = args.pop("environment", None)
+        if environment is not None:
+            if isinstance(environment, list):
+                try:
+                    environment = CreateMixin._convert_env_list_to_dict(environment)
+                except ValueError as e:
+                    raise ValueError(
+                        "Failed to convert environment variables list to dictionary. "
+                        f"Error: {str(e)}"
+                    ) from e
+            elif not isinstance(environment, dict):
+                raise TypeError(
+                    "Environment variables must be provided as either a dictionary "
+                    "or a list of strings in the format ['KEY=value']"
+                )
 
         # These keywords are not supported for various reasons.
         unsupported_keys = set(args.keys()).intersection(
@@ -490,7 +531,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "dns_search": pop("dns_search"),
             "dns_server": pop("dns"),
             "entrypoint": pop("entrypoint"),
-            "env": pop("environment"),
+            "env": environment,
             "env_host": pop("env_host"),  # TODO document, podman only
             "expose": {},
             "groups": pop("group_add"),
