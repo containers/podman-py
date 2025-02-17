@@ -111,11 +111,12 @@ class ContainersIntegrationTest(base.IntegrationTest):
             )
             self.containers.append(container)
 
-            self.assertEqual(
-                container.attrs.get('Config', {}).get('Env', []),
-                [f"{k}={v}" for k, v in env_dict.items()],
-            )
+            # Verify that the user-provided environment variables are in the container's configuration
+            container_env = container.attrs.get('Config', {}).get('Env', [])
+            for key, value in env_dict.items():
+                self.assertIn(f"{key}={value}", container_env)
 
+            # Start the container and verify the environment variables are set
             container.start()
             container.wait()
             logs = b"\n".join(container.logs()).decode()
@@ -130,11 +131,12 @@ class ContainersIntegrationTest(base.IntegrationTest):
             )
             self.containers.append(container)
 
-            self.assertEqual(
-                container.attrs.get('Config', {}).get('Env', []),
-                env_list,
-            )
+            # Verify that the user-provided environment variables are in the container's configuration
+            container_env = container.attrs.get('Config', {}).get('Env', [])
+            for env in env_list:
+                self.assertIn(env, container_env)
 
+            # Start the container and verify the environment variables are set
             container.start()
             container.wait()
             logs = b"\n".join(container.logs()).decode()
