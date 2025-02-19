@@ -78,7 +78,7 @@ class PodmanClient(AbstractContextManager):
 
     def _verify_connection(self):
         """Verify connection to Podman daemon during initialization.
-        
+
         Raises:
             PodmanException: If unable to connect to Podman daemon
         """
@@ -91,13 +91,9 @@ class PodmanClient(AbstractContextManager):
                     "Error while connecting to Podman daemon: "
                     f"Could not find socket file - {str(e)}"
                 ) from e
-            raise PodmanConnectionError(
-                f"Error while connecting to Podman daemon: {str(e)}"
-            ) from e
+            raise PodmanConnectionError(f"Error while connecting to Podman daemon: {str(e)}") from e
         except Exception as e:
-            raise PodmanConnectionError(
-                f"Error while connecting to Podman daemon: {str(e)}"
-            ) from e
+            raise PodmanConnectionError(f"Error while connecting to Podman daemon: {str(e)}") from e
 
     def __enter__(self) -> "PodmanClient":
         return self
@@ -173,7 +169,6 @@ class PodmanClient(AbstractContextManager):
             kwargs['base_url'] = host
 
         return PodmanClient(**kwargs)
-
 
     @cached_property
     def containers(self) -> ContainersManager:
