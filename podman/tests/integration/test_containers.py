@@ -1,8 +1,8 @@
 import io
 import random
 import tarfile
-import unittest
 import tempfile
+import unittest
 
 try:
     # Python >= 3.10
@@ -16,7 +16,6 @@ from podman import PodmanClient
 from podman.domain.containers import Container
 from podman.domain.images import Image
 from podman.errors import NotFound
-
 
 # @unittest.skipIf(os.geteuid() != 0, 'Skipping, not running as root')
 
@@ -237,6 +236,38 @@ ENV foo=bar
         finally:
             labeled_container.remove(v=True)
             unlabeled_container.remove(v=True)
+
+    def test_container_update(self):
+        """Update container"""
+        to_update_container = self.client.containers.run(
+            self.alpine_image, name="to_update_container", detach=True
+        )
+        with self.subTest("Test container update changing the healthcheck"):
+            to_update_container.update(health_cmd="ls")
+            self.assertEqual(
+                to_update_container.inspect()['Config']['Healthcheck']['Test'], ['CMD-SHELL', 'ls']
+            )
+
+        with self.subTest("Test container update disabling the healthcheck"):
+            to_update_container.update(no_healthcheck=True)
+            self.assertEqual(
+                to_update_container.inspect()['Config']['Healthcheck']['Test'], ['NONE']
+            )
+        with self.subTest("Test container update passing payload and data"):
+            to_update_container.update(
+                restart_policy="always", health_cmd="echo", health_timeout="10s"
+            )
+            self.assertEqual(
+                to_update_container.inspect()['Config']['Healthcheck']['Test'],
+                ['CMD-SHELL', 'echo'],
+            )
+            self.assertEqual(
+                to_update_container.inspect()['Config']['Healthcheck']['Timeout'], 10000000000
+            )
+            self.assertEqual(
+                to_update_container.inspect()['HostConfig']['RestartPolicy']['Name'], 'always'
+            )
+        to_update_container.remove(v=True)
 
 
 if __name__ == '__main__':
