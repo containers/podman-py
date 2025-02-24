@@ -123,7 +123,7 @@ class ImagesManager(BuildMixin, Manager):
 
     def load(
         self, data: Optional[bytes] = None, file_path: Optional[os.PathLike] = None
-    ) -> Generator[bytes, None, None]:
+    ) -> Generator[Image, None, None]:
         """Restore an image previously saved.
 
         Args:
@@ -159,7 +159,7 @@ class ImagesManager(BuildMixin, Manager):
         )
         response.raise_for_status()  # Catch any errors before proceeding
 
-        def _generator(body: dict) -> Generator[bytes, None, None]:
+        def _generator(body: dict) -> Generator[Image, None, None]:
             # Iterate and yield images from response body
             for item in body["Names"]:
                 yield self.get(item)
