@@ -3,9 +3,9 @@
 import json
 import logging
 import shlex
+from collections.abc import Iterable, Iterator, Mapping
 from contextlib import suppress
 from typing import Any, Optional, Union
-from collections.abc import Iterable, Iterator, Mapping
 
 import requests
 
@@ -506,13 +506,223 @@ class Container(PodmanResource):
         response = self.client.post(f"/containers/{self.id}/unpause")
         response.raise_for_status()
 
-    def update(self, **kwargs):
+    def update(self, **kwargs) -> None:
         """Update resource configuration of the containers.
+        Keyword Args:
+            Please refer to Podman API documentation for details:
+            https://docs.podman.io/en/latest/_static/api.html#tag/containers/operation/ContainerUpdateLibpod
+            BlkIOWeightDevice (str, int):Block IO weight (relative device weight)
+                in the form: (device_path, weight)
+            blockIO (dict): LinuxBlockIO for Linux cgroup 'blkio' resource management
+                Example:
+                blockIO = {
+                        "leafWeight": weight // int,
+                        "throttleReadBpsDevice": [
+                            major, // int
+                            minor, // int
+                            rate   // int
+                        ],
+                        "throttleReadIopsDevice": [
+                            major, // int
+                            minor, // int
+                            rate   // int
+                        ],
+                        "throttleWriteBpsDevice": [
+                            major, // int
+                            minor, // int
+                            rate   // int
+                        ],
+                        "throttleWriteIopsDevice": [
+                            major, // int
+                            minor, // int
+                            rate   // int
+                        ],
+                        "weight": weight // int,
+                        weightDevice: [
+                            leafWeight, // int
+                            major,      // int
+                            minor,      // int
+                            weight      // int
+                        ],
+                    }
+            cpu (dict): LinuxCPU for Linux cgroup 'cpu' resource management
+                Example:
+                cpu = {
+                        "burst": burst // int,
+                        "cpus": cpus // str,
+                        "idle": idle // int,
+                        "mems": mems // str,
+                        "period": period // int,
+                        "quota": quota // int,
+                        "realtimePeriod": realtimePeriod // int,
+                        "realtimeRuntime": realtimeRuntime // int,
+                        "shares": shares // int
+                    }
+            DeviceReadBPs (str, int): Limit read rate (bytes per second) from a device, in the form:
+                (device_path, rate)
+            DeviceReadIOPs (str, int): Limit read rate (IO operations per second) from a device,
+                in the form: (device_path, rate)
+            DeviceWriteBPs (str, int): Limit write rate (bytes per second) to a device, in the form:
+                (device_path, rate)
+            DeviceWriteIOPs (str, int): Limit write rate (IO operations per second) to a device,
+                in the form: (device_path, rate)
+            devices (list): Devices configures the device allowlist.
+                Example:
+                devices = (
+                    access, //str
+                    allow,  //bool
+                    major,  //int
+                    minor,  //int
+                    type    //str
+                )
+            health_cmd (str): set a healthcheck command for the container ('None' disables the
+                existing healthcheck)
+            health_interval (str): set an interval for the healthcheck (a value of disable results
+                in no automatic timer setup)(Changing this setting resets timer.) (default "30s")
+            health_log_destination (str):  set the destination of the HealthCheck log. Directory
+                path, local or events_logger (local use container state file)(Warning: Changing
+                this setting may cause the loss of previous logs.) (default "local")
+            health_max_log_count (int): set maximum number of attempts in the HealthCheck log file.
+                ('0' value means an infinite number of attempts in the log file) (default 5)
+            health_max_logs_size (int): set maximum length in characters of stored HealthCheck log.
+                ('0' value means an infinite log length) (default 500)
+            health_on_failure (str): action to take once the container turns unhealthy
+                (default "none")
+            health_retries (int): the number of retries allowed before a healthcheck is considered
+                to be unhealthy (default 3)
+            health_start_period (str): the initialization time needed for a container to bootstrap
+                (default "0s")
+            health_startup_cmd (str): Set a startup healthcheck command for the container
+            health_startup_interval (str): Set an interval for the startup healthcheck. Changing
+                this setting resets the timer, depending on the state of the container.
+                (default "30s")
+            health_startup_retries (int): Set the maximum number of retries before the startup
+                healthcheck will restart the container
+            health_startup_success (int): Set the number of consecutive successes before the
+                startup healthcheck is marked as successful and the normal healthcheck begins
+                (0 indicates any success will start the regular healthcheck)
+            health_startup_timeout (str): Set the maximum amount of time that the startup
+                healthcheck may take before it is considered failed (default "30s")
+            health_timeout (str):  the maximum time allowed to complete the healthcheck before an
+                interval is considered failed (default "30s")
+            no_healthcheck (bool): Disable healthchecks on container
+            hugepageLimits (int, str): Hugetlb limits (in bytes).
+                Default to reservation limits if supported.
+            memory (dict): LinuxMemory for Linux cgroup 'memory' resource management
+                Example:
+                memory = (
+                    checkBeforeUpdate, // bool
+                    disableOOMKiller, // bool
+                    kernel, // int
+                    kernelTCP, // int
+                    limit, // int
+                    reservation, // int
+                    swap, // int
+                    swappiness, // int
+                    useHierarchy, // bool
+                )
+            network (int, (str, int)): LinuxNetwork identification and priority configuration
+                Example:
+                network = (
+                    classID, // int
+                    (name, priority), // str, int
+                )
+            pids (dict): LinuxPids for Linux cgroup 'pids' resource management (Linux 4.3)
+                Example:
+                    pids = {
+                        "limit": limit // int
+                    }
+            rdma (dict): Rdma resource restriction configuration. Limits are a set of key value
+                pairs that define RDMA resource limits, where the key is device name and value
+                is resource limits.
+                Example:
+                rdma = {
+                    "property1": (
+                        hcaHandles // int
+                        hcaObjects // int
+                    ),
+                    "property2": (
+                        hcaHandles // int
+                        hcaObjects // int
+                    ),
+                    ...
+                }
+            unified (dict): Unified resources.
+                Example:
+                unified = {
+                    "property1": "value1",
+                    "property2": "value2",
+                    ...
+                }
 
-        Raises:
-            NotImplementedError: Podman service unsupported operation.
         """
-        raise NotImplementedError("Container.update() is not supported by Podman service.")
+        health_commands = [
+            "health_cmd",
+            "health_interval",
+            "health_log_destination",
+            "health_max_log_count",
+            "health_max_logs_size",
+            "health_on_failure",
+            "health_retries",
+            "health_start_period",
+            "health_startup_cmd",
+            "health_startup_interval",
+            "health_startup_retries",
+            "health_startup_success",
+            "health_startup_timeout",
+            "health_timeout",
+        ]
+
+        # the healthcheck section of parameters accepted can be either no_healthcheck or a series
+        # of healthcheck parameters
+        if kwargs.get("no_healthcheck", True):
+            for command in health_commands:
+                if command in kwargs:
+                    raise ValueError(f"Cannot set {command} when no_healthcheck is True")
+            params = {
+                "no_healthcheck": kwargs.get("no_healthcheck", True),
+            }
+        else:
+            params = {
+                "health_cmd": kwargs.get("health_cmd", None),
+                "health_interval": kwargs.get("health_interval", "30s"),
+                "health_log_destination": kwargs.get("health_log_destination", "local"),
+                "health_max_log_count": kwargs.get("health_max_log_count", 5),
+                "health_max_logs_size": kwargs.get("health_max_logs_size", 500),
+                "health_on_failure": kwargs.get("health_on_failure", None),
+                "health_retries": kwargs.get("health_retries", 3),
+                "health_start_period": kwargs.get("health_start_period", "0s"),
+                "health_startup_cmd": kwargs.get("health_startup_cmd"),
+                "health_startup_interval": kwargs.get("health_startup_interval", "30s"),
+                "health_startup_retries": kwargs.get("health_startup_retries"),
+                "health_startup_success": kwargs.get("health_startup_success"),
+                "health_startup_timeout": kwargs.get("health_startup_timeout", "30s"),
+                "health_timeout": kwargs.get("health_timeout", "30s"),
+                "no_healthcheck": kwargs.get("no_healthcheck", False),
+            }
+
+        update_params = [
+            "BlkIOWeightDevice",
+            "blockIO",
+            "cpu",
+            "DeviceReadBPs",
+            "DeviceReadIOps",
+            "DeviceWriteBPs",
+            "DeviceWriteIOps",
+            "devices",
+            "hugepageLimits",
+            "memory",
+            "network",
+            "pids",
+            "rdma",
+            "unified",
+        ]
+        for par in update_params:
+            if par in kwargs:
+                params[par] = kwargs.get(par)
+
+        response = self.client.post(f"/containers/{self.id}/update", params=params)
+        response.raise_for_status()
 
     def wait(self, **kwargs) -> int:
         """Block until the container enters given state.
