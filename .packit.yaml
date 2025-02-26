@@ -100,6 +100,12 @@ jobs:
     packages: [python-podman-fedora]
     targets:
       - fedora-all
+    tf_extra_params:
+      environments:
+        - artifacts:
+          - type: repository-file
+            id: https://copr.fedorainfracloud.org/coprs/rhcontainerbot/podman-next/repo/fedora-$releasever/rhcontainerbot-podman-next-fedora-$releasever.repo
+
 
   - job: tests
     trigger: pull_request

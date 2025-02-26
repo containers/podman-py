@@ -9,8 +9,18 @@ prepare:
     how: install
     package:
       - make
-      - podman
       - python3-pip
+      - podman
+
+  - name: enable rhcontainerbot/podman-next update podman
+    when: initiator == packit
+    how: shell
+    script: |
+      COPR_REPO_FILE="/etc/yum.repos.d/*podman-next*.repo"
+      if compgen -G $COPR_REPO_FILE > /dev/null; then
+          sed -i -n '/^priority=/!p;$apriority=1' $COPR_REPO_FILE
+      fi
+      dnf -y upgrade --allowerasing
 
   - name: pip dependencies
     how: shell
