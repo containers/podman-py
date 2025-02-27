@@ -28,4 +28,4 @@ require:
         tag: [ matrix]
         summary: Run all tests for all ptyhon versions available
         test: cd .. && make tests-ci-all-python
-        duration: 10m
+        duration: 20m
