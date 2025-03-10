@@ -4,6 +4,26 @@
 
 upstream_tag_template: v{version}
 
+files_to_sync:
+  - src: rpm/gating.yml
+    dest: gating.yml
+    delete: true
+  - src: pyproject.toml
+    dest: pyproject.toml
+    delete: true
+  - src: plans/
+    dest: plans/
+    delete: true
+    mkpath: true
+  - src: tests/
+    dest: tests/
+    delete: true
+    mkpath: true
+  - src: .fmf/
+    dest: .fmf/
+    delete: true
+    mkpath: true
+
 packages:
   python-podman-fedora:
     pkg_tool: fedpkg
