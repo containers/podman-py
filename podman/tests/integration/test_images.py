@@ -15,6 +15,7 @@
 """Images integration tests."""
 
 import io
+import platform
 import tarfile
 import types
 import unittest
@@ -143,10 +144,12 @@ class ImagesIntegrationTest(base.IntegrationTest):
         self.assertIsNotNone(image)
         self.assertIsNotNone(image.id)
 
+    @unittest.skipIf(platform.architecture()[0] == "32bit", "no 32-bit image available")
     def test_pull_stream(self):
         generator = self.client.images.pull("ubi8", tag="latest", stream=True)
         self.assertIsInstance(generator, types.GeneratorType)
 
+    @unittest.skipIf(platform.architecture()[0] == "32bit", "no 32-bit image available")
     def test_pull_stream_decode(self):
         generator = self.client.images.pull("ubi8", tag="latest", stream=True, decode=True)
         self.assertIsInstance(generator, types.GeneratorType)
