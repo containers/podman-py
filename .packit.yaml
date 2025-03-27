@@ -113,6 +113,21 @@ jobs:
       - fedora-latest-stable
     skip_build: true
 
+
+  # test unit test coverage
+  - job: tests
+    trigger: pull_request
+    identifier: unittest-coverage
+    tmt_plan: /upstream/unittest_coverage
+    packages: [python-podman-fedora]
+    targets:
+      - fedora-latest-stable
+    skip_build: true
+
+
+  # TODO: test integration test coverage
+
+  # run all tests for all python versions on all fedoras
   - job: tests
     trigger: pull_request
     identifier: upstream-all-fedora
@@ -125,7 +140,6 @@ jobs:
         - artifacts:
           - type: repository-file
             id: https://copr.fedorainfracloud.org/coprs/rhcontainerbot/podman-next/repo/fedora-$releasever/rhcontainerbot-podman-next-fedora-$releasever.repo
-
 
   - job: tests
     trigger: pull_request
