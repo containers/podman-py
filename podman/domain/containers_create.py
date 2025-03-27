@@ -436,6 +436,13 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         def pop(k):
             return args.pop(k, None)
 
+        def normalize_nsmode(
+            mode: Union[str, MutableMapping[str, str]],
+        ) -> dict[str, str]:
+            if isinstance(mode, dict):
+                return mode
+            return {"nsmode": mode}
+
         def to_bytes(size: Union[int, str, None]) -> Union[int, None]:
             """
             Converts str or int to bytes.
@@ -746,10 +753,10 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             params["secret_env"] = args.pop("secret_env", {})
 
         if "cgroupns" in args:
-            params["cgroupns"] = {"nsmode": args.pop("cgroupns")}
+            params["cgroupns"] = normalize_nsmode(args.pop("cgroupns"))
 
         if "ipc_mode" in args:
-            params["ipcns"] = {"nsmode": args.pop("ipc_mode")}
+            params["ipcns"] = normalize_nsmode(args.pop("ipc_mode"))
 
         if "network_mode" in args:
             network_mode = args.pop("network_mode")
@@ -760,13 +767,13 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 params["netns"] = {"nsmode": network_mode}
 
         if "pid_mode" in args:
-            params["pidns"] = {"nsmode": args.pop("pid_mode")}
+            params["pidns"] = normalize_nsmode(args.pop("pid_mode"))
 
         if "userns_mode" in args:
-            params["userns"] = {"nsmode": args.pop("userns_mode")}
+            params["userns"] = normalize_nsmode(args.pop("userns_mode"))
 
         if "uts_mode" in args:
-            params["utsns"] = {"nsmode": args.pop("uts_mode")}
+            params["utsns"] = normalize_nsmode(args.pop("uts_mode"))
 
         if len(args) > 0:
             raise TypeError(

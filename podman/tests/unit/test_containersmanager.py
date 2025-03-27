@@ -257,6 +257,54 @@ class ContainersManagerTestCase(unittest.TestCase):
         ]
         self.assertEqual(expected_ports, actual_ports)
 
+    @requests_mock.Mocker()
+    def test_create_userns_mode_simple(self, mock):
+        mock_response = MagicMock()
+        mock_response.json = lambda: {
+            "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
+            "Size": 1024,
+        }
+        self.client.containers.client.post = MagicMock(return_value=mock_response)
+        mock.get(
+            tests.LIBPOD_URL
+            + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
+            json=FIRST_CONTAINER,
+        )
+
+        userns = "keep-id"
+        self.client.containers.create("fedora", "/usr/bin/ls", userns_mode=userns)
+        self.client.containers.client.post.assert_called()
+        expected_userns = {"nsmode": userns}
+
+        actual_userns = json.loads(self.client.containers.client.post.call_args[1]["data"])[
+            "userns"
+        ]
+        self.assertEqual(expected_userns, actual_userns)
+
+    @requests_mock.Mocker()
+    def test_create_userns_mode_dict(self, mock):
+        mock_response = MagicMock()
+        mock_response.json = lambda: {
+            "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
+            "Size": 1024,
+        }
+        self.client.containers.client.post = MagicMock(return_value=mock_response)
+        mock.get(
+            tests.LIBPOD_URL
+            + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
+            json=FIRST_CONTAINER,
+        )
+
+        userns = {"nsmode": "keep-id", "value": "uid=900"}
+        self.client.containers.create("fedora", "/usr/bin/ls", userns_mode=userns)
+        self.client.containers.client.post.assert_called()
+        expected_userns = dict(**userns)
+
+        actual_userns = json.loads(self.client.containers.client.post.call_args[1]["data"])[
+            "userns"
+        ]
+        self.assertEqual(expected_userns, actual_userns)
+
     def test_create_unsupported_key(self):
         with self.assertRaises(TypeError):
             self.client.containers.create("fedora", "/usr/bin/ls", blkio_weight=100.0)
