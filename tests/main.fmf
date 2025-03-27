@@ -8,12 +8,12 @@ require:
     test: cd .. && make lint
 
 /coverage_integration:
-    tag: [ stable, coverage ]
+    tag: [ stable, coverage, integration ]
     summary: Run integration tests coverage check
     test: cd .. && make integration
 
 /coverage_unittest:
-    tag: [ stable, coverage ]
+    tag: [ stable, coverage, unittest ]
     summary: Run unit tests coverage check
     test: cd .. && make unittest
 
@@ -25,7 +25,7 @@ require:
         duration: 10m
 
     /all_python:
-        tag: [ matrix]
+        tag: [ matrix ]
         summary: Run all tests for all ptyhon versions available
         test: cd .. && make tests-ci-all-python
         duration: 20m

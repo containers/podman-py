@@ -60,6 +60,11 @@ prepare:
         discover+:
             filter: tag:matrix
 
+    /unittest_coverage:
+        summary: Run Unit test coverage
+        discover+:
+            filter: tag:coverage & tag:unittest
+
     adjust+:
         enabled: false
         when: initiator is not defined or initiator != packit
