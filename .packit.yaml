@@ -115,6 +115,12 @@ jobs:
 
   - job: tests
     trigger: pull_request
+    identifier: upstream-coverage-unittest
+    tmt_plan: /upstream/coverage-unittest
+    packages: [python-podman-fedora]
+
+  - job: tests
+    trigger: pull_request
     identifier: upstream-all-fedora
     tmt_plan: /upstream/all
     packages: [python-podman-fedora]
