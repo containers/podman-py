@@ -5,7 +5,7 @@ from typing import Any, Optional, Union
 
 from podman.domain.manager import PodmanResource
 
-_Timeout = Union[None, float, tuple[float, float], tuple[float, None]]
+_Timeout = Union[None, int, tuple[int, int], tuple[int, None]]
 
 logger = logging.getLogger("podman.pods")
 
