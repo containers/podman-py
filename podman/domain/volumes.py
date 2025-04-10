@@ -35,6 +35,23 @@ class Volume(PodmanResource):
         """
         self.manager.remove(self.name, force=force)
 
+    def inspect(self, **kwargs) -> dict:
+        """Inspect this volume
+
+        Keyword Args:
+            tls_verify (bool) - Require TLS verification. Default: True.
+
+        Returns:
+            Display attributes of volume.
+
+        Raises:
+            APIError: when service reports an error
+        """
+        params = {"tlsVerify": kwargs.get("tls_verify", True)}
+        response = self.client.get(f"/volumes/{self.id}/json", params=params)
+        response.raise_for_status()
+        return response.json()
+
 
 class VolumesManager(Manager):
     """Specialized Manager for Volume resources."""
