@@ -39,6 +39,15 @@ class VolumeTestCase(unittest.TestCase):
         volume.remove(force=True)
         self.assertTrue(adapter.called_once)
 
+    @requests_mock.Mocker()
+    def test_inspect(self, mock):
+        adapter = mock.get(
+            tests.LIBPOD_URL + "/volumes/dbase/json?tlsVerify=False", json=FIRST_VOLUME
+        )
+        vol_manager = VolumesManager(self.client.api)
+        actual = vol_manager.prepare_model(attrs=FIRST_VOLUME)
+        self.assertEqual(actual.inspect(tls_verify=False)["Mountpoint"], "/var/database")
+
 
 if __name__ == '__main__':
     unittest.main()
