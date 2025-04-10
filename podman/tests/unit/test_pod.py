@@ -149,7 +149,7 @@ class PodTestCase(unittest.TestCase):
     def test_stop(self, mock):
         adapter = mock.post(
             tests.LIBPOD_URL
-            + "/pods/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/stop?t=70.0",
+            + "/pods/c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8/stop?t=70",
             json={
                 "Errs": [],
                 "Id": "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8",
@@ -157,7 +157,7 @@ class PodTestCase(unittest.TestCase):
         )
 
         pod = Pod(attrs=FIRST_POD, client=self.client.api)
-        pod.stop(timeout=70.0)
+        pod.stop(timeout=70)
         self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
