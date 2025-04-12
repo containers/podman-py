@@ -6,7 +6,6 @@ from contextlib import suppress
 from typing import Any, Optional, Union
 
 from podman import api
-from podman.api.http_utils import encode_auth_header
 from podman.domain.images import Image
 from podman.domain.manager import Manager, PodmanResource
 from podman.errors import ImageNotFound
@@ -118,7 +117,7 @@ class Manifest(PodmanResource):
 
         headers = {
             # A base64url-encoded auth configuration
-            "X-Registry-Auth": encode_auth_header(auth_config) if auth_config else ""
+            "X-Registry-Auth": api.encode_auth_header(auth_config) if auth_config else ""
         }
 
         params = {

@@ -164,6 +164,15 @@ class TestUtilsCase(unittest.TestCase):
 
         self.assertDictEqual(payload, actual_dict)
 
+    def test_encode_auth_header(self):
+        auth_config = {
+            "username": "user",
+            "password": "pass",
+        }
+        expected = b"eyJ1c2VybmFtZSI6ICJ1c2VyIiwgInBhc3N3b3JkIjogInBhc3MifQ=="
+        actual = api.encode_auth_header(auth_config)
+        self.assertEqual(expected, actual)
+
 
 if __name__ == '__main__':
     unittest.main()
