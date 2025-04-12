@@ -181,7 +181,7 @@ class ImagesManagerTestCase(unittest.TestCase):
         """Unit test filters param for Images prune()."""
         mock.post(
             tests.LIBPOD_URL + "/images/prune?filters=%7B%22dangling%22%3A+%5B%22True%22%5D%7D",
-            params=[
+            json=[
                 {
                     "Id": "326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab",
                     "Size": 1024,
