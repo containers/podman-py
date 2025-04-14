@@ -67,16 +67,26 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
                     Give the container name or id.
                 - since (str): Only containers created after a particular container.
                     Give container name or id.
-            sparse: Ignored
+            sparse: If False, return basic container information without additional
+                inspection requests. This improves performance when listing many containers
+                but might provide less detail. You can call Container.reload() on individual
+                containers later to retrieve complete attributes. Default: True.
+                When Docker compatibility is enabled with `compatible=True`: Default: False.
             ignore_removed: If True, ignore failures due to missing containers.
 
         Raises:
             APIError: when service returns an error
         """
+        compatible = kwargs.get("compatible", False)
+        # Libpod behavior: default is sparse=True and containers require a reload call
+        # to get full details
+        # Docker behavior: default is sparse=False and containers are inspected during
+        # list calls
         params = {
             "all": kwargs.get("all"),
             "filters": kwargs.get("filters", {}),
             "limit": kwargs.get("limit"),
+            "sparse": kwargs.get("sparse", not compatible),
         }
         if "before" in kwargs:
             params["filters"]["before"] = kwargs.get("before")
@@ -86,10 +96,21 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
         # filters formatted last because some kwargs may need to be mapped into filters
         params["filters"] = api.prepare_filters(params["filters"])
 
-        response = self.client.get("/containers/json", params=params)
+        response = self.client.get("/containers/json", params=params, compatible=compatible)
         response.raise_for_status()
 
-        return [self.prepare_model(attrs=i) for i in response.json()]
+        containers: list[Container] = [self.prepare_model(attrs=i) for i in response.json()]
+
+        # If sparse is False (default), reload each container to get full details
+        if not kwargs.get("sparse", False):
+            for container in containers:
+                try:
+                    container.reload()
+                except APIError:
+                    # Skip containers that might have been removed
+                    pass
+
+        return containers
 
     def prune(self, filters: Mapping[str, str] = None) -> dict[str, Any]:
         """Delete stopped containers.
