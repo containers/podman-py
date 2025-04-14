@@ -67,9 +67,13 @@ class PodmanResource(ABC):  # noqa: B024
             return self.id[:17]
         return self.id[:10]
 
-    def reload(self) -> None:
-        """Refresh this object's data from the service."""
-        latest = self.manager.get(self.id)
+    def reload(self, **kwargs) -> None:
+        """Refresh this object's data from the service.
+
+        Keyword Args:
+            compatible (bool): Use Docker compatibility endpoint
+        """
+        latest = self.manager.get(self.id, **kwargs)
         self.attrs = latest.attrs
 
 
