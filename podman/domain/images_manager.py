@@ -273,9 +273,14 @@ class ImagesManager(BuildMixin, Manager):
             "format": kwargs.get("format"),
         }
 
+        stream = kwargs.get("stream", False)
+        decode = kwargs.get("decode", False)
+
         name = f'{repository}:{tag}' if tag else repository
         name = urllib.parse.quote_plus(name)
-        response = self.client.post(f"/images/{name}/push", params=params, headers=headers)
+        response = self.client.post(
+            f"/images/{name}/push", params=params, stream=stream, headers=headers
+        )
         response.raise_for_status(not_found=ImageNotFound)
 
         tag_count = 0 if tag is None else 1
@@ -290,8 +295,6 @@ class ImagesManager(BuildMixin, Manager):
             },
         ]
 
-        stream = kwargs.get("stream", False)
-        decode = kwargs.get("decode", False)
         if stream:
             return self._push_helper(decode, body)
 
