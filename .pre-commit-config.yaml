@@ -19,3 +19,10 @@ repos:
   rev: 1.39.0
   hooks:
     - id: tmt-lint
+- repo: https://github.com/pre-commit/mirrors-mypy
+  rev: v1.15.0
+  hooks:
+    - id: mypy
+      language: system
+      pass_filenames: false
+      args: ["--package", "podman"]

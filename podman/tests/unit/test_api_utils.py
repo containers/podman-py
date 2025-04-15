@@ -11,7 +11,7 @@ from podman import api
 
 
 class TestUtilsCase(unittest.TestCase):
-    def test_format_filters(self):
+    def test_format_filters(self) -> None:
         @dataclass
         class TestCase:
             name: str
@@ -42,12 +42,12 @@ class TestUtilsCase(unittest.TestCase):
             if actual is not None:
                 self.assertIsInstance(actual, str)
 
-    def test_containerignore_404(self):
+    def test_containerignore_404(self) -> None:
         actual = api.prepare_containerignore("/does/not/exists")
         self.assertListEqual([], actual)
 
     @patch.object(pathlib.Path, "exists", return_value=True)
-    def test_containerignore_read(self, patch_exists):
+    def test_containerignore_read(self, patch_exists) -> None:
         data = r"""# unittest
 
         #Ignore the logs directory
@@ -74,7 +74,7 @@ class TestUtilsCase(unittest.TestCase):
         patch_exists.assert_called_once_with()
 
     @patch.object(pathlib.Path, "exists", return_value=True)
-    def test_containerignore_empty(self, patch_exists):
+    def test_containerignore_empty(self, patch_exists) -> None:
         data = r"""# unittest
         """
 
@@ -86,21 +86,21 @@ class TestUtilsCase(unittest.TestCase):
         patch_exists.assert_called_once_with()
 
     @mock.patch("pathlib.Path.parent", autospec=True)
-    def test_containerfile_1(self, mock_parent):
+    def test_containerfile_1(self, mock_parent) -> None:
         mock_parent.samefile.return_value = True
         actual = api.prepare_containerfile("/work", "/work/Dockerfile")
         self.assertEqual(actual, "Dockerfile")
         mock_parent.samefile.assert_called()
 
     @mock.patch("pathlib.Path.parent", autospec=True)
-    def test_containerfile_2(self, mock_parent):
+    def test_containerfile_2(self, mock_parent) -> None:
         mock_parent.samefile.return_value = True
         actual = api.prepare_containerfile(".", "Dockerfile")
         self.assertEqual(actual, "Dockerfile")
         mock_parent.samefile.assert_called()
 
     @mock.patch("shutil.copy2")
-    def test_containerfile_copy(self, mock_copy):
+    def test_containerfile_copy(self, mock_copy) -> None:
         mock_copy.return_value = None
 
         with mock.patch.object(pathlib.Path, "parent") as mock_parent:
@@ -109,7 +109,7 @@ class TestUtilsCase(unittest.TestCase):
             actual = api.prepare_containerfile("/work", "/home/Dockerfile")
             self.assertRegex(actual, r"\.containerfile\..*")
 
-    def test_prepare_body_all_types(self):
+    def test_prepare_body_all_types(self) -> None:
         payload = {
             "String": "string",
             "Integer": 42,
@@ -121,7 +121,7 @@ class TestUtilsCase(unittest.TestCase):
         actual = api.prepare_body(payload)
         self.assertEqual(actual, json.dumps(payload, sort_keys=True))
 
-    def test_prepare_body_none(self):
+    def test_prepare_body_none(self) -> None:
         payload = {
             "String": "",
             "Integer": None,
@@ -133,8 +133,8 @@ class TestUtilsCase(unittest.TestCase):
         actual = api.prepare_body(payload)
         self.assertEqual(actual, '{"Boolean": false}')
 
-    def test_prepare_body_embedded(self):
-        payload = {
+    def test_prepare_body_embedded(self) -> None:
+        payload: dict[str, Any] = {
             "String": "",
             "Integer": None,
             "Boolean": False,
@@ -154,7 +154,7 @@ class TestUtilsCase(unittest.TestCase):
         self.assertDictEqual(actual_dict["Dictionary"], payload["Dictionary"])
         self.assertEqual(set(actual_dict["Set1"]), {"item1", "item2"})
 
-    def test_prepare_body_dict_empty_string(self):
+    def test_prepare_body_dict_empty_string(self) -> None:
         payload = {"Dictionary": {"key1": "", "key2": {"key3": ""}, "key4": [], "key5": {}}}
 
         actual = api.prepare_body(payload)
