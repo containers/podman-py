@@ -1,6 +1,6 @@
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.3.0
+    rev: v5.0.0
     hooks:
     - id: check-yaml
       exclude: "gating.yml"
@@ -23,6 +23,5 @@ repos:
   rev: v1.15.0
   hooks:
     - id: mypy
-      language: system
       pass_filenames: false
       args: ["--package", "podman"]
