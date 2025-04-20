@@ -12,7 +12,7 @@ Example:
 import ipaddress
 import logging
 from contextlib import suppress
-from typing import Any, Optional, Literal
+from typing import Any, Optional, Literal, Union
 
 from podman.api import http_utils, prepare_filters
 from podman.domain.manager import Manager
@@ -188,7 +188,7 @@ class NetworksManager(Manager):
 
         return {"NetworksDeleted": deleted, "SpaceReclaimed": 0}
 
-    def remove(self, name: [Network, str], force: Optional[bool] = None) -> None:
+    def remove(self, name: Union[Network, str], force: Optional[bool] = None) -> None:
         """Remove Network resource.
 
         Args:

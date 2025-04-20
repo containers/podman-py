@@ -6,5 +6,5 @@ try:
     from functools import cached_property  # pylint: disable=unused-import
 except ImportError:
 
-    def cached_property(fn):
+    def cached_property(fn):  # type: ignore[no-redef]
         return property(functools.lru_cache()(fn))

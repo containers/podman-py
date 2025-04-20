@@ -50,7 +50,7 @@ class PodmanLauncher:
         self.socket_file: str = socket_uri.replace('unix://', '')
         self.log_level = log_level
 
-        self.proc = None
+        self.proc: Optional[subprocess.Popen[bytes]] = None
         self.reference_id = hash(time.monotonic())
 
         self.cmd: list[str] = []
