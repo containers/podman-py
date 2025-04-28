@@ -97,6 +97,7 @@ class Manifest(PodmanResource):
         self,
         destination: str,
         all: Optional[bool] = None,  # pylint: disable=redefined-builtin
+        **kwargs,
     ) -> None:
         """Push a manifest list or image index to a registry.
 
@@ -104,15 +105,32 @@ class Manifest(PodmanResource):
             destination: Target for push.
             all: Push all images.
 
+        Keyword Args:
+            auth_config (Mapping[str, str]: Override configured credentials. Must include
+                username and password keys.
+
         Raises:
             NotFound: when the Manifest could not be found
             APIError: when service reports an error
         """
+        auth_config: Optional[dict[str, str]] = kwargs.get("auth_config")
+
+        headers = {
+            # A base64url-encoded auth configuration
+            "X-Registry-Auth": api.encode_auth_header(auth_config) if auth_config else ""
+        }
+
         params = {
             "all": all,
             "destination": destination,
         }
-        response = self.client.post(f"/manifests/{self.quoted_name}/push", params=params)
+
+        destination_quoted = urllib.parse.quote_plus(destination)
+        response = self.client.post(
+            f"/manifests/{self.quoted_name}/registry/{destination_quoted}",
+            params=params,
+            headers=headers,
+        )
         response.raise_for_status()
 
     def remove(self, digest: str) -> None:

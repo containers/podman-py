@@ -13,7 +13,6 @@ import requests
 
 from podman import api
 from podman.api.parse_utils import parse_repository
-from podman.api.http_utils import encode_auth_header
 from podman.domain.images import Image
 from podman.domain.images_build import BuildMixin
 from podman.domain.json_stream import json_stream
@@ -264,7 +263,7 @@ class ImagesManager(BuildMixin, Manager):
 
         headers = {
             # A base64url-encoded auth configuration
-            "X-Registry-Auth": encode_auth_header(auth_config) if auth_config else ""
+            "X-Registry-Auth": api.encode_auth_header(auth_config) if auth_config else ""
         }
 
         params = {
@@ -362,7 +361,7 @@ class ImagesManager(BuildMixin, Manager):
 
         headers = {
             # A base64url-encoded auth configuration
-            "X-Registry-Auth": encode_auth_header(auth_config) if auth_config else ""
+            "X-Registry-Auth": api.encode_auth_header(auth_config) if auth_config else ""
         }
 
         params = {
