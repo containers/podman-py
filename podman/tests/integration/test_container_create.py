@@ -1,5 +1,6 @@
 import unittest
 
+import pytest
 import re
 
 import podman.tests.integration.base as base
@@ -310,6 +311,45 @@ class ContainersIntegrationTest(base.IntegrationTest):
             container.wait()
 
             self.assertEqual(container.attrs.get('State', dict()).get('ExitCode', 256), 0)
+
+    @pytest.mark.pnext
+    # repeat this test against this upstream change
+    # https://github.com/containers/podman/pull/25942
+    def test_container_mounts_without_rw_as_default(self):
+        """Test passing mounts"""
+        with self.subTest("Check bind mount"):
+            mount = {
+                "type": "bind",
+                "source": "/etc/hosts",
+                "target": "/test",
+                "read_only": True,
+                "relabel": "Z",
+            }
+            container = self.client.containers.create(
+                self.alpine_image, command=["cat", "/test"], mounts=[mount]
+            )
+            self.containers.append(container)
+            self.assertIn(
+                f"{mount['source']}:{mount['target']}:ro,Z,rprivate,rbind",
+                container.attrs.get('HostConfig', {}).get('Binds', list()),
+            )
+
+            # check if container can be started and exits with EC == 0
+            container.start()
+            container.wait()
+
+            self.assertEqual(container.attrs.get('State', dict()).get('ExitCode', 256), 0)
+
+        with self.subTest("Check tmpfs mount"):
+            mount = {"type": "tmpfs", "source": "tmpfs", "target": "/test", "size": "456k"}
+            container = self.client.containers.create(
+                self.alpine_image, command=["df", "-h"], mounts=[mount]
+            )
+            self.containers.append(container)
+            self.assertEqual(
+                container.attrs.get('HostConfig', {}).get('Tmpfs', {}).get(mount['target']),
+                f"size={mount['size']},rprivate,nosuid,nodev,tmpcopyup",
+            )
 
     def test_container_devices(self):
         devices = ["/dev/null:/dev/foo", "/dev/zero:/dev/bar"]

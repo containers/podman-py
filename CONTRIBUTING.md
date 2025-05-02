@@ -45,6 +45,45 @@ pip install tox
 tox -e coverage
 ```
 
+#### Advanced testing
+
+Always prefer to run `tox` directly, even when you want to run a specific test or scenario.
+Instead of running `pytest` directly, you should run:
+
+```
+tox -e py -- podman/tests/integration/test_container_create.py -k test_container_directory_volume_mount
+```
+
+If you'd like to test against a specific `tox` environment you can do:
+
+```
+tox -e py12 -- podman/tests/integration/test_container_create.py -k test_container_directory_volume_mount
+```
+
+Pass pytest options after `--`.
+
+#### Testing future features
+
+Since `podman-py` follows stable releases of `podman`, tests are thought to be run against
+libpod's versions that are commonly installed in the distributions. Tests can be versioned,
+but preferably they should not. Occasionally, upstream can diverge and have features that
+are not included in a specific version of libpod, or that will be included eventually.
+To run a test against such changes, you need to have
+[podman-next](https://copr.fedorainfracloud.org/coprs/rhcontainerbot/podman-next) installed.
+Then, you need to mark the test as `@pytest.mark.pnext`. Marked tests willbe excluded from the
+runs, unless you pass `--pnext` as a cli option.
+Preferably, this should be a rare case and it's better to use this marker as a temporary solution,
+with the goal of removing the marker within few PRs.
+
+To run these tests use:
+
+```
+tox -e py -- --pnext -m pnext podman/tests/integration/test_container_create.py -k test_container_mounts_without_rw_as_default
+```
+
+The option `--pnext` **enables** the tests with the `pnext` pytest marker, and `-m pnext` will run
+the marked tests **only**.
+
 ## Submitting changes
 
 - Create a github pull request (PR)

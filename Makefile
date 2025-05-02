@@ -26,10 +26,16 @@ tests: tox
 	# see tox.ini for environment variable settings
 	$(PYTHON) -m tox -e coverage,py39,py310,py311,py312,py313
 
+.PHONY: tests-ci-base-python-podman-next
+tests-ci-base-python-podman-next:
+	$(PYTHON) -m tox -e py -- --pnext -m pnext
+
 .PHONY: tests-ci-base-python
 tests-ci-base-python:
 	$(PYTHON) -m tox -e coverage,py
 
+# TODO: coverage is probably not necessary here and in tests-ci-base-python
+# 		but for now it's ok to leave it here so it's run
 .PHONY: tests-ci-all-python
 tests-ci-all-python:
 	$(PYTHON) -m tox -e coverage,py39,py310,py311,py312,py313

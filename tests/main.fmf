@@ -24,8 +24,14 @@ require:
         test: cd .. && make tests-ci-base-python
         duration: 10m
 
+    /base_python_pnext:
+        tag: [ pnext ]
+        summary: Run all tests on the base python version and podman-next
+        test: cd .. && make tests-ci-base-python-podman-next
+        duration: 5m
+
     /all_python:
         tag: [ matrix ]
-        summary: Run all tests for all ptyhon versions available
+        summary: Run all tests for all python versions available
         test: cd .. && make tests-ci-all-python
         duration: 20m
