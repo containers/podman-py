@@ -155,6 +155,22 @@ class ContainersManagerTestCase(unittest.TestCase):
         )
 
     @requests_mock.Mocker()
+    def test_list_sparse_with_compat(self, mock):
+        mock.get(
+            tests.COMPATIBLE_URL + "/containers/json?sparse=False",
+            json=[FIRST_CONTAINER, SECOND_CONTAINER],
+        )
+        actual = self.client.containers.list(compatible=True)
+        self.assertIsInstance(actual, list)
+
+        self.assertEqual(
+            actual[0].id, "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
+        )
+        self.assertEqual(
+            actual[1].id, "6dc84cc0a46747da94e4c1571efcc01a756b4017261440b4b8985d37203c3c03"
+        )
+
+    @requests_mock.Mocker()
     def test_prune(self, mock):
         mock.post(
             tests.LIBPOD_URL + "/containers/prune",
