@@ -15,7 +15,7 @@ import podman.tests.integration.base as base
 from podman import PodmanClient
 from podman.domain.containers import Container
 from podman.domain.images import Image
-from podman.errors import NotFound
+from podman.errors import NotFound, APIError
 
 # @unittest.skipIf(os.geteuid() != 0, 'Skipping, not running as root')
 
