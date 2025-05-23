@@ -142,7 +142,8 @@ class ContainersIntegrationTest(base.IntegrationTest):
 
             # Try stopping the already stopped.
             # See https://github.com/containers/podman-py/pull/550 for more info.
-            top_ctnr.stop()
+            with self.assertRaises(APIError):
+                top_ctnr.stop()
 
             top_ctnr.reload()
             self.assertIn(top_ctnr.status, ("exited", "stopped"))
