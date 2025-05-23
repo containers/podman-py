@@ -139,6 +139,11 @@ class ContainersIntegrationTest(base.IntegrationTest):
             self.assertIn("/usr/bin/top", report["Processes"][0][-1])
 
             top_ctnr.stop()
+
+            # Try stopping the already stopped.
+            # See https://github.com/containers/podman-py/pull/550 for more info.
+            top_ctnr.stop()
+
             top_ctnr.reload()
             self.assertIn(top_ctnr.status, ("exited", "stopped"))
 
