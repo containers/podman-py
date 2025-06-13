@@ -40,7 +40,7 @@ class RegistryData(PodmanResource):
         Args:
             platform: Platform for which to pull Image. Default: None (all platforms.)
         """
-        repository = api.parse_repository(self.image_name)
+        repository, _ = api.parse_repository(self.image_name)
         return self.manager.pull(repository, tag=self.id, platform=platform)
 
     def has_platform(self, platform: Union[str, Mapping[str, Any]]) -> bool:

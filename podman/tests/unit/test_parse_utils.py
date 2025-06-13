@@ -29,13 +29,18 @@ class ParseUtilsTestCase(unittest.TestCase):
             ),
             TestCase(
                 name="@digest",
-                input="quay.io/libpod/testimage@71f1b47263fc",
-                expected=("quay.io/libpod/testimage", "71f1b47263fc"),
+                input="quay.io/libpod/testimage@sha256:71f1b47263fc",
+                expected=("quay.io/libpod/testimage@sha256", "71f1b47263fc"),
             ),
             TestCase(
                 name=":tag",
                 input="quay.io/libpod/testimage:latest",
                 expected=("quay.io/libpod/testimage", "latest"),
+            ),
+            TestCase(
+                name=":tag@digest",
+                input="quay.io/libpod/testimage:latest@sha256:71f1b47263fc",
+                expected=("quay.io/libpod/testimage:latest@sha256", "71f1b47263fc"),
             ),
             TestCase(
                 name=":port",
@@ -44,13 +49,18 @@ class ParseUtilsTestCase(unittest.TestCase):
             ),
             TestCase(
                 name=":port@digest",
-                input="quay.io:5000/libpod/testimage@71f1b47263fc",
-                expected=("quay.io:5000/libpod/testimage", "71f1b47263fc"),
+                input="quay.io:5000/libpod/testimage@sha256:71f1b47263fc",
+                expected=("quay.io:5000/libpod/testimage@sha256", "71f1b47263fc"),
             ),
             TestCase(
                 name=":port:tag",
                 input="quay.io:5000/libpod/testimage:latest",
                 expected=("quay.io:5000/libpod/testimage", "latest"),
+            ),
+            TestCase(
+                name=":port:tag:digest",
+                input="quay.io:5000/libpod/testimage:latest@sha256:71f1b47263fc",
+                expected=("quay.io:5000/libpod/testimage:latest@sha256", "71f1b47263fc"),
             ),
         ]
 
