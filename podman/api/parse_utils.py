@@ -13,17 +13,12 @@ from .output_utils import demux_output
 
 
 def parse_repository(name: str) -> tuple[str, Optional[str]]:
-    """Parse repository image name from tag or digest
+    """Parse repository image name from tag.
 
     Returns:
         item 1: repository name
-        item 2: Either digest and tag, tag, or None
+        item 2: Either tag or None
     """
-    # split image name and digest
-    elements = name.split("@", 1)
-    if len(elements) == 2:
-        return elements[0], elements[1]
-
     # split repository and image name from tag
     # tags need to be split from the right since
     # a port number might increase the split list len by 1
