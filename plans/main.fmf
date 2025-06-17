@@ -51,6 +51,14 @@ prepare:
 
 # Run tests against Podman buids installed from the distribution.
 /distro:
+    prepare+:
+      - name: Enable testing repositories
+        when: initiator == packit && distro == fedora
+        how: shell
+        script: |
+          dnf config-manager setopt updates-testing.enabled=true
+          dnf -y upgrade --allowerasing --setopt=allow_vendor_change=true
+
     /sanity:
         summary: Run Sanity and Coverage checks on Python Podman
         discover+:
