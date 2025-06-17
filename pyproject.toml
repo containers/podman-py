@@ -168,3 +168,8 @@ module = [
     "podman.errors.exceptions"
 ]
 ignore_errors = true
+
+[tool.coverage.report]
+exclude_also = [
+    "unittest.main()",
+]
