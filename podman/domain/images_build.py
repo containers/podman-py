@@ -204,8 +204,16 @@ class BuildMixin:
         if "labels" in kwargs:
             params["labels"] = json.dumps(kwargs.get("labels"))
 
-        if params["dockerfile"] is None:
-            params["dockerfile"] = f".containerfile.{random.getrandbits(160):x}"
+        def default(value, def_value):
+            return def_value if value is None else value
+
+        params["outputformat"] = default(
+            params["outputformat"], "application/vnd.oci.image.manifest.v1+json"
+        )
+        params["layers"] = default(params["layers"], True)
+        params["dockerfile"] = default(
+            params["dockerfile"], f".containerfile.{random.getrandbits(160):x}"
+        )
 
         # Remove any unset parameters
         return dict(filter(lambda i: i[1] is not None, params.items()))
