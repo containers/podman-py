@@ -9,8 +9,8 @@ prepare:
     how: install
     package:
       - make
-      - podman
       - python3-pip
+      - podman
 
   - name: pip dependencies
     how: shell
@@ -24,39 +24,90 @@ prepare:
         - cp /root/.ssh/authorized_keys /root/.ssh/authorized_keys%
         - cat /root/.ssh/id_ecdsa.pub >>/root/.ssh/authorized_keys
 
-/upstream:
+# Run tests agains Podman Next builds.
+# These tests should NOT overlap with the ones who run in the distro plan and should only include
+# tests against upcoming features or upstream tests that we need to run for reasons.
+/pnext:
+    prepare+:
+      - name: enable rhcontainerbot/podman-next update podman
+        when: initiator == packit
+        how: shell
+        script: |
+          COPR_REPO_FILE="/etc/yum.repos.d/*podman-next*.repo"
+          if compgen -G $COPR_REPO_FILE > /dev/null; then
+              sed -i -n '/^priority=/!p;$apriority=1' $COPR_REPO_FILE
+          fi
+          dnf -y upgrade --allowerasing
+
+    /base_python:
+        summary: Run Tests Upstream PRs for base Python
+        discover+:
+            filter: tag:pnext
+
+    adjust+:
+        enabled: false
+        when: initiator is not defined or initiator != packit
+
+
+# Run tests against Podman buids installed from the distribution.
+/distro:
+    prepare+:
+      - name: Enable testing repositories
+        when: initiator == packit && distro == fedora
+        how: shell
+        script: |
+          dnf config-manager setopt updates-testing.enabled=true
+          dnf -y upgrade --allowerasing --setopt=allow_vendor_change=true
+
     /sanity:
         summary: Run Sanity and Coverage checks on Python Podman
         discover+:
             # we want to change this to tag:stable once all the coverage tests are fixed
             filter: tag:lint
 
-    /base:
-        summary: Run Python Podman Tests on Upstream PRs for base Python
+    /base_python:
+        summary: Run Tests Upstream for base Python
         discover+:
             filter: tag:base
 
-    /all:
-        summary: Run Python Podman Tests on Upstream PRs for all Python versions
+    /all_python:
+        summary: Run Tests Upstream PRs for all Python versions
         prepare+:
-            - name: install all python versions
-              how: install
-              package:
-                - python3.9
-                - python3.10
-                - python3.11
-                - python3.12
-                - python3.13
+          - name: install all python versions
+            how: install
+            package:
+              - python3.9
+              - python3.10
+              - python3.11
+              - python3.12
+              - python3.13
         discover+:
             filter: tag:matrix
+
+    # TODO: replace with /coverage and include integration tests coverage
+    /unittest_coverage:
+        summary: Run Unit test coverage
+        discover+:
+            filter: tag:coverage & tag:unittest
 
     adjust+:
         enabled: false
         when: initiator is not defined or initiator != packit
 
+# Run tests against downstream Podman. These tests should be the all_python only since the sanity
+# of code is tested in the distro environment
 /downstream:
     /all:
-      summary: Run Python Podman Tests on bodhi / errata and dist-git PRs
+      summary: Run Tests on bodhi / errata and dist-git PRs
+      prepare+:
+        - name: install all python versions
+          how: install
+          package:
+            - python3.9
+            - python3.10
+            - python3.11
+            - python3.12
+            - python3.13
       discover+:
           filter: tag:matrix
 

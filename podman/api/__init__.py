@@ -3,7 +3,7 @@
 from podman.api.cached_property import cached_property
 from podman.api.client import APIClient
 from podman.api.api_versions import VERSION, COMPATIBLE_VERSION
-from podman.api.http_utils import prepare_body, prepare_filters
+from podman.api.http_utils import encode_auth_header, prepare_body, prepare_filters
 from podman.api.parse_utils import (
     decode_header,
     frames,
@@ -27,6 +27,7 @@ __all__ = [
     'cached_property',
     'create_tar',
     'decode_header',
+    'encode_auth_header',
     'frames',
     'parse_repository',
     'prepare_body',

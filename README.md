@@ -1,5 +1,5 @@
 # podman-py
-[![Build Status](https://api.cirrus-ci.com/github/containers/podman-py.svg)](https://cirrus-ci.com/github/containers/podman-py/main)
+[![PyPI Latest Version](https://img.shields.io/pypi/v/podman)](https://pypi.org/project/podman/)
 
 This python package is a library of bindings to use the RESTful API of [Podman](https://github.com/containers/podman).
 It is currently under development and contributors are welcome!

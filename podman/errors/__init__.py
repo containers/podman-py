@@ -58,7 +58,7 @@ try:
     from .exceptions import ImageNotFound
 except ImportError:
 
-    class ImageNotFound(NotFoundError):
+    class ImageNotFound(NotFoundError):  # type: ignore[no-redef]
         """HTTP request returned a http.HTTPStatus.NOT_FOUND.
 
         Specialized for Image not found. Deprecated.

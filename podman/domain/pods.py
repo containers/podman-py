@@ -1,17 +1,22 @@
 """Model and Manager for Pod resources."""
 
 import logging
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, TYPE_CHECKING
 
 from podman.domain.manager import PodmanResource
 
-_Timeout = Union[None, float, tuple[float, float], tuple[float, None]]
+if TYPE_CHECKING:
+    from podman.domain.pods_manager import PodsManager
+
+_Timeout = Union[None, int, tuple[int, int], tuple[int, None]]
 
 logger = logging.getLogger("podman.pods")
 
 
 class Pod(PodmanResource):
     """Details and configuration for a pod managed by the Podman service."""
+
+    manager: "PodsManager"
 
     @property
     def id(self):  # pylint: disable=invalid-name

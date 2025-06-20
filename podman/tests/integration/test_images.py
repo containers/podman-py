@@ -15,6 +15,7 @@
 """Images integration tests."""
 
 import io
+import platform
 import tarfile
 import types
 import unittest
@@ -22,7 +23,7 @@ import unittest
 import podman.tests.integration.base as base
 from podman import PodmanClient
 from podman.domain.images import Image
-from podman.errors import APIError, ImageNotFound
+from podman.errors import APIError, ImageNotFound, PodmanError
 
 
 # @unittest.skipIf(os.geteuid() != 0, 'Skipping, not running as root')
@@ -143,10 +144,48 @@ class ImagesIntegrationTest(base.IntegrationTest):
         self.assertIsNotNone(image)
         self.assertIsNotNone(image.id)
 
+    def test_build_with_context(self):
+        context = io.BytesIO()
+        with tarfile.open(fileobj=context, mode="w") as tar:
+
+            def add_file(name: str, content: str):
+                binary_content = content.encode("utf-8")
+                fileobj = io.BytesIO(binary_content)
+                tarinfo = tarfile.TarInfo(name=name)
+                tarinfo.size = len(binary_content)
+                tar.addfile(tarinfo, fileobj)
+
+            # Use a non-standard Dockerfile name to test the 'dockerfile' argument
+            add_file(
+                "MyDockerfile", ("FROM quay.io/libpod/alpine_labels:latest\nCOPY example.txt .\n")
+            )
+            add_file("example.txt", "This is an example file.\n")
+
+        # Rewind to the start of the generated file so we can read it
+        context.seek(0)
+
+        with self.assertRaises(PodmanError) as e:
+            # If requesting a custom context, must provide the context as `fileobj`
+            self.client.images.build(custom_context=True, path='invalid')
+
+        with self.assertRaises(PodmanError) as e:
+            # If requesting a custom context, currently must specify the dockerfile name
+            self.client.images.build(custom_context=True, fileobj=context)
+
+        image, stream = self.client.images.build(
+            fileobj=context,
+            dockerfile="MyDockerfile",
+            custom_context=True,
+        )
+        self.assertIsNotNone(image)
+        self.assertIsNotNone(image.id)
+
+    @unittest.skipIf(platform.architecture()[0] == "32bit", "no 32-bit image available")
     def test_pull_stream(self):
         generator = self.client.images.pull("ubi8", tag="latest", stream=True)
         self.assertIsInstance(generator, types.GeneratorType)
 
+    @unittest.skipIf(platform.architecture()[0] == "32bit", "no 32-bit image available")
     def test_pull_stream_decode(self):
         generator = self.client.images.pull("ubi8", tag="latest", stream=True, decode=True)
         self.assertIsInstance(generator, types.GeneratorType)

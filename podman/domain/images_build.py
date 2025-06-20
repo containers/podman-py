@@ -34,7 +34,7 @@ class BuildMixin:
             nocache (bool) – Don’t use the cache when set to True
             rm (bool) – Remove intermediate containers. Default True
             timeout (int) – HTTP timeout
-            custom_context (bool) – Optional if using fileobj (ignored)
+            custom_context (bool) – Optional if using fileobj
             encoding (str) – The encoding for a stream. Set to gzip for compressing (ignored)
             pull (bool) – Downloads any updates to the FROM image in Dockerfile
             forcerm (bool) – Always remove intermediate containers, even after unsuccessful builds
@@ -82,7 +82,21 @@ class BuildMixin:
 
         body = None
         path = None
-        if "fileobj" in kwargs:
+        if kwargs.get("custom_context"):
+            if "fileobj" not in kwargs:
+                raise PodmanError(
+                    "Custom context requires fileobj to be set to a binary file-like object containing a build-directory tarball."
+                )
+            if "dockerfile" not in kwargs:
+                # TODO: Scan the tarball for either a Dockerfile or a Containerfile.
+                # This could be slow if the tarball is large,
+                # and could require buffering/copying the tarball if `fileobj` is not seekable.
+                # As a workaround for now, don't support omitting the filename.
+                raise PodmanError(
+                    "Custom context requires specifying the name of the Dockerfile (typically 'Dockerfile' or 'Containerfile')."
+                )
+            body = kwargs["fileobj"]
+        elif "fileobj" in kwargs:
             path = tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
             filename = pathlib.Path(path.name) / params["dockerfile"]
 

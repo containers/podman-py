@@ -13,7 +13,7 @@ from podman import api
 
 
 class ParseUtilsTestCase(unittest.TestCase):
-    def test_parse_repository(self):
+    def test_parse_repository(self) -> None:
         @dataclass
         class TestCase:
             name: str
@@ -29,13 +29,18 @@ class ParseUtilsTestCase(unittest.TestCase):
             ),
             TestCase(
                 name="@digest",
-                input="quay.io/libpod/testimage@71f1b47263fc",
-                expected=("quay.io/libpod/testimage", "71f1b47263fc"),
+                input="quay.io/libpod/testimage@sha256:71f1b47263fc",
+                expected=("quay.io/libpod/testimage@sha256", "71f1b47263fc"),
             ),
             TestCase(
                 name=":tag",
                 input="quay.io/libpod/testimage:latest",
                 expected=("quay.io/libpod/testimage", "latest"),
+            ),
+            TestCase(
+                name=":tag@digest",
+                input="quay.io/libpod/testimage:latest@sha256:71f1b47263fc",
+                expected=("quay.io/libpod/testimage:latest@sha256", "71f1b47263fc"),
             ),
             TestCase(
                 name=":port",
@@ -44,13 +49,18 @@ class ParseUtilsTestCase(unittest.TestCase):
             ),
             TestCase(
                 name=":port@digest",
-                input="quay.io:5000/libpod/testimage@71f1b47263fc",
-                expected=("quay.io:5000/libpod/testimage", "71f1b47263fc"),
+                input="quay.io:5000/libpod/testimage@sha256:71f1b47263fc",
+                expected=("quay.io:5000/libpod/testimage@sha256", "71f1b47263fc"),
             ),
             TestCase(
                 name=":port:tag",
                 input="quay.io:5000/libpod/testimage:latest",
                 expected=("quay.io:5000/libpod/testimage", "latest"),
+            ),
+            TestCase(
+                name=":port:tag:digest",
+                input="quay.io:5000/libpod/testimage:latest@sha256:71f1b47263fc",
+                expected=("quay.io:5000/libpod/testimage:latest@sha256", "71f1b47263fc"),
             ),
         ]
 
@@ -62,13 +72,13 @@ class ParseUtilsTestCase(unittest.TestCase):
                 f"failed test {case.name} expected {case.expected}, actual {actual}",
             )
 
-    def test_decode_header(self):
+    def test_decode_header(self) -> None:
         actual = api.decode_header("eyJIZWFkZXIiOiJ1bml0dGVzdCJ9")
         self.assertDictEqual(actual, {"Header": "unittest"})
 
         self.assertDictEqual(api.decode_header(None), {})
 
-    def test_prepare_timestamp(self):
+    def test_prepare_timestamp(self) -> None:
         time = datetime.datetime(2022, 1, 24, 12, 0, 0)
         self.assertEqual(api.prepare_timestamp(time), 1643025600)
         self.assertEqual(api.prepare_timestamp(2), 2)
@@ -77,11 +87,11 @@ class ParseUtilsTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             api.prepare_timestamp("bad input")  # type: ignore
 
-    def test_prepare_cidr(self):
+    def test_prepare_cidr(self) -> None:
         net = ipaddress.IPv4Network("127.0.0.0/24")
         self.assertEqual(api.prepare_cidr(net), ("127.0.0.0", "////AA=="))
 
-    def test_stream_helper(self):
+    def test_stream_helper(self) -> None:
         streamed_results = [b'{"test":"val1"}', b'{"test":"val2"}']
         mock_response = mock.Mock(spec=Response)
         mock_response.iter_lines.return_value = iter(streamed_results)
@@ -93,7 +103,7 @@ class ParseUtilsTestCase(unittest.TestCase):
             self.assertIsInstance(actual, bytes)
             self.assertEqual(expected, actual)
 
-    def test_stream_helper_with_decode(self):
+    def test_stream_helper_with_decode(self) -> None:
         streamed_results = [b'{"test":"val1"}', b'{"test":"val2"}']
         mock_response = mock.Mock(spec=Response)
         mock_response.iter_lines.return_value = iter(streamed_results)
@@ -103,7 +113,7 @@ class ParseUtilsTestCase(unittest.TestCase):
         self.assertIsInstance(streamable, Iterable)
         for expected, actual in zip(streamed_results, streamable):
             self.assertIsInstance(actual, dict)
-            self.assertDictEqual(json.loads(expected), actual)
+            self.assertDictEqual(json.loads(expected), actual)  # type: ignore[arg-type]
 
 
 if __name__ == '__main__':
