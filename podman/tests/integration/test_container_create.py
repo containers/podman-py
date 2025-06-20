@@ -103,6 +103,44 @@ class ContainersIntegrationTest(base.IntegrationTest):
             for hosts_entry in formatted_hosts:
                 self.assertIn(hosts_entry, logs)
 
+    def test_container_environment_variables(self):
+        """Test environment variables passed to the container."""
+        with self.subTest("Check environment variables as dictionary"):
+            env_dict = {"MY_VAR": "123", "ANOTHER_VAR": "456"}
+            container = self.client.containers.create(
+                self.alpine_image, command=["env"], environment=env_dict
+            )
+            self.containers.append(container)
+
+            container_env = container.attrs.get('Config', {}).get('Env', [])
+            for key, value in env_dict.items():
+                self.assertIn(f"{key}={value}", container_env)
+
+            container.start()
+            container.wait()
+            logs = b"\n".join(container.logs()).decode()
+
+            for key, value in env_dict.items():
+                self.assertIn(f"{key}={value}", logs)
+
+        with self.subTest("Check environment variables as list"):
+            env_list = ["MY_VAR=123", "ANOTHER_VAR=456"]
+            container = self.client.containers.create(
+                self.alpine_image, command=["env"], environment=env_list
+            )
+            self.containers.append(container)
+
+            container_env = container.attrs.get('Config', {}).get('Env', [])
+            for env in env_list:
+                self.assertIn(env, container_env)
+
+            container.start()
+            container.wait()
+            logs = b"\n".join(container.logs()).decode()
+
+            for env in env_list:
+                self.assertIn(env, logs)
+
     def _test_memory_limit(self, parameter_name, host_config_name, set_mem_limit=False):
         """Base for tests which checks memory limits"""
         memory_limit_tests = [
