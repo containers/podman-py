@@ -63,9 +63,10 @@ class BuildMixin:
             isolation (str) – Isolation technology used during build. (ignored)
             use_config_proxy (bool) – (ignored)
             http_proxy (bool) - Inject http proxy environment variables into container (Podman only)
-            layers (bool) - Cache intermediate layers during build.
+            layers (bool) - Cache intermediate layers during build. Default True.
             output (str) - specifies if any custom build output is selected for following build.
             outputformat (str) - The format of the output image's manifest and configuration data.
+                Default to "application/vnd.oci.image.manifest.v1+json" (OCI format).
             manifest (str) - add the image to the specified manifest list.
                 Creates manifest list if it does not exist.
             secrets (list[str]) - Secret files/envs to expose to the build
@@ -172,7 +173,7 @@ class BuildMixin:
             raise PodmanError("Custom encoding not supported when gzip enabled.")
 
         params = {
-            "dockerfile": kwargs.get("dockerfile"),
+            "dockerfile": kwargs.get("dockerfile", f".containerfile.{random.getrandbits(160):x}"),
             "forcerm": kwargs.get("forcerm"),
             "httpproxy": kwargs.get("http_proxy"),
             "networkmode": kwargs.get("network_mode"),
@@ -187,9 +188,11 @@ class BuildMixin:
             "squash": kwargs.get("squash"),
             "t": kwargs.get("tag"),
             "target": kwargs.get("target"),
-            "layers": kwargs.get("layers"),
+            "layers": kwargs.get("layers", True),
             "output": kwargs.get("output"),
-            "outputformat": kwargs.get("outputformat"),
+            "outputformat": kwargs.get(
+                "outputformat", "application/vnd.oci.image.manifest.v1+json"
+            ),
         }
 
         if "buildargs" in kwargs:
@@ -212,9 +215,6 @@ class BuildMixin:
 
         if "secrets" in kwargs:
             params["secrets"] = json.dumps(kwargs.get("secrets"))
-
-        if params["dockerfile"] is None:
-            params["dockerfile"] = f".containerfile.{random.getrandbits(160):x}"
 
         # Remove any unset parameters
         return dict(filter(lambda i: i[1] is not None, params.items()))

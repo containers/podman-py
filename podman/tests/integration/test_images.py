@@ -16,11 +16,13 @@
 
 import io
 import os
+import json
 import platform
 import tarfile
 import tempfile
 import types
 import unittest
+import random
 
 import podman.tests.integration.base as base
 from podman import PodmanClient
@@ -150,6 +152,43 @@ class ImagesIntegrationTest(base.IntegrationTest):
         image, stream = self.client.images.build(fileobj=buffer)
         self.assertIsNotNone(image)
         self.assertIsNotNone(image.id)
+
+    def test_build_cache(self):
+        """Check build caching when enabled
+
+        Build twice with caching enabled (default), then again with nocache
+        """
+
+        def look_for_cache(stream) -> bool:
+            # Search for a line with contents "-> Using cache <image id>"
+            uses_cache = False
+            for line in stream:
+                parsed = json.loads(line)['stream']
+                if "Using cache" in parsed:
+                    uses_cache = True
+                    break
+            return uses_cache
+
+        label = str(random.getrandbits(32))
+        buffer = io.StringIO(f"""FROM scratch\nLABEL test={label}""")
+        image, _ = self.client.images.build(fileobj=buffer)
+        buffer.seek(0)
+        cached_image, stream = self.client.images.build(fileobj=buffer)
+        self.assertTrue(look_for_cache(stream))
+        self.assertEqual(
+            cached_image.id,
+            image.id,
+            msg="Building twice with cache does not produce the same image id",
+        )
+        # Build again with disabled cache
+        buffer.seek(0)
+        uncached_image, stream = self.client.images.build(fileobj=buffer, nocache=True)
+        self.assertFalse(look_for_cache(stream))
+        self.assertNotEqual(
+            uncached_image.id,
+            image.id,
+            msg="Building twice without cache produces the same image id",
+        )
 
     def test_build_with_manifest(self):
         buffer = io.StringIO("""FROM quay.io/libpod/alpine_labels:latest""")
