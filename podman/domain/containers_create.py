@@ -422,9 +422,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
             # Validate key is not empty
             if not key.strip():
-                raise ValueError(
-                    f"Environment variable at index {i} has empty key: '{env_var}'"
-                )
+                raise ValueError(f"Environment variable at index {i} has empty key: '{env_var}'")
 
             env_dict[key] = value
         return env_dict
@@ -554,9 +552,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "cni_networks": [pop("network")],
             "command": args.pop("command", args.pop("cmd", None)),
             "conmon_pid_file": pop("conmon_pid_file"),  # TODO document, podman only
-            "containerCreateCommand": pop(
-                "containerCreateCommand"
-            ),  # TODO document, podman only
+            "containerCreateCommand": pop("containerCreateCommand"),  # TODO document, podman only
             "devices": [],
             "dns_option": pop("dns_opt"),
             "dns_search": pop("dns_search"),
@@ -605,9 +601,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "rootfs_propagation": pop("rootfs_propagation"),
             "sdnotifyMode": pop("sdnotifyMode"),  # TODO document, podman only
             "seccomp_policy": pop("seccomp_policy"),  # TODO document, podman only
-            "seccomp_profile_path": pop(
-                "seccomp_profile_path"
-            ),  # TODO document, podman only
+            "seccomp_profile_path": pop("seccomp_profile_path"),  # TODO document, podman only
             "secrets": [],  # TODO document, podman only
             "selinux_opts": pop("security_opt"),
             "shm_size": to_bytes(pop("shm_size")),
@@ -623,9 +617,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "unified": pop("unified"),  # TODO document, podman only
             "unmask": pop("unmasked_paths"),  # TODO document, podman only
             "use_image_hosts": pop("use_image_hosts"),  # TODO document, podman only
-            "use_image_resolve_conf": pop(
-                "use_image_resolve_conf"
-            ),  # TODO document, podman only
+            "use_image_resolve_conf": pop("use_image_resolve_conf"),  # TODO document, podman only
             "user": pop("user"),
             "version": pop("version"),
             "volumes": [],
@@ -647,15 +639,9 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             params["log_configuration"]["driver"] = args["log_config"].get("Type")
 
             if "Config" in args["log_config"]:
-                params["log_configuration"]["path"] = args["log_config"]["Config"].get(
-                    "path"
-                )
-                params["log_configuration"]["size"] = args["log_config"]["Config"].get(
-                    "size"
-                )
-                params["log_configuration"]["options"] = args["log_config"][
-                    "Config"
-                ].get("options")
+                params["log_configuration"]["path"] = args["log_config"]["Config"].get("path")
+                params["log_configuration"]["size"] = args["log_config"]["Config"].get("size")
+                params["log_configuration"]["options"] = args["log_config"]["Config"].get("options")
             args.pop("log_config")
 
         for item in args.pop("mounts", []):
@@ -710,9 +696,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 result.append(port_map)
             elif isinstance(_host, list):
                 for host_list in _host:
-                    host_list_result = parse_host_port(
-                        _container_port, _protocol, host_list
-                    )
+                    host_list_result = parse_host_port(_container_port, _protocol, host_list)
                     result.extend(host_list_result)
             elif isinstance(_host, dict):
                 _host_port = _host.get("port")
@@ -854,8 +838,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
         if len(args) > 0:
             raise TypeError(
-                "Unknown keyword argument(s): "
-                + " ,".join(f"'{k}'" for k in args.keys())
+                "Unknown keyword argument(s): " + " ,".join(f"'{k}'" for k in args.keys())
             )
 
         return params
