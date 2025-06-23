@@ -422,7 +422,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
             # Validate key is not empty
             if not key.strip():
-                raise ValueError(f"Environment variable at index {i} has empty key: '{env_var}'")
+                raise ValueError(f"Environment variable has empty key: '{env_var}'")
 
             env_dict[key] = value
         return env_dict
