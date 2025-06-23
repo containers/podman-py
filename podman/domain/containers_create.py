@@ -17,7 +17,7 @@ from podman.errors import ImageNotFound
 
 logger = logging.getLogger("podman.containers")
 
-NAMED_VOLUME_PATTERN = re.compile(r'[a-zA-Z0-9][a-zA-Z0-9_.-]*')
+NAMED_VOLUME_PATTERN = re.compile(r"[a-zA-Z0-9][a-zA-Z0-9_.-]*")
 
 
 class CreateMixin:  # pylint: disable=too-few-public-methods
@@ -375,7 +375,9 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         payload = api.prepare_body(payload)
 
         response = self.client.post(
-            "/containers/create", headers={"content-type": "application/json"}, data=payload
+            "/containers/create",
+            headers={"content-type": "application/json"},
+            data=payload,
         )
         response.raise_for_status(not_found=ImageNotFound)
 
@@ -396,14 +398,34 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         Raises:
             ValueError: If any environment variable is not in the correct format
         """
+        if not isinstance(env_list, list):
+            raise TypeError(f"Expected list, got {type(env_list).__name__}")
+
         env_dict = {}
+
         for env_var in env_list:
-            if '=' not in env_var:
+            if not isinstance(env_var, str):
+                raise TypeError(
+                    f"Environment variable must be a string, "
+                    f"got {type(env_var).__name__}: {repr(env_var)}"
+                )
+
+            # Handle empty strings
+            if not env_var.strip():
+                raise ValueError(f"Environment variable cannot be empty")
+            if "=" not in env_var:
                 raise ValueError(
                     f"Environment variable '{env_var}' is not in the correct format. "
                     "Expected format: 'KEY=value'"
                 )
-            key, value = env_var.split('=', 1)  # Split on first '=' only
+            key, value = env_var.split("=", 1)  # Split on first '=' only
+
+            # Validate key is not empty
+            if not key.strip():
+                raise ValueError(
+                    f"Environment variable at index {i} has empty key: '{env_var}'"
+                )
+
             env_dict[key] = value
         return env_dict
 
@@ -507,9 +529,9 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 try:
                     return int(size)
                 except ValueError as bad_size:
-                    mapping = {'b': 0, 'k': 1, 'm': 2, 'g': 3}
-                    mapping_regex = ''.join(mapping.keys())
-                    search = re.search(rf'^(\d+)([{mapping_regex}])$', size.lower())
+                    mapping = {"b": 0, "k": 1, "m": 2, "g": 3}
+                    mapping_regex = "".join(mapping.keys())
+                    search = re.search(rf"^(\d+)([{mapping_regex}])$", size.lower())
                     if search:
                         return int(search.group(1)) * (1024 ** mapping[search.group(2)])
                     raise TypeError(
@@ -532,7 +554,9 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "cni_networks": [pop("network")],
             "command": args.pop("command", args.pop("cmd", None)),
             "conmon_pid_file": pop("conmon_pid_file"),  # TODO document, podman only
-            "containerCreateCommand": pop("containerCreateCommand"),  # TODO document, podman only
+            "containerCreateCommand": pop(
+                "containerCreateCommand"
+            ),  # TODO document, podman only
             "devices": [],
             "dns_option": pop("dns_opt"),
             "dns_search": pop("dns_search"),
@@ -581,7 +605,9 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "rootfs_propagation": pop("rootfs_propagation"),
             "sdnotifyMode": pop("sdnotifyMode"),  # TODO document, podman only
             "seccomp_policy": pop("seccomp_policy"),  # TODO document, podman only
-            "seccomp_profile_path": pop("seccomp_profile_path"),  # TODO document, podman only
+            "seccomp_profile_path": pop(
+                "seccomp_profile_path"
+            ),  # TODO document, podman only
             "secrets": [],  # TODO document, podman only
             "selinux_opts": pop("security_opt"),
             "shm_size": to_bytes(pop("shm_size")),
@@ -597,7 +623,9 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "unified": pop("unified"),  # TODO document, podman only
             "unmask": pop("unmasked_paths"),  # TODO document, podman only
             "use_image_hosts": pop("use_image_hosts"),  # TODO document, podman only
-            "use_image_resolve_conf": pop("use_image_resolve_conf"),  # TODO document, podman only
+            "use_image_resolve_conf": pop(
+                "use_image_resolve_conf"
+            ),  # TODO document, podman only
             "user": pop("user"),
             "version": pop("version"),
             "volumes": [],
@@ -619,9 +647,15 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             params["log_configuration"]["driver"] = args["log_config"].get("Type")
 
             if "Config" in args["log_config"]:
-                params["log_configuration"]["path"] = args["log_config"]["Config"].get("path")
-                params["log_configuration"]["size"] = args["log_config"]["Config"].get("size")
-                params["log_configuration"]["options"] = args["log_config"]["Config"].get("options")
+                params["log_configuration"]["path"] = args["log_config"]["Config"].get(
+                    "path"
+                )
+                params["log_configuration"]["size"] = args["log_config"]["Config"].get(
+                    "size"
+                )
+                params["log_configuration"]["options"] = args["log_config"][
+                    "Config"
+                ].get("options")
             args.pop("log_config")
 
         for item in args.pop("mounts", []):
@@ -648,7 +682,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 if _k in bool_options and v is True:
                     options.append(option_name)
                 elif _k in regular_options:
-                    options.append(f'{option_name}={v}')
+                    options.append(f"{option_name}={v}")
                 elif _k in simple_options:
                     options.append(v)
 
@@ -676,7 +710,9 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 result.append(port_map)
             elif isinstance(_host, list):
                 for host_list in _host:
-                    host_list_result = parse_host_port(_container_port, _protocol, host_list)
+                    host_list_result = parse_host_port(
+                        _container_port, _protocol, host_list
+                    )
                     result.extend(host_list_result)
             elif isinstance(_host, dict):
                 _host_port = _host.get("port")
@@ -750,12 +786,12 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
         for item in args.pop("volumes", {}).items():
             key, value = item
-            extended_mode = value.get('extended_mode', [])
+            extended_mode = value.get("extended_mode", [])
             if not isinstance(extended_mode, list):
                 raise ValueError("'extended_mode' value should be a list")
 
             options = extended_mode
-            mode = value.get('mode')
+            mode = value.get("mode")
             if mode is not None:
                 if not isinstance(mode, str):
                     raise ValueError("'mode' value should be a str")
@@ -770,10 +806,10 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 params["volumes"].append(volume)
             else:
                 mount_point = {
-                    "destination": value['bind'],
+                    "destination": value["bind"],
                     "options": options,
                     "source": key,
-                    "type": 'bind',
+                    "type": "bind",
                 }
                 params["mounts"].append(mount_point)
 
@@ -818,7 +854,8 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
         if len(args) > 0:
             raise TypeError(
-                "Unknown keyword argument(s): " + " ,".join(f"'{k}'" for k in args.keys())
+                "Unknown keyword argument(s): "
+                + " ,".join(f"'{k}'" for k in args.keys())
             )
 
         return params
