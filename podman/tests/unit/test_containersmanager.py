@@ -334,11 +334,11 @@ class ContainersManagerTestCase(unittest.TestCase):
 
         # Test non iterable
         env_list3 = ["FOO=foo", None]
-        self.assertRaises(ValueError, CreateMixin._convert_env_list_to_dict, env_list3)
+        self.assertRaises(TypeError, CreateMixin._convert_env_list_to_dict, env_list3)
 
         # Test iterable with non string element
         env_list4 = ["FOO=foo", []]
-        self.assertRaises(ValueError, CreateMixin._convert_env_list_to_dict, env_list4)
+        self.assertRaises(TypeError, CreateMixin._convert_env_list_to_dict, env_list4)
 
         # Test empty list
         env_list5 = []
