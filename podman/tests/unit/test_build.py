@@ -1,4 +1,5 @@
 import io
+import requests
 import json
 import unittest
 
@@ -15,6 +16,20 @@ import requests_mock
 from podman import PodmanClient, api, tests
 from podman.domain.images import Image
 from podman.errors import BuildError, DockerException
+
+good_image_id = "032b8b2855fc"
+good_stream = [
+    {"stream": " ---\u003e a9eb17255234"},
+    {"stream": "Step 1 : VOLUME /data"},
+    {"stream": " ---\u003e Running in abdc1e6896c6"},
+    {"stream": " ---\u003e 713bca62012e"},
+    {"stream": "Removing intermediate container abdc1e6896c6"},
+    {"stream": "Step 2 : CMD [\"/bin/sh\"]"},
+    {"stream": " ---\u003e Running in dba30f2a1a7e"},
+    {"stream": " ---\u003e 032b8b2855fc"},
+    {"stream": "Removing intermediate container dba30f2a1a7e"},
+    {"stream": f"{good_image_id}\n"},
+]
 
 
 class TestBuildCase(unittest.TestCase):
@@ -41,19 +56,7 @@ class TestBuildCase(unittest.TestCase):
         mock_prepare_containerfile.return_value = "Containerfile"
         mock_create_tar.return_value = b"This is a mocked tarball."
 
-        stream = [
-            {"stream": " ---\u003e a9eb17255234"},
-            {"stream": "Step 1 : VOLUME /data"},
-            {"stream": " ---\u003e Running in abdc1e6896c6"},
-            {"stream": " ---\u003e 713bca62012e"},
-            {"stream": "Removing intermediate container abdc1e6896c6"},
-            {"stream": "Step 2 : CMD [\"/bin/sh\"]"},
-            {"stream": " ---\u003e Running in dba30f2a1a7e"},
-            {"stream": " ---\u003e 032b8b2855fc"},
-            {"stream": "Removing intermediate container dba30f2a1a7e"},
-            {"stream": "032b8b2855fc\n"},
-        ]
-
+        stream = good_stream
         buffer = io.StringIO()
         for entry in stream:
             buffer.write(json.JSONEncoder().encode(entry))
@@ -72,9 +75,9 @@ class TestBuildCase(unittest.TestCase):
                 text=buffer.getvalue(),
             )
             mock.get(
-                tests.LIBPOD_URL + "/images/032b8b2855fc/json",
+                tests.LIBPOD_URL + f"/images/{good_image_id}/json",
                 json={
-                    "Id": "032b8b2855fc",
+                    "Id": good_image_id,
                     "ParentId": "",
                     "RepoTags": ["fedora:latest", "fedora:33", "<none>:<none>"],
                     "RepoDigests": [
@@ -104,7 +107,7 @@ class TestBuildCase(unittest.TestCase):
                 secrets=["id=example,src=podman-build-secret123"],
             )
             self.assertIsInstance(image, Image)
-            self.assertEqual(image.id, "032b8b2855fc")
+            self.assertEqual(image.id, good_image_id)
             self.assertIsInstance(logs, Iterable)
 
     @patch.object(api, "create_tar")
@@ -134,15 +137,46 @@ class TestBuildCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_build_no_context(self, mock):
-        mock.post(tests.LIBPOD_URL + "/images/build")
+        mock.post(tests.LIBPOD_URL + "/build")
         with self.assertRaises(TypeError):
             self.client.images.build()
 
     @requests_mock.Mocker()
     def test_build_encoding(self, mock):
-        mock.post(tests.LIBPOD_URL + "/images/build")
+        mock.post(tests.LIBPOD_URL + "/build")
         with self.assertRaises(DockerException):
             self.client.images.build(path="/root", gzip=True, encoding="utf-8")
+
+    @patch.object(api, "create_tar")
+    @patch.object(api, "prepare_containerfile")
+    def test_build_defaults(self, mock_prepare_containerfile, mock_create_tar):
+        """Check the defaults used by images.build"""
+        mock_prepare_containerfile.return_value = "Containerfile"
+        mock_create_tar.return_value = b"This is a mocked tarball."
+
+        stream = good_stream
+        buffer = io.StringIO()
+        for entry in stream:
+            buffer.write(json.dumps(entry))
+            buffer.write("\n")
+
+        with requests_mock.Mocker() as mock:
+            query = "?outputformat=" + (
+                requests.utils.quote("application/vnd.oci.image.manifest.v1+json", safe='')
+                + "&layers=True"
+            )
+            mock.post(
+                tests.LIBPOD_URL + "/build" + query,
+                text=buffer.getvalue(),
+            )
+            mock.get(
+                tests.LIBPOD_URL + f"/images/{good_image_id}/json",
+                json={
+                    "Id": "unittest",
+                },
+            )
+            img, _ = self.client.images.build(path="/tmp/context_dir")
+        assert img.id == "unittest"
 
 
 if __name__ == '__main__':
