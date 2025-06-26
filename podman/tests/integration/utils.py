@@ -24,7 +24,7 @@ from typing import Optional
 
 import time
 
-from podman.tests import errors
+from podman import PodmanCommand
 
 logger = logging.getLogger("podman.service")
 
@@ -41,54 +41,27 @@ class PodmanLauncher:
         log_level: str = "WARNING",
     ) -> None:
         """create a launcher and build podman command"""
-        podman_exe: str = podman_path
-        if not podman_exe:
-            podman_exe = shutil.which('podman')
-        if podman_exe is None:
-            raise errors.PodmanNotInstalled()
+        self.podman = PodmanCommand(path=podman_path, privileged=privileged)
 
+        self.timeout = timeout
+        self.socket_uri: str = socket_uri
         self.socket_file: str = socket_uri.replace('unix://', '')
         self.log_level = log_level
 
         self.proc: Optional[subprocess.Popen[bytes]] = None
         self.reference_id = hash(time.monotonic())
 
-        self.cmd: list[str] = []
-        if privileged:
-            self.cmd.append('sudo')
-
-        self.cmd.append(podman_exe)
-
         logger.setLevel(logging.getLevelName(log_level))
 
         # Map from python to go logging levels, FYI trace level breaks cirrus logging
-        self.cmd.append(f"--log-level={log_level.lower()}")
-
+        self.podman.options.log_level = log_level.lower()
         if os.environ.get("container") == "oci":
-            self.cmd.append("--storage-driver=vfs")
+            self.podman.options.storage_driver = "vfs"
 
-        self.cmd.extend(
-            [
-                "system",
-                "service",
-                f"--time={timeout}",
-                socket_uri,
-            ]
-        )
-
-        process = subprocess.run(
-            [podman_exe, "--version"], check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-        )
-        self.version = str(process.stdout.decode("utf-8")).strip().split()[2]
+        self.version = self.podman.run(["--version"]).split()[2]
 
     def start(self, check_socket=True) -> None:
         """start podman service"""
-        logger.info(
-            "Launching(%s) %s refid=%s",
-            self.version,
-            ' '.join(self.cmd),
-            self.reference_id,
-        )
 
         def consume_lines(pipe, consume_fn):
             with pipe:
@@ -98,32 +71,34 @@ class PodmanLauncher:
         def consume(line: str):
             logger.debug(line.strip("\n") + f" refid={self.reference_id}")
 
-        self.proc = subprocess.Popen(self.cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)  # pylint: disable=consider-using-with
+        self.proc = self.podman.start_service(
+            self.socket_uri,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+
+        logger.info(
+            "Launched(%s) %s pid=%s refid=%s",
+            self.version,
+            ' '.join(self.proc.args),
+            self.proc.pid,
+            self.reference_id,
+        )
+
         threading.Thread(target=consume_lines, args=[self.proc.stdout, consume]).start()
 
         if not check_socket:
             return
 
         # wait for socket to be created
-        timeout = time.monotonic() + 30
-        while not os.path.exists(self.socket_file):
-            if time.monotonic() > timeout:
-                raise subprocess.TimeoutExpired("podman service ", timeout)
-            time.sleep(0.2)
+        self.podman.wait_for_service(self.socket_uri, self.proc, timeout=30)
 
     def stop(self) -> None:
         """stop podman service"""
         if not self.proc:
             return
 
-        self.proc.terminate()
-        try:
-            return_code = self.proc.wait(timeout=15)
-        except subprocess.TimeoutExpired:
-            self.proc.kill()
-            return_code = self.proc.wait()
-        self.proc = None
-
+        return_code = self.podman.stop_service(self.proc, timeout=15)
         with suppress(FileNotFoundError):
             os.remove(self.socket_file)
 
