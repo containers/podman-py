@@ -2,8 +2,8 @@
 
 import logging
 import urllib
-from typing import Any, Union
 from collections.abc import Mapping
+from typing import Any, Union
 
 from podman import api
 from podman.domain.containers import Container
@@ -27,11 +27,14 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
         response = self.client.get(f"/containers/{key}/exists")
         return response.ok
 
-    def get(self, key: str) -> Container:
+    def get(self, key: str, **kwargs) -> Container:
         """Get container by name or id.
 
         Args:
             key: Container name or id.
+
+        Keyword Args:
+            compatible (bool): Use Docker compatibility endpoint
 
         Returns:
             A `Container` object corresponding to `key`.
@@ -40,8 +43,10 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
             NotFound: when Container does not exist
             APIError: when an error return by service
         """
+        compatible = kwargs.get("compatible", False)
+
         container_id = urllib.parse.quote_plus(key)
-        response = self.client.get(f"/containers/{container_id}/json")
+        response = self.client.get(f"/containers/{container_id}/json", compatible=compatible)
         response.raise_for_status()
         return self.prepare_model(attrs=response.json())
 
@@ -67,12 +72,26 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
                     Give the container name or id.
                 - since (str): Only containers created after a particular container.
                     Give container name or id.
-            sparse: Ignored
+            sparse: If False, return basic container information without additional
+                inspection requests. This improves performance when listing many containers
+                but might provide less detail. You can call Container.reload() on individual
+                containers later to retrieve complete attributes. Default: True.
+                When Docker compatibility is enabled with `compatible=True`: Default: False.
             ignore_removed: If True, ignore failures due to missing containers.
 
         Raises:
             APIError: when service returns an error
         """
+        compatible = kwargs.get("compatible", False)
+
+        # Set sparse default based on mode:
+        # Libpod behavior: default is sparse=True (faster, requires reload for full details)
+        # Docker behavior: default is sparse=False (full details immediately, compatible)
+        if "sparse" in kwargs:
+            sparse = kwargs["sparse"]
+        else:
+            sparse = not compatible  # True for libpod, False for compat
+
         params = {
             "all": kwargs.get("all"),
             "filters": kwargs.get("filters", {}),
@@ -86,10 +105,21 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
         # filters formatted last because some kwargs may need to be mapped into filters
         params["filters"] = api.prepare_filters(params["filters"])
 
-        response = self.client.get("/containers/json", params=params)
+        response = self.client.get("/containers/json", params=params, compatible=compatible)
         response.raise_for_status()
 
-        return [self.prepare_model(attrs=i) for i in response.json()]
+        containers: list[Container] = [self.prepare_model(attrs=i) for i in response.json()]
+
+        # If sparse is False, reload each container to get full details
+        if not sparse:
+            for container in containers:
+                try:
+                    container.reload(compatible=compatible)
+                except APIError:
+                    # Skip containers that might have been removed
+                    pass
+
+        return containers
 
     def prune(self, filters: Mapping[str, str] = None) -> dict[str, Any]:
         """Delete stopped containers.
