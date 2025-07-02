@@ -59,18 +59,32 @@ class PodmanClient(AbstractContextManager):
         """
         super().__init__()
         config = PodmanConfig()
-
         api_kwargs = kwargs.copy()
 
+        # Case 1: Use named connection from kwargs if specified
         if "connection" in api_kwargs:
+            logger.debug("Using kwargs")
             connection = config.services[api_kwargs.get("connection")]
             api_kwargs["base_url"] = connection.url.geturl()
-
+            logger.debug("Connection URL: %s", api_kwargs["base_url"])
             # Override configured identity, if provided in arguments
             api_kwargs["identity"] = kwargs.get("identity", str(connection.identity))
-        elif "base_url" not in api_kwargs:
+
+        # Case 2: No kwargs provided - try to load from system configuration
+        elif not api_kwargs and "Connection" in config.attrs:
+            logger.debug("Using System Configuration")
+            default_connection_name = config.attrs["Connection"]["Default"]
+            connection = config.attrs["Connection"]["Connections"][default_connection_name]
+            api_kwargs["base_url"] = connection["URI"]
+            api_kwargs["identity"] = connection["Identity"]
+            logger.debug("Connection URL: %s", api_kwargs["base_url"])
+
+        # Case 3: Fallback - if no base_url is specified, use default socket path
+        if "base_url" not in api_kwargs:
             path = str(Path(get_runtime_dir()) / "podman" / "podman.sock")
             api_kwargs["base_url"] = "http+unix://" + path
+            logger.debug("Using Default Socket Path: %s", api_kwargs["base_url"])
+
         self.api = APIClient(**api_kwargs)
 
     def __enter__(self) -> "PodmanClient":
