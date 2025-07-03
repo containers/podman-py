@@ -8,12 +8,12 @@ require:
     test: cd .. && make lint
 
 /coverage_integration:
-    tag: [ stable, coverage ]
+    tag: [ stable, coverage, integration ]
     summary: Run integration tests coverage check
     test: cd .. && make integration
 
 /coverage_unittest:
-    tag: [ stable, coverage ]
+    tag: [ stable, coverage, unittest ]
     summary: Run unit tests coverage check
     test: cd .. && make unittest
 
@@ -24,8 +24,14 @@ require:
         test: cd .. && make tests-ci-base-python
         duration: 10m
 
+    /base_python_pnext:
+        tag: [ pnext ]
+        summary: Run all tests on the base python version and podman-next
+        test: cd .. && make tests-ci-base-python-podman-next
+        duration: 5m
+
     /all_python:
-        tag: [ matrix]
-        summary: Run all tests for all ptyhon versions available
+        tag: [ matrix ]
+        summary: Run all tests for all python versions available
         test: cd .. && make tests-ci-all-python
-        duration: 10m
+        duration: 20m

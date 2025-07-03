@@ -4,6 +4,26 @@
 
 upstream_tag_template: v{version}
 
+files_to_sync:
+  - src: rpm/gating.yml
+    dest: gating.yml
+    delete: true
+  - src: pyproject.toml
+    dest: pyproject.toml
+    delete: true
+  - src: plans/
+    dest: plans/
+    delete: true
+    mkpath: true
+  - src: tests/
+    dest: tests/
+    delete: true
+    mkpath: true
+  - src: .fmf/
+    dest: .fmf/
+    delete: true
+    mkpath: true
+
 packages:
   python-podman-fedora:
     pkg_tool: fedpkg
@@ -82,29 +102,63 @@ jobs:
     dist_git_branches:
       - fedora-branched # rawhide updates are created automatically
 
+
   # Test linting on the codebase
   # This test might break based on the OS and lint used, so we follow fedora-latest as a reference
   - job: tests
     trigger: pull_request
-    identifier: upstream-sanity
-    tmt_plan: /upstream/sanity
+    identifier: distro-sanity
+    tmt_plan: /distro/sanity
     packages: [python-podman-fedora]
     targets:
       - fedora-latest-stable
     skip_build: true
 
+
+  # test unit test coverage
   - job: tests
     trigger: pull_request
-    identifier: upstream-all-fedora
-    tmt_plan: /upstream/all
+    identifier: unittest-coverage
+    tmt_plan: /distro/unittest_coverage
+    packages: [python-podman-fedora]
+    targets:
+      - fedora-latest-stable
+    skip_build: true
+
+
+  # TODO: test integration test coverage
+
+  # run all tests for all python versions on all fedoras
+  - job: tests
+    trigger: pull_request
+    identifier: distro-fedora-all
+    tmt_plan: /distro/all_python
     packages: [python-podman-fedora]
     targets:
       - fedora-all
 
+  # run tests for the rawhide python version using podman-next packages
   - job: tests
     trigger: pull_request
-    identifier: upstream-base-centos
-    tmt_plan: /upstream/base
+    identifier: podman-next-fedora-base
+    tmt_plan: /pnext/base_python
+    packages: [python-podman-fedora]
+    targets:
+      - fedora-rawhide
+    tf_extra_params:
+      environments:
+        - artifacts:
+          - type: repository-file
+            id: https://copr.fedorainfracloud.org/coprs/rhcontainerbot/podman-next/repo/fedora-$releasever/rhcontainerbot-podman-next-fedora-$releasever.repo
+    manual_trigger: true
+    labels:
+      - pnext
+      - podman-next
+
+  - job: tests
+    trigger: pull_request
+    identifier: distro-centos-base
+    tmt_plan: /distro/base_python
     packages: [python-podman-centos]
     targets:
       - centos-stream-9
@@ -112,8 +166,8 @@ jobs:
 
   - job: tests
     trigger: pull_request
-    identifier: upstream-base-rhel
-    tmt_plan: /upstream/base
+    identifier: distro-rhel-base
+    tmt_plan: /distro/base_python
     packages: [python-podman-rhel]
     targets:
       - epel-9

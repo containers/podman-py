@@ -56,9 +56,9 @@ class SystemManager:
             password: Registry plaintext password
             email: Registry account email address
             registry: URL for registry access. For example,
+                https://quay.io/v2
             reauth: Ignored: If True, refresh existing authentication. Default: False
             dockercfg_path: Ignored: Path to custom configuration file.
-                https://quay.io/v2
             auth: TODO: Add description based on the source code of Podman.
             identitytoken: IdentityToken is used to authenticate the user and
                            get an access token for the registry.

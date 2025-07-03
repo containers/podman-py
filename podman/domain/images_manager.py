@@ -13,7 +13,6 @@ import requests
 
 from podman import api
 from podman.api.parse_utils import parse_repository
-from podman.api.http_utils import encode_auth_header
 from podman.domain.images import Image
 from podman.domain.images_build import BuildMixin
 from podman.domain.json_stream import json_stream
@@ -123,7 +122,7 @@ class ImagesManager(BuildMixin, Manager):
 
     def load(
         self, data: Optional[bytes] = None, file_path: Optional[os.PathLike] = None
-    ) -> Generator[bytes, None, None]:
+    ) -> Generator[Image, None, None]:
         """Restore an image previously saved.
 
         Args:
@@ -159,7 +158,7 @@ class ImagesManager(BuildMixin, Manager):
         )
         response.raise_for_status()  # Catch any errors before proceeding
 
-        def _generator(body: dict) -> Generator[bytes, None, None]:
+        def _generator(body: dict) -> Generator[Image, None, None]:
             # Iterate and yield images from response body
             for item in body["Names"]:
                 yield self.get(item)
@@ -264,7 +263,7 @@ class ImagesManager(BuildMixin, Manager):
 
         headers = {
             # A base64url-encoded auth configuration
-            "X-Registry-Auth": encode_auth_header(auth_config) if auth_config else ""
+            "X-Registry-Auth": api.encode_auth_header(auth_config) if auth_config else ""
         }
 
         params = {
@@ -273,9 +272,14 @@ class ImagesManager(BuildMixin, Manager):
             "format": kwargs.get("format"),
         }
 
+        stream = kwargs.get("stream", False)
+        decode = kwargs.get("decode", False)
+
         name = f'{repository}:{tag}' if tag else repository
         name = urllib.parse.quote_plus(name)
-        response = self.client.post(f"/images/{name}/push", params=params, headers=headers)
+        response = self.client.post(
+            f"/images/{name}/push", params=params, stream=stream, headers=headers
+        )
         response.raise_for_status(not_found=ImageNotFound)
 
         tag_count = 0 if tag is None else 1
@@ -290,8 +294,6 @@ class ImagesManager(BuildMixin, Manager):
             },
         ]
 
-        stream = kwargs.get("stream", False)
-        decode = kwargs.get("decode", False)
         if stream:
             return self._push_helper(decode, body)
 
@@ -359,7 +361,7 @@ class ImagesManager(BuildMixin, Manager):
 
         headers = {
             # A base64url-encoded auth configuration
-            "X-Registry-Auth": encode_auth_header(auth_config) if auth_config else ""
+            "X-Registry-Auth": api.encode_auth_header(auth_config) if auth_config else ""
         }
 
         params = {

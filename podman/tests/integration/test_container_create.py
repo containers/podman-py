@@ -1,5 +1,6 @@
 import unittest
 
+import pytest
 import re
 
 import podman.tests.integration.base as base
@@ -101,6 +102,44 @@ class ContainersIntegrationTest(base.IntegrationTest):
             formatted_hosts = [f"{ip}\t{hosts}" for hosts, ip in extra_hosts.items()]
             for hosts_entry in formatted_hosts:
                 self.assertIn(hosts_entry, logs)
+
+    def test_container_environment_variables(self):
+        """Test environment variables passed to the container."""
+        with self.subTest("Check environment variables as dictionary"):
+            env_dict = {"MY_VAR": "123", "ANOTHER_VAR": "456"}
+            container = self.client.containers.create(
+                self.alpine_image, command=["env"], environment=env_dict
+            )
+            self.containers.append(container)
+
+            container_env = container.attrs.get('Config', {}).get('Env', [])
+            for key, value in env_dict.items():
+                self.assertIn(f"{key}={value}", container_env)
+
+            container.start()
+            container.wait()
+            logs = b"\n".join(container.logs()).decode()
+
+            for key, value in env_dict.items():
+                self.assertIn(f"{key}={value}", logs)
+
+        with self.subTest("Check environment variables as list"):
+            env_list = ["MY_VAR=123", "ANOTHER_VAR=456"]
+            container = self.client.containers.create(
+                self.alpine_image, command=["env"], environment=env_list
+            )
+            self.containers.append(container)
+
+            container_env = container.attrs.get('Config', {}).get('Env', [])
+            for env in env_list:
+                self.assertIn(env, container_env)
+
+            container.start()
+            container.wait()
+            logs = b"\n".join(container.logs()).decode()
+
+            for env in env_list:
+                self.assertIn(env, logs)
 
     def _test_memory_limit(self, parameter_name, host_config_name, set_mem_limit=False):
         """Base for tests which checks memory limits"""
@@ -310,6 +349,45 @@ class ContainersIntegrationTest(base.IntegrationTest):
             container.wait()
 
             self.assertEqual(container.attrs.get('State', dict()).get('ExitCode', 256), 0)
+
+    @pytest.mark.pnext
+    # repeat this test against this upstream change
+    # https://github.com/containers/podman/pull/25942
+    def test_container_mounts_without_rw_as_default(self):
+        """Test passing mounts"""
+        with self.subTest("Check bind mount"):
+            mount = {
+                "type": "bind",
+                "source": "/etc/hosts",
+                "target": "/test",
+                "read_only": True,
+                "relabel": "Z",
+            }
+            container = self.client.containers.create(
+                self.alpine_image, command=["cat", "/test"], mounts=[mount]
+            )
+            self.containers.append(container)
+            self.assertIn(
+                f"{mount['source']}:{mount['target']}:ro,Z,rprivate,rbind",
+                container.attrs.get('HostConfig', {}).get('Binds', list()),
+            )
+
+            # check if container can be started and exits with EC == 0
+            container.start()
+            container.wait()
+
+            self.assertEqual(container.attrs.get('State', dict()).get('ExitCode', 256), 0)
+
+        with self.subTest("Check tmpfs mount"):
+            mount = {"type": "tmpfs", "source": "tmpfs", "target": "/test", "size": "456k"}
+            container = self.client.containers.create(
+                self.alpine_image, command=["df", "-h"], mounts=[mount]
+            )
+            self.containers.append(container)
+            self.assertEqual(
+                container.attrs.get('HostConfig', {}).get('Tmpfs', {}).get(mount['target']),
+                f"size={mount['size']},rprivate,nosuid,nodev,tmpcopyup",
+            )
 
     def test_container_devices(self):
         devices = ["/dev/null:/dev/foo", "/dev/zero:/dev/bar"]

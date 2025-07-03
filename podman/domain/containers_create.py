@@ -17,7 +17,7 @@ from podman.errors import ImageNotFound
 
 logger = logging.getLogger("podman.containers")
 
-NAMED_VOLUME_PATTERN = re.compile(r'[a-zA-Z0-9][a-zA-Z0-9_.-]*')
+NAMED_VOLUME_PATTERN = re.compile(r"[a-zA-Z0-9][a-zA-Z0-9_.-]*")
 
 
 class CreateMixin:  # pylint: disable=too-few-public-methods
@@ -375,13 +375,57 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         payload = api.prepare_body(payload)
 
         response = self.client.post(
-            "/containers/create", headers={"content-type": "application/json"}, data=payload
+            "/containers/create",
+            headers={"content-type": "application/json"},
+            data=payload,
         )
         response.raise_for_status(not_found=ImageNotFound)
 
         container_id = response.json()["Id"]
 
         return self.get(container_id)
+
+    @staticmethod
+    def _convert_env_list_to_dict(env_list):
+        """Convert a list of environment variables to a dictionary.
+
+        Args:
+            env_list (List[str]): List of environment variables in the format ["KEY=value"]
+
+        Returns:
+            Dict[str, str]: Dictionary of environment variables
+
+        Raises:
+            ValueError: If any environment variable is not in the correct format
+        """
+        if not isinstance(env_list, list):
+            raise TypeError(f"Expected list, got {type(env_list).__name__}")
+
+        env_dict = {}
+
+        for env_var in env_list:
+            if not isinstance(env_var, str):
+                raise TypeError(
+                    f"Environment variable must be a string, "
+                    f"got {type(env_var).__name__}: {repr(env_var)}"
+                )
+
+            # Handle empty strings
+            if not env_var.strip():
+                raise ValueError(f"Environment variable cannot be empty")
+            if "=" not in env_var:
+                raise ValueError(
+                    f"Environment variable '{env_var}' is not in the correct format. "
+                    "Expected format: 'KEY=value'"
+                )
+            key, value = env_var.split("=", 1)  # Split on first '=' only
+
+            # Validate key is not empty
+            if not key.strip():
+                raise ValueError(f"Environment variable has empty key: '{env_var}'")
+
+            env_dict[key] = value
+        return env_dict
 
     # pylint: disable=too-many-locals,too-many-statements,too-many-branches
     @staticmethod
@@ -410,6 +454,23 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             with suppress(KeyError):
                 del args[key]
 
+        # Handle environment variables
+        environment = args.pop("environment", None)
+        if environment is not None:
+            if isinstance(environment, list):
+                try:
+                    environment = CreateMixin._convert_env_list_to_dict(environment)
+                except ValueError as e:
+                    raise ValueError(
+                        "Failed to convert environment variables list to dictionary. "
+                        f"Error: {str(e)}"
+                    ) from e
+            elif not isinstance(environment, dict):
+                raise TypeError(
+                    "Environment variables must be provided as either a dictionary "
+                    "or a list of strings in the format ['KEY=value']"
+                )
+
         # These keywords are not supported for various reasons.
         unsupported_keys = set(args.keys()).intersection(
             (
@@ -436,6 +497,13 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         def pop(k):
             return args.pop(k, None)
 
+        def normalize_nsmode(
+            mode: Union[str, MutableMapping[str, str]],
+        ) -> dict[str, str]:
+            if isinstance(mode, dict):
+                return mode
+            return {"nsmode": mode}
+
         def to_bytes(size: Union[int, str, None]) -> Union[int, None]:
             """
             Converts str or int to bytes.
@@ -459,9 +527,9 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 try:
                     return int(size)
                 except ValueError as bad_size:
-                    mapping = {'b': 0, 'k': 1, 'm': 2, 'g': 3}
-                    mapping_regex = ''.join(mapping.keys())
-                    search = re.search(rf'^(\d+)([{mapping_regex}])$', size.lower())
+                    mapping = {"b": 0, "k": 1, "m": 2, "g": 3}
+                    mapping_regex = "".join(mapping.keys())
+                    search = re.search(rf"^(\d+)([{mapping_regex}])$", size.lower())
                     if search:
                         return int(search.group(1)) * (1024 ** mapping[search.group(2)])
                     raise TypeError(
@@ -490,7 +558,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "dns_search": pop("dns_search"),
             "dns_server": pop("dns"),
             "entrypoint": pop("entrypoint"),
-            "env": pop("environment"),
+            "env": environment,
             "env_host": pop("env_host"),  # TODO document, podman only
             "expose": {},
             "groups": pop("group_add"),
@@ -600,7 +668,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 if _k in bool_options and v is True:
                     options.append(option_name)
                 elif _k in regular_options:
-                    options.append(f'{option_name}={v}')
+                    options.append(f"{option_name}={v}")
                 elif _k in simple_options:
                     options.append(v)
 
@@ -702,12 +770,12 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
         for item in args.pop("volumes", {}).items():
             key, value = item
-            extended_mode = value.get('extended_mode', [])
+            extended_mode = value.get("extended_mode", [])
             if not isinstance(extended_mode, list):
                 raise ValueError("'extended_mode' value should be a list")
 
             options = extended_mode
-            mode = value.get('mode')
+            mode = value.get("mode")
             if mode is not None:
                 if not isinstance(mode, str):
                     raise ValueError("'mode' value should be a str")
@@ -722,10 +790,10 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 params["volumes"].append(volume)
             else:
                 mount_point = {
-                    "destination": value['bind'],
+                    "destination": value["bind"],
                     "options": options,
                     "source": key,
-                    "type": 'bind',
+                    "type": "bind",
                 }
                 params["mounts"].append(mount_point)
 
@@ -746,10 +814,10 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             params["secret_env"] = args.pop("secret_env", {})
 
         if "cgroupns" in args:
-            params["cgroupns"] = {"nsmode": args.pop("cgroupns")}
+            params["cgroupns"] = normalize_nsmode(args.pop("cgroupns"))
 
         if "ipc_mode" in args:
-            params["ipcns"] = {"nsmode": args.pop("ipc_mode")}
+            params["ipcns"] = normalize_nsmode(args.pop("ipc_mode"))
 
         if "network_mode" in args:
             network_mode = args.pop("network_mode")
@@ -760,13 +828,13 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 params["netns"] = {"nsmode": network_mode}
 
         if "pid_mode" in args:
-            params["pidns"] = {"nsmode": args.pop("pid_mode")}
+            params["pidns"] = normalize_nsmode(args.pop("pid_mode"))
 
         if "userns_mode" in args:
-            params["userns"] = {"nsmode": args.pop("userns_mode")}
+            params["userns"] = normalize_nsmode(args.pop("userns_mode"))
 
         if "uts_mode" in args:
-            params["utsns"] = {"nsmode": args.pop("uts_mode")}
+            params["utsns"] = normalize_nsmode(args.pop("uts_mode"))
 
         if len(args) > 0:
             raise TypeError(
