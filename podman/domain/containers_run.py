@@ -44,7 +44,14 @@ class RunMixin:  # pylint: disable=too-few-public-methods
                 side. Default: False.
 
         Keyword Args:
-            - See the create() method for keyword arguments.
+            - These args are directly used to pull an image when the image is not found.
+                auth_config (Mapping[str, str]): Override the credentials that are found in the
+                config for this request. auth_config should contain the username and password
+                keys to be valid.
+                platform (str): Platform in the format os[/arch[/variant]]
+                policy (str): Pull policy. "missing" (default), "always", "never", "newer"
+
+            - See the create() method for other keyword arguments.
 
         Returns:
             - When detach is True, return a Container
@@ -66,7 +73,12 @@ class RunMixin:  # pylint: disable=too-few-public-methods
         try:
             container = self.create(image=image, command=command, **kwargs)
         except ImageNotFound:
-            self.podman_client.images.pull(image, platform=kwargs.get("platform"))
+            self.podman_client.images.pull(
+                image,
+                auth_config=kwargs.get("auth_config"),
+                platform=kwargs.get("platform"),
+                policy=kwargs.get("policy", "missing"),
+            )
             container = self.create(image=image, command=command, **kwargs)
 
         container.start()

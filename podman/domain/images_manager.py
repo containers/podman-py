@@ -337,6 +337,7 @@ class ImagesManager(BuildMixin, Manager):
             decode (bool) – Decode the JSON data from the server into dicts.
                 Only applies with ``stream=True``
             platform (str) – Platform in the format os[/arch[/variant]]
+            policy (str) - Pull policy. "always" (default), "missing", "never", "newer"
             progress_bar (bool) - Display a progress bar with the image pull progress (uses
                 the compat endpoint). Default: False
             tls_verify (bool) - Require TLS verification. Default: True.
@@ -365,6 +366,7 @@ class ImagesManager(BuildMixin, Manager):
         }
 
         params = {
+            "policy": kwargs.get("policy", "always"),
             "reference": repository,
             "tlsVerify": kwargs.get("tls_verify", True),
             "compatMode": kwargs.get("compatMode", True),
