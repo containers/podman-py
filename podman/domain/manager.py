@@ -2,10 +2,13 @@
 
 from abc import ABC, abstractmethod
 from collections import abc
-from typing import Any, Optional, TypeVar, Union
+from typing import Any, Optional, TypeVar, Union, TYPE_CHECKING
 from collections.abc import Mapping
 
 from podman.api.client import APIClient
+
+if TYPE_CHECKING:
+    from podman import PodmanClient
 
 # Methods use this Type when a subclass of PodmanResource is expected.
 PodmanResourceType: TypeVar = TypeVar("PodmanResourceType", bound="PodmanResource")

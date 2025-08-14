@@ -18,7 +18,7 @@ from requests.adapters import HTTPAdapter
 from podman.api.api_versions import VERSION, COMPATIBLE_VERSION
 from podman.api.ssh import SSHAdapter
 from podman.api.uds import UDSAdapter
-from podman.errors import APIError, NotFound
+from podman.errors import APIError, NotFound, PodmanError
 from podman.tlsconfig import TLSConfig
 from podman.version import __version__
 

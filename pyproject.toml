@@ -104,10 +104,10 @@ select = [
     "E", # Pycodestyle Error
     "W", # Pycodestyle Warning
     "N", # PEP8 Naming
-    # TODO "UP", # Pyupgrade
+    "UP", # Pyupgrade
     # TODO "ANN",
     # TODO "S", # Bandit
-    # "B", # Bugbear
+    "B", # Bugbear
     "A", # flake-8-builtins
     "YTT", # flake-8-2020
     "PLC", # Pylint Convention
@@ -117,17 +117,7 @@ select = [
 # Some checks should be enabled for code sanity disabled now
 # to avoid changing too many lines
 ignore = [
-    "F821", # TODO Undefined name
-    "F541", # TODO f-string is missing placeholders
-    "F401", # TODO Module imported but unused
-    "F841", # TODO Local variable is assigned to but never used
-    "E402", # TODO Module level import not at top of file
-    "E741", # TODO ambiguous variable name
-    "E722", # TODO do not use bare 'except'
-    "E501", # TODO line too long
     "N818", # TODO Error Suffix in exception name
-    "ANN10", # Missing type annotation
-    "PLW2901", # TODO Redefined Loop Name
 ]
 [tool.ruff.lint.flake8-builtins]
 builtins-ignorelist = ["copyright", "all"]
