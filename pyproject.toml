@@ -126,7 +126,6 @@ ignore = [
     "E722", # TODO do not use bare 'except'
     "E501", # TODO line too long
     "N818", # TODO Error Suffix in exception name
-    "N80", # TODO Invalid Name
     "ANN10", # Missing type annotation
     "PLW2901", # TODO Redefined Loop Name
 ]
