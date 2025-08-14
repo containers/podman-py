@@ -164,11 +164,11 @@ class ImagesIntegrationTest(base.IntegrationTest):
         # Rewind to the start of the generated file so we can read it
         context.seek(0)
 
-        with self.assertRaises(PodmanError) as e:
+        with self.assertRaises(PodmanError):
             # If requesting a custom context, must provide the context as `fileobj`
             self.client.images.build(custom_context=True, path='invalid')
 
-        with self.assertRaises(PodmanError) as e:
+        with self.assertRaises(PodmanError):
             # If requesting a custom context, currently must specify the dockerfile name
             self.client.images.build(custom_context=True, fileobj=context)
 

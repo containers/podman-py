@@ -412,7 +412,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
             # Handle empty strings
             if not env_var.strip():
-                raise ValueError(f"Environment variable cannot be empty")
+                raise ValueError("Environment variable cannot be empty")
             if "=" not in env_var:
                 raise ValueError(
                     f"Environment variable '{env_var}' is not in the correct format. "
