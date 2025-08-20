@@ -22,7 +22,7 @@ class ContainersIntegrationTest(base.IntegrationTest):
         self.alpine_image = self.client.images.pull("quay.io/libpod/alpine", tag="latest")
         self.containers = []
 
-    def tearUp(self):
+    def tearDown(self):
         for container in self.containers:
             container.remove(force=True)
 
