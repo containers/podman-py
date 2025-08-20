@@ -1,10 +1,11 @@
 import unittest
+import re
 
 import pytest
-import re
 
 import podman.tests.integration.base as base
 from podman import PodmanClient
+from podman.tests.utils import OS_RELEASE
 
 # @unittest.skipIf(os.geteuid() != 0, 'Skipping, not running as root')
 
@@ -278,6 +279,10 @@ class ContainersIntegrationTest(base.IntegrationTest):
         """Test passing shared memory size"""
         self._test_memory_limit('shm_size', 'ShmSize')
 
+    @pytest.mark.skipif(
+        OS_RELEASE["ID"] == "fedora" and int(OS_RELEASE["VERSION_ID"]) >= 42,
+        reason="This feature is different in F42 https://github.com/containers/podman/pull/25942",
+    )
     def test_container_mounts(self):
         """Test passing mounts"""
         with self.subTest("Check bind mount"):
@@ -350,9 +355,14 @@ class ContainersIntegrationTest(base.IntegrationTest):
 
             self.assertEqual(container.attrs.get('State', dict()).get('ExitCode', 256), 0)
 
-    @pytest.mark.pnext
-    # repeat this test against this upstream change
-    # https://github.com/containers/podman/pull/25942
+    @pytest.mark.skipif(
+        OS_RELEASE["ID"] == "fedora" and int(OS_RELEASE["VERSION_ID"]) < 42,
+        reason="Test against this feature in F42 or later https://github.com/containers/podman/pull/25942",
+    )
+    @pytest.mark.skipif(
+        OS_RELEASE["ID"] in ["rhel", "centos"],
+        reason="This feature is not available in RHEL/CentOS",
+    )
     def test_container_mounts_without_rw_as_default(self):
         """Test passing mounts"""
         with self.subTest("Check bind mount"):
