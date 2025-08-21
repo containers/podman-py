@@ -316,7 +316,7 @@ class ContainersIntegrationTest(base.IntegrationTest):
             self.containers.append(container)
             self.assertEqual(
                 container.attrs.get('HostConfig', {}).get('Tmpfs', {}).get(mount['target']),
-                f"size={mount['size']},rw,rprivate,nosuid,nodev,tmpcopyup",
+                f"size={mount['size']},rprivate,nosuid,nodev,tmpcopyup",
             )
 
             container.start()
