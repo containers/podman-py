@@ -472,6 +472,10 @@ class Container(PodmanResource):
         if response.status_code == requests.codes.not_modified:
             if kwargs.get("ignore", False):
                 return
+            else:
+                raise APIError(
+                    response.text, response=response, explanation="Container already stopped."
+                )
 
         body = response.json()
         raise APIError(body["cause"], response=response, explanation=body["message"])
