@@ -4,7 +4,7 @@ import base64
 import ipaddress
 import json
 import struct
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional, Union
 from collections.abc import Iterator
 
@@ -48,7 +48,9 @@ def prepare_timestamp(value: Union[datetime, int, None]) -> Optional[int]:
         return value
 
     if isinstance(value, datetime):
-        delta = value - datetime.utcfromtimestamp(0)
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        delta = value - datetime.fromtimestamp(0, timezone.utc)
         return delta.seconds + delta.days * 24 * 3600
 
     raise ValueError(f"Type '{type(value)}' is not supported by prepare_timestamp()")
