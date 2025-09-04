@@ -15,6 +15,7 @@
 """Images integration tests."""
 
 import io
+import json
 import platform
 import tarfile
 import types
@@ -143,6 +144,19 @@ class ImagesIntegrationTest(base.IntegrationTest):
         image, stream = self.client.images.build(fileobj=buffer)
         self.assertIsNotNone(image)
         self.assertIsNotNone(image.id)
+
+    def test_build_cache(self):
+        """Check that building twice the same image uses caching"""
+        buffer = io.StringIO("""FROM quay.io/libpod/alpine_labels:latest\nLABEL test=value""")
+        image, _ = self.client.images.build(fileobj=buffer)
+        buffer.seek(0)
+        _, stream = self.client.images.build(fileobj=buffer)
+        for line in stream:
+            # Search for a line with contents "-> Using cache <image id>"
+            parsed = json.loads(line)['stream']
+            if "Using cache" in parsed:
+                break
+        self.assertEqual(parsed.split()[3], image.id)
 
     def test_build_with_context(self):
         context = io.BytesIO()
