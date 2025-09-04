@@ -85,7 +85,8 @@ class BuildMixin:
         if kwargs.get("custom_context"):
             if "fileobj" not in kwargs:
                 raise PodmanError(
-                    "Custom context requires fileobj to be set to a binary file-like object containing a build-directory tarball."
+                    "Custom context requires fileobj to be set to a binary file-like object "
+                    "containing a build-directory tarball."
                 )
             if "dockerfile" not in kwargs:
                 # TODO: Scan the tarball for either a Dockerfile or a Containerfile.
@@ -93,7 +94,8 @@ class BuildMixin:
                 # and could require buffering/copying the tarball if `fileobj` is not seekable.
                 # As a workaround for now, don't support omitting the filename.
                 raise PodmanError(
-                    "Custom context requires specifying the name of the Dockerfile (typically 'Dockerfile' or 'Containerfile')."
+                    "Custom context requires specifying the name of the Dockerfile "
+                    "(typically 'Dockerfile' or 'Containerfile')."
                 )
             body = kwargs["fileobj"]
         elif "fileobj" in kwargs:

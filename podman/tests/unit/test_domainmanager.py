@@ -32,25 +32,29 @@ class PodmanResourceTestCase(unittest.TestCase):
 
         # Mock the get() call
         mock.get(
-            f"{tests.LIBPOD_URL}/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
+            f"{tests.LIBPOD_URL}/"
+            f"containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
             json=CONTAINER,
         )
 
         # Mock the reload() call
         mock.get(
-            f"{tests.LIBPOD_URL}/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
+            f"{tests.LIBPOD_URL}/"
+            f"containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
             json=CONTAINER,
         )
 
         # Mock the reload(compatible=False) call
         mock.get(
-            f"{tests.LIBPOD_URL}/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
+            f"{tests.LIBPOD_URL}/"
+            f"containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
             json=CONTAINER,
         )
 
         # Mock the reload(compatible=True) call
         mock.get(
-            f"{tests.COMPATIBLE_URL}/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
+            f"{tests.COMPATIBLE_URL}/"
+            f"containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
             json=CONTAINER,
         )
 
@@ -66,7 +70,8 @@ class PodmanResourceTestCase(unittest.TestCase):
             self.assertEqual(
                 mock.request_history[i].url,
                 tests.LIBPOD_URL.lower()
-                + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
+                + "/containers/"
+                + "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
             )
         self.assertEqual(
             mock.request_history[3].url,

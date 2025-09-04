@@ -12,7 +12,7 @@ except ImportError:
         Python < 3.10
         """
         path = pathlib.Path("/etc/os-release")
-        with open(path, "r") as f:
+        with open(path) as f:
             reader = csv.reader(f, delimiter="=")
             return dict(reader)
 
