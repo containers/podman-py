@@ -163,6 +163,134 @@ class ContainersManagerTestCase(unittest.TestCase):
         )
 
     @requests_mock.Mocker()
+    def test_list_sparse_libpod_default(self, mock):
+        mock.get(
+            tests.LIBPOD_URL + "/containers/json",
+            json=[FIRST_CONTAINER, SECOND_CONTAINER],
+        )
+        actual = self.client.containers.list()
+        self.assertIsInstance(actual, list)
+
+        self.assertEqual(
+            actual[0].id, "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
+        )
+        self.assertEqual(
+            actual[1].id, "6dc84cc0a46747da94e4c1571efcc01a756b4017261440b4b8985d37203c3c03"
+        )
+
+        # Verify that no individual reload() calls were made for sparse=True (default)
+        # Should be only 1 request for the list endpoint
+        self.assertEqual(len(mock.request_history), 1)
+        # lower() needs to be enforced since the mocked url is transformed as lowercase and
+        # this avoids %2f != %2F errors. Same applies for other instances of assertEqual
+        self.assertEqual(mock.request_history[0].url, tests.LIBPOD_URL.lower() + "/containers/json")
+
+    @requests_mock.Mocker()
+    def test_list_sparse_libpod_false(self, mock):
+        mock.get(
+            tests.LIBPOD_URL + "/containers/json",
+            json=[FIRST_CONTAINER, SECOND_CONTAINER],
+        )
+        # Mock individual container detail endpoints for reload() calls
+        # that are done for sparse=False
+        mock.get(
+            tests.LIBPOD_URL + f"/containers/{FIRST_CONTAINER['Id']}/json",
+            json=FIRST_CONTAINER,
+        )
+        mock.get(
+            tests.LIBPOD_URL + f"/containers/{SECOND_CONTAINER['Id']}/json",
+            json=SECOND_CONTAINER,
+        )
+        actual = self.client.containers.list(sparse=False)
+        self.assertIsInstance(actual, list)
+
+        self.assertEqual(
+            actual[0].id, "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
+        )
+        self.assertEqual(
+            actual[1].id, "6dc84cc0a46747da94e4c1571efcc01a756b4017261440b4b8985d37203c3c03"
+        )
+
+        # Verify that individual reload() calls were made for sparse=False
+        # Should be 3 requests total: 1 for list + 2 for individual container details
+        self.assertEqual(len(mock.request_history), 3)
+
+        # Verify the list endpoint was called first
+        self.assertEqual(mock.request_history[0].url, tests.LIBPOD_URL.lower() + "/containers/json")
+
+        # Verify the individual container detail endpoints were called
+        individual_urls = {req.url for req in mock.request_history[1:]}
+        expected_urls = {
+            tests.LIBPOD_URL.lower() + f"/containers/{FIRST_CONTAINER['Id']}/json",
+            tests.LIBPOD_URL.lower() + f"/containers/{SECOND_CONTAINER['Id']}/json",
+        }
+        self.assertEqual(individual_urls, expected_urls)
+
+    @requests_mock.Mocker()
+    def test_list_sparse_compat_default(self, mock):
+        mock.get(
+            tests.COMPATIBLE_URL + "/containers/json",
+            json=[FIRST_CONTAINER, SECOND_CONTAINER],
+        )
+        # Mock individual container detail endpoints for reload() calls
+        # that are done for sparse=False
+        mock.get(
+            tests.COMPATIBLE_URL + f"/containers/{FIRST_CONTAINER['Id']}/json",
+            json=FIRST_CONTAINER,
+        )
+        mock.get(
+            tests.COMPATIBLE_URL + f"/containers/{SECOND_CONTAINER['Id']}/json",
+            json=SECOND_CONTAINER,
+        )
+        actual = self.client.containers.list(compatible=True)
+        self.assertIsInstance(actual, list)
+
+        self.assertEqual(
+            actual[0].id, "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
+        )
+        self.assertEqual(
+            actual[1].id, "6dc84cc0a46747da94e4c1571efcc01a756b4017261440b4b8985d37203c3c03"
+        )
+
+        # Verify that individual reload() calls were made for compat default (sparse=True)
+        # Should be 3 requests total: 1 for list + 2 for individual container details
+        self.assertEqual(len(mock.request_history), 3)
+        self.assertEqual(
+            mock.request_history[0].url, tests.COMPATIBLE_URL.lower() + "/containers/json"
+        )
+
+        # Verify the individual container detail endpoints were called
+        individual_urls = {req.url for req in mock.request_history[1:]}
+        expected_urls = {
+            tests.COMPATIBLE_URL.lower() + f"/containers/{FIRST_CONTAINER['Id']}/json",
+            tests.COMPATIBLE_URL.lower() + f"/containers/{SECOND_CONTAINER['Id']}/json",
+        }
+        self.assertEqual(individual_urls, expected_urls)
+
+    @requests_mock.Mocker()
+    def test_list_sparse_compat_true(self, mock):
+        mock.get(
+            tests.COMPATIBLE_URL + "/containers/json",
+            json=[FIRST_CONTAINER, SECOND_CONTAINER],
+        )
+        actual = self.client.containers.list(sparse=True, compatible=True)
+        self.assertIsInstance(actual, list)
+
+        self.assertEqual(
+            actual[0].id, "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
+        )
+        self.assertEqual(
+            actual[1].id, "6dc84cc0a46747da94e4c1571efcc01a756b4017261440b4b8985d37203c3c03"
+        )
+
+        # Verify that no individual reload() calls were made for sparse=True
+        # Should be only 1 request for the list endpoint
+        self.assertEqual(len(mock.request_history), 1)
+        self.assertEqual(
+            mock.request_history[0].url, tests.COMPATIBLE_URL.lower() + "/containers/json"
+        )
+
+    @requests_mock.Mocker()
     def test_prune(self, mock):
         mock.post(
             tests.LIBPOD_URL + "/containers/prune",
