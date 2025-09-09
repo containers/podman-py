@@ -1,0 +1,54 @@
+name: 'Build Python Package'
+description: 'Build Python distribution packages (wheel and source tarball)'
+inputs:
+  python-version:
+    description: 'Python version to use for building'
+    required: false
+    default: '3.x'
+  upload-artifact:
+    description: 'Whether to upload the built packages as artifacts'
+    required: false
+    default: 'true'
+  artifact-name:
+    description: 'Name for the uploaded artifact'
+    required: false
+    default: 'python-package-distributions'
+  build-backend:
+    description: 'Build backend to use (build, hatch, etc.)'
+    required: false
+    default: 'build'
+
+outputs:
+  dist-path:
+    description: 'Path to the built distribution packages'
+    value: 'dist/'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+      with:
+        persist-credentials: false
+
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install build backend
+      shell: bash
+      run: |
+        python3 -m pip install ${{ inputs.build-backend }} --user
+
+    - name: Build distribution packages
+      shell: bash
+      run: |
+        python3 -m build
+
+    - name: Upload distribution packages
+      if: ${{ inputs.upload-artifact == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: dist/

@@ -1,0 +1,13 @@
+name: Test Build Python distribution 📦
+
+on:
+  pull_request:
+
+jobs:
+  build:
+    name: Test Build Python distribution 📦
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Build Python package
+        uses: ./.github/actions/build-python-package
