@@ -44,7 +44,7 @@ class Network(PodmanResource):
         """list[Container]: Returns list of Containers connected to network."""
         with suppress(KeyError):
             container_manager = ContainersManager(client=self.client)
-            return [container_manager.get(ident) for ident in self.attrs["Containers"].keys()]
+            return [container_manager.get(ident) for ident in self.attrs["containers"].keys()]
         return []
 
     @property
