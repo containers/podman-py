@@ -40,7 +40,7 @@ Integration tests would be required for large changes (TBD).
 
 Run unit tests and get coverage report:
 
-```
+```bash
 pip install tox
 tox -e coverage
 ```
@@ -48,21 +48,33 @@ tox -e coverage
 #### Advanced testing
 
 Always prefer to run `tox` directly, even when you want to run a specific test or scenario.
-Instead of running `pytest` directly, you should run:
+Instead of running `pytest` directly, you should run it through tox:
 
-```
+```bash
 tox -e py -- podman/tests/integration/test_container_create.py -k test_container_directory_volume_mount
-```
-
-If you'd like to test against a specific `tox` environment you can do:
-
-```
-tox -e py12 -- podman/tests/integration/test_container_create.py -k test_container_directory_volume_mount
 ```
 
 Pass pytest options after `--`.
 
-#### Testing future features
+##### Test against a specific python version
+
+If you'd like to test against a specific `tox` environment (like a specific python version) you can do:
+
+```bash
+tox -e py12 -- podman/tests/integration/test_container_create.py -k test_container_directory_volume_mount
+```
+
+Avaliable environments are specified under `tox.envlist` in `tox.ini`
+
+##### Test against a specific podman version
+
+By default, our test suite uses the podman version that's found in the path, i.e., the installed binary. If you want to use a specific version, or a custom build, pass it via the env variable.
+
+```bash
+PODMAN_BINARY=/path/to/podman/bin tox -e py -- ...
+```
+
+##### Testing future features
 
 Since `podman-py` follows stable releases of `podman`, tests are thought to be run against
 libpod's versions that are commonly installed in the distributions. Tests can be versioned,
@@ -83,6 +95,41 @@ tox -e py -- --pnext -m pnext podman/tests/integration/test_container_create.py 
 
 The option `--pnext` **enables** the tests with the `pnext` pytest marker, and `-m pnext` will run
 the marked tests **only**.
+
+##### Testing version-specific or distro-specific scenarios
+
+Tests can be conditionally skipped based on `podman`'s version or on the host
+that's running the test suite.
+
+```python
+from podman.tests.utils import OS_RELEASE, PODMAN_VERSION
+
+
+@pytest.mark.skipif(
+    PODMAN_VERSION < (5, 6, 0),
+    reason="Feature introduced in Podman 5.6.0 https://github.com/...",
+)
+@pytest.mark.skipif(
+    OS_RELEASE["ID"] == "fedora" and int(OS_RELEASE["VERSION_ID"]) < 42,
+    reason="Feature patched in F42 or later https://github.com/...",
+)
+```
+
+#### Common test issues
+
+Tests work by establishing a ssh connection with localhost. If you see
+this line repeating after launching tox you might need to fix your ssh to be
+able to connect locally.
+
+```log
+...
+2025-09-25 13:20:44 [   DEBUG] Waiting on /run/user/1000/podman/podman-forward-a65fd89525a248608d4c.sock (ssh.py:89)
+2025-09-25 13:20:44 [   DEBUG] Waiting on /run/user/1000/podman/podman-forward-a65fd89525a248608d4c.sock (ssh.py:89)
+...
+```
+
+Most of the times, if you can run `ssh localhost exit` successfully your tests
+ will run.
 
 ## Submitting changes
 
