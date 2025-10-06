@@ -4,6 +4,7 @@ import logging
 from typing import Any, Literal, Optional, Union
 
 import requests
+import pathlib
 
 from podman import api
 from podman.domain.manager import Manager, PodmanResource
@@ -172,4 +173,50 @@ class VolumesManager(Manager):
         if isinstance(name, Volume):
             name = name.name
         response = self.client.delete(f"/volumes/{name}", params={"force": force})
+        response.raise_for_status()
+
+    def export_archive(self, name: Union[Volume, str]) -> bytes:
+        """Export a podman volume, returns the exported archive as bytes.
+
+        Args:
+            name: Identifier for Volume to be exported.
+
+        Raises:
+            APIError: when service reports an error
+        """
+        if isinstance(name, Volume):
+            name = name.name
+        response = self.client.get(f"/volumes/{name}/export")
+        response.raise_for_status()
+        return response._content
+
+    def import_archive(
+        self, name: Union[Volume, str], data: Optional[bytes] = None, path: Optional[str] = None
+    ):
+        """Import a podman volume from tar.
+        The podman volume archive must be provided either as bytes or as a path to the archive.
+
+        Args:
+            name: Identifier for Volume to be imported.
+            data: Uncompressed tar archive as bytes.
+            path: Path to uncompressed tar archive.
+
+        Raises:
+            APIError: when service reports an error
+        """
+        if isinstance(name, Volume):
+            name = name.name
+
+        if data is None and path is None:
+            raise RuntimeError("Either data or path must be provided !")
+        elif data is not None and path is not None:
+            raise RuntimeError("Data and path must not be set at the same time !")
+
+        if data is None:
+            file = pathlib.Path(path)
+            if not file.exists():
+                raise RuntimeError(f"Archive {path} does not exist !")
+            data = file.read_bytes()
+
+        response = self.client.post(f"/volumes/{name}/import", data=data)
         response.raise_for_status()
