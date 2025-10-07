@@ -6,6 +6,7 @@ from unittest.mock import MagicMock
 
 import requests_mock
 
+from podman.domain.config import PodmanConfig, ServiceConnection
 from podman import PodmanClient, tests
 from podman.api.path_utils import get_runtime_dir, get_xdg_config_home
 
@@ -107,6 +108,23 @@ class PodmanClientTestCase(unittest.TestCase):
             # Build path to support tests running as root or a user
             expected = Path(get_xdg_config_home()) / "containers" / "containers.conf"
             PodmanClientTestCase.opener.assert_called_with(expected, encoding="utf-8")
+
+    def test_connect_with_connection_file(self):
+        mock_config = MagicMock(spec=PodmanConfig)
+        mock_service = MagicMock(spec=ServiceConnection)
+        mock_service.url.geturl.return_value = (
+            "http+ssh://core@127.0.0.1:58468/run/user/501/podman/podman.sock"
+        )
+        mock_service.identity = "/Users/test/.local/share/containers/podman/machine/machine"
+        mock_service.is_machine = True
+        mock_config.active_service = mock_service
+
+        with mock.patch('podman.client.PodmanConfig', return_value=mock_config):
+            # Mock pathlib.Path.exists to return True for the identity file
+            with mock.patch('pathlib.Path.exists', return_value=True):
+                with PodmanClient() as client:
+                    expected = "http+ssh://core@127.0.0.1:58468/run/user/501/podman/podman.sock"
+                    self.assertEqual(client.api.base_url.geturl(), expected)
 
 
 if __name__ == '__main__':
