@@ -59,6 +59,11 @@ class ServiceConnection:
             return Path(self.attrs.get("identity"))
         return Path(self.attrs.get("Identity"))
 
+    @cached_property
+    def is_machine(self) -> bool:
+        """bool: Returns True if connection is to a Podman machine."""
+        return self.attrs.get("IsMachine", False)
+
 
 class PodmanConfig:
     """PodmanConfig provides a representation of the containers.conf file."""
