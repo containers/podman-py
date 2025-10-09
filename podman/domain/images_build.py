@@ -66,6 +66,8 @@ class BuildMixin:
             layers (bool) - Cache intermediate layers during build.
             output (str) - specifies if any custom build output is selected for following build.
             outputformat (str) - The format of the output image's manifest and configuration data.
+            manifest (str) - add the image to the specified manifest list.
+                Creates manifest list if it does not exist.
 
         Returns:
             first item is the podman.domain.images.Image built
@@ -173,6 +175,7 @@ class BuildMixin:
             "forcerm": kwargs.get("forcerm"),
             "httpproxy": kwargs.get("http_proxy"),
             "networkmode": kwargs.get("network_mode"),
+            "manifest": kwargs.get("manifest"),
             "nocache": kwargs.get("nocache"),
             "platform": kwargs.get("platform"),
             "pull": kwargs.get("pull"),

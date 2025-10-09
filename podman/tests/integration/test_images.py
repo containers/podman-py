@@ -38,6 +38,12 @@ class ImagesIntegrationTest(base.IntegrationTest):
         self.client = PodmanClient(base_url=self.socket_uri)
         self.addCleanup(self.client.close)
 
+        self.test_manifest_name = "dummy:v1.2.3"
+
+    def tearDown(self) -> None:
+        if self.client.manifests.exists(self.test_manifest_name):
+            self.client.manifests.remove(self.test_manifest_name)
+
     def test_image_crud(self):
         """Test Image CRUD.
 
@@ -143,6 +149,17 @@ class ImagesIntegrationTest(base.IntegrationTest):
         image, stream = self.client.images.build(fileobj=buffer)
         self.assertIsNotNone(image)
         self.assertIsNotNone(image.id)
+
+    def test_build_with_manifest(self):
+        buffer = io.StringIO("""FROM quay.io/libpod/alpine_labels:latest""")
+
+        self.assertFalse(self.client.manifests.exists(self.test_manifest_name))
+
+        image, _ = self.client.images.build(fileobj=buffer, manifest=self.test_manifest_name)
+        self.assertIsNotNone(image)
+        self.assertIsNotNone(image.id)
+
+        self.assertTrue(self.client.manifests.exists(self.test_manifest_name))
 
     def test_build_with_context(self):
         context = io.BytesIO()

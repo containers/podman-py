@@ -66,7 +66,8 @@ class TestBuildCase(unittest.TestCase):
                 "&buildargs=%7B%22BUILD_DATE%22%3A+%22January+1%2C+1970%22%7D"
                 "&cpuperiod=10"
                 "&extrahosts=%7B%22database%22%3A+%22127.0.0.1%22%7D"
-                "&labels=%7B%22Unittest%22%3A+%22true%22%7D",
+                "&labels=%7B%22Unittest%22%3A+%22true%22%7D"
+                "&manifest=example%3Av1.2.3",
                 text=buffer.getvalue(),
             )
             mock.get(
@@ -98,6 +99,7 @@ class TestBuildCase(unittest.TestCase):
                 },
                 extra_hosts={"database": "127.0.0.1"},
                 labels={"Unittest": "true"},
+                manifest="example:v1.2.3",
             )
             self.assertIsInstance(image, Image)
             self.assertEqual(image.id, "032b8b2855fc")
