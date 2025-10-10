@@ -25,7 +25,7 @@ class RunMixin:  # pylint: disable=too-few-public-methods
         stderr=False,
         remove: bool = False,
         **kwargs,
-    ) -> Union[Container, Union[Generator[str, None, None], Iterator[str]]]:
+    ) -> Union[Container, Union[Generator[bytes, None, None], Iterator[str]]]:
         """Run a container.
 
         By default, run() will wait for the container to finish and return its logs.
@@ -66,20 +66,22 @@ class RunMixin:  # pylint: disable=too-few-public-methods
             APIError: when Podman service reports an error
         """
         if isinstance(image, Image):
-            image = image.id
+            image_id = image.id
+        else:
+            image_id = image
         if isinstance(command, str):
             command = [command]
 
         try:
-            container = self.create(image=image, command=command, **kwargs)
+            container = self.create(image=image_id, command=command, **kwargs)  # type: ignore[attr-defined]
         except ImageNotFound:
-            self.podman_client.images.pull(
-                image,
+            self.podman_client.images.pull(  # type: ignore[attr-defined]
+                image_id,
                 auth_config=kwargs.get("auth_config"),
                 platform=kwargs.get("platform"),
                 policy=kwargs.get("policy", "missing"),
             )
-            container = self.create(image=image, command=command, **kwargs)
+            container = self.create(image=image_id, command=command, **kwargs)  # type: ignore[attr-defined]
 
         container.start()
         container.reload()
@@ -116,6 +118,6 @@ class RunMixin:  # pylint: disable=too-few-public-methods
             container.remove()
 
         if exit_status != 0:
-            raise ContainerError(container, exit_status, command, image, log_iter)
+            raise ContainerError(container, exit_status, command, image_id, log_iter)
 
-        return log_iter if kwargs.get("stream", False) or log_iter is None else b"".join(log_iter)
+        return log_iter if kwargs.get("stream", False) or log_iter is None else b"".join(log_iter)  # type: ignore[return-value]

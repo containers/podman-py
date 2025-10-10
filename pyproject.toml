@@ -141,7 +141,6 @@ module = [
     "podman.domain.config",
     "podman.domain.containers",
     "podman.domain.containers_create",
-    "podman.domain.containers_run",
     "podman.domain.events",
     "podman.domain.images_build",
     "podman.domain.images_manager",
