@@ -25,7 +25,7 @@ class RunMixin:  # pylint: disable=too-few-public-methods
         stderr=False,
         remove: bool = False,
         **kwargs,
-    ) -> Union[Container, Union[Generator[bytes, None, None], Iterator[str]]]:
+    ) -> Union[Container, Union[Generator[bytes, None, None], Iterator[bytes]]]:
         """Run a container.
 
         By default, run() will wait for the container to finish and return its logs.
