@@ -7,13 +7,13 @@ import re
 from contextlib import suppress
 from typing import Any, Union
 from collections.abc import MutableMapping
+import requests
 
 from podman import api
 from podman.domain.containers import Container
 from podman.domain.images import Image
 from podman.domain.pods import Pod
 from podman.domain.secrets import Secret
-from podman.errors import ImageNotFound
 
 logger = logging.getLogger("podman.containers")
 
@@ -36,6 +36,12 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             command: Command to run in the container.
 
         Keyword Args:
+            all_tags (bool): Pull all tags from repository. Default: False.
+                Only used if the method needs to pull the requested image.
+            auth_config (Mapping[str, str]): Override the credentials that are found in the
+                config for this request. auth_config should contain the username and password
+                keys to be valid.
+                Only used if the method needs to pull the requested image.
             auto_remove (bool): Enable auto-removal of the container on daemon side when the
                 container's process exits.
             blkio_weight_device (dict[str, Any]): Block IO weight (relative device weight)
@@ -55,6 +61,9 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             cpuset_cpus (str): CPUs in which to allow execution (0-3, 0,1).
             cpuset_mems (str): Memory nodes (MEMs) in which to allow execution (0-3, 0,1).
                 Only effective on NUMA systems.
+            decode (bool): Decode the JSON data from the server into dicts.
+                Only applies with ``stream=True``. Default: False.
+                Only used if the method needs to pull the requested image.
             detach (bool): Run container in the background and return a Container object.
             device_cgroup_rules (list[str]): A list of cgroup rules to apply to the container.
             device_read_bps: Limit read rate (bytes per second) from a device in the form of:
@@ -210,6 +219,8 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             pids_limit (int): Tune a container's pids limit. Set -1 for unlimited.
             platform (str): Platform in the format os[/arch[/variant]]. Only used if the method
                 needs to pull the requested image.
+            policy (str): Pull policy. "missing" (default for create), "always", "never", "newer".
+                Only used if the method needs to pull the requested image.
             ports (
                 dict[
                     Union[int, str],
@@ -271,7 +282,12 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
                     }
             privileged (bool): Give extended privileges to this container.
+            progress_bar (bool): Display a progress bar with the image pull progress (uses
+                the compat endpoint). Default: False.
+                Only used if the method needs to pull the requested image.
             publish_all_ports (bool): Publish all ports to the host.
+            pull_stream (bool): When True, the pull progress will be published as received.
+                Default: False. Only used if the method needs to pull the requested image.
             read_only (bool): Mount the container's root filesystem as read only.
             read_write_tmpfs (bool): Mount temporary file systems as read write,
                 in case of read_only options set to True. Default: False
@@ -340,6 +356,8 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
                 For example: {'/mnt/vol2': '', '/mnt/vol1': 'size=3G,uid=1000'}
 
+            tls_verify (bool): Require TLS verification. Default: True.
+                Only used if the method needs to pull the requested image.
             tty (bool): Allocate a pseudo-TTY.
             ulimits (list[Ulimit]): Ulimits to set inside the container.
             use_config_proxy (bool): If True, and if the docker client configuration
@@ -391,7 +409,6 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             A Container object.
 
         Raises:
-            ImageNotFound: when Image not found by Podman service
             APIError: when Podman service reports an error
         """
         if isinstance(image, Image):
@@ -409,7 +426,24 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             headers={"content-type": "application/json"},
             data=payload,
         )
-        response.raise_for_status(not_found=ImageNotFound)
+        if response.status_code == requests.codes.not_found:
+            self.podman_client.images.pull(
+                image,
+                all_tags=kwargs.get("all_tags", False),
+                auth_config=kwargs.get("auth_config"),
+                decode=kwargs.get("decode", False),
+                platform=kwargs.get("platform"),
+                policy=kwargs.get("policy", "missing"),
+                progress_bar=kwargs.get("progress_bar", False),
+                stream=kwargs.get("pull_stream", False),
+                tls_verify=kwargs.get("tls_verify", True),
+            )
+            response = self.client.post(
+                "/containers/create",
+                headers={"content-type": "application/json"},
+                data=payload,
+            )
+            response.raise_for_status()
 
         container_id = response.json()["Id"]
 
@@ -479,6 +513,13 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "stdout",  # used by caller
             "stream",  # used by caller
             "detach",  # used by caller
+            "all_tags",  # used by caller
+            "auth_config",  # used by caller
+            "decode",  # used by caller
+            "policy",  # used by caller
+            "progress_bar",  # used by caller
+            "pull_stream",  # used by caller
+            "tls_verify",  # used by caller
             "volume_driver",
         ):
             with suppress(KeyError):

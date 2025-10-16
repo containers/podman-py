@@ -8,7 +8,7 @@ from collections.abc import Generator, Iterator
 
 from podman.domain.containers import Container
 from podman.domain.images import Image
-from podman.errors import ContainerError, ImageNotFound
+from podman.errors import ContainerError
 
 logger = logging.getLogger("podman.containers")
 
@@ -62,7 +62,6 @@ class RunMixin:  # pylint: disable=too-few-public-methods
 
         Raises:
             ContainerError: when Container exists with a non-zero code
-            ImageNotFound: when Image not found by Podman service
             APIError: when Podman service reports an error
         """
         if isinstance(image, Image):
@@ -72,16 +71,7 @@ class RunMixin:  # pylint: disable=too-few-public-methods
         if isinstance(command, str):
             command = [command]
 
-        try:
-            container = self.create(image=image_id, command=command, **kwargs)  # type: ignore[attr-defined]
-        except ImageNotFound:
-            self.podman_client.images.pull(  # type: ignore[attr-defined]
-                image_id,
-                auth_config=kwargs.get("auth_config"),
-                platform=kwargs.get("platform"),
-                policy=kwargs.get("policy", "missing"),
-            )
-            container = self.create(image=image_id, command=command, **kwargs)  # type: ignore[attr-defined]
+        container = self.create(image=image_id, command=command, **kwargs)  # type: ignore[attr-defined]
 
         container.start()
         container.reload()
