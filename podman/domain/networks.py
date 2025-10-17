@@ -11,11 +11,14 @@ import hashlib
 import json
 import logging
 from contextlib import suppress
-from typing import Optional, Union
+from typing import Optional, Union, TYPE_CHECKING
 
 from podman.domain.containers import Container
 from podman.domain.containers_manager import ContainersManager
 from podman.domain.manager import PodmanResource
+
+if TYPE_CHECKING:
+    from podman.domain.networks_manager import NetworksManager
 
 logger = logging.getLogger("podman.networks")
 
@@ -26,6 +29,8 @@ class Network(PodmanResource):
     Attributes:
         attrs (dict[str, Any]): Attributes of Network reported from Podman service
     """
+
+    manager: "NetworksManager"
 
     @property
     def id(self):  # pylint: disable=invalid-name
@@ -105,7 +110,7 @@ class Network(PodmanResource):
         }
 
         data = {"Container": container, "EndpointConfig": endpoint_config}
-        data = {k: v for (k, v) in data.items() if not (v is None or len(v) == 0)}
+        data = {k: v for (k, v) in data.items() if not (v is None or len(v) == 0)}  # type: ignore[arg-type]
 
         response = self.client.post(
             f"/networks/{self.name}/connect",
