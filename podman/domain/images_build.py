@@ -121,7 +121,7 @@ class BuildMixin:
         if kwargs.get("timeout"):
             post_kwargs["timeout"] = float(kwargs.get("timeout"))
 
-        response = self.client.post(
+        response = self.client.post(  # type: ignore[attr-defined]
             "/build",
             params=params,
             data=body,
@@ -154,7 +154,7 @@ class BuildMixin:
             unknown = line
 
         if image_id:
-            return self.get(image_id), report_stream
+            return self.get(image_id), report_stream  # type: ignore[attr-defined]
 
         raise BuildError(unknown or "Unknown", report_stream)
 

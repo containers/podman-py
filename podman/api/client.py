@@ -32,6 +32,9 @@ _Data = Union[
 ]
 """Type alias for request data parameter."""
 
+_Params = Union[None, bytes, Mapping[str, Any]]
+"""Type alias for request query parameter."""
+
 _Timeout = Union[None, float, tuple[float, float], tuple[float, None]]
 """Type alias for request timeout parameter."""
 
@@ -207,7 +210,7 @@ class APIClient(requests.Session):
         self,
         path: Union[str, bytes],
         *,
-        params: Union[None, bytes, Mapping[str, str]] = None,
+        params: _Params = None,
         headers: Optional[Mapping[str, str]] = None,
         timeout: _Timeout = None,
         stream: Optional[bool] = False,
@@ -242,7 +245,7 @@ class APIClient(requests.Session):
         self,
         path: Union[str, bytes],
         *,
-        params: Union[None, bytes, Mapping[str, list[str]]] = None,
+        params: _Params = None,
         headers: Optional[Mapping[str, str]] = None,
         timeout: _Timeout = None,
         stream: Optional[bool] = False,
@@ -277,7 +280,7 @@ class APIClient(requests.Session):
         self,
         path: Union[str, bytes],
         *,
-        params: Union[None, bytes, Mapping[str, str]] = None,
+        params: _Params = None,
         headers: Optional[Mapping[str, str]] = None,
         timeout: _Timeout = None,
         stream: Optional[bool] = False,
@@ -312,7 +315,7 @@ class APIClient(requests.Session):
         self,
         path: Union[str, bytes],
         *,
-        params: Union[None, bytes, Mapping[str, str]] = None,
+        params: _Params = None,
         data: _Data = None,
         headers: Optional[Mapping[str, str]] = None,
         timeout: _Timeout = None,
@@ -351,7 +354,7 @@ class APIClient(requests.Session):
         self,
         path: Union[str, bytes],
         *,
-        params: Union[None, bytes, Mapping[str, str]] = None,
+        params: _Params = None,
         data: _Data = None,
         headers: Optional[Mapping[str, str]] = None,
         timeout: _Timeout = None,
@@ -391,7 +394,7 @@ class APIClient(requests.Session):
         path: Union[str, bytes],
         *,
         data: _Data = None,
-        params: Union[None, bytes, Mapping[str, str]] = None,
+        params: _Params = None,
         headers: Optional[Mapping[str, str]] = None,
         timeout: _Timeout = None,
         stream: Optional[bool] = None,

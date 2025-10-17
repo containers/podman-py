@@ -146,13 +146,8 @@ module = [
     "podman.domain.images_manager",
     "podman.domain.manager",
     "podman.domain.manifests",
-    "podman.domain.networks",
-    "podman.domain.networks_manager",
-    "podman.domain.pods",
     "podman.domain.pods_manager",
     "podman.domain.registry_data",
-    "podman.domain.secrets",
-    "podman.domain.volumes",
     "podman.errors.exceptions"
 ]
 ignore_errors = true

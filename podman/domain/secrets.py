@@ -11,6 +11,8 @@ from podman.domain.manager import Manager, PodmanResource
 class Secret(PodmanResource):
     """Details and configuration for a secret registered with the Podman service."""
 
+    manager: "SecretsManager"
+
     def __repr__(self):
         return f"<{self.__class__.__name__}: {self.name}>"
 
