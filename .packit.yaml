@@ -15,10 +15,6 @@ files_to_sync:
     dest: plans/
     delete: true
     mkpath: true
-  - src: tests/
-    dest: tests/
-    delete: true
-    mkpath: true
   - src: .fmf/
     dest: .fmf/
     delete: true
@@ -35,6 +31,10 @@ packages:
     specfile_path: rpm/python-podman.spec
   python-podman-rhel:
     specfile_path: rpm/python-podman.spec
+
+actions:
+  prepare-files: >-
+    bash -c "sed -i 's/^\(\s*\)ref: .*/\1ref: \"${PACKIT_PROJECT_TAG}\"/' ${PACKIT_DOWNSTREAM_REPO}/plans/main.fmf"
 
 srpm_build_deps:
   - make
