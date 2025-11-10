@@ -38,7 +38,7 @@ classifiers = [
 # ~= with version numbers
 dependencies = [
     "requests >=2.24",
-    "tomli>=1.2.3; python_version<'3.11'",
+    "tomli>=1.2.3",
     "urllib3",
 ]
 
