@@ -1,7 +1,6 @@
 import io
 import random
 import tarfile
-import tempfile
 import unittest
 
 try:
@@ -86,7 +85,7 @@ class ContainersIntegrationTest(base.IntegrationTest):
         with self.subTest("Archive /root/unittest"):
             self.assertTrue(container.put_archive("/root", data=tarball))
 
-            actual, stats = container.get_archive("/root")
+            actual, _ = container.get_archive("/root")
 
             with io.BytesIO() as fd:
                 for chunk in actual:
@@ -184,16 +183,8 @@ class ContainersIntegrationTest(base.IntegrationTest):
 
     def test_container_rm_anonymous_volume(self):
         with self.subTest("Check anonymous volume is removed"):
-            container_file = """
-FROM alpine
-VOLUME myvol
-ENV foo=bar
-"""
-            tmp_file = tempfile.mktemp()
-            file = open(tmp_file, 'w')
-            file.write(container_file)
-            file.close()
-            self.client.images.build(dockerfile=tmp_file, tag="test-img", path=".")
+            container_file = io.StringIO("\n".join(["FROM alpine", "VOLUME myvol", "ENV foo=bar"]))
+            test_img, _ = self.client.images.build(fileobj=container_file, tag="test-img", path=".")
 
             # get existing number of containers and volumes
             existing_containers = self.client.containers.list(all=True)
@@ -211,6 +202,8 @@ ENV foo=bar
             self.assertEqual(len(container_list), len(existing_containers))
             volume_list = self.client.volumes.list()
             self.assertEqual(len(volume_list), len(existing_volumes))
+            # clean up
+            self.client.images.remove(test_img)
 
     def test_container_labels(self):
         labels = {'label1': 'value1', 'label2': 'value2'}
