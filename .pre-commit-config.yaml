@@ -16,7 +16,7 @@ repos:
     # Run the formatter.
     - id: ruff-format
 - repo: https://github.com/teemtee/tmt.git
-  rev: 1.39.0
+  rev: 1.62.1
   hooks:
     - id: tmt-lint
 - repo: https://github.com/pre-commit/mirrors-mypy
