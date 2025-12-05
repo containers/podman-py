@@ -15,16 +15,17 @@
 """Images integration tests."""
 
 import io
+import os
 import platform
 import tarfile
+import tempfile
 import types
 import unittest
 
 import podman.tests.integration.base as base
 from podman import PodmanClient
 from podman.domain.images import Image
-from podman.errors import APIError, ImageNotFound, PodmanError
-
+from podman.errors import APIError, ContainerError, ImageNotFound, PodmanError
 
 # @unittest.skipIf(os.geteuid() != 0, 'Skipping, not running as root')
 
@@ -196,6 +197,41 @@ class ImagesIntegrationTest(base.IntegrationTest):
         )
         self.assertIsNotNone(image)
         self.assertIsNotNone(image.id)
+
+    def test_build_with_secret(self):
+        with tempfile.TemporaryDirectory() as context_dir:
+            dockerfile_path = os.path.join(context_dir, "Dockerfile")
+            with open(dockerfile_path, "w") as f:
+                f.write("""
+                FROM quay.io/libpod/alpine_labels:latest
+                RUN --mount=type=secret,id=example cat /run/secrets/example > /output.txt
+                """)
+
+            secret_path = os.path.join(context_dir, "build-secret.txt")
+            with open(secret_path, "w") as f:
+                f.write("secret123")
+
+            image, _ = self.client.images.build(
+                path=context_dir,
+                secrets=["id=example,src=build-secret.txt"],
+                dockerfile="Dockerfile",
+            )
+
+        self.assertIsNotNone(image)
+        self.assertIsNotNone(image.id)
+
+        # Verify secret was passed and stored in file (NOT RECOMMENDED for real use cases)
+        container_out = self.client.containers.run(
+            image.id, command=["cat", "/output.txt"], remove=True, log_config={"Type": "json-file"}
+        )
+        self.assertIn(b"secret123", container_out)
+
+        # Verify mounted secret file is not present in image
+        with self.assertRaises(ContainerError) as exc:
+            self.client.containers.run(
+                image.id, command=["cat", "/run/secrets/example"], remove=True
+            )
+        self.assertIn("No such file or directory", b"".join(exc.exception.stderr).decode("utf-8"))
 
     @unittest.skipIf(platform.architecture()[0] == "32bit", "no 32-bit image available")
     def test_pull_stream(self):

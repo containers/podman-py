@@ -68,6 +68,7 @@ class BuildMixin:
             outputformat (str) - The format of the output image's manifest and configuration data.
             manifest (str) - add the image to the specified manifest list.
                 Creates manifest list if it does not exist.
+            secrets (list[str]) - Secret files/envs to expose to the build
 
         Returns:
             first item is the podman.domain.images.Image built
@@ -208,6 +209,9 @@ class BuildMixin:
             params["extrahosts"] = json.dumps(kwargs.get("extra_hosts"))
         if "labels" in kwargs:
             params["labels"] = json.dumps(kwargs.get("labels"))
+
+        if "secrets" in kwargs:
+            params["secrets"] = json.dumps(kwargs.get("secrets"))
 
         if params["dockerfile"] is None:
             params["dockerfile"] = f".containerfile.{random.getrandbits(160):x}"
