@@ -1,10 +1,11 @@
-"""Provide cached_property for Python <=3.8 programs."""
+"""Provide cached_property for Python < 3.8 programs."""
 
 import functools
+import sys
 
-try:
+if sys.version_info >= (3, 8):
     from functools import cached_property  # pylint: disable=unused-import
-except ImportError:
+else:
 
     def cached_property(fn):  # type: ignore[no-redef]
         return property(functools.lru_cache()(fn))
