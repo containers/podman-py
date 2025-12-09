@@ -3,10 +3,10 @@
 import logging
 import os
 from contextlib import AbstractContextManager
+from functools import cached_property
 from pathlib import Path
 from typing import Any, Optional
 
-from podman.api import cached_property
 from podman.api.client import APIClient
 from podman.api.path_utils import get_runtime_dir
 from podman.domain.config import PodmanConfig
