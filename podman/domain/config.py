@@ -2,11 +2,11 @@
 
 import sys
 import urllib
+from functools import cached_property
 from pathlib import Path
 from typing import Optional
 import json
 
-from podman.api import cached_property
 from podman.api.path_utils import get_xdg_config_home
 
 if sys.version_info >= (3, 11):
