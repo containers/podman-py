@@ -66,9 +66,6 @@ make docs                             # Build documentation
 make tests                            # Run all tests with coverage
 make unittest                         # Run unit tests only
 make integration                      # Run integration tests only
-make tests-ci-base-python             # Run coverage and base Python tests
-make tests-ci-all-python              # Run coverage and all Python versions
-make tests-ci-base-python-podman-next # Test future features with podman-next
 
 # Code Quality:
 make lint                             # Run linting, formatting, and type checks
@@ -116,7 +113,7 @@ tox -e py312 -- podman/tests/unit/
 PODMAN_BINARY=/path/to/podman tox -e py
 
 # Test future features (requires podman-next)
-make tests-ci-base-python-podman-next
+tox -e py -- --pnext -m pnext
 ```
 
 ### Linting and Formatting
@@ -182,7 +179,7 @@ ruff check --fix
 
 ### Coverage Requirements
 
-- Minimum 80% coverage (enforced by tox -e coverage)
+- Minimum 85% coverage (enforced by tox -e coverage)
 - Code will not be merged if coverage drops below 85%
 - Exclude test files from coverage: `--omit=podman/tests/*`
 - Uses coverage.py: https://coverage.readthedocs.io/
