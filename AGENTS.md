@@ -320,7 +320,7 @@ cd docs/source && python3 -m sphinx -T -E -W --keep-going -b html -d _build/doct
 ### Version Management
 
 - Version defined in `pyproject.toml` (currently 5.6.0)
-- TODO: Switch to dynamic versioning from `podman.version.__version__`
+- Note: Future versions may use dynamic versioning from `podman.version.__version__`
 
 ### Publishing
 
