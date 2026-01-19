@@ -84,6 +84,36 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             healthcheck (dict[str,Any]): Specify a test to perform to check that the
                 container is healthy.
             health_check_on_failure_action (int): Specify an action if a healthcheck fails.
+            health_cmd (str): set a healthcheck command for the container ('None' disables the
+                existing healthcheck)
+            health_interval (str): set an interval for the healthcheck (a value of disable results
+                in no automatic timer setup)(Changing this setting resets timer.) (default "30s")
+            health_log_destination (str):  set the destination of the HealthCheck log. Directory
+                path, local or events_logger (local use container state file)(Warning: Changing
+                this setting may cause the loss of previous logs.) (default "local")
+            health_max_log_count (int): set maximum number of attempts in the HealthCheck log file.
+                ('0' value means an infinite number of attempts in the log file) (default 5)
+            health_max_logs_size (int): set maximum length in characters of stored HealthCheck log.
+                ('0' value means an infinite log length) (default 500)
+            health_on_failure (str): action to take once the container turns unhealthy
+                (default "none")
+            health_retries (int): the number of retries allowed before a healthcheck is considered
+                to be unhealthy (default 3)
+            health_start_period (str): the initialization time needed for a container to bootstrap
+                (default "0s")
+            health_startup_cmd (str): Set a startup healthcheck command for the container
+            health_startup_interval (str): Set an interval for the startup healthcheck. Changing
+                this setting resets the timer, depending on the state of the container.
+                (default "30s")
+            health_startup_retries (int): Set the maximum number of retries before the startup
+                healthcheck will restart the container
+            health_startup_success (int): Set the number of consecutive successes before the
+                startup healthcheck is marked as successful and the normal healthcheck begins
+                (0 indicates any success will start the regular healthcheck)
+            health_startup_timeout (str): Set the maximum amount of time that the startup
+                healthcheck may take before it is considered failed (default "30s")
+            health_timeout (str): the maximum time allowed to complete the healthcheck before an
+                interval is considered failed (default "30s")
             hostname (str): Optional hostname for the container.
             init (bool): Run an init inside the container that forwards signals and reaps processes
             init_path (str): Path to the docker-init binary
@@ -735,6 +765,32 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             params["restart_policy"] = args["restart_policy"].get("Name")
             params["restart_tries"] = args["restart_policy"].get("MaximumRetryCount")
             args.pop("restart_policy")
+
+        health_commands_data = {
+            "health_cmd",
+            "health_interval",
+            "health_log_destination",
+            "health_max_log_count",
+            "health_max_logs_size",
+            "health_on_failure",
+            "health_retries",
+            "health_start_period",
+            "health_startup_cmd",
+            "health_startup_interval",
+            "health_startup_retries",
+            "health_startup_success",
+            "health_startup_timeout",
+            "health_timeout",
+        }
+        # the healthcheck section of parameters accepted can be either no_healthcheck or a series
+        # of healthcheck parameters
+        if args.get("no_healthcheck"):
+            if conflicts := set(args) & health_commands_data:
+                raise ValueError(f"Cannot set {conflicts.pop()} when no_healthcheck is True")
+            params["no_healthcheck"] = args.pop("no_healthcheck", None)
+        else:
+            for hc in set(args) & health_commands_data:
+                params[hc] = args.pop(hc, None)
 
         params["resource_limits"]["pids"] = {"limit": args.pop("pids_limit", None)}
 
