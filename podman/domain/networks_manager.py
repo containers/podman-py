@@ -39,7 +39,8 @@ class NetworksManager(Manager):
         Keyword Args:
             attachable (bool): Ignored, always False.
             check_duplicate (bool): Ignored, always False.
-            dns_enabled (bool): DNSEnabled is whether name resolution is active for container on this Network. Only supported with the bridge driver.
+            dns_enabled (bool): DNSEnabled is whether name resolution is active for container on this Network. 
+                                Only supported with the bridge driver.
             driver (str): Which network driver to use when creating network.
             enable_ipv6 (bool): Enable IPv6 on the network.
             ingress (bool): Ignored, always False.
