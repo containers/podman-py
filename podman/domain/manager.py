@@ -127,6 +127,7 @@ class Manager(ABC):
             attrs.client = self.client
             attrs.podman_client = self.podman_client
             attrs.collection = self
+            attrs.manager = self
             return attrs
 
         # Instantiate new PodmanResource from Mapping[str, Any]
