@@ -49,6 +49,14 @@ class ManagerTestCase(unittest.TestCase):
         self.assertTrue(mock.called)
         self.assertEqual(len(mock.request_history), 1)
 
+    def test_collection_property_aliases_manager(self):
+        """Test that collection property is an alias for manager."""
+        pod = Pod(attrs={"Id": "12345"}, collection=self.client.pods)
+        # collection should be accessible via property
+        self.assertTrue(hasattr(pod, "collection"))
+        # collection should equal manager
+        self.assertIs(pod.collection, pod.manager)
+
 
 if __name__ == '__main__':
     unittest.main()

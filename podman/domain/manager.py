@@ -33,7 +33,9 @@ class PodmanResource(ABC):  # noqa: B024
         Args:
             attrs: Mapping of attributes for resource from Podman service.
             client: Configured connection to a Podman service.
-            collection: Manager of this category of resource, named `collection` for compatibility
+            collection: Manager of this category of resource. This is stored as
+                the `manager` attribute, with `collection` available as a property
+                alias for Docker SDK compatibility.
             podman_client: PodmanClient() configured to connect to Podman object.
         """
         super().__init__()
@@ -69,6 +71,19 @@ class PodmanResource(ABC):  # noqa: B024
         if self.id.startswith("sha256:"):
             return self.id[:17]
         return self.id[:10]
+
+    @property
+    def collection(self):
+        """Manager: An alias for the manager attribute.
+
+        The `collection` name is maintained for Docker SDK compatibility.
+        Both `collection` and `manager` refer to the same underlying Manager instance.
+        """
+        return self.manager
+
+    @collection.setter
+    def collection(self, value):
+        self.manager = value
 
     def reload(self, **kwargs) -> None:
         """Refresh this object's data from the service.
@@ -126,6 +141,9 @@ class Manager(ABC):
         if isinstance(attrs, PodmanResource):
             attrs.client = self.client
             attrs.podman_client = self.podman_client
+            # Both collection and manager are set explicitly for clarity.
+            # The collection property aliases manager, but we set both to be explicit
+            # about the dual-naming convention maintained for Docker SDK compatibility.
             attrs.collection = self
             attrs.manager = self
             return attrs
