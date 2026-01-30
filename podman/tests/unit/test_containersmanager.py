@@ -644,6 +644,117 @@ class ContainersManagerTestCase(unittest.TestCase):
                 self.assertEqual(next(actual), b"This is a unittest - line 1")
                 self.assertEqual(next(actual), b"This is a unittest - line 2")
 
+    @requests_mock.Mocker()
+    def test_create_all_healthcheck_parameters(self, mock):
+        """Test that all healthcheck parameters are correctly passed to the API."""
+        mock_response = MagicMock()
+        mock_response.json = lambda: {
+            "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
+            "Size": 1024,
+        }
+        self.client.containers.client.post = MagicMock(return_value=mock_response)
+        mock.get(
+            tests.LIBPOD_URL
+            + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
+            json=FIRST_CONTAINER,
+        )
+
+        # Test all 14 healthcheck parameters with realistic values
+        healthcheck_params = {
+            "health_cmd": "curl -f http://localhost:8080/health",
+            "health_interval": "30s",
+            "health_log_destination": "local",
+            "health_max_log_count": 5,
+            "health_max_logs_size": 500,
+            "health_on_failure": "restart",
+            "health_retries": 3,
+            "health_start_period": "60s",
+            "health_startup_cmd": "curl -f http://localhost:8080/ready",
+            "health_startup_interval": "10s",
+            "health_startup_retries": 5,
+            "health_startup_success": 2,
+            "health_startup_timeout": "45s",
+            "health_timeout": "30s",
+        }
+
+        self.client.containers.create("fedora", "/usr/bin/ls", **healthcheck_params)
+        self.client.containers.client.post.assert_called()
+
+        # Verify all healthcheck parameters are in the request payload
+        actual_data = json.loads(self.client.containers.client.post.call_args[1]["data"])
+
+        for param_name, expected_value in healthcheck_params.items():
+            self.assertIn(param_name, actual_data, f"Parameter {param_name} not found in request")
+            self.assertEqual(
+                actual_data[param_name],
+                expected_value,
+                f"Parameter {param_name} has incorrect value",
+            )
+
+    @requests_mock.Mocker()
+    def test_create_no_healthcheck_validation(self, mock):
+        """Test no_healthcheck validation and functionality."""
+        mock_response = MagicMock()
+        mock_response.json = lambda: {
+            "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
+            "Size": 1024,
+        }
+        self.client.containers.client.post = MagicMock(return_value=mock_response)
+        mock.get(
+            tests.LIBPOD_URL
+            + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
+            json=FIRST_CONTAINER,
+        )
+
+        # Test that no_healthcheck=True works without conflicts
+        self.client.containers.create("fedora", "/usr/bin/ls", no_healthcheck=True)
+        self.client.containers.client.post.assert_called()
+
+        actual_data = json.loads(self.client.containers.client.post.call_args[1]["data"])
+        self.assertIn("no_healthcheck", actual_data)
+        self.assertTrue(actual_data["no_healthcheck"])
+
+        # Test that setting healthcheck parameters with no_healthcheck=True raises ValueError
+        healthcheck_params = [
+            "health_cmd",
+            "health_interval",
+            "health_log_destination",
+            "health_max_log_count",
+            "health_max_logs_size",
+            "health_on_failure",
+            "health_retries",
+            "health_start_period",
+            "health_startup_cmd",
+            "health_startup_interval",
+            "health_startup_retries",
+            "health_startup_success",
+            "health_startup_timeout",
+            "health_timeout",
+        ]
+
+        # Test each parameter individually with no_healthcheck=True
+        for param in healthcheck_params:
+            with self.subTest(param=param):
+                kwargs = {"no_healthcheck": True, param: "test_value"}
+                with self.assertRaises(ValueError) as context:
+                    self.client.containers.create("fedora", "/usr/bin/ls", **kwargs)
+
+                expected_message = f"Cannot set {param} when no_healthcheck is True"
+                self.assertEqual(str(context.exception), expected_message)
+
+        # Test multiple healthcheck parameters with no_healthcheck=True
+        with self.assertRaises(ValueError) as context:
+            self.client.containers.create(
+                "fedora",
+                "/usr/bin/ls",
+                no_healthcheck=True,
+                health_cmd="test",
+                health_interval="30s",
+            )
+        # Should raise for the first conflicting parameter found
+        self.assertIn("Cannot set", str(context.exception))
+        self.assertIn("when no_healthcheck is True", str(context.exception))
+
 
 if __name__ == "__main__":
     unittest.main()
