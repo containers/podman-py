@@ -19,6 +19,7 @@ from podman.domain.pods_manager import PodsManager
 from podman.domain.secrets import SecretsManager
 from podman.domain.system import SystemManager
 from podman.domain.volumes import VolumesManager
+from podman.domain.quadlets import QuadletsManager
 
 logger = logging.getLogger("podman")
 
@@ -167,6 +168,11 @@ class PodmanClient(AbstractContextManager):
     def volumes(self) -> VolumesManager:
         """Returns Manager for operations on volumes maintained by a Podman service."""
         return VolumesManager(client=self.api)
+
+    @cached_property
+    def quadlets(self) -> QuadletsManager:
+        """Returns Manager for operations on quadlets maintained by a Podman service."""
+        return QuadletsManager(client=self.api, podman_client=self)
 
     @cached_property
     def pods(self) -> PodsManager:
