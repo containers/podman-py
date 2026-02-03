@@ -1,11 +1,10 @@
 import unittest
 import re
-import os
 import pytest
 
 import podman.tests.integration.base as base
 from podman import PodmanClient
-from podman.tests.utils import PODMAN_VERSION
+from podman.tests.utils import PODMAN_VERSION, is_root
 
 # @unittest.skipIf(os.geteuid() != 0, 'Skipping, not running as root')
 
@@ -279,7 +278,7 @@ class ContainersIntegrationTest(base.IntegrationTest):
         """Test passing shared memory size"""
         self._test_memory_limit('shm_size', 'ShmSize')
 
-    @pytest.mark.skipif(os.geteuid() != 0, reason='Skipping, not running as root')
+    @pytest.mark.skipif(not is_root(), reason='Skipping, rootless user')
     @pytest.mark.skipif(
         PODMAN_VERSION >= (5, 6, 0),
         reason="Test against this feature in Podman 5.6.0  or greater https://github.com/containers/podman/pull/25942",
@@ -356,7 +355,7 @@ class ContainersIntegrationTest(base.IntegrationTest):
 
             self.assertEqual(container.attrs.get('State', dict()).get('ExitCode', 256), 0)
 
-    @pytest.mark.skipif(os.geteuid() != 0, reason='Skipping, not running as root')
+    @pytest.mark.skipif(not is_root(), reason='Skipping, rootless user')
     @pytest.mark.skipif(
         PODMAN_VERSION < (5, 6, 0),
         reason="Test against this feature before Podman 5.6.0 https://github.com/containers/podman/pull/25942",
@@ -397,6 +396,7 @@ class ContainersIntegrationTest(base.IntegrationTest):
                 f"size={mount['size']},rprivate,nosuid,nodev,tmpcopyup",
             )
 
+    @pytest.mark.skipif(not is_root(), reason='Skipping, rootless user')
     def test_container_devices(self):
         devices = ["/dev/null:/dev/foo", "/dev/zero:/dev/bar"]
         container = self.client.containers.create(
