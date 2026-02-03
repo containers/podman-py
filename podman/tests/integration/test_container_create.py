@@ -397,6 +397,7 @@ class ContainersIntegrationTest(base.IntegrationTest):
                 f"size={mount['size']},rprivate,nosuid,nodev,tmpcopyup",
             )
 
+    @pytest.mark.skipif(os.geteuid() != 0, reason='Skipping, not running as root')
     def test_container_devices(self):
         devices = ["/dev/null:/dev/foo", "/dev/zero:/dev/bar"]
         container = self.client.containers.create(
