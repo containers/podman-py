@@ -27,6 +27,15 @@
          default, the only the copy of this file that matters
          is the one on the `main` branch.  No other branches
          will be monitored or touched in any way.
+
+Validate this file before committing with (from repository root):
+
+    podman run -it \
+        -v ./.github/renovate.json5:/usr/src/app/renovate.json5:z \
+        ghcr.io/renovatebot/renovate:latest \
+        renovate-config-validator
+
+and/or use the pre-commit hook: https://github.com/renovatebot/pre-commit-hooks
 */
 
 {
@@ -52,4 +61,7 @@
 
   // Don't leave dep. update. PRs "hanging", assign them to people.
   "assignees": ["inknos"],
+  "pre-commit": {
+    "enabled": true
+  },
 }
