@@ -1,0 +1,63 @@
+name: Create Release PR
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v5.8.0)'
+        required: true
+        type: string
+
+jobs:
+  create-release-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Validate and extract version
+        id: version
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          if [[ ! "$VERSION" =~ ^v[0-9]+(\.[0-9]+)*$ ]]; then
+            echo "Error: Version must start with 'v' followed by numbers and dots (e.g., v5.8.0)"
+            echo "Provided version: $VERSION"
+            exit 1
+          fi
+          echo "Version format is valid: $VERSION"
+          # Remove 'v' prefix for file updates
+          VERSION_NUMBER="${VERSION#v}"
+          echo "version_number=$VERSION_NUMBER" >> $GITHUB_OUTPUT
+          echo "version_tag=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Update version files
+        run: |
+          chmod +x .github/scripts/update-version.sh
+          ./.github/scripts/update-version.sh "${{ steps.version.outputs.version_number }}"
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          branch: release/${{ steps.version.outputs.version_tag }}
+          delete-branch: true
+          title: "Bump release to ${{ steps.version.outputs.version_number }}"
+          commit-message: |
+            Bump release to ${{ steps.version.outputs.version_number }}
+
+            Signed-off-by: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
+          body: |
+            ## Release ${{ steps.version.outputs.version_tag }}
+
+            This PR bumps the version to ${{ steps.version.outputs.version_number }} in all required files:
+            - `podman/version.py`
+            - `pyproject.toml`
+            - `setup.cfg`
+            - `Makefile`
+            - `podman/tests/__init__.py`
+            - `plans/main.fmf`
+
+            Once merged, a GitHub release will be automatically created with tag `${{ steps.version.outputs.version_tag }}`, which will trigger the [PyPI publish workflow](.github/workflows/publish-to-pypi.yml).

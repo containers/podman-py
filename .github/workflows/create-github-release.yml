@@ -1,0 +1,55 @@
+name: Create GitHub Release
+
+on:
+  pull_request:
+    types:
+      - closed
+
+jobs:
+  create-release:
+    # Only run if PR was merged and title starts with "Bump release to"
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.title, 'Bump release to')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from PR title
+        id: version
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          # Extract version number from "Bump release to X.Y.Z"
+          VERSION_NUMBER=$(echo "$PR_TITLE" | sed 's/Bump release to //')
+          VERSION_TAG="v$VERSION_NUMBER"
+
+          echo "version_number=$VERSION_NUMBER" >> $GITHUB_OUTPUT
+          echo "version_tag=$VERSION_TAG" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION_TAG"
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create and push tag
+        run: |
+          VERSION_TAG="${{ steps.version.outputs.version_tag }}"
+          git tag "$VERSION_TAG"
+          git push origin "$VERSION_TAG"
+          echo "Created and pushed tag: $VERSION_TAG"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION_TAG="${{ steps.version.outputs.version_tag }}"
+
+          gh release create "$VERSION_TAG" \
+            --title "$VERSION_TAG" \
+            --generate-notes \
+            --draft
