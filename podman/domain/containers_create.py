@@ -7,13 +7,13 @@ import re
 from contextlib import suppress
 from typing import Any, Union
 from collections.abc import MutableMapping
+import requests
 
 from podman import api
 from podman.domain.containers import Container
 from podman.domain.images import Image
 from podman.domain.pods import Pod
 from podman.domain.secrets import Secret
-from podman.errors import ImageNotFound
 
 logger = logging.getLogger("podman.containers")
 
@@ -361,7 +361,6 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             A Container object.
 
         Raises:
-            ImageNotFound: when Image not found by Podman service
             APIError: when Podman service reports an error
         """
         if isinstance(image, Image):
@@ -379,7 +378,18 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             headers={"content-type": "application/json"},
             data=payload,
         )
-        response.raise_for_status(not_found=ImageNotFound)
+        if response.status_code == requests.codes.not_found:
+            self.podman_client.images.pull(
+                image,
+                auth_config=kwargs.get("auth_config"),
+                platform=kwargs.get("platform"),
+                policy=kwargs.get("policy", "missing"),
+            )
+            response = self.client.post(
+                "/containers/create",
+                headers={"content-type": "application/json"},
+                data=payload,
+            )
 
         container_id = response.json()["Id"]
 

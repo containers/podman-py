@@ -16,7 +16,7 @@ from podman import PodmanClient, tests
 from podman.domain.containers import Container
 from podman.domain.containers_create import CreateMixin
 from podman.domain.containers_manager import ContainersManager
-from podman.errors import ImageNotFound, NotFound
+from podman.errors import NotFound
 
 FIRST_CONTAINER = {
     "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
@@ -338,17 +338,45 @@ class ContainersManagerTestCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_create_404(self, mock):
+        # mock the first POST to return 404,
+        # then the second POST (after pulling the image) to return 201
         mock.post(
             tests.LIBPOD_URL + "/containers/create",
-            status_code=404,
-            json={
-                "cause": "Image not found",
-                "message": "Image not found",
-                "response": 404,
-            },
+            [
+                {
+                    "status_code": 404,
+                    "json": {
+                        "cause": "Image not found",
+                        "message": "Image not found",
+                        "response": 404,
+                    },
+                },
+                {
+                    "status_code": 201,
+                    "json": {
+                        "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
+                        "Warnings": [],
+                    },
+                },
+            ],
         )
-        with self.assertRaises(ImageNotFound):
-            self.client.containers.create("fedora", "/usr/bin/ls", cpu_count=9999)
+        self.client.images.pull = MagicMock()
+        mock.get(
+            tests.LIBPOD_URL + f"/containers/{FIRST_CONTAINER['Id']}/json",
+            json=FIRST_CONTAINER,
+        )
+        actual = self.client.containers.create("fedora", "/usr/bin/ls", cpu_count=9999)
+        self.client.images.pull.assert_called_once_with(
+            "fedora",
+            auth_config=None,
+            platform=None,
+            policy="missing",
+        )
+        self.assertIsInstance(actual, Container)
+        self.assertEqual(actual.id, FIRST_CONTAINER['Id'])
+        # 2 POSTs for create
+        # 1 GET for container json
+        self.assertEqual(mock.call_count, 3)
 
     @requests_mock.Mocker()
     def test_create_parse_host_port(self, mock):
@@ -643,6 +671,67 @@ class ContainersManagerTestCase(unittest.TestCase):
                 self.assertIsInstance(actual, Iterator)
                 self.assertEqual(next(actual), b"This is a unittest - line 1")
                 self.assertEqual(next(actual), b"This is a unittest - line 2")
+
+    @requests_mock.Mocker()
+    def test_run_404(self, mock):
+        # mock the first POST to return 404,
+        # then the second POST (after pulling the image) to return 201
+        mock.post(
+            tests.LIBPOD_URL + "/containers/create",
+            [
+                {
+                    "status_code": 404,
+                    "json": {
+                        "cause": "Image not found",
+                        "message": "Image not found",
+                        "response": 404,
+                    },
+                },
+                {
+                    "status_code": 201,
+                    "json": {
+                        "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
+                        "Warnings": [],
+                    },
+                },
+            ],
+        )
+        self.client.images.pull = MagicMock()
+        mock.post(
+            tests.LIBPOD_URL
+            + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/start",
+            status_code=204,
+        )
+        mock.get(
+            tests.LIBPOD_URL + f"/containers/{FIRST_CONTAINER['Id']}/json",
+            json=FIRST_CONTAINER,
+        )
+
+        mock_logs = (
+            b"This is a unittest - line 1",
+            b"This is a unittest - line 2",
+        )
+
+        with patch.multiple(Container, logs=DEFAULT, wait=DEFAULT, autospec=True) as mock_container:
+            mock_container["wait"].return_value = 0
+            mock_container["logs"].return_value = iter(mock_logs)
+
+            actual = self.client.containers.run("fedora", "/usr/bin/ls")
+            self.client.images.pull.assert_called_once_with(
+                "fedora",
+                auth_config=None,
+                platform=None,
+                policy="missing",
+            )
+            self.assertIsInstance(actual, bytes)
+            self.assertEqual(actual, b"This is a unittest - line 1This is a unittest - line 2")
+            # 2 POSTs for create
+            # 1 POST for start
+            # 1 GET for container json
+            # 1 GET for reload
+            for r in mock.request_history:
+                print(r)
+            self.assertEqual(mock.call_count, 5)
 
 
 if __name__ == "__main__":
