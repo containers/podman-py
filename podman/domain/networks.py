@@ -35,8 +35,11 @@ class Network(PodmanResource):
     @property
     def id(self):  # pylint: disable=invalid-name
         """str: Returns the identifier of the network."""
-        with suppress(KeyError):
+        if "Id" in self.attrs:
             return self.attrs["Id"]
+
+        if "id" in self.attrs:
+            return self.attrs["id"]
 
         with suppress(KeyError):
             sha256 = hashlib.sha256(self.attrs["name"].encode("ascii"))
