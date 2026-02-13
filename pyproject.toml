@@ -128,7 +128,6 @@ builtins-ignorelist = ["copyright", "all"]
 install_types = true
 non_interactive = true
 allow_redefinition = true
-no_strict_optional = true
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
