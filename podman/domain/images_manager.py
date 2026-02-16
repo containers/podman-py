@@ -400,6 +400,9 @@ class ImagesManager(BuildMixin, Manager):
             params["compatMode"] = True
             stream = True
 
+        if not params["compatMode"] and not stream:
+            params["quiet"] = True
+
         response = self.client.post("/images/pull", params=params, stream=stream, headers=headers)
         response.raise_for_status(not_found=ImageNotFound)
 
@@ -572,8 +575,30 @@ class ImagesManager(BuildMixin, Manager):
                         break
                     if reader._fp.chunk_left:
                         data += reader.read(reader._fp.chunk_left)
+                    try:
+                        data_dictionary = json.loads(data)
+                    except json.JSONDecodeError as e:
+                        self._stream_error_helper("Service returned invalid JSON", e.msg)
+                    except UnicodeDecodeError as e:
+                        self._stream_error_helper("Service returned wrongly encoded data", e.msg)
+                    error = data_dictionary.get("error")
+                    if error:
+                        self._stream_error_helper(
+                            "Service returned an error after streaming started", error
+                        )
                     yield data
         else:
             # Response isn't chunked, meaning we probably
             # encountered an error immediately
             yield self._result(response, json=decode)
+
+    def _stream_error_helper(self, message, explanation):
+        """Helper to handle errors after streaming started."""
+        error_response = requests.Response()
+        error_response.status_code = 500
+        error_response.reason = "Internal Server Error"
+        raise APIError(
+            message,
+            response=error_response,
+            explanation=explanation,
+        )

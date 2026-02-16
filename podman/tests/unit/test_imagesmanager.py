@@ -671,6 +671,62 @@ class ImagesManagerTestCase(unittest.TestCase):
         self.assertEqual(image.id, image_id)
 
     @requests_mock.Mocker()
+    def test_pull_no_compat_mode(self, mock):
+        image_id = "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
+        mock.post(
+            tests.LIBPOD_URL + "/images/pull?reference=quay.io%2ffedora%3Alatest&quiet=True",
+            json={
+                "error": "",
+                "id": image_id,
+                "images": [image_id],
+                "stream": "",
+            },
+        )
+        mock.get(
+            tests.LIBPOD_URL + "/images"
+            "/sha256%3A326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/json",
+            json=FIRST_IMAGE,
+        )
+
+        image = self.client.images.pull("quay.io/fedora", "latest", compatMode=False)
+        self.assertEqual(image.id, image_id)
+
+    @requests_mock.Mocker()
+    def test_pull_no_compat_mode_no_image(self, mock):
+        non_existing_reference = "quay.io/f4ee35641334/f6fda4bb"
+        error = {
+            "cause": "access to the requested resource is not authorized",
+            "message": "unable to copy from source",
+            "response": 401,
+        }
+
+        stream_cases = [
+            dict(stream=False, quiet_postfix="&quiet=True"),
+            dict(stream=True, quiet_postfix=""),
+        ]
+
+        for stream_case in stream_cases:
+            with self.subTest(stream_case=stream_case):
+                mock.post(
+                    tests.LIBPOD_URL
+                    + f"/images/pull?reference={non_existing_reference}%3Alatest"
+                    + f"{stream_case['quiet_postfix']}",
+                    status_code=error["response"],
+                    json=error,
+                )
+
+                with self.assertRaises(APIError) as context:
+                    self.client.images.pull(
+                        non_existing_reference,
+                        "latest",
+                        compatMode=False,
+                        stream=stream_case["stream"],
+                    )
+                self.assertEqual(context.exception.args[0], error["cause"])
+                self.assertEqual(context.exception.explanation, error["message"])
+                self.assertEqual(context.exception.response.status_code, error["response"])
+
+    @requests_mock.Mocker()
     def test_list_with_name_parameter(self, mock):
         """Test that name parameter is correctly converted to a reference filter"""
         mock.get(
