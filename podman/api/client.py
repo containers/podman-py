@@ -317,6 +317,7 @@ class APIClient(requests.Session):
         *,
         params: _Params = None,
         data: _Data = None,
+        files: Optional[Any] = None,
         headers: Optional[Mapping[str, str]] = None,
         timeout: _Timeout = None,
         stream: Optional[bool] = False,
@@ -327,6 +328,8 @@ class APIClient(requests.Session):
         Args:
             path: Relative path to RESTful resource.
             data: HTTP body for operation
+            files: Dictionary or list of tuples for multipart file upload.
+                Follows the ``requests`` library ``files`` parameter format.
             params: Optional parameters to include with URL.
             headers: Optional headers to include in request.
             timeout: Number of seconds to wait on request, or (connect timeout, read timeout) tuple
@@ -344,6 +347,7 @@ class APIClient(requests.Session):
             path=path,
             params=params,
             data=data,
+            files=files,
             headers=headers,
             timeout=timeout,
             stream=stream,
@@ -394,6 +398,7 @@ class APIClient(requests.Session):
         path: Union[str, bytes],
         *,
         data: _Data = None,
+        files: Optional[Any] = None,
         params: _Params = None,
         headers: Optional[Mapping[str, str]] = None,
         timeout: _Timeout = None,
@@ -406,6 +411,7 @@ class APIClient(requests.Session):
             method: HTTP method to use for request
             path: Relative path to RESTful resource.
             params: Optional parameters to include with URL.
+            files: Dictionary or list of tuples for multipart file upload.
             headers: Optional headers to include in request.
             timeout: Number of seconds to wait on request, or (connect timeout, read timeout) tuple
 
@@ -445,6 +451,7 @@ class APIClient(requests.Session):
                     uri.geturl(),
                     params=params,
                     data=data,
+                    files=files,
                     headers=(headers or {}),
                     stream=stream,
                     verify=kwargs.get("verify", None),
