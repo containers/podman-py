@@ -1,6 +1,5 @@
 """Unit tests for Quadlet domain class."""
 
-import pytest
 import unittest
 from unittest.mock import patch
 
@@ -18,7 +17,6 @@ FIRST_QUADLET = {
 }
 
 
-@pytest.mark.pnext
 class QuadletTestCase(unittest.TestCase):
     """Test Quadlet domain class."""
 
@@ -95,6 +93,40 @@ class QuadletTestCase(unittest.TestCase):
             result = quadlet.print_contents()
             self.assertIsNone(result)
             mock_print.assert_called_once_with(expected_content.strip())
+
+    @requests_mock.Mocker()
+    def test_delete(self, mock):
+        """Test Quadlet instance delete delegates to manager correctly."""
+        mock.delete(
+            tests.LIBPOD_URL + "/quadlets/myapp.container",
+            json={"Removed": ["myapp.container"]},
+            status_code=200,
+        )
+        quadlet_manager = QuadletsManager(self.client.api)
+        quadlet = quadlet_manager.prepare_model(attrs=FIRST_QUADLET)
+
+        result = quadlet.delete()
+        self.assertEqual(result, ["myapp.container"])
+
+    @requests_mock.Mocker()
+    def test_delete_with_kwargs(self, mock):
+        """Test Quadlet delete passes kwargs (force, ignore, reload_systemd) through."""
+        adapter = mock.delete(
+            tests.LIBPOD_URL + "/quadlets/myapp.container",
+            json={"Removed": ["myapp.container"]},
+            status_code=200,
+        )
+        quadlet_manager = QuadletsManager(self.client.api)
+        quadlet = quadlet_manager.prepare_model(attrs=FIRST_QUADLET)
+
+        result = quadlet.delete(force=True, ignore=True, reload_systemd=False)
+        self.assertEqual(result, ["myapp.container"])
+
+        # Verify all parameters were passed correctly
+        url_lower = adapter.last_request.url.lower()
+        self.assertIn("force=true", url_lower)
+        self.assertIn("ignore=true", url_lower)
+        self.assertIn("reload-systemd=false", url_lower)
 
 
 if __name__ == '__main__':

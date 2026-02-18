@@ -1,6 +1,5 @@
 """Unit tests for QuadletsManager."""
 
-import pytest
 import unittest
 from unittest.mock import patch
 
@@ -8,7 +7,7 @@ import requests_mock
 
 from podman import PodmanClient, tests
 from podman.domain.quadlets import Quadlet, QuadletsManager
-from podman.errors import NotFound
+from podman.errors import APIError, NotFound, PodmanError
 
 FIRST_QUADLET = {
     "Name": "myapp.container",
@@ -27,7 +26,6 @@ SECOND_QUADLET = {
 }
 
 
-@pytest.mark.pnext
 class QuadletsManagerTestCase(unittest.TestCase):
     """Test QuadletsManager area of concern.
 
@@ -176,6 +174,207 @@ class QuadletsManagerTestCase(unittest.TestCase):
             result = self.client.quadlets.print_contents("myapp.container")
             self.assertIsNone(result)
             mock_print.assert_called_once_with(expected_content.strip())
+
+    @requests_mock.Mocker()
+    def test_delete_by_name(self, mock):
+        """Test delete single quadlet by name string."""
+        mock.delete(
+            tests.LIBPOD_URL + "/quadlets/myapp.container",
+            json={"Removed": ["myapp.container"]},
+            status_code=200,
+        )
+
+        result = self.client.quadlets.delete("myapp.container")
+        self.assertEqual(result, ["myapp.container"])
+
+    @requests_mock.Mocker()
+    def test_delete_by_quadlet_object(self, mock):
+        """Test delete using Quadlet object."""
+        mock.delete(
+            tests.LIBPOD_URL + "/quadlets/myapp.container",
+            json={"Removed": ["myapp.container"]},
+            status_code=200,
+        )
+
+        quadlet = Quadlet(attrs=FIRST_QUADLET)
+        result = self.client.quadlets.delete(quadlet)
+        self.assertEqual(result, ["myapp.container"])
+
+    @requests_mock.Mocker()
+    def test_delete_all(self, mock):
+        """Test delete all quadlets with all=True."""
+        mock.delete(
+            tests.LIBPOD_URL + "/quadlets",
+            json={"Removed": ["myapp.container", "mydb.container"]},
+            status_code=200,
+        )
+
+        result = self.client.quadlets.delete(all=True)
+        self.assertEqual(result, ["myapp.container", "mydb.container"])
+
+    @requests_mock.Mocker()
+    def test_delete_with_force(self, mock):
+        """Test delete with force=True parameter."""
+        adapter = mock.delete(
+            tests.LIBPOD_URL + "/quadlets/myapp.container",
+            json={"Removed": ["myapp.container"]},
+            status_code=200,
+        )
+
+        result = self.client.quadlets.delete("myapp.container", force=True)
+        self.assertEqual(result, ["myapp.container"])
+
+        # Verify force parameter was passed correctly
+        self.assertIn("force=true", adapter.last_request.url.lower())
+
+    @requests_mock.Mocker()
+    def test_delete_with_ignore(self, mock):
+        """Test delete with ignore=True parameter."""
+        adapter = mock.delete(
+            tests.LIBPOD_URL + "/quadlets/myapp.container",
+            json={"Removed": []},
+            status_code=200,
+        )
+
+        result = self.client.quadlets.delete("myapp.container", ignore=True)
+        self.assertEqual(result, [])
+
+        # Verify ignore parameter was passed correctly
+        self.assertIn("ignore=true", adapter.last_request.url.lower())
+
+    @requests_mock.Mocker()
+    def test_delete_without_reload(self, mock):
+        """Test delete with reload_systemd=False."""
+        adapter = mock.delete(
+            tests.LIBPOD_URL + "/quadlets/myapp.container",
+            json={"Removed": ["myapp.container"]},
+            status_code=200,
+        )
+
+        result = self.client.quadlets.delete("myapp.container", reload_systemd=False)
+        self.assertEqual(result, ["myapp.container"])
+
+        # Verify reload-systemd parameter was passed correctly (note the hyphen)
+        self.assertIn("reload-systemd=false", adapter.last_request.url.lower())
+
+    def test_delete_no_name_or_all(self):
+        """Test delete raises PodmanError when neither name nor all provided."""
+        with self.assertRaises(PodmanError) as context:
+            self.client.quadlets.delete()
+
+        self.assertIn("Quadlet name, or 'all=True' should be provided", str(context.exception))
+
+    @requests_mock.Mocker()
+    def test_delete_response_format(self, mock):
+        """Test delete correctly parses 'Removed' field from API response."""
+        mock.delete(
+            tests.LIBPOD_URL + "/quadlets/myapp.container",
+            json={"Removed": ["myapp.container", "related.container"]},
+            status_code=200,
+        )
+
+        result = self.client.quadlets.delete("myapp.container")
+        self.assertIsInstance(result, list)
+        self.assertEqual(len(result), 2)
+        self.assertIn("myapp.container", result)
+        self.assertIn("related.container", result)
+
+    @requests_mock.Mocker()
+    def test_delete_nonexistent_quadlet_error(self, mock):
+        """Test delete raises NotFound for non-existent quadlet without ignore."""
+        mock.delete(
+            tests.LIBPOD_URL + "/quadlets/nonexistent.container",
+            json={"error": "no such quadlet: nonexistent.container"},
+            status_code=404,
+        )
+
+        with self.assertRaises(NotFound) as context:
+            self.client.quadlets.delete("nonexistent.container")
+
+        self.assertIn("nonexistent.container", str(context.exception))
+
+    @requests_mock.Mocker()
+    def test_delete_nonexistent_with_ignore_succeeds(self, mock):
+        """Test delete with ignore=True succeeds for non-existent quadlet."""
+        mock.delete(
+            tests.LIBPOD_URL + "/quadlets/nonexistent.container",
+            json={"Removed": ["nonexistent.container"], "Errors": {}},
+            status_code=200,
+        )
+
+        result = self.client.quadlets.delete("nonexistent.container", ignore=True)
+        self.assertEqual(result, ["nonexistent.container"])
+
+    @requests_mock.Mocker()
+    def test_delete_running_quadlet_error(self, mock):
+        """Test delete raises error when quadlet is running without force."""
+        mock.delete(
+            tests.LIBPOD_URL + "/quadlets/running.container",
+            json={
+                "cause": (
+                    "quadlet running.container is running and force is not set, refusing to remove"
+                ),
+                "message": "container is running and force is not set, refusing to remove",
+                "response": 400,
+            },
+            status_code=400,
+        )
+
+        with self.assertRaises(APIError) as context:
+            self.client.quadlets.delete("running.container")
+
+        error_message = str(context.exception)
+        self.assertTrue(
+            "running" in error_message.lower() or "force" in error_message.lower(),
+            f"Expected error about running quadlet or force, got: {error_message}",
+        )
+
+    @requests_mock.Mocker()
+    def test_delete_running_quadlet_with_force_succeeds(self, mock):
+        """Test delete with force=True succeeds for running quadlet."""
+        mock.delete(
+            tests.LIBPOD_URL + "/quadlets/running.container",
+            json={"Removed": ["running.container"], "Errors": {}},
+            status_code=200,
+        )
+
+        result = self.client.quadlets.delete("running.container", force=True)
+        self.assertEqual(result, ["running.container"])
+
+    @requests_mock.Mocker()
+    def test_delete_internal_server_error(self, mock):
+        """Test delete raises error on internal server error."""
+        mock.delete(
+            tests.LIBPOD_URL + "/quadlets/myapp.container",
+            json={"cause": "systemd connection failed", "message": "Internal error"},
+            status_code=500,
+        )
+
+        with self.assertRaises(APIError) as context:
+            self.client.quadlets.delete("myapp.container")
+
+        # Verify it's a 500 error
+        self.assertEqual(context.exception.status_code, 500)
+        self.assertTrue(context.exception.is_server_error())
+
+    @requests_mock.Mocker()
+    def test_delete_all_with_partial_errors(self, mock):
+        """Test delete all with some quadlets failing doesn't raise exception."""
+        mock.delete(
+            tests.LIBPOD_URL + "/quadlets",
+            json={
+                "Removed": ["success1.container", "success2.container"],
+                "Errors": {"failed.container": "could not locate quadlet failed.container"},
+            },
+            status_code=200,
+        )
+
+        # Should return successfully removed quadlets
+        result = self.client.quadlets.delete(all=True)
+        self.assertIsInstance(result, list)
+        self.assertEqual(len(result), 2)
+        self.assertIn("success1.container", result)
+        self.assertIn("success2.container", result)
 
 
 if __name__ == '__main__':
