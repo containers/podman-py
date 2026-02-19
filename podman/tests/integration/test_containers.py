@@ -14,7 +14,7 @@ import podman.tests.integration.base as base
 from podman import PodmanClient
 from podman.domain.containers import Container
 from podman.domain.images import Image
-from podman.errors import NotFound
+from podman.errors import NotFound, APIError
 
 # @unittest.skipIf(os.geteuid() != 0, 'Skipping, not running as root')
 
@@ -138,6 +138,12 @@ class ContainersIntegrationTest(base.IntegrationTest):
             self.assertIn("/usr/bin/top", report["Processes"][0][-1])
 
             top_ctnr.stop()
+
+            # Try stopping the already stopped.
+            # See https://github.com/containers/podman-py/pull/550 for more info.
+            with self.assertRaises(APIError):
+                top_ctnr.stop()
+
             top_ctnr.reload()
             self.assertIn(top_ctnr.status, ("exited", "stopped"))
 
