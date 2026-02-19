@@ -13,6 +13,7 @@ from http.client import HTTPException
 # isort: unique-list
 __all__ = [
     'APIError',
+    'CommandError',
     'BuildError',
     'ContainerError',
     'DockerException',
@@ -21,18 +22,24 @@ __all__ = [
     'NotFound',
     'NotFoundError',
     'PodmanError',
+    'PodmanNotInstalled',
+    'ServiceTerminatedServiceTimeout',
     'StreamParseError',
 ]
 
 try:
     from .exceptions import (
         APIError,
+        CommandError,
         BuildError,
         ContainerError,
         DockerException,
         InvalidArgument,
         NotFound,
         PodmanError,
+        PodmanNotInstalled,
+        ServiceTerminated,
+        ServiceTimeout,
         StreamParseError,
     )
 except ImportError:
