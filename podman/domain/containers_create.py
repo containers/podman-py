@@ -889,6 +889,33 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         if "userns_mode" in args:
             params["userns"] = normalize_nsmode(args.pop("userns_mode"))
 
+            # proof-of-concept
+            def merge_dicts(d1, d2):
+                for dk in d2:
+                    if dk in d1:
+                        if not isinstance(d1[dk], dict) or not isinstance(d2[dk], dict):
+                            d1[dk] = d2[dk]
+                        else:
+                            d1[dk] = merge_dicts(d1[dk], d2[dk])
+                    else:
+                        d1[dk] = d2[dk]
+                return d1
+
+            default_idmappings = {
+                "AutoUserNs": False if params["userns"]["nsmode"] != "auto" else True,
+                "AutoUserNsOpts": None if params["userns"]["nsmode"] != "auto" else {
+                    "AdditionalUIDMappings": None,
+                    "AdditionalGIDMappings": None,
+                    "PasswdFile": "",
+                    "GroupFile": "",
+                    "InitialSize": 0,
+                    "Size": 0,
+                },
+            }
+
+            old_idmappings = params.get("idmappings") or {}
+            params.update(idmappings=merge_dicts(default_idmappings, old_idmappings))
+
         if "uts_mode" in args:
             params["utsns"] = normalize_nsmode(args.pop("uts_mode"))
 
