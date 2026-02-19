@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.history/
 
 # C extensions
 *.so
@@ -9,6 +10,7 @@ __pycache__/
 # Distribution / packaging
 .Python
 build/
+_build/
 develop-eggs/
 dist/
 downloads/
