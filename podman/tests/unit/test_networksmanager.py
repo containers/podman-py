@@ -180,6 +180,31 @@ class NetworksManagerTestCase(unittest.TestCase):
         )
 
     @requests_mock.Mocker()
+    def test_create_network_dns_servers(self, mock):
+        adapter = mock.post(tests.LIBPOD_URL + "/networks/create", json=FIRST_NETWORK_LIBPOD)
+
+        network = self.client.networks.create("podman", network_dns_servers=["192.0.2.1"])
+        self.assertIsInstance(network, Network)
+
+        self.assertEqual(adapter.call_count, 1)
+        self.assertDictEqual(
+            adapter.last_request.json(),
+            {"name": "podman", "network_dns_servers": ["192.0.2.1"]},
+        )
+
+        network = self.client.networks.create(
+            "podman", network_dns_servers=["192.0.2.1", "192.0.2.2"]
+        )
+
+        self.assertIsInstance(network, Network)
+
+        self.assertEqual(adapter.call_count, 2)
+        self.assertDictEqual(
+            adapter.last_request.json(),
+            {"name": "podman", "network_dns_servers": ["192.0.2.1", "192.0.2.2"]},
+        )
+
+    @requests_mock.Mocker()
     def test_prune_libpod(self, mock):
         mock.post(
             tests.LIBPOD_URL + "/networks/prune",
