@@ -41,6 +41,9 @@ class NetworksManager(Manager):
             check_duplicate (bool): Ignored, always False.
             dns_enabled (bool): DNSEnabled is whether name resolution is active for container on
                                 this Network. Only supported with the bridge driver.
+            network_dns_servers (list[str]): List of custom DNS server for podman's DNS resolver
+                                at network level, all the containers attached to this network will
+                                consider resolvers configured at network level.
             driver (str): Which network driver to use when creating network.
             enable_ipv6 (bool): Enable IPv6 on the network.
             ingress (bool): Ignored, always False.
@@ -57,6 +60,7 @@ class NetworksManager(Manager):
             "name": name,
             "driver": kwargs.get("driver"),
             "dns_enabled": kwargs.get("dns_enabled"),
+            "network_dns_servers": kwargs.get("network_dns_servers"),
             "subnets": kwargs.get("subnets"),
             "ipv6_enabled": kwargs.get("enable_ipv6"),
             "internal": kwargs.get("internal"),
