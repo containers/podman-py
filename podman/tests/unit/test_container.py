@@ -225,8 +225,26 @@ class ContainersTestCase(unittest.TestCase):
             json={"StatusCode": 0},
         )
         container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
-        container.wait(condition="exited", interval=1)
+        container.wait(condition="exited", interval="23s")
         self.assertTrue(adapter.called_once)
+        self.maxDiff = None
+        self.assertEqual(adapter.last_request.qs['interval'], ['23s'])
+
+    @requests_mock.Mocker()
+    def test_wait_timeout(self, mock):
+        adapter = mock.post(
+            tests.LIBPOD_URL
+            + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/wait",
+            status_code=200,
+            json={"StatusCode": 0},
+        )
+        container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
+        container.wait(timeout=42)
+        self.assertTrue(adapter.called_once)
+        self.assertEqual(adapter.last_request.timeout, 42)
+
+        container.wait()
+        self.assertIsNone(adapter.last_request.timeout)
 
     @requests_mock.Mocker()
     def test_diff(self, mock):
