@@ -166,6 +166,54 @@ class ImagesManager(BuildMixin, Manager):
         # Pass the response body to the generator
         return _generator(response.json())
 
+    def import_image(
+        self,
+        source: Union[str, bytes],
+        reference: Optional[str] = None,
+        message: Optional[str] = None,
+        changes: Optional[List[str]] = None,
+    ) -> "Image":
+        """Import a tarball as an image (equivalent of 'podman import').
+
+        Args:
+            source: Path to a tarball (str) or a file-like object opened in binary mode.
+            reference: Optional reference for the new image (e.g. 'myimage:latest').
+            message: Optional commit message.
+            changes: Optional list of Dockerfile-style instructions
+                     (e.g. ['CMD /bin/bash', 'ENV FOO=bar']).
+
+        Returns:
+            An Image object for the newly imported image.
+
+        Raises:
+            APIError: when service returns an error.
+        """
+        params = {}
+        if reference:
+            params["reference"] = reference
+        if message:
+            params["message"] = message
+        if changes:
+            params["changes"] = changes  # requests sends repeated keys as a list
+
+        if isinstance(source, str):
+            with open(source, "rb") as f:
+                data = f.read()
+        else:
+            data = source.read()
+
+        response = self.client.post(
+            "/images/import",
+            params=params,
+            data=data,
+            headers={"Content-Type": "application/x-tar"},
+        )
+        response.raise_for_status()
+
+        body = response.json()
+        image_id = body.get("Id") or body.get("id")
+        return self.get(image_id)
+
     def prune(
         self,
         all: Optional[bool] = False,  # pylint: disable=redefined-builtin
