@@ -17,9 +17,11 @@
 import io
 import os
 import json
+import http.server
 import platform
 import tarfile
 import tempfile
+import threading
 import types
 import unittest
 import random
@@ -292,3 +294,80 @@ class ImagesIntegrationTest(base.IntegrationTest):
             e.exception.explanation,
             r"failed to connect: dial tcp: lookup fake\.ip\.addr.+no such host",
         )
+
+    def test_import_from_file(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create test folder with test file
+            base_dir = os.path.join(tmpdir, "test")
+            os.mkdir(base_dir)
+            open(os.path.join(base_dir, "foobar"), "w").close()
+
+            # Pack the testfile with the test folder in a tar
+            tar_path = os.path.join(tmpdir, "test.tar.gz")
+            with tarfile.open(tar_path, "w:gz") as tar:
+                tar.add(base_dir, arcname="test")
+
+            # Import it
+            image = self.client.images.import_image(file_path=tar_path, message="test")
+            self.assertIsInstance(image, Image)
+            self.assertEqual(image.attrs.get("Comment"), "test")
+            container = self.client.containers.create(image, command=["."])
+
+            # Check the imported image
+            actual = container.get_archive("./test/foobar")
+            self.assertEqual(len(actual), 2)
+            self.assertEqual(actual[1]["linkTarget"], "/test/foobar")
+
+    def test_import_from_data(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create test folder with test file
+            base_dir = os.path.join(tmpdir, "test")
+            os.mkdir(base_dir)
+            open(os.path.join(base_dir, "foobar"), "w").close()
+
+            # Pack the testfile with the test folder in a tar buffer
+            tar_buffer = io.BytesIO()
+            with tarfile.open(fileobj=tar_buffer, mode="w:gz") as tar:
+                tar.add(base_dir, arcname="test")
+            tar_buffer.seek(0)
+
+            # Import it
+            image = self.client.images.import_image(data=tar_buffer.read(), changes=["ENV FOO=bar"])
+            self.assertIsInstance(image, Image)
+            self.assertEqual(image.attrs.get("Config", {}).get("Env"), ["FOO=bar"])
+            container = self.client.containers.create(image, command=["."])
+
+            # Check the imported image
+            actual = container.get_archive("./test/foobar")
+            self.assertEqual(len(actual), 2)
+            self.assertEqual(actual[1]["linkTarget"], "/test/foobar")
+
+    def test_import_from_url(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create test folder with test file
+            base_dir = os.path.join(tmpdir, "test")
+            os.mkdir(base_dir)
+            open(os.path.join(base_dir, "foobar"), "w").close()
+
+            # Pack the testfile with the test folder in a tar
+            tar_path = os.path.join(tmpdir, "test.tar.gz")
+            with tarfile.open(tar_path, "w:gz") as tar:
+                tar.add(base_dir, arcname="test")
+
+            # Serve it on a http server
+            handler = lambda *a: http.server.SimpleHTTPRequestHandler(*a, directory=tmpdir)
+            with http.server.HTTPServer(("", 8000), handler) as httpd:
+                threading.Thread(target=httpd.serve_forever, daemon=True).start()
+
+                # Import it
+                image = self.client.images.import_image(
+                    url="http://localhost:8000/test.tar.gz", message="test"
+                )
+                self.assertIsInstance(image, Image)
+                self.assertEqual(image.attrs.get("Comment"), "test")
+                container = self.client.containers.create(image, command=["."])
+
+                # Check the imported image
+                actual = container.get_archive("./test/foobar")
+                self.assertEqual(len(actual), 2)
+                self.assertEqual(actual[1]["linkTarget"], "/test/foobar")
