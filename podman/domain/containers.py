@@ -736,10 +736,12 @@ class Container(PodmanResource):
             condition (Union[str, list[str]]): Container state on which to release.
                 One or more of: "configured", "created", "running", "stopped",
                 "paused", "exited", "removing", "stopping".
-            interval (int): Time interval to wait before polling for completion.
+            interval (str): Time interval to wait before polling for completion, e.g. '5s'
+            timeout (int): API call timeout in seconds.
 
         Returns:
             "Error" key has a dictionary value with the key "Message".
+            On success: exit code of the container process.
 
         Raises:
               NotFound: when Container not found
@@ -751,6 +753,7 @@ class Container(PodmanResource):
             condition = [condition]
 
         interval = kwargs.get("interval")
+        timeout = kwargs.get("timeout")
 
         params = {}
         if condition != []:
@@ -758,9 +761,9 @@ class Container(PodmanResource):
         if interval != "":
             params["interval"] = interval
 
-        # This API endpoint responds with a JSON encoded integer.
+        # This API endpoint responds with a JSON encoded integer, the exit code of the container.
         # See:
         # https://docs.podman.io/en/latest/_static/api.html#tag/containers/operation/ContainerWaitLibpod
-        response = self.client.post(f"/containers/{self.id}/wait", params=params)
+        response = self.client.post(f"/containers/{self.id}/wait", params=params, timeout=timeout)
         response.raise_for_status()
         return response.json()
