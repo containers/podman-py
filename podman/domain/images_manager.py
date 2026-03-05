@@ -8,6 +8,7 @@ import os
 import urllib.parse
 from typing import Any, Literal
 from collections.abc import Iterator, Mapping, Generator
+from contextlib import nullcontext
 from pathlib import Path
 import requests
 
@@ -225,6 +226,97 @@ class ImagesManager(BuildMixin, Manager):
             )
             response.raise_for_status()
             return _generator(response.json())
+
+    def import_image(
+        self,
+        *,
+        data: bytes | None = None,
+        file_path: os.PathLike | None = None,
+        url: str | None = None,
+        reference: str | None = None,
+        message: str | None = None,
+        changes: str | None = None,
+        os: str | None = None,
+        architecture: str | None = None,
+        variant: str | None = None,
+    ) -> "Image":
+        """Import a tarball as an image (equivalent of 'podman import').
+
+        Keyword Args:
+            file_path: Path to the tarball to import.
+            data: tarball raw data (bytes)
+            url: Url to the tarball to import.
+            reference: Optional reference for the new image (e.g. 'myimage:latest').
+            message: Optional commit message.
+            changes: Optional list of Dockerfile-style instructions
+                     (e.g. ['CMD /bin/bash', 'ENV FOO=bar']).
+            os: Optional target os.
+            architecture: Optional architecture the image is for.
+            variant: Optional architecture variant the image is for..
+
+        Returns:
+            An Image object for the newly imported image.
+
+        Raises:
+            APIError: when service returns an error.
+        """
+        # Check that exactly one of the data or file_path is provided
+        if sum(x is not None for x in (data, file_path, url)) != 1:
+            raise PodmanError(
+                "Exactly one parameter should be set from 'data', 'file_path' and 'url' parameters."
+            )
+
+        # Check if url given it is supported
+        if url:
+            uri = urllib.parse.urlparse(url)
+            supported_schemes = ["http", "https"]
+            if uri.scheme not in supported_schemes:
+                raise ValueError(f"The scheme '{uri.scheme}' must be one of {supported_schemes}")
+
+        # Set the parameters
+        params = {}
+        if reference:
+            params["reference"] = reference
+        if message:
+            params["message"] = message
+        if changes:
+            params["changes"] = changes  # requests sends repeated keys as a list
+        if url:
+            params["url"] = url
+        if os:
+            params["OS"] = os
+        if architecture:
+            params["Architecture"] = architecture
+        if variant:
+            params["Variant"] = variant
+
+        # Get either from file or from raw data and post it
+        def post_data_cm():
+            if file_path:
+                return Path(file_path).open("rb")
+            elif data:
+                return io.BytesIO(data)
+            else:
+                return nullcontext()
+
+        with post_data_cm() as post_data:
+            response = self.api.post(
+                "/images/import",
+                params=params,
+                data=post_data,
+                headers={"Content-Type": "application/x-tar"},
+            )
+            response.raise_for_status()
+
+            body = response.json()
+            image_id = body.get("Id")
+
+            if image_id is None:
+                raise APIError(
+                    response.url, response=response, explanation="No image id was returned"
+                )
+
+        return self.get(image_id)
 
     def prune(
         self,
