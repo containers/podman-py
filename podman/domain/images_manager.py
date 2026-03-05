@@ -6,7 +6,7 @@ import json
 import logging
 import os
 import urllib.parse
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal, Optional, Union, List
 from collections.abc import Iterator, Mapping, Generator
 from pathlib import Path
 import requests
