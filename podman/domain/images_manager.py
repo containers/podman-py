@@ -6,7 +6,7 @@ import json
 import logging
 import os
 import urllib.parse
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal, Optional, Union, List
 from collections.abc import Iterator, Mapping, Generator
 from pathlib import Path
 import requests
@@ -165,6 +165,64 @@ class ImagesManager(BuildMixin, Manager):
 
         # Pass the response body to the generator
         return _generator(response.json())
+
+    def import_image(
+        self,
+        data: Optional[bytes] = None,
+        file_path: Optional[os.PathLike] = None,
+        reference: Optional[str] = None,
+        message: Optional[str] = None,
+        changes: Optional[List[str]] = None,
+    ) -> "Image":
+        """Import a tarball as an image (equivalent of 'podman import').
+
+        Args:
+            source: Path to a tarball (str) or a file-like object opened in binary mode.
+            reference: Optional reference for the new image (e.g. 'myimage:latest').
+            message: Optional commit message.
+            changes: Optional list of Dockerfile-style instructions
+                     (e.g. ['CMD /bin/bash', 'ENV FOO=bar']).
+
+        Returns:
+            An Image object for the newly imported image.
+
+        Raises:
+            APIError: when service returns an error.
+        """
+         # Check that exactly one of the data or file_path is provided
+        if not data and not file_path:
+            raise PodmanError("The 'data' or 'file_path' parameter should be set.")
+
+        if data and file_path:
+            raise PodmanError(
+                "Only one parameter should be set from 'data' and 'file_path' parameters."
+            )
+
+        post_data = data
+        if file_path:
+            # Convert to Path if file_path is a string
+            file_path_object = Path(file_path)
+            post_data = file_path_object.read_bytes()  # Read the tarball file as bytes
+
+        params = {}
+        if reference:
+            params["reference"] = reference
+        if message:
+            params["message"] = message
+        if changes:
+            params["changes"] = changes  # requests sends repeated keys as a list
+
+        response = self.client.post(
+            "/images/import",
+            params=params,
+            data=post_data,
+            headers={"Content-Type": "application/x-tar"},
+        )
+        response.raise_for_status()
+
+        body = response.json()
+        image_id = body.get("Id") or body.get("id")
+        return self.get(image_id)
 
     def prune(
         self,
