@@ -168,7 +168,8 @@ class ImagesManager(BuildMixin, Manager):
 
     def import_image(
         self,
-        source: Union[str, bytes],
+        data: Optional[bytes] = None,
+        file_path: Optional[os.PathLike] = None,
         reference: Optional[str] = None,
         message: Optional[str] = None,
         changes: Optional[List[str]] = None,
@@ -188,6 +189,21 @@ class ImagesManager(BuildMixin, Manager):
         Raises:
             APIError: when service returns an error.
         """
+         # Check that exactly one of the data or file_path is provided
+        if not data and not file_path:
+            raise PodmanError("The 'data' or 'file_path' parameter should be set.")
+
+        if data and file_path:
+            raise PodmanError(
+                "Only one parameter should be set from 'data' and 'file_path' parameters."
+            )
+
+        post_data = data
+        if file_path:
+            # Convert to Path if file_path is a string
+            file_path_object = Path(file_path)
+            post_data = file_path_object.read_bytes()  # Read the tarball file as bytes
+
         params = {}
         if reference:
             params["reference"] = reference
@@ -196,16 +212,10 @@ class ImagesManager(BuildMixin, Manager):
         if changes:
             params["changes"] = changes  # requests sends repeated keys as a list
 
-        if isinstance(source, str):
-            with open(source, "rb") as f:
-                data = f.read()
-        else:
-            data = source.read()
-
         response = self.client.post(
             "/images/import",
             params=params,
-            data=data,
+            data=post_data,
             headers={"Content-Type": "application/x-tar"},
         )
         response.raise_for_status()
