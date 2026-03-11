@@ -305,8 +305,11 @@ class QuadletsManager(Manager):
 
     @staticmethod
     def _is_tar_path(item: "QuadletFileItem") -> bool:
-        """Return True if *item* looks like a path to a ``.tar`` archive."""
-        return isinstance(item, (str, os.PathLike)) and str(item).endswith(".tar")
+        """Return True if *item* looks like a path to a tar archive."""
+        if not isinstance(item, (str, os.PathLike)):
+            return False
+        name = str(item)
+        return name.endswith(".tar") or name.endswith(".tar.gz")
 
     def _prepare_install_body(
         self,
@@ -323,7 +326,10 @@ class QuadletsManager(Manager):
         for item in items:
             if isinstance(item, tuple):
                 filename, content = item
-                result[filename] = (filename, content.encode("utf-8"))
+                if isinstance(content, bytes):
+                    result[filename] = (filename, content)
+                else:
+                    result[filename] = (filename, content.encode("utf-8"))
             elif isinstance(item, (str, os.PathLike)):
                 fp = pathlib.Path(item)
                 if not fp.is_file():
@@ -333,4 +339,4 @@ class QuadletsManager(Manager):
 
 
 # Type alias – importable for type annotations in calling code.
-QuadletFileItem = Union[tuple[str, str], str, os.PathLike]
+QuadletFileItem = Union[tuple[str, Union[str, bytes]], str, os.PathLike]

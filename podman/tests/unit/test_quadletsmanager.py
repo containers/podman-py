@@ -473,6 +473,26 @@ class QuadletsManagerTestCase(unittest.TestCase):
         self.assertEqual(mock.last_request.body, original_bytes)
         self.assertEqual(mock.last_request.headers["Content-Type"], "application/x-tar")
 
+    @requests_mock.Mocker()
+    def test_install_single_tar_gz_by_string_path(self, mock):
+        """Test that a single .tar.gz file by string path is sent directly."""
+        mock.post(tests.LIBPOD_URL + "/quadlets", json=INSTALL_REPORT, status_code=200)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            quadlet_file = os.path.join(tmpdir, "test.container")
+            with open(quadlet_file, "w") as f:
+                f.write("[Container]\nImage=alpine\n")
+
+            tar_path = os.path.join(tmpdir, "quadlet.tar.gz")
+            with tarfile.open(tar_path, "w:gz") as tar:
+                tar.add(quadlet_file, arcname="test.container")
+
+            original_bytes = open(tar_path, "rb").read()
+            self.client.quadlets.install(tar_path)
+
+        self.assertEqual(mock.last_request.body, original_bytes)
+        self.assertEqual(mock.last_request.headers["Content-Type"], "application/x-tar")
+
     def test_install_single_tar_not_found(self):
         """Test install raises FileNotFoundError for nonexistent .tar path."""
         with self.assertRaises(FileNotFoundError):
