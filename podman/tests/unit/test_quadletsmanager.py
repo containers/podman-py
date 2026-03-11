@@ -1,5 +1,12 @@
 """Unit tests for QuadletsManager."""
 
+import os
+import pathlib
+import tarfile
+import tempfile
+from email.message import Message
+from email.parser import BytesParser
+
 import unittest
 from unittest.mock import patch
 
@@ -8,6 +15,34 @@ import requests_mock
 from podman import PodmanClient, tests
 from podman.domain.quadlets import Quadlet, QuadletsManager
 from podman.errors import APIError, NotFound, PodmanError
+
+INSTALL_REPORT = {
+    "InstalledQuadlets": {
+        "test.container": "/home/user/.config/containers/systemd/test.container",
+    },
+    "QuadletErrors": {},
+}
+
+
+def _parse_multipart_files(request) -> dict[str, bytes]:
+    """Parse a multipart/form-data request into ``{filename: content_bytes}``."""
+    content_type = request.headers["Content-Type"]
+    body = request.body
+    if not isinstance(body, bytes):
+        body = body.read() if hasattr(body, "read") else body.encode()
+    raw = b"Content-Type: " + content_type.encode() + b"\r\n\r\n" + body
+    msg = BytesParser().parsebytes(raw)
+    result: dict[str, bytes] = {}
+    if msg.is_multipart():
+        for part in msg.get_payload():
+            if not isinstance(part, Message):
+                continue
+            filename = part.get_filename()
+            payload = part.get_payload(decode=True)
+            if filename and isinstance(payload, bytes):
+                result[filename] = payload
+    return result
+
 
 FIRST_QUADLET = {
     "Name": "myapp.container",
@@ -329,6 +364,353 @@ class QuadletsManagerTestCase(unittest.TestCase):
             f"Expected error about running quadlet or force, got: {error_message}",
         )
 
+    # -- install: single items -------------------------------------------------
+
+    @requests_mock.Mocker()
+    def test_install_single_str_path(self, mock):
+        """Test installing a single quadlet file by path (str)."""
+        adapter = mock.post(tests.LIBPOD_URL + "/quadlets", json=INSTALL_REPORT, status_code=200)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            quadlet_path = os.path.join(tmpdir, "test.container")
+            with open(quadlet_path, "w") as f:
+                f.write("[Container]\nImage=alpine\n")
+
+            result = self.client.quadlets.install(quadlet_path)
+
+        self.assertEqual(result, INSTALL_REPORT)
+        self.assertIn("test.container", result["InstalledQuadlets"])
+        self.assertEqual(result["QuadletErrors"], {})
+        self.assertTrue(adapter.called_once)
+
+    @requests_mock.Mocker()
+    def test_install_single_pathlib_path(self, mock):
+        """Test installing a single quadlet file by path (pathlib.Path)."""
+        adapter = mock.post(tests.LIBPOD_URL + "/quadlets", json=INSTALL_REPORT, status_code=200)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            quadlet_path = pathlib.Path(tmpdir) / "test.container"
+            quadlet_path.write_text("[Container]\nImage=alpine\n")
+
+            result = self.client.quadlets.install(quadlet_path)
+
+        uploaded = _parse_multipart_files(mock.last_request)
+        self.assertEqual(sorted(uploaded), ["test.container"])
+        self.assertEqual(uploaded["test.container"], b"[Container]\nImage=alpine\n")
+        self.assertEqual(result, INSTALL_REPORT)
+        self.assertTrue(adapter.called_once)
+
+    @requests_mock.Mocker()
+    def test_install_single_tuple(self, mock):
+        """Test installing a single quadlet file by tuple (filename, content)."""
+        adapter = mock.post(tests.LIBPOD_URL + "/quadlets", json=INSTALL_REPORT, status_code=200)
+
+        content = "[Container]\nImage=alpine\n"
+        result = self.client.quadlets.install(("test.container", content))
+
+        uploaded = _parse_multipart_files(mock.last_request)
+        self.assertEqual(sorted(uploaded), ["test.container"])
+        self.assertEqual(uploaded["test.container"], content.encode())
+        self.assertEqual(result, INSTALL_REPORT)
+        self.assertTrue(adapter.called_once)
+
+    @requests_mock.Mocker()
+    def test_install_list_of_tuples(self, mock):
+        """Test installing a list of (filename, content) tuples."""
+        adapter = mock.post(tests.LIBPOD_URL + "/quadlets", json=INSTALL_REPORT, status_code=200)
+
+        items = [
+            ("myapp.container", "[Container]\nImage=alpine\n"),
+            ("Containerfile", "FROM alpine\nCMD echo hello\n"),
+        ]
+        self.client.quadlets.install(items)
+
+        uploaded = _parse_multipart_files(mock.last_request)
+        self.assertIn("myapp.container", uploaded)
+        self.assertIn("Containerfile", uploaded)
+        self.assertEqual(uploaded["myapp.container"], b"[Container]\nImage=alpine\n")
+        self.assertTrue(adapter.called_once)
+
+    # -- install: tar passthrough ------------------------------------------
+
+    @requests_mock.Mocker()
+    def test_install_single_tar_by_string_path(self, mock):
+        """Test that a single .tar file by string path is sent directly."""
+        mock.post(tests.LIBPOD_URL + "/quadlets", json=INSTALL_REPORT, status_code=200)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            quadlet_file = os.path.join(tmpdir, "test.container")
+            with open(quadlet_file, "w") as f:
+                f.write("[Container]\nImage=alpine\n")
+
+            tar_path = os.path.join(tmpdir, "quadlet.tar")
+            with tarfile.open(tar_path, "w") as tar:
+                tar.add(quadlet_file, arcname="test.container")
+
+            original_bytes = open(tar_path, "rb").read()
+            self.client.quadlets.install(tar_path)
+
+        self.assertEqual(mock.last_request.body, original_bytes)
+        self.assertEqual(mock.last_request.headers["Content-Type"], "application/x-tar")
+
+    @requests_mock.Mocker()
+    def test_install_single_tar_by_pathlib_path(self, mock):
+        """Test that a single .tar file by pathlib.Path is sent directly."""
+        mock.post(tests.LIBPOD_URL + "/quadlets", json=INSTALL_REPORT, status_code=200)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            quadlet_file = os.path.join(tmpdir, "test.container")
+            with open(quadlet_file, "w") as f:
+                f.write("[Container]\nImage=alpine\n")
+
+            tar_path = pathlib.Path(tmpdir) / "quadlet.tar"
+            with tarfile.open(str(tar_path), "w") as tar:
+                tar.add(quadlet_file, arcname="test.container")
+
+            original_bytes = tar_path.read_bytes()
+            self.client.quadlets.install(tar_path)
+
+        self.assertEqual(mock.last_request.body, original_bytes)
+        self.assertEqual(mock.last_request.headers["Content-Type"], "application/x-tar")
+
+    @requests_mock.Mocker()
+    def test_install_single_tar_gz_by_string_path(self, mock):
+        """Test that a single .tar.gz file by string path is sent directly."""
+        mock.post(tests.LIBPOD_URL + "/quadlets", json=INSTALL_REPORT, status_code=200)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            quadlet_file = os.path.join(tmpdir, "test.container")
+            with open(quadlet_file, "w") as f:
+                f.write("[Container]\nImage=alpine\n")
+
+            tar_path = os.path.join(tmpdir, "quadlet.tar.gz")
+            with tarfile.open(tar_path, "w:gz") as tar:
+                tar.add(quadlet_file, arcname="test.container")
+
+            original_bytes = open(tar_path, "rb").read()
+            self.client.quadlets.install(tar_path)
+
+        self.assertEqual(mock.last_request.body, original_bytes)
+        self.assertEqual(mock.last_request.headers["Content-Type"], "application/x-tar")
+
+    def test_install_single_tar_not_found(self):
+        """Test install raises FileNotFoundError for nonexistent .tar path."""
+        with self.assertRaises(FileNotFoundError):
+            self.client.quadlets.install("/nonexistent/path/archive.tar")
+
+    # -- install: lists (homogeneous) -----------------------------------------
+
+    @requests_mock.Mocker()
+    def test_install_list_of_str_paths(self, mock):
+        """Test installing a list of string paths."""
+        mock.post(tests.LIBPOD_URL + "/quadlets", json=INSTALL_REPORT, status_code=200)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            file_a = os.path.join(tmpdir, "a.container")
+            with open(file_a, "w") as f:
+                f.write("[Container]\nImage=alpine\n")
+
+            file_b = os.path.join(tmpdir, "Containerfile")
+            with open(file_b, "w") as f:
+                f.write("FROM alpine\n")
+
+            self.client.quadlets.install([file_a, file_b])
+
+        uploaded = _parse_multipart_files(mock.last_request)
+        self.assertEqual(sorted(uploaded), ["Containerfile", "a.container"])
+        self.assertEqual(uploaded["a.container"], b"[Container]\nImage=alpine\n")
+        self.assertEqual(uploaded["Containerfile"], b"FROM alpine\n")
+
+    @requests_mock.Mocker()
+    def test_install_list_of_pathlib_paths(self, mock):
+        """Test installing a list of pathlib.Path objects."""
+        mock.post(tests.LIBPOD_URL + "/quadlets", json=INSTALL_REPORT, status_code=200)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            file_a = pathlib.Path(tmpdir) / "a.container"
+            file_a.write_text("[Container]\nImage=alpine\n")
+
+            file_b = pathlib.Path(tmpdir) / "app.yml"
+            file_b.write_text("services:\n  web:\n    image: alpine\n")
+
+            self.client.quadlets.install([file_a, file_b])
+
+        uploaded = _parse_multipart_files(mock.last_request)
+        self.assertEqual(sorted(uploaded), ["a.container", "app.yml"])
+        self.assertEqual(uploaded["app.yml"], b"services:\n  web:\n    image: alpine\n")
+
+    # -- install: mixed lists (paths, tuples) --------------------------------
+
+    @requests_mock.Mocker()
+    def test_install_mixed_str_path_and_tuple(self, mock):
+        """Test mixed list: string path + content tuple."""
+        mock.post(tests.LIBPOD_URL + "/quadlets", json=INSTALL_REPORT, status_code=200)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            quadlet_path = os.path.join(tmpdir, "myapp.container")
+            with open(quadlet_path, "w") as f:
+                f.write("[Container]\nImage=alpine\n")
+
+            items = [
+                quadlet_path,
+                ("extra-config.yml", "key: value\n"),
+            ]
+            self.client.quadlets.install(items)
+
+        uploaded = _parse_multipart_files(mock.last_request)
+        self.assertEqual(sorted(uploaded), ["extra-config.yml", "myapp.container"])
+        self.assertEqual(uploaded["myapp.container"], b"[Container]\nImage=alpine\n")
+        self.assertEqual(uploaded["extra-config.yml"], b"key: value\n")
+
+    @requests_mock.Mocker()
+    def test_install_mixed_pathlib_and_tuple(self, mock):
+        """Test mixed list: pathlib.Path + content tuple."""
+        mock.post(tests.LIBPOD_URL + "/quadlets", json=INSTALL_REPORT, status_code=200)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            quadlet_path = pathlib.Path(tmpdir) / "myapp.container"
+            quadlet_path.write_text("[Container]\nImage=alpine\n")
+
+            items = [
+                quadlet_path,
+                ("Containerfile", "FROM alpine\nCMD echo hello\n"),
+            ]
+            self.client.quadlets.install(items)
+
+        uploaded = _parse_multipart_files(mock.last_request)
+        self.assertEqual(sorted(uploaded), ["Containerfile", "myapp.container"])
+        self.assertEqual(uploaded["myapp.container"], b"[Container]\nImage=alpine\n")
+        self.assertEqual(uploaded["Containerfile"], b"FROM alpine\nCMD echo hello\n")
+
+    @requests_mock.Mocker()
+    def test_install_mixed_str_and_pathlib_paths(self, mock):
+        """Test mixed list: string path + pathlib.Path."""
+        mock.post(tests.LIBPOD_URL + "/quadlets", json=INSTALL_REPORT, status_code=200)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            file_a = os.path.join(tmpdir, "a.container")
+            with open(file_a, "w") as f:
+                f.write("[Container]\nImage=alpine\n")
+
+            file_b = pathlib.Path(tmpdir) / "Containerfile"
+            file_b.write_text("FROM alpine\n")
+
+            self.client.quadlets.install([file_a, file_b])
+
+        uploaded = _parse_multipart_files(mock.last_request)
+        self.assertEqual(sorted(uploaded), ["Containerfile", "a.container"])
+        self.assertEqual(uploaded["a.container"], b"[Container]\nImage=alpine\n")
+        self.assertEqual(uploaded["Containerfile"], b"FROM alpine\n")
+
+    @requests_mock.Mocker()
+    def test_install_mixed_all_three_types(self, mock):
+        """Test mixed list with all three item types: str path, pathlib.Path, tuple."""
+        mock.post(tests.LIBPOD_URL + "/quadlets", json=INSTALL_REPORT, status_code=200)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            str_path = os.path.join(tmpdir, "myapp.container")
+            with open(str_path, "w") as f:
+                f.write("[Container]\nImage=alpine\n")
+
+            pathlib_path = pathlib.Path(tmpdir) / "app.yml"
+            pathlib_path.write_text("services:\n  web:\n    image: alpine\n")
+
+            items = [
+                str_path,
+                pathlib_path,
+                ("Containerfile", "FROM alpine\nCMD echo hello\n"),
+            ]
+            self.client.quadlets.install(items)
+
+        uploaded = _parse_multipart_files(mock.last_request)
+        self.assertEqual(len(uploaded), 3)
+        self.assertEqual(
+            sorted(uploaded),
+            ["Containerfile", "app.yml", "myapp.container"],
+        )
+        self.assertEqual(uploaded["myapp.container"], b"[Container]\nImage=alpine\n")
+        self.assertEqual(uploaded["app.yml"], b"services:\n  web:\n    image: alpine\n")
+        self.assertEqual(uploaded["Containerfile"], b"FROM alpine\nCMD echo hello\n")
+
+    def test_install_mixed_list_path_not_found(self):
+        """Test that FileNotFoundError is raised when one path in a list does not exist."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            good_path = os.path.join(tmpdir, "good.container")
+            with open(good_path, "w") as f:
+                f.write("[Container]\nImage=alpine\n")
+
+            items = [
+                good_path,
+                "/nonexistent/bad.yml",
+                ("Containerfile", "FROM alpine\n"),
+            ]
+            with self.assertRaises(FileNotFoundError) as ctx:
+                self.client.quadlets.install(items)
+
+            self.assertIn("bad.yml", str(ctx.exception))
+
+    # -- install: query params & error handling ----------------------------
+
+    @requests_mock.Mocker()
+    def test_install_with_replace(self, mock):
+        """Test install sends replace=True as query parameter."""
+        mock.post(tests.LIBPOD_URL + "/quadlets", json=INSTALL_REPORT, status_code=200)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            quadlet_path = os.path.join(tmpdir, "test.container")
+            with open(quadlet_path, "w") as f:
+                f.write("[Container]\nImage=alpine\n")
+
+            self.client.quadlets.install(quadlet_path, replace=True)
+
+        self.assertEqual(mock.last_request.qs["replace"], ["true"])
+
+    @requests_mock.Mocker()
+    def test_install_with_reload_systemd_false(self, mock):
+        """Test install sends reload-systemd=False as query parameter."""
+        mock.post(tests.LIBPOD_URL + "/quadlets", json=INSTALL_REPORT, status_code=200)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            quadlet_path = os.path.join(tmpdir, "test.container")
+            with open(quadlet_path, "w") as f:
+                f.write("[Container]\nImage=alpine\n")
+
+            self.client.quadlets.install(quadlet_path, reload_systemd=False)
+
+        self.assertEqual(mock.last_request.qs["reload-systemd"], ["false"])
+
+    @requests_mock.Mocker()
+    def test_install_default_params(self, mock):
+        """Test install sends correct default query parameters."""
+        mock.post(tests.LIBPOD_URL + "/quadlets", json=INSTALL_REPORT, status_code=200)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            quadlet_path = os.path.join(tmpdir, "test.container")
+            with open(quadlet_path, "w") as f:
+                f.write("[Container]\nImage=alpine\n")
+
+            self.client.quadlets.install(quadlet_path)
+
+        self.assertEqual(mock.last_request.qs["replace"], ["false"])
+        self.assertEqual(mock.last_request.qs["reload-systemd"], ["true"])
+        self.assertTrue(mock.last_request.headers["Content-Type"].startswith("multipart/form-data"))
+
+    @requests_mock.Mocker()
+    def test_install_already_exists(self, mock):
+        """Test install raises APIError when quadlet already exists."""
+        mock.post(
+            tests.LIBPOD_URL + "/quadlets",
+            json={
+                "cause": "a Quadlet with name test.container already exists, refusing to overwrite",
+                "message": "a Quadlet with name test.container already exists, "
+                "refusing to overwrite",
+            },
+            status_code=400,
+        )
+
+        with self.assertRaises(APIError):
+            self.client.quadlets.install(("test.container", "[Container]\nImage=alpine\n"))
+
     @requests_mock.Mocker()
     def test_delete_running_quadlet_with_force_succeeds(self, mock):
         """Test delete with force=True succeeds for running quadlet."""
@@ -375,6 +757,11 @@ class QuadletsManagerTestCase(unittest.TestCase):
         self.assertEqual(len(result), 2)
         self.assertIn("success1.container", result)
         self.assertIn("success2.container", result)
+
+    def test_install_single_file_not_found(self):
+        """Test install raises FileNotFoundError for nonexistent file path."""
+        with self.assertRaises(FileNotFoundError):
+            self.client.quadlets.install("/nonexistent/path/test.container")
 
 
 if __name__ == '__main__':
