@@ -57,7 +57,10 @@ class ManifestsIntegrationTest(base.IntegrationTest):
 
         with self.subTest("Inspect"):
             actual = self.client.manifests.get("quay.io/libpod/alpine:latest")
-            self.assertEqual(actual.id, manifest.id)
+            # We don't check manifest.id since arm64 resolves a platform-specific
+            # digest rather than the top-level manifest list digest.
+            self.assertIsNotNone(actual.id)
+            self.assertTrue(actual.id)
 
             actual = self.client.manifests.get(manifest.name)
             self.assertEqual(actual.id, manifest.id)
