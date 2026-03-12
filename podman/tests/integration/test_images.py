@@ -236,6 +236,8 @@ class ImagesIntegrationTest(base.IntegrationTest):
         self.assertIsNotNone(image)
         self.assertIsNotNone(image.id)
 
+    # https://github.com/containers/podman-py/issues/636
+    @unittest.skipIf(platform.machine() != "x86_64", reason="test image only available on x86_64")
     def test_build_with_secret(self):
         with tempfile.TemporaryDirectory() as context_dir:
             dockerfile_path = os.path.join(context_dir, "Dockerfile")
