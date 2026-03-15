@@ -1,3 +1,4 @@
+import io
 import types
 import unittest
 from unittest.mock import patch
@@ -428,6 +429,86 @@ class ImagesManagerTestCase(unittest.TestCase):
         self.assertEqual(len(report), 1)
         self.assertEqual(
             report[0].id, "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
+        )
+
+    @requests_mock.Mocker()
+    def test_import(self, mock):
+        # Check for forbidden parameter usage
+        with self.assertRaises(PodmanError):
+            self.client.images.import_image()
+
+        with self.assertRaises(PodmanError):
+            self.client.images.import_image(b'data', "file_path")
+
+        with self.assertRaises(PodmanError):
+            self.client.images.import_image(b'data', "file_path", "url")
+
+        with self.assertRaises(PodmanError):
+            self.client.images.import_image(data=b'data', file_path="file_path")
+
+        with self.assertRaises(PodmanError):
+            self.client.images.import_image(url="url", file_path="file_path")
+
+        with self.assertRaises(PodmanError):
+            self.client.images.import_image(url="url", data=b'data')
+
+        with self.assertRaises(PodmanError):
+            self.client.images.import_image(data=b'data', file_path="file_path", url="url")
+
+        # Check if url is valid
+        with self.assertRaises(ValueError):
+            self.client.images.import_image(url="not-an-url")
+
+        # Patch Path.read_bytes to mock the file reading behavior
+        with patch("pathlib.Path.open", return_value=io.BytesIO(b"mock tarball data")):
+            mock.post(
+                tests.LIBPOD_URL + "/images/import",
+                json={"Id": "quay.io/fedora:latest"},
+            )
+            mock.get(
+                tests.LIBPOD_URL + "/images/quay.io%2ffedora%3Alatest/json",
+                json=FIRST_IMAGE,
+            )
+
+            # 3a. Test the case where only 'file_path' is provided
+            image = self.client.images.import_image(file_path="mock_file.tar")
+            self.assertIsInstance(image, Image)
+
+            self.assertEqual(
+                image.id,
+                "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab",
+            )
+
+        mock.post(
+            tests.LIBPOD_URL + "/images/import",
+            json={"Id": "quay.io/fedora:latest"},
+        )
+        mock.get(
+            tests.LIBPOD_URL + "/images/quay.io%2ffedora%3Alatest/json",
+            json=FIRST_IMAGE,
+        )
+
+        image = self.client.images.import_image(b'This is a weird tarball...')
+        self.assertIsInstance(image, Image)
+
+        self.assertEqual(
+            image.id, "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
+        )
+
+        mock.post(
+            tests.LIBPOD_URL + "/images/import",
+            json={"Id": "quay.io/fedora:latest"},
+        )
+        mock.get(
+            tests.LIBPOD_URL + "/images/quay.io%2ffedora%3Alatest/json",
+            json=FIRST_IMAGE,
+        )
+
+        image = self.client.images.import_image(url="http://example.com")
+        self.assertIsInstance(image, Image)
+
+        self.assertEqual(
+            image.id, "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
         )
 
     @requests_mock.Mocker()
