@@ -140,7 +140,6 @@ class ImagesIntegrationTest(base.IntegrationTest):
         # Just check that it doesn't throw an exception and move on.
         self.client.images.search("alpine")
 
-    @unittest.skip("Needs Podman 3.1.0")
     def test_corrupt_load(self):
         with self.assertRaises(APIError) as e:
             next(self.client.images.load(b"This is a corrupt tarball"))
