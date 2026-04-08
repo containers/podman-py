@@ -75,6 +75,9 @@ class BuildMixin:
                 (e.g. ["FOO=bar", "BAZ=qux"]). Equivalent to ``podman build --env``.
             unsetenvs (list[str]) - Environment variable names to unset from the final image
                 (e.g. ["FOO", "BAZ"]). Equivalent to ``podman build --unsetenv``.
+            ssh (list[str]) - SSH agent socket or keys to expose to the build.
+                Format is the same as ``podman build --ssh``, e.g.
+                ``["default"]`` or ``["mykey=/path/to/key"]``.
 
         Returns:
             first item is the podman.domain.images.Image built
@@ -233,6 +236,8 @@ class BuildMixin:
             params["setenv"] = kwargs.get("envs")
         if "unsetenvs" in kwargs:
             params["unsetenv"] = kwargs.get("unsetenvs")
+        if "ssh" in kwargs and kwargs.get("ssh") != []:
+            params["ssh"] = json.dumps(kwargs["ssh"])
 
         # Remove any unset parameters
         return dict(filter(lambda i: i[1] is not None, params.items()))
