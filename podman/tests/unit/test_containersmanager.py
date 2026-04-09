@@ -645,6 +645,50 @@ class ContainersManagerTestCase(unittest.TestCase):
                 self.assertEqual(next(actual), b"This is a unittest - line 2")
 
     @requests_mock.Mocker()
+    def test_run_pulls_image_on_api_error_image_not_known(self, mock):
+        """run() should pull image and retry when Podman returns 500 'image not known'."""
+        image_id = "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        image_id_encoded = image_id.replace(":", "%3A")
+        container_id = FIRST_CONTAINER["Id"]
+
+        mock.post(
+            tests.LIBPOD_URL + "/containers/create",
+            [
+                {
+                    "status_code": 500,
+                    "json": {"cause": "image not known", "message": "fedora: image not known"},
+                },
+                {
+                    "status_code": 201,
+                    "json": {"Id": container_id, "Warnings": []},
+                },
+            ],
+        )
+        mock.post(
+            tests.LIBPOD_URL + "/images/pull",
+            json={"error": "", "id": image_id, "images": [image_id], "stream": ""},
+        )
+        mock.get(
+            tests.LIBPOD_URL + f"/images/{image_id_encoded}/json",
+            json={"Id": image_id},
+        )
+        mock.post(
+            tests.LIBPOD_URL + f"/containers/{container_id}/start",
+            status_code=204,
+        )
+        mock.get(
+            tests.LIBPOD_URL + f"/containers/{container_id}/json",
+            json=FIRST_CONTAINER,
+        )
+
+        with patch.multiple(Container, logs=DEFAULT, wait=DEFAULT, autospec=True) as mock_container:
+            mock_container["wait"].return_value = 0
+            mock_container["logs"].return_value = iter([b"output"])
+
+            actual = self.client.containers.run("fedora", "/usr/bin/ls")
+            self.assertIsInstance(actual, bytes)
+
+    @requests_mock.Mocker()
     def test_create_all_healthcheck_parameters(self, mock):
         """Test that all healthcheck parameters are correctly passed to the API."""
         mock_response = MagicMock()
