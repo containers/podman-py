@@ -8,7 +8,7 @@ from collections.abc import Generator, Iterator
 
 from podman.domain.containers import Container
 from podman.domain.images import Image
-from podman.errors import ContainerError, ImageNotFound
+from podman.errors import APIError, ContainerError, ImageNotFound
 
 logger = logging.getLogger("podman.containers")
 
@@ -72,9 +72,19 @@ class RunMixin:  # pylint: disable=too-few-public-methods
         if isinstance(command, str):
             command = [command]
 
+        _needs_pull = False
         try:
             container = self.create(image=image_id, command=command, **kwargs)  # type: ignore[attr-defined]
         except ImageNotFound:
+            _needs_pull = True
+        except APIError as e:
+            # Podman may return HTTP 500 with "image not known" instead of 404
+            # when an image is missing locally; re-raise any unrelated API errors.
+            if "image not known" not in str(e):
+                raise
+            _needs_pull = True
+
+        if _needs_pull:
             self.podman_client.images.pull(  # type: ignore[attr-defined]
                 image_id,
                 auth_config=kwargs.get("auth_config"),
