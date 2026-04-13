@@ -1,5 +1,7 @@
 """Podman API Errors."""
 
+import subprocess
+
 from typing import Optional, Union, TYPE_CHECKING
 from collections.abc import Iterable
 
@@ -148,3 +150,32 @@ class InvalidArgument(PodmanError):
 class StreamParseError(RuntimeError):
     def __init__(self, reason):
         self.msg = reason
+
+
+class PodmanNotInstalled(PodmanError):
+    def __init__(self) -> None:
+        msg = f"The Podman command is not installed in the system"
+        super().__init__(msg)
+
+
+class CommandError(PodmanError):
+    def __init__(self, error: subprocess.CalledProcessError) -> None:
+        self.error = error
+        msg = f"The Podman process failed with the following error: {error}"
+        if self.error.stdout:
+            msg += f"\nStdout: {self.error.stdout}"
+        if self.error.stderr:
+            msg += f"\nStderr: {self.error.stderr}"
+        super().__init__(msg)
+
+
+class ServiceTimeout(PodmanError):
+    def __init__(self, timeout: int) -> None:
+        msg = f"The Podman service failed to reply to a ping within {timeout} seconds"
+        super().__init__(msg)
+
+
+class ServiceTerminated(PodmanError):
+    def __init__(self, code: int) -> None:
+        msg = f"The Podman service has terminated with error code {code}"
+        super().__init__(msg)
