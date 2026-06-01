@@ -21,18 +21,45 @@ from podman.errors import APIError
 logger = logging.getLogger("podman.containers")
 
 
+_IDLE_TIMEOUT_SECONDS = 20.0
+
+
 def _read_from_socket(sock, n=4096):
-    """Read at most n bytes from a socket, using select to wait for data."""
+    """Read at most n bytes from a socket, using select/poll with an idle timeout.
+
+    A quiet period longer than _IDLE_TIMEOUT_SECONDS is treated as EOF.  The
+    upstream default was 5s which silently truncated long-running exec streams
+    with >5s gaps (e.g. `cargo build` link phases).  20s is long enough to
+    ride out most silent phases while still bounding hangs.
+    """
     if not hasattr(select, "poll"):
-        ready, _, _ = select.select([sock], [], [], 5.0)
+        ready, _, _ = select.select([sock], [], [], _IDLE_TIMEOUT_SECONDS)
         if not ready:
+            logger.warning(
+                "_read_from_socket: select() idle %ss (requested %d bytes) "
+                "— treating as EOF, stream may truncate",
+                _IDLE_TIMEOUT_SECONDS,
+                n,
+            )
             return b""
     else:
         poll = select.poll()
         poll.register(sock, select.POLLIN | select.POLLPRI)
-        if not poll.poll(5000):
+        if not poll.poll(_IDLE_TIMEOUT_SECONDS * 1000):
+            logger.warning(
+                "_read_from_socket: poll() idle %ss (requested %d bytes) "
+                "— treating as EOF, stream may truncate",
+                _IDLE_TIMEOUT_SECONDS,
+                n,
+            )
             return b""
-    return sock.recv(n)
+    chunk = sock.recv(n)
+    if not chunk:
+        logger.warning(
+            "_read_from_socket: sock.recv(%d) returned 0 bytes — real EOF on socket",
+            n,
+        )
+    return chunk
 
 
 def _read_exactly(sock, n):
@@ -41,6 +68,12 @@ def _read_exactly(sock, n):
     while len(data) < n:
         chunk = _read_from_socket(sock, n - len(data))
         if not chunk:
+            logger.warning(
+                "_read_exactly: short read, got %d of requested %d bytes — "
+                "returning partial buffer to caller",
+                len(data),
+                n,
+            )
             return data
         data += chunk
     return data
@@ -48,16 +81,34 @@ def _read_exactly(sock, n):
 
 def _frames_iter(sock):
     """Yield (stream_type, payload) tuples from a multiplexed socket."""
+    frame_count = 0
     while True:
         header = _read_exactly(sock, 8)
         if len(header) < 8:
+            logger.warning(
+                "_frames_iter: header short read (%d/8 bytes) after %d frames "
+                "— ending iteration, exec stream may be truncated",
+                len(header),
+                frame_count,
+            )
             return
         stream_type, frame_length = struct.unpack_from(">BxxxL", header)
         if not frame_length:
             continue
         payload = _read_exactly(sock, frame_length)
+        if len(payload) < frame_length:
+            logger.warning(
+                "_frames_iter: payload short read (%d/%d bytes, stream_type=%d) "
+                "after %d frames — ending iteration, exec stream truncated",
+                len(payload),
+                frame_length,
+                stream_type,
+                frame_count,
+            )
+            return
         if not payload:
             return
+        frame_count += 1
         yield stream_type, payload
 
 
