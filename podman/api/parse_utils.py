@@ -3,6 +3,7 @@
 import base64
 import ipaddress
 import json
+import re
 import struct
 from datetime import datetime, timezone
 from typing import Any, Optional, Union
@@ -10,6 +11,68 @@ from collections.abc import Iterator
 
 from podman.api.client import APIResponse
 from .output_utils import demux_output
+
+DURATION_UNITS_NS = {
+    "ns": 1,
+    "us": 1_000,
+    "µs": 1_000,
+    "ms": 1_000_000,
+    "s": 1_000_000_000,
+    "m": 60_000_000_000,
+    "h": 3_600_000_000_000,
+}
+
+HEALTH_ON_FAILURE_ACTION = {
+    "none": 0,
+    # value 1 is "invalid" in the Go enum (HealthCheckOnFailureActionInvalid)
+    # and should not be used directly
+    "kill": 2,
+    "restart": 3,
+    "stop": 4,
+}
+
+
+def prepare_duration_ns(value: Union[int, str, None]) -> Union[int, None]:
+    """Returns nanoseconds from given input.
+
+    Accepts:
+        - None: returns None
+        - int: returned as-is (assumed nanoseconds)
+        - str: parsed as Go duration (e.g. "30s", "1m", "500ms", "1h30m", "0")
+
+    Raises:
+        TypeError: if value is not int, str, or None
+        ValueError: if the string cannot be parsed as a Go duration
+    """
+    if value is None:
+        return None
+    if isinstance(value, int):
+        return value
+    if not isinstance(value, str):
+        raise TypeError(f"Duration must be int or str, got {type(value).__name__}")
+
+    total_ns = 0
+    remaining = value.strip()
+    if not remaining:
+        raise ValueError("Empty duration string")
+
+    if remaining == "0":
+        return 0
+
+    pattern = re.compile(r"(\d+)(ns|µs|us|ms|s|m|h)")
+    pos = 0
+    while pos < len(remaining):
+        match = pattern.match(remaining, pos)
+        if not match:
+            raise ValueError(
+                f"Invalid duration format: {value!r}. "
+                f"Use Go-style durations like '30s', '1m', '500ms', '1h30m'."
+            )
+        num_str, unit = match.groups()
+        total_ns += int(num_str) * DURATION_UNITS_NS[unit]
+        pos = match.end()
+
+    return total_ns
 
 
 def parse_repository(name: str) -> tuple[str, Optional[str]]:
