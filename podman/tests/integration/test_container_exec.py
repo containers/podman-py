@@ -120,3 +120,26 @@ class ContainersExecIntegrationTests(base.IntegrationTest):
             output,
             b'\n',
         )
+
+    def test_container_exec_run_socket(self):
+        """exec_run(socket=True) returns a live bidirectional socket."""
+        container = self.client.containers.create(self.alpine_image, command=["top"], detach=True)
+        self.containers.append(container)
+        container.start()
+
+        rc, sock = container.exec_run("/bin/sh", stdin=True, tty=True, socket=True)
+        self.assertIsNone(rc)
+
+        try:
+            sock.settimeout(5)
+            sock.sendall(b"echo $((100+11))\n")
+            data = b""
+            while b"111" not in data:
+                # the echo contains "100+11", never the literal "111":
+                # a computed marker distinguishes output from input echo
+                chunk = sock.recv(4096)
+                if not chunk:
+                    self.fail("socket closed before the marker was seen")
+                data += chunk
+        finally:
+            sock.close()
