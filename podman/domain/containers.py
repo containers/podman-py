@@ -145,7 +145,7 @@ class Container(PodmanResource):
         user=None,
         detach: bool = False,
         stream: bool = False,
-        socket: bool = False,  # pylint: disable=unused-argument
+        socket: bool = False,
         environment: Union[Mapping[str, str], list[str]] = None,
         workdir: str = None,
         demux: bool = False,
@@ -182,9 +182,12 @@ class Container(PodmanResource):
                 If ``stream``, then a generator yielding response chunks.
                 If ``demux``, then a tuple of (``stdout``, ``stderr``).
                 Else the response content.
+                If ``socket``, then ``(None, socket)`` where ``socket`` is the
+                    raw bidirectional connection to the exec session
+                    (``stdin``/``stdout``/``stderr``). The caller is responsible
+                    for reading, writing and closing it.
 
         Raises:
-            NotImplementedError: method not implemented.
             APIError: when service reports error
         """
         # pylint: disable-msg=too-many-locals
@@ -210,6 +213,37 @@ class Container(PodmanResource):
         response = self.api.post(f"/containers/{self.name}/exec", data=json.dumps(data))
         response.raise_for_status()
         exec_id = response.json()['Id']
+        if socket:
+            # Hijack the connection: request a protocol upgrade on the exec
+            # start endpoint. After the "101 Switching Protocols" response the
+            # underlying UDS connection stops being HTTP and becomes a raw
+            # bidirectional byte channel attached to the exec session's
+            # stdin/stdout/stderr (raw stream with tty=True, multiplexed
+            # frames otherwise).
+            if self.client.base_url.scheme == "http+ssh":
+                raise NotImplementedError("exec_run(socket=True) is not supported over SSH")
+            start_resp = self.api.post(
+                f"/exec/{exec_id}/start",
+                data=json.dumps({"Detach": False, "Tty": tty}),
+                headers={"Connection": "Upgrade", "Upgrade": "tcp"},
+                stream=True,  # keep requests from consuming the stream body
+            )
+            start_resp.raise_for_status()
+            conn = start_resp.raw.connection
+            if conn is None or conn.sock is None:
+                raise APIError(
+                    f"/exec/{exec_id}/start",
+                    explanation="Unable to extract socket from hijacked connection",
+                    response=start_resp,
+                )
+            sock = conn.sock
+            # Anchor the response on the socket: if start_resp were released
+            # or garbage collected, urllib3 could return the hijacked
+            # connection to the pool and a later request would write HTTP
+            # into the exec session.
+            sock._hijacked_response = start_resp
+            return None, sock
+
         # start the exec instance, this will store command output
         start_resp = self.api.post(
             f"/exec/{exec_id}/start", data=json.dumps({"Detach": detach, "Tty": tty}), stream=stream
