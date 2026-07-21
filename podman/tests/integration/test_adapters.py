@@ -11,6 +11,7 @@ class AdapterIntegrationTest(base.IntegrationTest):
     def setUp(self):
         super().setUp()
 
+    # trigger pr
     def test_ssh_ping(self):
         with PodmanClient(
             base_url=f"http+ssh://{getpass.getuser()}@localhost:22{self.socket_file}"
