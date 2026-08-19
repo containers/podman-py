@@ -27,19 +27,22 @@ runs:
   using: 'composite'
   steps:
     - name: Checkout code
-      uses: actions/checkout@v5
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       with:
         persist-credentials: false
 
     - name: Set up Python
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
       with:
         python-version: ${{ inputs.python-version }}
 
     - name: Install build backend
       shell: bash
+      env:
+        BUILD_BACKEND: ${{ inputs.build-backend }}
       run: |
-        python3 -m pip install ${{ inputs.build-backend }} --user
+        # Intentionally unquoted so more than one backend can be passed.
+        python3 -m pip install $BUILD_BACKEND --user
 
     - name: Build distribution packages
       shell: bash
@@ -48,7 +51,7 @@ runs:
 
     - name: Upload distribution packages
       if: ${{ inputs.upload-artifact == 'true' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: ${{ inputs.artifact-name }}
         path: dist/
