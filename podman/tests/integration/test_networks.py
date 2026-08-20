@@ -64,6 +64,13 @@ class NetworksIntegrationTest(base.IntegrationTest):
             names = [i.name for i in nets]
             self.assertIn("integration_test", names)
 
+        with self.subTest("Get by ID"):
+            network = self.client.networks.get("integration_test")
+            net_id = network.id
+            assert isinstance(net_id, str)
+            network_by_id = self.client.networks.get(net_id)
+            self.assertEqual(network.name, network_by_id.name)
+
         with self.subTest("Delete network"):
             network = self.client.networks.get("integration_test")
             network.remove(force=True)
