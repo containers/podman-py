@@ -104,12 +104,9 @@ class SSHSocket(socket.socket):
         Raises:
             RuntimeError: When socket has not been connected.
         """
-        if not self._proc or self._proc.stdin.closed:
+        if not self._proc:
             raise RuntimeError(f"SSHSocket({self.uri}) not connected.")
-
-        count = self._proc.stdin.write(data)
-        self._proc.stdin.flush()
-        return count
+        return super().send(data, flags or 0)
 
     def recv(self, buffersize, flags=None) -> bytes:  # pylint: disable=unused-argument
         """Read data from SSH forwarded UNIX domain socket.
@@ -123,7 +120,7 @@ class SSHSocket(socket.socket):
         """
         if not self._proc:
             raise RuntimeError(f"SSHSocket({self.uri}) not connected.")
-        return self._proc.stdout.read(buffersize)
+        return super().recv(buffersize, flags or 0)
 
     def close(self):
         """Release resources held by SSHSocket.

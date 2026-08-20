@@ -2,7 +2,9 @@
 
 import json
 import logging
+import select
 import shlex
+import struct
 from collections.abc import Iterable, Iterator, Mapping
 from contextlib import suppress
 from typing import Any, Optional, Union
@@ -17,6 +19,65 @@ from podman.domain.manager import PodmanResource
 from podman.errors import APIError
 
 logger = logging.getLogger("podman.containers")
+
+
+def _read_from_socket(sock, n=4096):
+    """Read at most n bytes from a socket, using select to wait for data."""
+    if not hasattr(select, "poll"):
+        ready, _, _ = select.select([sock], [], [], 5.0)
+        if not ready:
+            return b""
+    else:
+        poll = select.poll()
+        poll.register(sock, select.POLLIN | select.POLLPRI)
+        if not poll.poll(5000):
+            return b""
+    return sock.recv(n)
+
+
+def _read_exactly(sock, n):
+    """Read exactly n bytes from socket."""
+    data = b""
+    while len(data) < n:
+        chunk = _read_from_socket(sock, n - len(data))
+        if not chunk:
+            return data
+        data += chunk
+    return data
+
+
+def _frames_iter(sock):
+    """Yield (stream_type, payload) tuples from a multiplexed socket."""
+    while True:
+        header = _read_exactly(sock, 8)
+        if len(header) < 8:
+            return
+        stream_type, frame_length = struct.unpack_from(">BxxxL", header)
+        if not frame_length:
+            continue
+        payload = _read_exactly(sock, frame_length)
+        if not payload:
+            return
+        yield stream_type, payload
+
+
+def _consume_frames(sock, demux=False):
+    """Read all frames from socket and return the concatenated result.
+
+    If demux is True, returns (stdout_bytes, stderr_bytes) tuple.
+    Otherwise returns all payload concatenated.
+    """
+    if demux:
+        out = [None, None]
+        for stream_type, payload in _frames_iter(sock):
+            idx = 0 if stream_type == 1 else 1
+            if out[idx] is None:
+                out[idx] = payload
+            else:
+                out[idx] += payload
+        return tuple(out)
+
+    return b"".join(payload for _, payload in _frames_iter(sock))
 
 
 class Container(PodmanResource):
@@ -245,21 +306,48 @@ class Container(PodmanResource):
             return None, sock
 
         # start the exec instance, this will store command output
+        # Upgrade headers are required for SSH connections: without them the
+        # server returns 200 with no Content-Length or Transfer-Encoding, and
+        # http.client closes the socket before the multiplexed body can be
+        # read. With Upgrade the server returns 101 and data flows on the raw
+        # socket outside HTTP framing.
         start_resp = self.api.post(
-            f"/exec/{exec_id}/start", data=json.dumps({"Detach": detach, "Tty": tty}), stream=stream
+            f"/exec/{exec_id}/start",
+            data=json.dumps({"Detach": detach, "Tty": tty}),
+            headers={"Connection": "Upgrade", "Upgrade": "tcp"},
+            stream=True,
         )
         start_resp.raise_for_status()
 
-        if stream:
-            return None, api.stream_frames(start_resp, demux=demux)
+        if start_resp.status_code == 101:
+            sock = self.api._get_raw_response_socket(start_resp)
+            if stream:
+                if demux:
+                    def _demux_gen():
+                        for stream_type, payload in _frames_iter(sock):
+                            if stream_type == 1:
+                                yield (payload, None)
+                            else:
+                                yield (None, payload)
+                    return None, _demux_gen()
+                return None, (payload for _, payload in _frames_iter(sock))
+            output = _consume_frames(sock, demux=demux)
+            try:
+                sock.close()
+            except OSError:
+                pass
+            start_resp.close()
+        else:
+            if stream:
+                return None, api.stream_frames(start_resp, demux=demux)
+            output = start_resp.content
+            if demux:
+                output = demux_output(output)
 
         # get and return exec information
         response = self.api.get(f"/exec/{exec_id}/json")
         response.raise_for_status()
-        if demux:
-            stdout_data, stderr_data = demux_output(start_resp.content)
-            return response.json().get('ExitCode'), (stdout_data, stderr_data)
-        return response.json().get('ExitCode'), start_resp.content
+        return response.json().get('ExitCode'), output
 
     def export(self, chunk_size: int = api.DEFAULT_CHUNK_SIZE) -> Iterator[bytes]:
         """Download container's filesystem contents as a tar archive.

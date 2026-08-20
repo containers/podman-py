@@ -460,3 +460,22 @@ class APIClient(requests.Session):
             )
         except OSError as e:
             raise APIError(uri.geturl(), explanation=f"{method.upper()} operation failed") from e
+
+    def _get_raw_response_socket(self, response):
+        """Extract the raw socket from an HTTP response.
+
+        After a 101 Upgrade, data flows directly on the socket outside HTTP
+        framing. This method navigates the urllib3/http.client internals to
+        reach the underlying transport socket.
+        """
+        if self.base_url.scheme == "http+ssh":
+            sock = response.raw._fp.fp.raw._sock
+        else:
+            sock = response.raw._fp.fp.raw
+        try:
+            # Keep a reference to the response to prevent garbage collection
+            # from closing the socket prematurely.
+            sock._response = response
+        except AttributeError:
+            pass
+        return sock
