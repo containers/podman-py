@@ -97,6 +97,8 @@ class SecretsManager(Manager):
         data: bytes,
         labels: Optional[Mapping[str, Any]] = None,  # pylint: disable=unused-argument
         driver: Optional[str] = None,
+        ignore: Optional[bool] = False,
+        replace: Optional[bool] = False,
     ) -> Secret:
         """Create a Secret.
 
@@ -105,6 +107,8 @@ class SecretsManager(Manager):
             data: Secret to be registered with Podman service.
             labels: Ignored.
             driver: Secret driver.
+            ignore: When True, ignore the request if a secret with the same name already exists.
+            replace: When True, replace an existing secret with the same name.
 
         Raises:
             APIError: when service returns an error
@@ -112,6 +116,8 @@ class SecretsManager(Manager):
         params = {
             "name": name,
             "driver": driver,
+            "ignore": ignore,
+            "replace": replace,
         }
         response = self.api.post("/secrets/create", params=params, data=data)
         response.raise_for_status()
