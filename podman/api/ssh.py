@@ -78,10 +78,21 @@ class SSHSocket(socket.socket):
             shell=False,
             stdout=subprocess.PIPE,
             stdin=subprocess.PIPE,
+            #stderr=subprocess.PIPE,
         )
 
         expiration = time.monotonic() + 300
         while not self.local_sock.exists():
+            # TODO: re-enable after timeout investigation
+            # if self._proc.poll() is not None:
+            #     stderr = self._proc.stderr.read() if self._proc.stderr else b""
+            #     stdout = self._proc.stdout.read() if self._proc.stdout else b""
+            #     output = (stderr or stdout or b"").decode(errors="replace").strip()
+            #     cmd = " ".join(command)
+            #     raise OSError(
+            #         f"SSH tunnel exited with code {self._proc.returncode}: "
+            #         f"{output or cmd}"
+            #     )
             if time.monotonic() > expiration:
                 cmd = " ".join(command)
                 raise subprocess.TimeoutExpired(cmd, expiration)
@@ -104,12 +115,9 @@ class SSHSocket(socket.socket):
         Raises:
             RuntimeError: When socket has not been connected.
         """
-        if not self._proc or self._proc.stdin.closed:
+        if not self._proc:
             raise RuntimeError(f"SSHSocket({self.uri}) not connected.")
-
-        count = self._proc.stdin.write(data)
-        self._proc.stdin.flush()
-        return count
+        return super().send(data, flags or 0)
 
     def recv(self, buffersize, flags=None) -> bytes:  # pylint: disable=unused-argument
         """Read data from SSH forwarded UNIX domain socket.
@@ -123,7 +131,7 @@ class SSHSocket(socket.socket):
         """
         if not self._proc:
             raise RuntimeError(f"SSHSocket({self.uri}) not connected.")
-        return self._proc.stdout.read(buffersize)
+        return super().recv(buffersize, flags or 0)
 
     def close(self):
         """Release resources held by SSHSocket.
