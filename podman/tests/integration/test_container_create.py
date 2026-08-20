@@ -262,6 +262,53 @@ class ContainersIntegrationTest(base.IntegrationTest):
         container = self.client.containers.create(self.alpine_image, **parameters)
         self.containers.append(container)
 
+    def test_container_healthcheck_fine_grained_kwargs(self):
+        """Test fine-grained health kwargs produce correct healthcheck config."""
+        container = self.client.containers.create(
+            self.alpine_image,
+            health_cmd="echo healthy",
+            health_interval="10s",
+            health_timeout="5s",
+            health_retries=3,
+            health_start_period="2s",
+            health_on_failure="restart",
+        )
+        self.containers.append(container)
+
+        inspect = container.inspect()
+        hc = inspect['Config']['Healthcheck']
+        self.assertEqual(hc['Test'], ['CMD-SHELL', 'echo healthy'])
+        self.assertEqual(hc['Interval'], 10_000_000_000)
+        self.assertEqual(hc['Timeout'], 5_000_000_000)
+        self.assertEqual(hc['Retries'], 3)
+        self.assertEqual(hc['StartPeriod'], 2_000_000_000)
+
+    def test_container_healthcheck_on_failure_none(self):
+        """Test health_on_failure='none' (default action) works."""
+        container = self.client.containers.create(
+            self.alpine_image,
+            health_cmd="echo healthy",
+            health_interval="10s",
+            health_on_failure="none",
+        )
+        self.containers.append(container)
+
+        inspect = container.inspect()
+        hc = inspect['Config']['Healthcheck']
+        self.assertEqual(hc['Test'], ['CMD-SHELL', 'echo healthy'])
+
+    def test_container_healthcheck_no_healthcheck(self):
+        """Test no_healthcheck=True disables healthchecks."""
+        container = self.client.containers.create(
+            self.alpine_image,
+            no_healthcheck=True,
+        )
+        self.containers.append(container)
+
+        inspect = container.inspect()
+        hc = inspect['Config']['Healthcheck']
+        self.assertEqual(hc['Test'], ['NONE'])
+
     def test_container_mem_limit(self):
         """Test passing memory limit"""
         self._test_memory_limit('mem_limit', 'Memory')

@@ -679,8 +679,6 @@ class ContainersManagerTestCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_run_404(self, mock):
-        # mock the first POST to return 404,
-        # then the second POST (after pulling the image) to return 201
         mock.post(
             tests.LIBPOD_URL + "/containers/create",
             [
@@ -744,8 +742,8 @@ class ContainersManagerTestCase(unittest.TestCase):
             self.assertEqual(mock.call_count, 5)
 
     @requests_mock.Mocker()
-    def test_create_all_healthcheck_parameters(self, mock):
-        """Test that all healthcheck parameters are correctly passed to the API."""
+    def test_create_healthcheck_nested_payload(self, mock):
+        """Test that fine-grained health kwargs produce nested healthconfig/startupHealthConfig."""
         mock_response = MagicMock()
         mock_response.json = lambda: {
             "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
@@ -758,41 +756,32 @@ class ContainersManagerTestCase(unittest.TestCase):
             json=FIRST_CONTAINER,
         )
 
-        # Test all 14 healthcheck parameters with realistic values
-        healthcheck_params = {
-            "health_cmd": "curl -f http://localhost:8080/health",
-            "health_interval": "30s",
-            "health_log_destination": "local",
-            "health_max_log_count": 5,
-            "health_max_logs_size": 500,
-            "health_on_failure": "restart",
-            "health_retries": 3,
-            "health_start_period": "60s",
-            "health_startup_cmd": "curl -f http://localhost:8080/ready",
-            "health_startup_interval": "10s",
-            "health_startup_retries": 5,
-            "health_startup_success": 2,
-            "health_startup_timeout": "45s",
-            "health_timeout": "30s",
-        }
+        self.client.containers.create(
+            "fedora",
+            "/usr/bin/ls",
+            health_cmd="curl -f http://localhost:8080/health",
+            health_interval="30s",
+            health_timeout="10s",
+            health_retries=3,
+            health_start_period="1m",
+        )
 
-        self.client.containers.create("fedora", "/usr/bin/ls", **healthcheck_params)
-        self.client.containers.client.post.assert_called()
-
-        # Verify all healthcheck parameters are in the request payload
         actual_data = json.loads(self.client.containers.client.post.call_args[1]["data"])
 
-        for param_name, expected_value in healthcheck_params.items():
-            self.assertIn(param_name, actual_data, f"Parameter {param_name} not found in request")
-            self.assertEqual(
-                actual_data[param_name],
-                expected_value,
-                f"Parameter {param_name} has incorrect value",
-            )
+        self.assertEqual(
+            actual_data["healthconfig"],
+            {
+                "Test": ["CMD-SHELL", "curl -f http://localhost:8080/health"],
+                "Interval": 30_000_000_000,
+                "Timeout": 10_000_000_000,
+                "Retries": 3,
+                "StartPeriod": 60_000_000_000,
+            },
+        )
 
     @requests_mock.Mocker()
-    def test_create_no_healthcheck_validation(self, mock):
-        """Test no_healthcheck validation and functionality."""
+    def test_create_startup_healthcheck_nested_payload(self, mock):
+        """Test that startup health kwargs produce nested startupHealthConfig."""
         mock_response = MagicMock()
         mock_response.json = lambda: {
             "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
@@ -805,54 +794,172 @@ class ContainersManagerTestCase(unittest.TestCase):
             json=FIRST_CONTAINER,
         )
 
-        # Test that no_healthcheck=True works without conflicts
-        self.client.containers.create("fedora", "/usr/bin/ls", no_healthcheck=True)
-        self.client.containers.client.post.assert_called()
+        self.client.containers.create(
+            "fedora",
+            "/usr/bin/ls",
+            health_startup_cmd="curl -f http://localhost:8080/ready",
+            health_startup_interval="10s",
+            health_startup_timeout="45s",
+            health_startup_retries=5,
+            health_startup_success=2,
+        )
 
         actual_data = json.loads(self.client.containers.client.post.call_args[1]["data"])
-        self.assertIn("no_healthcheck", actual_data)
-        self.assertTrue(actual_data["no_healthcheck"])
 
-        # Test that setting healthcheck parameters with no_healthcheck=True raises ValueError
-        healthcheck_params = [
-            "health_cmd",
-            "health_interval",
-            "health_log_destination",
-            "health_max_log_count",
-            "health_max_logs_size",
-            "health_on_failure",
-            "health_retries",
-            "health_start_period",
-            "health_startup_cmd",
-            "health_startup_interval",
-            "health_startup_retries",
-            "health_startup_success",
-            "health_startup_timeout",
-            "health_timeout",
-        ]
+        self.assertEqual(
+            actual_data["startupHealthConfig"],
+            {
+                "Test": ["CMD-SHELL", "curl -f http://localhost:8080/ready"],
+                "Interval": 10_000_000_000,
+                "Timeout": 45_000_000_000,
+                "Retries": 5,
+                "Successes": 2,
+            },
+        )
 
-        # Test each parameter individually with no_healthcheck=True
-        for param in healthcheck_params:
-            with self.subTest(param=param):
-                kwargs = {"no_healthcheck": True, param: "test_value"}
-                with self.assertRaises(ValueError) as context:
-                    self.client.containers.create("fedora", "/usr/bin/ls", **kwargs)
+    @requests_mock.Mocker()
+    def test_create_health_scalar_fields(self, mock):
+        """Test healthLogDestination, healthMaxLogCount, healthMaxLogSize mapping."""
+        mock_response = MagicMock()
+        mock_response.json = lambda: {
+            "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
+            "Size": 1024,
+        }
+        self.client.containers.client.post = MagicMock(return_value=mock_response)
+        mock.get(
+            tests.LIBPOD_URL
+            + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
+            json=FIRST_CONTAINER,
+        )
 
-                expected_message = f"Cannot set {param} when no_healthcheck is True"
-                self.assertEqual(str(context.exception), expected_message)
+        self.client.containers.create(
+            "fedora",
+            "/usr/bin/ls",
+            health_cmd="true",
+            health_log_destination="events_logger",
+            health_max_log_count=10,
+            health_max_logs_size=1024,
+        )
 
-        # Test multiple healthcheck parameters with no_healthcheck=True
-        with self.assertRaises(ValueError) as context:
+        actual_data = json.loads(self.client.containers.client.post.call_args[1]["data"])
+
+        self.assertEqual(actual_data["healthLogDestination"], "events_logger")
+        self.assertEqual(actual_data["healthMaxLogCount"], 10)
+        self.assertEqual(actual_data["healthMaxLogSize"], 1024)
+
+    @requests_mock.Mocker()
+    def test_create_health_on_failure_mapping(self, mock):
+        """Test health_on_failure string maps to health_check_on_failure_action int."""
+        mock_response = MagicMock()
+        mock_response.json = lambda: {
+            "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
+            "Size": 1024,
+        }
+        self.client.containers.client.post = MagicMock(return_value=mock_response)
+        mock.get(
+            tests.LIBPOD_URL
+            + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
+            json=FIRST_CONTAINER,
+        )
+
+        self.client.containers.create(
+            "fedora",
+            "/usr/bin/ls",
+            health_cmd="true",
+            health_on_failure="restart",
+        )
+
+        actual_data = json.loads(self.client.containers.client.post.call_args[1]["data"])
+        self.assertEqual(actual_data["health_check_on_failure_action"], 3)
+
+    @requests_mock.Mocker()
+    def test_create_no_healthcheck(self, mock):
+        """Test no_healthcheck=True produces healthconfig with Test=NONE."""
+        mock_response = MagicMock()
+        mock_response.json = lambda: {
+            "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
+            "Size": 1024,
+        }
+        self.client.containers.client.post = MagicMock(return_value=mock_response)
+        mock.get(
+            tests.LIBPOD_URL
+            + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
+            json=FIRST_CONTAINER,
+        )
+
+        self.client.containers.create("fedora", "/usr/bin/ls", no_healthcheck=True)
+
+        actual_data = json.loads(self.client.containers.client.post.call_args[1]["data"])
+        self.assertEqual(actual_data["healthconfig"], {"Test": ["NONE"]})
+
+    def test_create_no_healthcheck_conflicts_with_health_kwargs(self):
+        """Test that no_healthcheck=True + health kwargs raises ValueError."""
+        with self.assertRaises(ValueError) as ctx:
+            self.client.containers.create(
+                "fedora", "/usr/bin/ls", no_healthcheck=True, health_cmd="true"
+            )
+        self.assertIn("no_healthcheck is True", str(ctx.exception))
+
+    def test_create_healthcheck_dict_conflicts_with_health_kwargs(self):
+        """Test that healthcheck dict + health_cmd raises ValueError."""
+        with self.assertRaises(ValueError) as ctx:
             self.client.containers.create(
                 "fedora",
                 "/usr/bin/ls",
-                no_healthcheck=True,
-                health_cmd="test",
-                health_interval="30s",
+                healthcheck={"Test": ["CMD-SHELL", "true"]},
+                health_cmd="curl localhost",
             )
-        # Should raise for the first conflicting parameter found
-        self.assertIn("Cannot set", str(context.exception))
-        self.assertIn("when no_healthcheck is True", str(context.exception))
+        self.assertIn("Cannot combine", str(ctx.exception))
+
+    def test_create_health_on_failure_conflicts_with_int(self):
+        """Test that health_on_failure + health_check_on_failure_action raises ValueError."""
+        with self.assertRaises(ValueError) as ctx:
+            self.client.containers.create(
+                "fedora",
+                "/usr/bin/ls",
+                health_cmd="true",
+                health_on_failure="restart",
+                health_check_on_failure_action=3,
+            )
+        self.assertIn("Cannot set both", str(ctx.exception))
+
+    def test_create_health_on_failure_invalid_value(self):
+        """Test that invalid health_on_failure value raises ValueError."""
+        with self.assertRaises(ValueError) as ctx:
+            self.client.containers.create(
+                "fedora",
+                "/usr/bin/ls",
+                health_cmd="true",
+                health_on_failure="invalid_action",
+            )
+        self.assertIn("Invalid health_on_failure value", str(ctx.exception))
+
+    @requests_mock.Mocker()
+    def test_create_health_duration_as_int(self, mock):
+        """Test that int duration values are passed through as nanoseconds."""
+        mock_response = MagicMock()
+        mock_response.json = lambda: {
+            "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
+            "Size": 1024,
+        }
+        self.client.containers.client.post = MagicMock(return_value=mock_response)
+        mock.get(
+            tests.LIBPOD_URL
+            + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
+            json=FIRST_CONTAINER,
+        )
+
+        self.client.containers.create(
+            "fedora",
+            "/usr/bin/ls",
+            health_cmd="true",
+            health_interval=5_000_000_000,
+            health_timeout=2_000_000_000,
+        )
+
+        actual_data = json.loads(self.client.containers.client.post.call_args[1]["data"])
+        self.assertEqual(actual_data["healthconfig"]["Interval"], 5_000_000_000)
+        self.assertEqual(actual_data["healthconfig"]["Timeout"], 2_000_000_000)
 
 
 if __name__ == "__main__":
