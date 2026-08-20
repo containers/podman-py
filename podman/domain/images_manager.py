@@ -8,6 +8,7 @@ import os
 import urllib.parse
 from typing import Any, Literal, Optional, Union
 from collections.abc import Iterator, Mapping, Generator
+from contextlib import nullcontext
 from pathlib import Path
 import requests
 
@@ -157,6 +158,87 @@ class ImagesManager(BuildMixin, Manager):
             )
             response.raise_for_status()
             return _generator(response.json())
+
+    def import_image(
+        self,
+        data: Optional[bytes] = None,
+        file_path: Optional[os.PathLike] = None,
+        url: Optional[str] = None,
+        **kwargs,
+    ) -> "Image":
+        """Import a tarball as an image (equivalent of 'podman import').
+
+        Args:
+            file_path: Path to the tarball to import.
+            data: tarball raw data (bytes)
+            url: Url to the tarball to import.
+
+        Keyword Args:
+            reference: Optional reference for the new image (e.g. 'myimage:latest').
+            message: Optional commit message.
+            changes: Optional list of Dockerfile-style instructions
+                     (e.g. ['CMD /bin/bash', 'ENV FOO=bar']).
+
+        Returns:
+            An Image object for the newly imported image.
+
+        Raises:
+            APIError: when service returns an error.
+        """
+        # Check that exactly one of the data or file_path is provided
+        if sum(x is not None for x in (data, file_path, url)) != 1:
+            raise PodmanError(
+                "Exactly one parameter should be set from 'data', 'file_path' and 'url' parameters."
+            )
+
+        # Check if url given it is supported
+        if url:
+            uri = urllib.parse.urlparse(url)
+            if uri.scheme not in api.APIClient.supported_schemes:
+                raise ValueError(
+                    f"The scheme '{uri.scheme}' must be one of {api.APIClient.supported_schemes}"
+                )
+
+        # Set the parameters
+        params = {}
+        if reference := kwargs.get("reference"):
+            params["reference"] = reference
+        if message := kwargs.get("message"):
+            params["message"] = message
+        if changes := kwargs.get("changes"):
+            params["changes"] = changes  # requests sends repeated keys as a list
+        if url:
+            params["url"] = url
+
+        # Get either from file or from raw data
+        post_data_context = None
+        if file_path is not None:
+            post_data_context = Path(file_path).open("rb")
+        elif data is not None:
+            post_data_context = io.BytesIO(data)
+        elif url is not None:
+            post_data_context = nullcontext()
+
+        # Post it
+        image_id = None
+        with post_data_context as post_data:
+            response = self.client.post(
+                "/images/import",
+                params=params,
+                data=post_data,
+                headers={"Content-Type": "application/x-tar"},
+            )
+            response.raise_for_status()
+
+            body = response.json()
+            image_id = body.get("Id")
+
+            if image_id is None:
+                raise APIError(
+                    response.url, response=response, explanation="No image id was returned"
+                )
+
+        return self.get(image_id)
 
     def prune(
         self,

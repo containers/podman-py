@@ -1,5 +1,6 @@
 import io
 import types
+import urllib.parse
 import unittest
 from unittest.mock import patch
 
@@ -43,6 +44,11 @@ SECOND_IMAGE = {
     "VirtualSize": 23855104,
     "SharedSize": 0,
     "Containers": 0,
+}
+
+IMPORTED_IMAGE = {
+    "Id": "b07571c5220ab38f303c854bd150aede9e5d1d1501a34b54f84916e9f5f8d000",
+    "Digest": "sha256:122ae1d154d021971cd7a739b5d6f029a80b627763b649adeb34c6f13f3c451b",
 }
 
 
@@ -429,6 +435,88 @@ class ImagesManagerTestCase(unittest.TestCase):
         self.assertEqual(
             report[0].id, "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
         )
+
+    @requests_mock.Mocker()
+    def test_import(self, mock):
+        # Check for forbidden parameter usage
+        with self.assertRaises(PodmanError):
+            self.client.images.import_image()
+
+        with self.assertRaises(PodmanError):
+            self.client.images.import_image(b'data', "file_path")
+
+        with self.assertRaises(PodmanError):
+            self.client.images.import_image(b'data', "file_path", "url")
+
+        with self.assertRaises(PodmanError):
+            self.client.images.import_image(data=b'data', file_path="file_path")
+
+        with self.assertRaises(PodmanError):
+            self.client.images.import_image(url="url", file_path="file_path")
+
+        with self.assertRaises(PodmanError):
+            self.client.images.import_image(url="url", data=b'data')
+
+        with self.assertRaises(PodmanError):
+            self.client.images.import_image(data=b'data', file_path="file_path", url="url")
+
+        # Check if url is valid
+        with self.assertRaises(ValueError):
+            self.client.images.import_image(url="not-an-url")
+
+        # Patch Path.read_bytes to mock the file reading behavior
+        with patch("pathlib.Path.open", return_value=io.BytesIO(b"mock tarball data")):
+            mock.post(
+                tests.LIBPOD_URL + "/images/import",
+                json={"Id": IMPORTED_IMAGE["Digest"]},
+            )
+            mock.get(
+                tests.LIBPOD_URL
+                + "/images/"
+                + urllib.parse.quote_plus(IMPORTED_IMAGE["Digest"])
+                + "/json",
+                json=IMPORTED_IMAGE,
+            )
+
+            # 3a. Test the case where only 'file_path' is provided
+            image = self.client.images.import_image(file_path="mock_file.tar")
+            self.assertIsInstance(image, Image)
+
+            self.assertEqual(image.id, IMPORTED_IMAGE["Id"])
+
+        mock.post(
+            tests.LIBPOD_URL + "/images/import",
+            json={"Id": IMPORTED_IMAGE["Digest"]},
+        )
+        mock.get(
+            tests.LIBPOD_URL
+            + "/images/"
+            + urllib.parse.quote_plus(IMPORTED_IMAGE["Digest"])
+            + "/json",
+            json=IMPORTED_IMAGE,
+        )
+
+        image = self.client.images.import_image(b'This is a weird tarball...')
+        self.assertIsInstance(image, Image)
+
+        self.assertEqual(image.id, IMPORTED_IMAGE["Id"])
+
+        mock.post(
+            tests.LIBPOD_URL + "/images/import",
+            json={"Id": IMPORTED_IMAGE["Digest"]},
+        )
+        mock.get(
+            tests.LIBPOD_URL
+            + "/images/"
+            + urllib.parse.quote_plus(IMPORTED_IMAGE["Digest"])
+            + "/json",
+            json=IMPORTED_IMAGE,
+        )
+
+        image = self.client.images.import_image(url="http://example.com")
+        self.assertIsInstance(image, Image)
+
+        self.assertEqual(image.id, IMPORTED_IMAGE["Id"])
 
     @requests_mock.Mocker()
     def test_search(self, mock):
