@@ -1,7 +1,8 @@
 import io
-import requests
 import json
 import unittest
+
+import requests
 
 try:
     # Python >= 3.10
@@ -71,7 +72,8 @@ class TestBuildCase(unittest.TestCase):
                 "&extrahosts=%7B%22database%22%3A+%22127.0.0.1%22%7D"
                 "&labels=%7B%22Unittest%22%3A+%22true%22%7D"
                 "&manifest=example%3Av1.2.3"
-                "&secrets=%5B%22id%3Dexample%2Csrc%3Dpodman-build-secret123%22%5D",
+                "&secrets=%5B%22id%3Dexample%2Csrc%3Dpodman-build-secret123%22%5D"
+                "&ssh=%5B%22default%22%5D",
                 text=buffer.getvalue(),
             )
             mock.get(
@@ -105,6 +107,7 @@ class TestBuildCase(unittest.TestCase):
                 labels={"Unittest": "true"},
                 manifest="example:v1.2.3",
                 secrets=["id=example,src=podman-build-secret123"],
+                ssh=["default"],
             )
             self.assertIsInstance(image, Image)
             self.assertEqual(image.id, good_image_id)
