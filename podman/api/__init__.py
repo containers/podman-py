@@ -1,6 +1,5 @@
 """Tools for connecting to a Podman service."""
 
-from podman.api.cached_property import cached_property
 from podman.api.client import APIClient
 from podman.api.api_versions import VERSION, COMPATIBLE_VERSION
 from podman.api.http_utils import encode_auth_header, prepare_body, prepare_filters
@@ -24,7 +23,6 @@ __all__ = [
     'COMPATIBLE_VERSION',
     'DEFAULT_CHUNK_SIZE',
     'VERSION',
-    'cached_property',
     'create_tar',
     'decode_header',
     'encode_auth_header',

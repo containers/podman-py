@@ -4,6 +4,7 @@ import logging
 from typing import Any, Literal, Optional, Union
 
 import requests
+import pathlib
 
 from podman import api
 from podman.domain.manager import Manager, PodmanResource
@@ -14,6 +15,8 @@ logger = logging.getLogger("podman.volumes")
 
 class Volume(PodmanResource):
     """Details and configuration for an image managed by the Podman service."""
+
+    manager: "VolumesManager"
 
     @property
     def id(self):
@@ -48,7 +51,7 @@ class Volume(PodmanResource):
             APIError: when service reports an error
         """
         params = {"tlsVerify": kwargs.get("tls_verify", True)}
-        response = self.client.get(f"/volumes/{self.id}/json", params=params)
+        response = self.api.get(f"/volumes/{self.id}/json", params=params)
         response.raise_for_status()
         return response.json()
 
@@ -81,7 +84,7 @@ class VolumesManager(Manager):
             "Name": name,
             "Options": kwargs.get("driver_opts"),
         }
-        response = self.client.post(
+        response = self.api.post(
             "/volumes/create",
             data=api.prepare_body(data),
             headers={"Content-Type": "application/json"},
@@ -90,7 +93,7 @@ class VolumesManager(Manager):
         return self.prepare_model(attrs=response.json())
 
     def exists(self, key: str) -> bool:
-        response = self.client.get(f"/volumes/{key}/exists")
+        response = self.api.get(f"/volumes/{key}/exists")
         return response.ok
 
     # pylint is flagging 'volume_id' here vs. 'key' parameter in super.get()
@@ -104,7 +107,7 @@ class VolumesManager(Manager):
             NotFound: when volume could not be found
             APIError: when service reports an error
         """
-        response = self.client.get(f"/volumes/{volume_id}/json")
+        response = self.api.get(f"/volumes/{volume_id}/json")
         response.raise_for_status()
         return self.prepare_model(attrs=response.json())
 
@@ -119,7 +122,7 @@ class VolumesManager(Manager):
                 - name (str): filter by volume's name
         """
         filters = api.prepare_filters(kwargs.get("filters"))
-        response = self.client.get("/volumes/json", params={"filters": filters})
+        response = self.api.get("/volumes/json", params={"filters": filters})
 
         if response.status_code == requests.codes.not_found:
             return []
@@ -139,7 +142,7 @@ class VolumesManager(Manager):
         Raises:
             APIError: when service reports error
         """
-        response = self.client.post("/volumes/prune")
+        response = self.api.post("/volumes/prune")
         data = response.json()
         response.raise_for_status()
 
@@ -171,5 +174,52 @@ class VolumesManager(Manager):
         """
         if isinstance(name, Volume):
             name = name.name
-        response = self.client.delete(f"/volumes/{name}", params={"force": force})
+        response = self.api.delete(f"/volumes/{name}", params={"force": force})
+        response.raise_for_status()
+
+    def export_archive(self, name: Union[Volume, str]) -> bytes:
+        """Export a podman volume, returns the exported archive as bytes.
+
+        Args:
+            name: Identifier for Volume to be exported.
+
+        Raises:
+            APIError: when service reports an error
+        """
+        if isinstance(name, Volume):
+            name = name.name
+        response = self.api.get(f"/volumes/{name}/export")
+        response.raise_for_status()
+        return response._content
+
+    def import_archive(
+        self, name: Union[Volume, str], data: Optional[bytes] = None, path: Optional[str] = None
+    ):
+        """Import a podman volume from tar.
+        The podman volume archive must be provided either as bytes or as a path to the archive.
+
+        Args:
+            name: Identifier for Volume to be imported.
+            data: Uncompressed tar archive as bytes.
+            path: Path to uncompressed tar archive.
+
+        Raises:
+            APIError: when service reports an error
+        """
+        if isinstance(name, Volume):
+            name = name.name
+
+        if data is None and path is None:
+            raise RuntimeError("Either data or path must be provided !")
+        if data is not None and path is not None:
+            raise RuntimeError("Data and path must not be set at the same time !")
+
+        if data is None:
+            assert path is not None
+            file = pathlib.Path(path)
+            if not file.exists():
+                raise RuntimeError(f"Archive {path} does not exist !")
+            data = file.read_bytes()
+
+        response = self.api.post(f"/volumes/{name}/import", data=data)
         response.raise_for_status()

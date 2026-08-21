@@ -18,7 +18,7 @@ from requests.adapters import HTTPAdapter
 from podman.api.api_versions import VERSION, COMPATIBLE_VERSION
 from podman.api.ssh import SSHAdapter
 from podman.api.uds import UDSAdapter
-from podman.errors import APIError, NotFound
+from podman.errors import APIError, NotFound, PodmanError
 from podman.tlsconfig import TLSConfig
 from podman.version import __version__
 
@@ -31,6 +31,9 @@ _Data = Union[
     IO,
 ]
 """Type alias for request data parameter."""
+
+_Params = Union[None, bytes, Mapping[str, Any]]
+"""Type alias for request query parameter."""
 
 _Timeout = Union[None, float, tuple[float, float], tuple[float, None]]
 """Type alias for request timeout parameter."""
@@ -207,7 +210,7 @@ class APIClient(requests.Session):
         self,
         path: Union[str, bytes],
         *,
-        params: Union[None, bytes, Mapping[str, str]] = None,
+        params: _Params = None,
         headers: Optional[Mapping[str, str]] = None,
         timeout: _Timeout = None,
         stream: Optional[bool] = False,
@@ -242,7 +245,7 @@ class APIClient(requests.Session):
         self,
         path: Union[str, bytes],
         *,
-        params: Union[None, bytes, Mapping[str, list[str]]] = None,
+        params: _Params = None,
         headers: Optional[Mapping[str, str]] = None,
         timeout: _Timeout = None,
         stream: Optional[bool] = False,
@@ -277,7 +280,7 @@ class APIClient(requests.Session):
         self,
         path: Union[str, bytes],
         *,
-        params: Union[None, bytes, Mapping[str, str]] = None,
+        params: _Params = None,
         headers: Optional[Mapping[str, str]] = None,
         timeout: _Timeout = None,
         stream: Optional[bool] = False,
@@ -312,8 +315,9 @@ class APIClient(requests.Session):
         self,
         path: Union[str, bytes],
         *,
-        params: Union[None, bytes, Mapping[str, str]] = None,
+        params: _Params = None,
         data: _Data = None,
+        files: Optional[Any] = None,
         headers: Optional[Mapping[str, str]] = None,
         timeout: _Timeout = None,
         stream: Optional[bool] = False,
@@ -324,6 +328,8 @@ class APIClient(requests.Session):
         Args:
             path: Relative path to RESTful resource.
             data: HTTP body for operation
+            files: Dictionary or list of tuples for multipart file upload.
+                Follows the ``requests`` library ``files`` parameter format.
             params: Optional parameters to include with URL.
             headers: Optional headers to include in request.
             timeout: Number of seconds to wait on request, or (connect timeout, read timeout) tuple
@@ -341,6 +347,7 @@ class APIClient(requests.Session):
             path=path,
             params=params,
             data=data,
+            files=files,
             headers=headers,
             timeout=timeout,
             stream=stream,
@@ -351,7 +358,7 @@ class APIClient(requests.Session):
         self,
         path: Union[str, bytes],
         *,
-        params: Union[None, bytes, Mapping[str, str]] = None,
+        params: _Params = None,
         data: _Data = None,
         headers: Optional[Mapping[str, str]] = None,
         timeout: _Timeout = None,
@@ -391,7 +398,8 @@ class APIClient(requests.Session):
         path: Union[str, bytes],
         *,
         data: _Data = None,
-        params: Union[None, bytes, Mapping[str, str]] = None,
+        files: Optional[Any] = None,
+        params: _Params = None,
         headers: Optional[Mapping[str, str]] = None,
         timeout: _Timeout = None,
         stream: Optional[bool] = None,
@@ -403,6 +411,7 @@ class APIClient(requests.Session):
             method: HTTP method to use for request
             path: Relative path to RESTful resource.
             params: Optional parameters to include with URL.
+            files: Dictionary or list of tuples for multipart file upload.
             headers: Optional headers to include in request.
             timeout: Number of seconds to wait on request, or (connect timeout, read timeout) tuple
 
@@ -442,6 +451,7 @@ class APIClient(requests.Session):
                     uri.geturl(),
                     params=params,
                     data=data,
+                    files=files,
                     headers=(headers or {}),
                     stream=stream,
                     verify=kwargs.get("verify", None),

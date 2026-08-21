@@ -5,24 +5,9 @@
 upstream_tag_template: v{version}
 
 files_to_sync:
-  - src: rpm/gating.yml
-    dest: gating.yml
-    delete: true
   - src: pyproject.toml
     dest: pyproject.toml
     delete: true
-  - src: plans/
-    dest: plans/
-    delete: true
-    mkpath: true
-  - src: tests/
-    dest: tests/
-    delete: true
-    mkpath: true
-  - src: .fmf/
-    dest: .fmf/
-    delete: true
-    mkpath: true
 
 packages:
   python-podman-fedora:
@@ -80,6 +65,9 @@ jobs:
     packages: [python-podman-fedora]
     dist_git_branches:
       - fedora-all
+    actions:
+      post-modifications: >-
+        bash -c 'sed -i "s/^\(\s*\)ref: .*/\1ref: v${PACKIT_PROJECT_VERSION}/" ${PACKIT_DOWNSTREAM_REPO}/plans/main.fmf'
 
   # Downstream sync for CentOS Stream
   # TODO: c9s enablement being tracked in https://issues.redhat.com/browse/RUN-2123

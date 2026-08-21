@@ -63,9 +63,13 @@ class BuildMixin:
             isolation (str) – Isolation technology used during build. (ignored)
             use_config_proxy (bool) – (ignored)
             http_proxy (bool) - Inject http proxy environment variables into container (Podman only)
-            layers (bool) - Cache intermediate layers during build.
+            layers (bool) - Cache intermediate layers during build. Default True.
             output (str) - specifies if any custom build output is selected for following build.
             outputformat (str) - The format of the output image's manifest and configuration data.
+                Default to "application/vnd.oci.image.manifest.v1+json" (OCI format).
+            manifest (str) - add the image to the specified manifest list.
+                Creates manifest list if it does not exist.
+            secrets (list[str]) - Secret files/envs to expose to the build
 
         Returns:
             first item is the podman.domain.images.Image built
@@ -85,7 +89,8 @@ class BuildMixin:
         if kwargs.get("custom_context"):
             if "fileobj" not in kwargs:
                 raise PodmanError(
-                    "Custom context requires fileobj to be set to a binary file-like object containing a build-directory tarball."
+                    "Custom context requires fileobj to be set to a binary file-like object "
+                    "containing a build-directory tarball."
                 )
             if "dockerfile" not in kwargs:
                 # TODO: Scan the tarball for either a Dockerfile or a Containerfile.
@@ -93,7 +98,8 @@ class BuildMixin:
                 # and could require buffering/copying the tarball if `fileobj` is not seekable.
                 # As a workaround for now, don't support omitting the filename.
                 raise PodmanError(
-                    "Custom context requires specifying the name of the Dockerfile (typically 'Dockerfile' or 'Containerfile')."
+                    "Custom context requires specifying the name of the Dockerfile "
+                    "(typically 'Dockerfile' or 'Containerfile')."
                 )
             body = kwargs["fileobj"]
         elif "fileobj" in kwargs:
@@ -117,7 +123,7 @@ class BuildMixin:
         if kwargs.get("timeout"):
             post_kwargs["timeout"] = float(kwargs.get("timeout"))
 
-        response = self.client.post(
+        response = self.api.post(  # type: ignore[attr-defined]
             "/build",
             params=params,
             data=body,
@@ -150,7 +156,7 @@ class BuildMixin:
             unknown = line
 
         if image_id:
-            return self.get(image_id), report_stream
+            return self.get(image_id), report_stream  # type: ignore[attr-defined]
 
         raise BuildError(unknown or "Unknown", report_stream)
 
@@ -167,10 +173,11 @@ class BuildMixin:
             raise PodmanError("Custom encoding not supported when gzip enabled.")
 
         params = {
-            "dockerfile": kwargs.get("dockerfile"),
+            "dockerfile": kwargs.get("dockerfile", f".containerfile.{random.getrandbits(160):x}"),
             "forcerm": kwargs.get("forcerm"),
             "httpproxy": kwargs.get("http_proxy"),
             "networkmode": kwargs.get("network_mode"),
+            "manifest": kwargs.get("manifest"),
             "nocache": kwargs.get("nocache"),
             "platform": kwargs.get("platform"),
             "pull": kwargs.get("pull"),
@@ -181,9 +188,11 @@ class BuildMixin:
             "squash": kwargs.get("squash"),
             "t": kwargs.get("tag"),
             "target": kwargs.get("target"),
-            "layers": kwargs.get("layers"),
+            "layers": kwargs.get("layers", True),
             "output": kwargs.get("output"),
-            "outputformat": kwargs.get("outputformat"),
+            "outputformat": kwargs.get(
+                "outputformat", "application/vnd.oci.image.manifest.v1+json"
+            ),
         }
 
         if "buildargs" in kwargs:
@@ -204,8 +213,8 @@ class BuildMixin:
         if "labels" in kwargs:
             params["labels"] = json.dumps(kwargs.get("labels"))
 
-        if params["dockerfile"] is None:
-            params["dockerfile"] = f".containerfile.{random.getrandbits(160):x}"
+        if "secrets" in kwargs:
+            params["secrets"] = json.dumps(kwargs.get("secrets"))
 
         # Remove any unset parameters
         return dict(filter(lambda i: i[1] is not None, params.items()))

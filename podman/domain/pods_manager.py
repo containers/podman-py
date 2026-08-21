@@ -33,7 +33,7 @@ class PodsManager(Manager):
         data = {} if kwargs is None else kwargs.copy()
         data["name"] = name
 
-        response = self.client.post("/pods/create", data=json.dumps(data))
+        response = self.api.post("/pods/create", data=json.dumps(data))
         response.raise_for_status()
 
         body = response.json()
@@ -41,7 +41,7 @@ class PodsManager(Manager):
 
     def exists(self, key: str) -> bool:
         """Returns True, when pod exists."""
-        response = self.client.get(f"/pods/{key}/exists")
+        response = self.api.get(f"/pods/{key}/exists")
         return response.ok
 
     # pylint is flagging 'pod_id' here vs. 'key' parameter in super.get()
@@ -55,7 +55,7 @@ class PodsManager(Manager):
             NotFound: when network does not exist
             APIError: when error returned by service
         """
-        response = self.client.get(f"/pods/{pod_id}/json")
+        response = self.api.get(f"/pods/{pod_id}/json")
         response.raise_for_status()
         return self.prepare_model(attrs=response.json())
 
@@ -82,7 +82,7 @@ class PodsManager(Manager):
             APIError: when an error returned by service
         """
         params = {"filters": api.prepare_filters(kwargs.get("filters"))}
-        response = self.client.get("/pods/json", params=params)
+        response = self.api.get("/pods/json", params=params)
         response.raise_for_status()
         return [self.prepare_model(attrs=i) for i in response.json()]
 
@@ -97,7 +97,7 @@ class PodsManager(Manager):
         Raises:
             APIError: when service reports error
         """
-        response = self.client.post("/pods/prune", params={"filters": api.prepare_filters(filters)})
+        response = self.api.post("/pods/prune", params={"filters": api.prepare_filters(filters)})
         response.raise_for_status()
 
         deleted: builtins.list[str] = []
@@ -128,7 +128,7 @@ class PodsManager(Manager):
         if isinstance(pod_id, Pod):
             pod_id = pod_id.id
 
-        response = self.client.delete(f"/pods/{pod_id}", params={"force": force})
+        response = self.api.delete(f"/pods/{pod_id}", params={"force": force})
         response.raise_for_status()
 
     def stats(
@@ -159,7 +159,7 @@ class PodsManager(Manager):
             "namesOrIDs": kwargs.get("name"),
             "stream": stream,
         }
-        response = self.client.get("/pods/stats", params=params, stream=stream)
+        response = self.api.get("/pods/stats", params=params, stream=stream)
         response.raise_for_status()
 
         if stream:

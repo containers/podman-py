@@ -7,7 +7,9 @@ from typing import Optional, Union, Any
 from collections.abc import Mapping
 
 
-def prepare_filters(filters: Union[str, list[str], Mapping[str, str]]) -> Optional[str]:
+def prepare_filters(
+    filters: Union[str, list[str], Mapping[str, Any], None],
+) -> Optional[str]:
     """Return filters as an URL quoted JSON dict[str, list[Any]]."""
 
     if filters is None or len(filters) == 0:
@@ -82,6 +84,12 @@ def _filter_values(mapping: Mapping[str, Any], recursion=False) -> dict[str, Any
             or (isinstance(value, collections.abc.Sized) and len(value) <= 0)
             and not recursion
         ):
+            continue
+
+        # networks can actually be a dictionary with an empty value like this:
+        # networks={network.name: {}}
+        if key == "networks":
+            canonical[key] = value
             continue
 
         # depending on type we need details...

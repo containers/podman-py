@@ -41,7 +41,7 @@ class PodmanLauncher:
         log_level: str = "WARNING",
     ) -> None:
         """create a launcher and build podman command"""
-        podman_exe: str = podman_path
+        podman_exe: Optional[str] = podman_path
         if not podman_exe:
             podman_exe = shutil.which('podman')
         if podman_exe is None:

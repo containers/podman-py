@@ -41,9 +41,7 @@ class VolumeTestCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_inspect(self, mock):
-        adapter = mock.get(
-            tests.LIBPOD_URL + "/volumes/dbase/json?tlsVerify=False", json=FIRST_VOLUME
-        )
+        mock.get(tests.LIBPOD_URL + "/volumes/dbase/json?tlsVerify=False", json=FIRST_VOLUME)
         vol_manager = VolumesManager(self.client.api)
         actual = vol_manager.prepare_model(attrs=FIRST_VOLUME)
         self.assertEqual(actual.inspect(tls_verify=False)["Mountpoint"], "/var/database")

@@ -4,6 +4,7 @@ import unittest
 from podman import PodmanClient
 from podman.errors import NotFound
 from podman.tests.integration import base
+from podman.tests.utils import PODMAN_VERSION
 
 
 class VolumesIntegrationTest(base.IntegrationTest):
@@ -34,6 +35,13 @@ class VolumesIntegrationTest(base.IntegrationTest):
             report = self.client.volumes.list()
             names = [i.name for i in report]
             self.assertIn(volume_name, names)
+
+        if PODMAN_VERSION >= (5, 6, 0):
+            with self.subTest("Export"):
+                archive_bytes = self.client.volumes.export_archive(volume_name)
+
+            with self.subTest("Import"):
+                self.client.volumes.import_archive(volume_name, archive_bytes)
 
         with self.subTest("Remove"):
             self.client.volumes.remove(volume_name, force=True)

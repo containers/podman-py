@@ -16,7 +16,7 @@ from podman import PodmanClient, tests
 from podman.domain.containers import Container
 from podman.domain.containers_create import CreateMixin
 from podman.domain.containers_manager import ContainersManager
-from podman.errors import ImageNotFound, NotFound
+from podman.errors import NotFound
 
 FIRST_CONTAINER = {
     "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
@@ -163,6 +163,134 @@ class ContainersManagerTestCase(unittest.TestCase):
         )
 
     @requests_mock.Mocker()
+    def test_list_sparse_libpod_default(self, mock):
+        mock.get(
+            tests.LIBPOD_URL + "/containers/json",
+            json=[FIRST_CONTAINER, SECOND_CONTAINER],
+        )
+        actual = self.client.containers.list()
+        self.assertIsInstance(actual, list)
+
+        self.assertEqual(
+            actual[0].id, "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
+        )
+        self.assertEqual(
+            actual[1].id, "6dc84cc0a46747da94e4c1571efcc01a756b4017261440b4b8985d37203c3c03"
+        )
+
+        # Verify that no individual reload() calls were made for sparse=True (default)
+        # Should be only 1 request for the list endpoint
+        self.assertEqual(len(mock.request_history), 1)
+        # lower() needs to be enforced since the mocked url is transformed as lowercase and
+        # this avoids %2f != %2F errors. Same applies for other instances of assertEqual
+        self.assertEqual(mock.request_history[0].url, tests.LIBPOD_URL.lower() + "/containers/json")
+
+    @requests_mock.Mocker()
+    def test_list_sparse_libpod_false(self, mock):
+        mock.get(
+            tests.LIBPOD_URL + "/containers/json",
+            json=[FIRST_CONTAINER, SECOND_CONTAINER],
+        )
+        # Mock individual container detail endpoints for reload() calls
+        # that are done for sparse=False
+        mock.get(
+            tests.LIBPOD_URL + f"/containers/{FIRST_CONTAINER['Id']}/json",
+            json=FIRST_CONTAINER,
+        )
+        mock.get(
+            tests.LIBPOD_URL + f"/containers/{SECOND_CONTAINER['Id']}/json",
+            json=SECOND_CONTAINER,
+        )
+        actual = self.client.containers.list(sparse=False)
+        self.assertIsInstance(actual, list)
+
+        self.assertEqual(
+            actual[0].id, "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
+        )
+        self.assertEqual(
+            actual[1].id, "6dc84cc0a46747da94e4c1571efcc01a756b4017261440b4b8985d37203c3c03"
+        )
+
+        # Verify that individual reload() calls were made for sparse=False
+        # Should be 3 requests total: 1 for list + 2 for individual container details
+        self.assertEqual(len(mock.request_history), 3)
+
+        # Verify the list endpoint was called first
+        self.assertEqual(mock.request_history[0].url, tests.LIBPOD_URL.lower() + "/containers/json")
+
+        # Verify the individual container detail endpoints were called
+        individual_urls = {req.url for req in mock.request_history[1:]}
+        expected_urls = {
+            tests.LIBPOD_URL.lower() + f"/containers/{FIRST_CONTAINER['Id']}/json",
+            tests.LIBPOD_URL.lower() + f"/containers/{SECOND_CONTAINER['Id']}/json",
+        }
+        self.assertEqual(individual_urls, expected_urls)
+
+    @requests_mock.Mocker()
+    def test_list_sparse_compat_default(self, mock):
+        mock.get(
+            tests.COMPATIBLE_URL + "/containers/json",
+            json=[FIRST_CONTAINER, SECOND_CONTAINER],
+        )
+        # Mock individual container detail endpoints for reload() calls
+        # that are done for sparse=False
+        mock.get(
+            tests.COMPATIBLE_URL + f"/containers/{FIRST_CONTAINER['Id']}/json",
+            json=FIRST_CONTAINER,
+        )
+        mock.get(
+            tests.COMPATIBLE_URL + f"/containers/{SECOND_CONTAINER['Id']}/json",
+            json=SECOND_CONTAINER,
+        )
+        actual = self.client.containers.list(compatible=True)
+        self.assertIsInstance(actual, list)
+
+        self.assertEqual(
+            actual[0].id, "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
+        )
+        self.assertEqual(
+            actual[1].id, "6dc84cc0a46747da94e4c1571efcc01a756b4017261440b4b8985d37203c3c03"
+        )
+
+        # Verify that individual reload() calls were made for compat default (sparse=True)
+        # Should be 3 requests total: 1 for list + 2 for individual container details
+        self.assertEqual(len(mock.request_history), 3)
+        self.assertEqual(
+            mock.request_history[0].url, tests.COMPATIBLE_URL.lower() + "/containers/json"
+        )
+
+        # Verify the individual container detail endpoints were called
+        individual_urls = {req.url for req in mock.request_history[1:]}
+        expected_urls = {
+            tests.COMPATIBLE_URL.lower() + f"/containers/{FIRST_CONTAINER['Id']}/json",
+            tests.COMPATIBLE_URL.lower() + f"/containers/{SECOND_CONTAINER['Id']}/json",
+        }
+        self.assertEqual(individual_urls, expected_urls)
+
+    @requests_mock.Mocker()
+    def test_list_sparse_compat_true(self, mock):
+        mock.get(
+            tests.COMPATIBLE_URL + "/containers/json",
+            json=[FIRST_CONTAINER, SECOND_CONTAINER],
+        )
+        actual = self.client.containers.list(sparse=True, compatible=True)
+        self.assertIsInstance(actual, list)
+
+        self.assertEqual(
+            actual[0].id, "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd"
+        )
+        self.assertEqual(
+            actual[1].id, "6dc84cc0a46747da94e4c1571efcc01a756b4017261440b4b8985d37203c3c03"
+        )
+
+        # Verify that no individual reload() calls were made for sparse=True
+        # Should be only 1 request for the list endpoint
+        self.assertEqual(len(mock.request_history), 1)
+        self.assertEqual(
+            mock.request_history[0].url, tests.COMPATIBLE_URL.lower() + "/containers/json"
+        )
+
+    @requests_mock.Mocker()
     def test_prune(self, mock):
         mock.post(
             tests.LIBPOD_URL + "/containers/prune",
@@ -210,17 +338,50 @@ class ContainersManagerTestCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_create_404(self, mock):
+        # mock the first POST to return 404,
+        # then the second POST (after pulling the image) to return 201
         mock.post(
             tests.LIBPOD_URL + "/containers/create",
-            status_code=404,
-            json={
-                "cause": "Image not found",
-                "message": "Image not found",
-                "response": 404,
-            },
+            [
+                {
+                    "status_code": 404,
+                    "json": {
+                        "cause": "Image not found",
+                        "message": "Image not found",
+                        "response": 404,
+                    },
+                },
+                {
+                    "status_code": 201,
+                    "json": {
+                        "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
+                        "Warnings": [],
+                    },
+                },
+            ],
         )
-        with self.assertRaises(ImageNotFound):
-            self.client.containers.create("fedora", "/usr/bin/ls", cpu_count=9999)
+        self.client.images.pull = MagicMock()
+        mock.get(
+            tests.LIBPOD_URL + f"/containers/{FIRST_CONTAINER['Id']}/json",
+            json=FIRST_CONTAINER,
+        )
+        actual = self.client.containers.create("fedora", "/usr/bin/ls", cpu_count=9999)
+        self.client.images.pull.assert_called_once_with(
+            "fedora",
+            all_tags=False,
+            auth_config=None,
+            decode=False,
+            platform=None,
+            policy="missing",
+            progress_bar=False,
+            stream=False,
+            tls_verify=True,
+        )
+        self.assertIsInstance(actual, Container)
+        self.assertEqual(actual.id, FIRST_CONTAINER['Id'])
+        # 2 POSTs for create
+        # 1 GET for container json
+        self.assertEqual(mock.call_count, 3)
 
     @requests_mock.Mocker()
     def test_create_parse_host_port(self, mock):
@@ -515,6 +676,183 @@ class ContainersManagerTestCase(unittest.TestCase):
                 self.assertIsInstance(actual, Iterator)
                 self.assertEqual(next(actual), b"This is a unittest - line 1")
                 self.assertEqual(next(actual), b"This is a unittest - line 2")
+
+    @requests_mock.Mocker()
+    def test_run_404(self, mock):
+        # mock the first POST to return 404,
+        # then the second POST (after pulling the image) to return 201
+        mock.post(
+            tests.LIBPOD_URL + "/containers/create",
+            [
+                {
+                    "status_code": 404,
+                    "json": {
+                        "cause": "Image not found",
+                        "message": "Image not found",
+                        "response": 404,
+                    },
+                },
+                {
+                    "status_code": 201,
+                    "json": {
+                        "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
+                        "Warnings": [],
+                    },
+                },
+            ],
+        )
+        self.client.images.pull = MagicMock()
+        mock.post(
+            tests.LIBPOD_URL
+            + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/start",
+            status_code=204,
+        )
+        mock.get(
+            tests.LIBPOD_URL + f"/containers/{FIRST_CONTAINER['Id']}/json",
+            json=FIRST_CONTAINER,
+        )
+
+        mock_logs = (
+            b"This is a unittest - line 1",
+            b"This is a unittest - line 2",
+        )
+
+        with patch.multiple(Container, logs=DEFAULT, wait=DEFAULT, autospec=True) as mock_container:
+            mock_container["wait"].return_value = 0
+            mock_container["logs"].return_value = iter(mock_logs)
+
+            actual = self.client.containers.run("fedora", "/usr/bin/ls")
+            self.client.images.pull.assert_called_once_with(
+                "fedora",
+                auth_config=None,
+                platform=None,
+                policy="missing",
+                progress_bar=False,
+                tls_verify=True,
+                decode=False,
+                all_tags=False,
+                stream=False,
+            )
+            self.assertIsInstance(actual, bytes)
+            self.assertEqual(actual, b"This is a unittest - line 1This is a unittest - line 2")
+            # 2 POSTs for create
+            # 1 POST for start
+            # 1 GET for container json
+            # 1 GET for reload
+            for r in mock.request_history:
+                print(r)
+            self.assertEqual(mock.call_count, 5)
+
+    @requests_mock.Mocker()
+    def test_create_all_healthcheck_parameters(self, mock):
+        """Test that all healthcheck parameters are correctly passed to the API."""
+        mock_response = MagicMock()
+        mock_response.json = lambda: {
+            "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
+            "Size": 1024,
+        }
+        self.client.containers.client.post = MagicMock(return_value=mock_response)
+        mock.get(
+            tests.LIBPOD_URL
+            + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
+            json=FIRST_CONTAINER,
+        )
+
+        # Test all 14 healthcheck parameters with realistic values
+        healthcheck_params = {
+            "health_cmd": "curl -f http://localhost:8080/health",
+            "health_interval": "30s",
+            "health_log_destination": "local",
+            "health_max_log_count": 5,
+            "health_max_logs_size": 500,
+            "health_on_failure": "restart",
+            "health_retries": 3,
+            "health_start_period": "60s",
+            "health_startup_cmd": "curl -f http://localhost:8080/ready",
+            "health_startup_interval": "10s",
+            "health_startup_retries": 5,
+            "health_startup_success": 2,
+            "health_startup_timeout": "45s",
+            "health_timeout": "30s",
+        }
+
+        self.client.containers.create("fedora", "/usr/bin/ls", **healthcheck_params)
+        self.client.containers.client.post.assert_called()
+
+        # Verify all healthcheck parameters are in the request payload
+        actual_data = json.loads(self.client.containers.client.post.call_args[1]["data"])
+
+        for param_name, expected_value in healthcheck_params.items():
+            self.assertIn(param_name, actual_data, f"Parameter {param_name} not found in request")
+            self.assertEqual(
+                actual_data[param_name],
+                expected_value,
+                f"Parameter {param_name} has incorrect value",
+            )
+
+    @requests_mock.Mocker()
+    def test_create_no_healthcheck_validation(self, mock):
+        """Test no_healthcheck validation and functionality."""
+        mock_response = MagicMock()
+        mock_response.json = lambda: {
+            "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
+            "Size": 1024,
+        }
+        self.client.containers.client.post = MagicMock(return_value=mock_response)
+        mock.get(
+            tests.LIBPOD_URL
+            + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
+            json=FIRST_CONTAINER,
+        )
+
+        # Test that no_healthcheck=True works without conflicts
+        self.client.containers.create("fedora", "/usr/bin/ls", no_healthcheck=True)
+        self.client.containers.client.post.assert_called()
+
+        actual_data = json.loads(self.client.containers.client.post.call_args[1]["data"])
+        self.assertIn("no_healthcheck", actual_data)
+        self.assertTrue(actual_data["no_healthcheck"])
+
+        # Test that setting healthcheck parameters with no_healthcheck=True raises ValueError
+        healthcheck_params = [
+            "health_cmd",
+            "health_interval",
+            "health_log_destination",
+            "health_max_log_count",
+            "health_max_logs_size",
+            "health_on_failure",
+            "health_retries",
+            "health_start_period",
+            "health_startup_cmd",
+            "health_startup_interval",
+            "health_startup_retries",
+            "health_startup_success",
+            "health_startup_timeout",
+            "health_timeout",
+        ]
+
+        # Test each parameter individually with no_healthcheck=True
+        for param in healthcheck_params:
+            with self.subTest(param=param):
+                kwargs = {"no_healthcheck": True, param: "test_value"}
+                with self.assertRaises(ValueError) as context:
+                    self.client.containers.create("fedora", "/usr/bin/ls", **kwargs)
+
+                expected_message = f"Cannot set {param} when no_healthcheck is True"
+                self.assertEqual(str(context.exception), expected_message)
+
+        # Test multiple healthcheck parameters with no_healthcheck=True
+        with self.assertRaises(ValueError) as context:
+            self.client.containers.create(
+                "fedora",
+                "/usr/bin/ls",
+                no_healthcheck=True,
+                health_cmd="test",
+                health_interval="30s",
+            )
+        # Should raise for the first conflicting parameter found
+        self.assertIn("Cannot set", str(context.exception))
+        self.assertIn("when no_healthcheck is True", str(context.exception))
 
 
 if __name__ == "__main__":

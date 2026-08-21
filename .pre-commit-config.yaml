@@ -8,7 +8,7 @@ repos:
     - id: trailing-whitespace
 - repo: https://github.com/astral-sh/ruff-pre-commit
   # Ruff version.
-  rev: v0.8.1
+  rev: v0.14.13
   hooks:
     # Run the linter.
     - id: ruff
@@ -16,12 +16,18 @@ repos:
     # Run the formatter.
     - id: ruff-format
 - repo: https://github.com/teemtee/tmt.git
-  rev: 1.39.0
+  rev: 1.62.1
   hooks:
     - id: tmt-lint
 - repo: https://github.com/pre-commit/mirrors-mypy
-  rev: v1.15.0
+  rev: v1.19.1
   hooks:
     - id: mypy
       pass_filenames: false
       args: ["--package", "podman"]
+- repo: https://github.com/renovatebot/pre-commit-hooks
+  rev: 43.3.5
+  hooks:
+    - id: renovate-config-validator
+      args: [--strict]
+      files: '.github/renovate.json5'

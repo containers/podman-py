@@ -1,0 +1,49 @@
+name: Publish Python 🐍 distribution 📦 to PyPI
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+\.[0-9]+\.[0-9]+\.?[0-9]?'
+
+permissions: {}
+
+jobs:
+  build:
+    name: Build distribution 📦
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - name: Build Python package
+        uses: ./.github/actions/build-python-package
+        with:
+          upload-artifact: true
+          artifact-name: python-package-distributions-pypi
+
+  publish-to-pypi:
+    name: >-
+      Publish Python 🐍 distribution 📦 to PyPI
+    if: ${{ github.repository == 'containers/podman-py' }}
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/podman
+    permissions:
+      id-token: write # IMPORTANT: mandatory for trusted publishing
+
+    steps:
+      - name: Download artifacts from build job
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          name: python-package-distributions-pypi
+          path: dist/
+      - name: Publish distribution 📦 to PyPI
+        # PyPA recommends the floating release/v1 tag so that fixes to the
+        # trusted publishing flow are picked up automatically.
+        uses: pypa/gh-action-pypi-publish@release/v1 # zizmor: ignore[unpinned-uses]

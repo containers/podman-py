@@ -15,16 +15,19 @@
 """Images integration tests."""
 
 import io
+import os
+import json
 import platform
 import tarfile
+import tempfile
 import types
 import unittest
+import random
 
 import podman.tests.integration.base as base
 from podman import PodmanClient
 from podman.domain.images import Image
-from podman.errors import APIError, ImageNotFound, PodmanError
-
+from podman.errors import APIError, ContainerError, ImageNotFound, PodmanError
 
 # @unittest.skipIf(os.geteuid() != 0, 'Skipping, not running as root')
 
@@ -37,6 +40,12 @@ class ImagesIntegrationTest(base.IntegrationTest):
 
         self.client = PodmanClient(base_url=self.socket_uri)
         self.addCleanup(self.client.close)
+
+        self.test_manifest_name = "dummy:v1.2.3"
+
+    def tearDown(self) -> None:
+        if self.client.manifests.exists(self.test_manifest_name):
+            self.client.manifests.remove(self.test_manifest_name)
 
     def test_image_crud(self):
         """Test Image CRUD.
@@ -131,18 +140,64 @@ class ImagesIntegrationTest(base.IntegrationTest):
         # Just check that it doesn't throw an exception and move on.
         self.client.images.search("alpine")
 
-    @unittest.skip("Needs Podman 3.1.0")
     def test_corrupt_load(self):
         with self.assertRaises(APIError) as e:
             next(self.client.images.load(b"This is a corrupt tarball"))
         self.assertIn("payload does not match", e.exception.explanation)
 
     def test_build(self):
-        buffer = io.StringIO("""FROM quay.io/libpod/alpine_labels:latest""")
-
-        image, stream = self.client.images.build(fileobj=buffer)
+        buffer = io.StringIO("""FROM scratch""")
+        image, _ = self.client.images.build(fileobj=buffer)
         self.assertIsNotNone(image)
         self.assertIsNotNone(image.id)
+
+    def test_build_cache(self):
+        """Check build caching when enabled
+
+        Build twice with caching enabled (default), then again with nocache
+        """
+
+        def look_for_cache(stream) -> bool:
+            # Search for a line with contents "-> Using cache <image id>"
+            uses_cache = False
+            for line in stream:
+                parsed = json.loads(line)['stream']
+                if "Using cache" in parsed:
+                    uses_cache = True
+                    break
+            return uses_cache
+
+        label = str(random.getrandbits(32))
+        buffer = io.StringIO(f"""FROM scratch\nLABEL test={label}""")
+        image, _ = self.client.images.build(fileobj=buffer)
+        buffer.seek(0)
+        cached_image, stream = self.client.images.build(fileobj=buffer)
+        self.assertTrue(look_for_cache(stream))
+        self.assertEqual(
+            cached_image.id,
+            image.id,
+            msg="Building twice with cache does not produce the same image id",
+        )
+        # Build again with disabled cache
+        buffer.seek(0)
+        uncached_image, stream = self.client.images.build(fileobj=buffer, nocache=True)
+        self.assertFalse(look_for_cache(stream))
+        self.assertNotEqual(
+            uncached_image.id,
+            image.id,
+            msg="Building twice without cache produces the same image id",
+        )
+
+    def test_build_with_manifest(self):
+        buffer = io.StringIO("""FROM quay.io/libpod/alpine_labels:latest""")
+
+        self.assertFalse(self.client.manifests.exists(self.test_manifest_name))
+
+        image, _ = self.client.images.build(fileobj=buffer, manifest=self.test_manifest_name)
+        self.assertIsNotNone(image)
+        self.assertIsNotNone(image.id)
+
+        self.assertTrue(self.client.manifests.exists(self.test_manifest_name))
 
     def test_build_with_context(self):
         context = io.BytesIO()
@@ -164,21 +219,58 @@ class ImagesIntegrationTest(base.IntegrationTest):
         # Rewind to the start of the generated file so we can read it
         context.seek(0)
 
-        with self.assertRaises(PodmanError) as e:
+        with self.assertRaises(PodmanError):
             # If requesting a custom context, must provide the context as `fileobj`
             self.client.images.build(custom_context=True, path='invalid')
 
-        with self.assertRaises(PodmanError) as e:
+        with self.assertRaises(PodmanError):
             # If requesting a custom context, currently must specify the dockerfile name
             self.client.images.build(custom_context=True, fileobj=context)
 
-        image, stream = self.client.images.build(
+        image, _ = self.client.images.build(
             fileobj=context,
             dockerfile="MyDockerfile",
             custom_context=True,
         )
         self.assertIsNotNone(image)
         self.assertIsNotNone(image.id)
+
+    # https://github.com/containers/podman-py/issues/636
+    @unittest.skipIf(platform.machine() != "x86_64", reason="test image only available on x86_64")
+    def test_build_with_secret(self):
+        with tempfile.TemporaryDirectory() as context_dir:
+            dockerfile_path = os.path.join(context_dir, "Dockerfile")
+            with open(dockerfile_path, "w") as f:
+                f.write("""
+                FROM quay.io/libpod/alpine_labels:latest
+                RUN --mount=type=secret,id=example cat /run/secrets/example > /output.txt
+                """)
+
+            secret_path = os.path.join(context_dir, "build-secret.txt")
+            with open(secret_path, "w") as f:
+                f.write("secret123")
+
+            image, _ = self.client.images.build(
+                path=context_dir,
+                secrets=["id=example,src=build-secret.txt"],
+                dockerfile="Dockerfile",
+            )
+
+        self.assertIsNotNone(image)
+        self.assertIsNotNone(image.id)
+
+        # Verify secret was passed and stored in file (NOT RECOMMENDED for real use cases)
+        container_out = self.client.containers.run(
+            image.id, command=["cat", "/output.txt"], remove=True, log_config={"Type": "json-file"}
+        )
+        self.assertIn(b"secret123", container_out)
+
+        # Verify mounted secret file is not present in image
+        with self.assertRaises(ContainerError) as exc:
+            self.client.containers.run(
+                image.id, command=["cat", "/run/secrets/example"], remove=True
+            )
+        self.assertIn("No such file or directory", b"".join(exc.exception.stderr).decode("utf-8"))
 
     @unittest.skipIf(platform.architecture()[0] == "32bit", "no 32-bit image available")
     def test_pull_stream(self):

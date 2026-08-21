@@ -18,6 +18,7 @@ import logging
 import os
 import shutil
 import uuid
+from typing import Optional
 
 import fixtures
 
@@ -34,7 +35,7 @@ class IntegrationTest(fixtures.TestWithFixtures):
           results and logging captured by the unittest module test runner.
     """
 
-    podman: str = None
+    podman: Optional[str] = None
 
     @classmethod
     def setUpClass(cls) -> None:

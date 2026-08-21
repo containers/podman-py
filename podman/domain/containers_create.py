@@ -7,13 +7,13 @@ import re
 from contextlib import suppress
 from typing import Any, Union
 from collections.abc import MutableMapping
+import requests
 
 from podman import api
 from podman.domain.containers import Container
 from podman.domain.images import Image
 from podman.domain.pods import Pod
 from podman.domain.secrets import Secret
-from podman.errors import ImageNotFound
 
 logger = logging.getLogger("podman.containers")
 
@@ -36,6 +36,12 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             command: Command to run in the container.
 
         Keyword Args:
+            all_tags (bool): Pull all tags from repository. Default: False.
+                Only used if the method needs to pull the requested image.
+            auth_config (Mapping[str, str]): Override the credentials that are found in the
+                config for this request. auth_config should contain the username and password
+                keys to be valid.
+                Only used if the method needs to pull the requested image.
             auto_remove (bool): Enable auto-removal of the container on daemon side when the
                 container's process exits.
             blkio_weight_device (dict[str, Any]): Block IO weight (relative device weight)
@@ -55,6 +61,9 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             cpuset_cpus (str): CPUs in which to allow execution (0-3, 0,1).
             cpuset_mems (str): Memory nodes (MEMs) in which to allow execution (0-3, 0,1).
                 Only effective on NUMA systems.
+            decode (bool): Decode the JSON data from the server into dicts.
+                Only applies with ``stream=True``. Default: False.
+                Only used if the method needs to pull the requested image.
             detach (bool): Run container in the background and return a Container object.
             device_cgroup_rules (list[str]): A list of cgroup rules to apply to the container.
             device_read_bps: Limit read rate (bytes per second) from a device in the form of:
@@ -84,6 +93,36 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             healthcheck (dict[str,Any]): Specify a test to perform to check that the
                 container is healthy.
             health_check_on_failure_action (int): Specify an action if a healthcheck fails.
+            health_cmd (str): set a healthcheck command for the container ('None' disables the
+                existing healthcheck)
+            health_interval (str): set an interval for the healthcheck (a value of disable results
+                in no automatic timer setup)(Changing this setting resets timer.) (default "30s")
+            health_log_destination (str):  set the destination of the HealthCheck log. Directory
+                path, local or events_logger (local use container state file)(Warning: Changing
+                this setting may cause the loss of previous logs.) (default "local")
+            health_max_log_count (int): set maximum number of attempts in the HealthCheck log file.
+                ('0' value means an infinite number of attempts in the log file) (default 5)
+            health_max_logs_size (int): set maximum length in characters of stored HealthCheck log.
+                ('0' value means an infinite log length) (default 500)
+            health_on_failure (str): action to take once the container turns unhealthy
+                (default "none")
+            health_retries (int): the number of retries allowed before a healthcheck is considered
+                to be unhealthy (default 3)
+            health_start_period (str): the initialization time needed for a container to bootstrap
+                (default "0s")
+            health_startup_cmd (str): Set a startup healthcheck command for the container
+            health_startup_interval (str): Set an interval for the startup healthcheck. Changing
+                this setting resets the timer, depending on the state of the container.
+                (default "30s")
+            health_startup_retries (int): Set the maximum number of retries before the startup
+                healthcheck will restart the container
+            health_startup_success (int): Set the number of consecutive successes before the
+                startup healthcheck is marked as successful and the normal healthcheck begins
+                (0 indicates any success will start the regular healthcheck)
+            health_startup_timeout (str): Set the maximum amount of time that the startup
+                healthcheck may take before it is considered failed (default "30s")
+            health_timeout (str): the maximum time allowed to complete the healthcheck before an
+                interval is considered failed (default "30s")
             hostname (str): Optional hostname for the container.
             init (bool): Run an init inside the container that forwards signals and reaps processes
             init_path (str): Path to the docker-init binary
@@ -180,6 +219,8 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             pids_limit (int): Tune a container's pids limit. Set -1 for unlimited.
             platform (str): Platform in the format os[/arch[/variant]]. Only used if the method
                 needs to pull the requested image.
+            policy (str): Pull policy. "missing" (default for create), "always", "never", "newer".
+                Only used if the method needs to pull the requested image.
             ports (
                 dict[
                     Union[int, str],
@@ -241,7 +282,12 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
                     }
             privileged (bool): Give extended privileges to this container.
+            progress_bar (bool): Display a progress bar with the image pull progress (uses
+                the compat endpoint). Default: False.
+                Only used if the method needs to pull the requested image.
             publish_all_ports (bool): Publish all ports to the host.
+            pull_stream (bool): When True, the pull progress will be published as received.
+                Default: False. Only used if the method needs to pull the requested image.
             read_only (bool): Mount the container's root filesystem as read only.
             read_write_tmpfs (bool): Mount temporary file systems as read write,
                 in case of read_only options set to True. Default: False
@@ -310,6 +356,8 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
                 For example: {'/mnt/vol2': '', '/mnt/vol1': 'size=3G,uid=1000'}
 
+            tls_verify (bool): Require TLS verification. Default: True.
+                Only used if the method needs to pull the requested image.
             tty (bool): Allocate a pseudo-TTY.
             ulimits (list[Ulimit]): Ulimits to set inside the container.
             use_config_proxy (bool): If True, and if the docker client configuration
@@ -361,7 +409,6 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             A Container object.
 
         Raises:
-            ImageNotFound: when Image not found by Podman service
             APIError: when Podman service reports an error
         """
         if isinstance(image, Image):
@@ -374,12 +421,29 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         payload = self._render_payload(payload)
         payload = api.prepare_body(payload)
 
-        response = self.client.post(
+        response = self.api.post(
             "/containers/create",
             headers={"content-type": "application/json"},
             data=payload,
         )
-        response.raise_for_status(not_found=ImageNotFound)
+        if response.status_code == requests.codes.not_found:
+            self.podman_client.images.pull(
+                image,
+                all_tags=kwargs.get("all_tags", False),
+                auth_config=kwargs.get("auth_config"),
+                decode=kwargs.get("decode", False),
+                platform=kwargs.get("platform"),
+                policy=kwargs.get("policy", "missing"),
+                progress_bar=kwargs.get("progress_bar", False),
+                stream=kwargs.get("pull_stream", False),
+                tls_verify=kwargs.get("tls_verify", True),
+            )
+            response = self.client.post(
+                "/containers/create",
+                headers={"content-type": "application/json"},
+                data=payload,
+            )
+            response.raise_for_status()
 
         container_id = response.json()["Id"]
 
@@ -412,7 +476,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
             # Handle empty strings
             if not env_var.strip():
-                raise ValueError(f"Environment variable cannot be empty")
+                raise ValueError("Environment variable cannot be empty")
             if "=" not in env_var:
                 raise ValueError(
                     f"Environment variable '{env_var}' is not in the correct format. "
@@ -449,6 +513,13 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "stdout",  # used by caller
             "stream",  # used by caller
             "detach",  # used by caller
+            "all_tags",  # used by caller
+            "auth_config",  # used by caller
+            "decode",  # used by caller
+            "policy",  # used by caller
+            "progress_bar",  # used by caller
+            "pull_stream",  # used by caller
+            "tls_verify",  # used by caller
             "volume_driver",
         ):
             with suppress(KeyError):
@@ -735,6 +806,32 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             params["restart_policy"] = args["restart_policy"].get("Name")
             params["restart_tries"] = args["restart_policy"].get("MaximumRetryCount")
             args.pop("restart_policy")
+
+        health_commands_data = {
+            "health_cmd",
+            "health_interval",
+            "health_log_destination",
+            "health_max_log_count",
+            "health_max_logs_size",
+            "health_on_failure",
+            "health_retries",
+            "health_start_period",
+            "health_startup_cmd",
+            "health_startup_interval",
+            "health_startup_retries",
+            "health_startup_success",
+            "health_startup_timeout",
+            "health_timeout",
+        }
+        # the healthcheck section of parameters accepted can be either no_healthcheck or a series
+        # of healthcheck parameters
+        if args.get("no_healthcheck"):
+            if conflicts := set(args) & health_commands_data:
+                raise ValueError(f"Cannot set {conflicts.pop()} when no_healthcheck is True")
+            params["no_healthcheck"] = args.pop("no_healthcheck", None)
+        else:
+            for hc in set(args) & health_commands_data:
+                params[hc] = args.pop(hc, None)
 
         params["resource_limits"]["pids"] = {"limit": args.pop("pids_limit", None)}
 

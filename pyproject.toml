@@ -4,9 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "podman"
-# TODO: remove the line version = ... on podman-py > 5.4.0 releases
-# dynamic = ["version"]
-version = "5.5.0"
+dynamic = ["version"]
 description = "Bindings for Podman RESTful API"
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -75,26 +73,25 @@ testpaths = [
 where = ["."]
 include = ["podman*"]
 
-# TODO: remove the line version = ... on podman-py > 5.4.0 releases
-# [tool.setuptools.dynamic]
-# version = {attr = "podman.version.__version__"}
+[tool.setuptools.dynamic]
+version = {attr = "podman.version.__version__"}
 
 [tool.ruff]
 line-length = 100
 src = ["podman"]
-
-# This is the section where Black is mostly replaced with Ruff
-[tool.ruff.format]
 exclude = [
     ".git",
     ".history",
     ".tox",
     ".venv",
+    "_build",
     "build",
     "dist",
     "docs",
     "hack",
 ]
+
+[tool.ruff.format]
 quote-style = "preserve"
 
 [tool.ruff.lint]
@@ -104,10 +101,10 @@ select = [
     "E", # Pycodestyle Error
     "W", # Pycodestyle Warning
     "N", # PEP8 Naming
-    # TODO "UP", # Pyupgrade
+    "UP", # Pyupgrade
     # TODO "ANN",
     # TODO "S", # Bandit
-    # "B", # Bugbear
+    "B", # Bugbear
     "A", # flake-8-builtins
     "YTT", # flake-8-2020
     "PLC", # Pylint Convention
@@ -117,18 +114,7 @@ select = [
 # Some checks should be enabled for code sanity disabled now
 # to avoid changing too many lines
 ignore = [
-    "F821", # TODO Undefined name
-    "F541", # TODO f-string is missing placeholders
-    "F401", # TODO Module imported but unused
-    "F841", # TODO Local variable is assigned to but never used
-    "E402", # TODO Module level import not at top of file
-    "E741", # TODO ambiguous variable name
-    "E722", # TODO do not use bare 'except'
-    "E501", # TODO line too long
     "N818", # TODO Error Suffix in exception name
-    "N80", # TODO Invalid Name
-    "ANN10", # Missing type annotation
-    "PLW2901", # TODO Redefined Loop Name
 ]
 [tool.ruff.lint.flake8-builtins]
 builtins-ignorelist = ["copyright", "all"]
@@ -139,7 +125,6 @@ builtins-ignorelist = ["copyright", "all"]
 install_types = true
 non_interactive = true
 allow_redefinition = true
-no_strict_optional = true
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
@@ -152,19 +137,13 @@ module = [
     "podman.domain.config",
     "podman.domain.containers",
     "podman.domain.containers_create",
-    "podman.domain.containers_run",
     "podman.domain.events",
     "podman.domain.images_build",
     "podman.domain.images_manager",
     "podman.domain.manager",
     "podman.domain.manifests",
-    "podman.domain.networks",
-    "podman.domain.networks_manager",
-    "podman.domain.pods",
     "podman.domain.pods_manager",
     "podman.domain.registry_data",
-    "podman.domain.secrets",
-    "podman.domain.volumes",
     "podman.errors.exceptions"
 ]
 ignore_errors = true

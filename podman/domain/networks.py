@@ -11,11 +11,14 @@ import hashlib
 import json
 import logging
 from contextlib import suppress
-from typing import Optional, Union
+from typing import Optional, Union, TYPE_CHECKING
 
 from podman.domain.containers import Container
 from podman.domain.containers_manager import ContainersManager
 from podman.domain.manager import PodmanResource
+
+if TYPE_CHECKING:
+    from podman.domain.networks_manager import NetworksManager
 
 logger = logging.getLogger("podman.networks")
 
@@ -26,6 +29,8 @@ class Network(PodmanResource):
     Attributes:
         attrs (dict[str, Any]): Attributes of Network reported from Podman service
     """
+
+    manager: "NetworksManager"
 
     @property
     def id(self):  # pylint: disable=invalid-name
@@ -44,7 +49,7 @@ class Network(PodmanResource):
         """list[Container]: Returns list of Containers connected to network."""
         with suppress(KeyError):
             container_manager = ContainersManager(client=self.client)
-            return [container_manager.get(ident) for ident in self.attrs["Containers"].keys()]
+            return [container_manager.get(ident) for ident in self.attrs["containers"].keys()]
         return []
 
     @property
@@ -105,9 +110,9 @@ class Network(PodmanResource):
         }
 
         data = {"Container": container, "EndpointConfig": endpoint_config}
-        data = {k: v for (k, v) in data.items() if not (v is None or len(v) == 0)}
+        data = {k: v for (k, v) in data.items() if not (v is None or len(v) == 0)}  # type: ignore[arg-type]
 
-        response = self.client.post(
+        response = self.api.post(
             f"/networks/{self.name}/connect",
             data=json.dumps(data),
             headers={"Content-type": "application/json"},
@@ -131,7 +136,7 @@ class Network(PodmanResource):
             container = container.id
 
         data = {"Container": container, "Force": kwargs.get("force")}
-        response = self.client.post(f"/networks/{self.name}/disconnect", data=json.dumps(data))
+        response = self.api.post(f"/networks/{self.name}/disconnect", data=json.dumps(data))
         response.raise_for_status()
 
     def remove(self, force: Optional[bool] = None, **kwargs) -> None:

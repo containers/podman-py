@@ -8,7 +8,7 @@ from collections.abc import Generator, Iterator
 
 from podman.domain.containers import Container
 from podman.domain.images import Image
-from podman.errors import ContainerError, ImageNotFound
+from podman.errors import ContainerError
 
 logger = logging.getLogger("podman.containers")
 
@@ -25,7 +25,7 @@ class RunMixin:  # pylint: disable=too-few-public-methods
         stderr=False,
         remove: bool = False,
         **kwargs,
-    ) -> Union[Container, Union[Generator[str, None, None], Iterator[str]]]:
+    ) -> Union[Container, Union[Generator[bytes, None, None], Iterator[bytes]]]:
         """Run a container.
 
         By default, run() will wait for the container to finish and return its logs.
@@ -44,7 +44,14 @@ class RunMixin:  # pylint: disable=too-few-public-methods
                 side. Default: False.
 
         Keyword Args:
-            - See the create() method for keyword arguments.
+            - These args are directly used to pull an image when the image is not found.
+                auth_config (Mapping[str, str]): Override the credentials that are found in the
+                config for this request. auth_config should contain the username and password
+                keys to be valid.
+                platform (str): Platform in the format os[/arch[/variant]]
+                policy (str): Pull policy. "missing" (default), "always", "never", "newer"
+
+            - See the create() method for other keyword arguments.
 
         Returns:
             - When detach is True, return a Container
@@ -55,19 +62,16 @@ class RunMixin:  # pylint: disable=too-few-public-methods
 
         Raises:
             ContainerError: when Container exists with a non-zero code
-            ImageNotFound: when Image not found by Podman service
             APIError: when Podman service reports an error
         """
         if isinstance(image, Image):
-            image = image.id
+            image_id = image.id
+        else:
+            image_id = image
         if isinstance(command, str):
             command = [command]
 
-        try:
-            container = self.create(image=image, command=command, **kwargs)
-        except ImageNotFound:
-            self.podman_client.images.pull(image, platform=kwargs.get("platform"))
-            container = self.create(image=image, command=command, **kwargs)
+        container = self.create(image=image_id, command=command, **kwargs)  # type: ignore[attr-defined]
 
         container.start()
         container.reload()
@@ -104,6 +108,6 @@ class RunMixin:  # pylint: disable=too-few-public-methods
             container.remove()
 
         if exit_status != 0:
-            raise ContainerError(container, exit_status, command, image, log_iter)
+            raise ContainerError(container, exit_status, command or [], image_id, log_iter)
 
-        return log_iter if kwargs.get("stream", False) or log_iter is None else b"".join(log_iter)
+        return log_iter if kwargs.get("stream", False) or log_iter is None else b"".join(log_iter)  # type: ignore[return-value]

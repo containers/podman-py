@@ -2,10 +2,13 @@
 
 from abc import ABC, abstractmethod
 from collections import abc
-from typing import Any, Optional, TypeVar, Union
+from typing import Any, Optional, TypeVar, Union, TYPE_CHECKING
 from collections.abc import Mapping
 
 from podman.api.client import APIClient
+
+if TYPE_CHECKING:
+    from podman import PodmanClient
 
 # Methods use this Type when a subclass of PodmanResource is expected.
 PodmanResourceType: TypeVar = TypeVar("PodmanResourceType", bound="PodmanResource")
@@ -30,7 +33,9 @@ class PodmanResource(ABC):  # noqa: B024
         Args:
             attrs: Mapping of attributes for resource from Podman service.
             client: Configured connection to a Podman service.
-            collection: Manager of this category of resource, named `collection` for compatibility
+            collection: Manager of this category of resource. This is stored as
+                the `manager` attribute, with `collection` available as a property
+                alias for Docker SDK compatibility.
             podman_client: PodmanClient() configured to connect to Podman object.
         """
         super().__init__()
@@ -41,6 +46,13 @@ class PodmanResource(ABC):  # noqa: B024
         self.attrs = {}
         if attrs is not None:
             self.attrs.update(attrs)
+
+    @property
+    def api(self) -> APIClient:
+        """Return the API client, raising if not configured."""
+        if self.client is None:
+            raise AttributeError(f"{self.__class__.__name__} has no API client configured")
+        return self.client
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: {self.short_id}>"
@@ -67,9 +79,26 @@ class PodmanResource(ABC):  # noqa: B024
             return self.id[:17]
         return self.id[:10]
 
-    def reload(self) -> None:
-        """Refresh this object's data from the service."""
-        latest = self.manager.get(self.id)
+    @property
+    def collection(self):
+        """Manager: An alias for the manager attribute.
+
+        The `collection` name is maintained for Docker SDK compatibility.
+        Both `collection` and `manager` refer to the same underlying Manager instance.
+        """
+        return self.manager
+
+    @collection.setter
+    def collection(self, value):
+        self.manager = value
+
+    def reload(self, **kwargs) -> None:
+        """Refresh this object's data from the service.
+
+        Keyword Args:
+            compatible (bool): Use Docker compatibility endpoint
+        """
+        latest = self.manager.get(self.id, **kwargs)
         self.attrs = latest.attrs
 
 
@@ -93,6 +122,13 @@ class Manager(ABC):
         super().__init__()
         self.client = client
         self.podman_client = podman_client
+
+    @property
+    def api(self) -> APIClient:
+        """Return the API client, raising if not configured."""
+        if self.client is None:
+            raise AttributeError(f"{self.__class__.__name__} has no API client configured")
+        return self.client
 
     @abstractmethod
     def exists(self, key: str) -> bool:
@@ -119,7 +155,11 @@ class Manager(ABC):
         if isinstance(attrs, PodmanResource):
             attrs.client = self.client
             attrs.podman_client = self.podman_client
+            # Both collection and manager are set explicitly for clarity.
+            # The collection property aliases manager, but we set both to be explicit
+            # about the dual-naming convention maintained for Docker SDK compatibility.
             attrs.collection = self
+            attrs.manager = self
             return attrs
 
         # Instantiate new PodmanResource from Mapping[str, Any]

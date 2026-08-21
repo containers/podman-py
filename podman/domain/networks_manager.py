@@ -39,7 +39,11 @@ class NetworksManager(Manager):
         Keyword Args:
             attachable (bool): Ignored, always False.
             check_duplicate (bool): Ignored, always False.
-            dns_enabled (bool): When True, do not provision DNS for this network.
+            dns_enabled (bool): DNSEnabled is whether name resolution is active for container on
+                                this Network. Only supported with the bridge driver.
+            network_dns_servers (list[str]): List of custom DNS server for podman's DNS resolver
+                                at network level, all the containers attached to this network will
+                                consider resolvers configured at network level.
             driver (str): Which network driver to use when creating network.
             enable_ipv6 (bool): Enable IPv6 on the network.
             ingress (bool): Ignored, always False.
@@ -56,6 +60,7 @@ class NetworksManager(Manager):
             "name": name,
             "driver": kwargs.get("driver"),
             "dns_enabled": kwargs.get("dns_enabled"),
+            "network_dns_servers": kwargs.get("network_dns_servers"),
             "subnets": kwargs.get("subnets"),
             "ipv6_enabled": kwargs.get("enable_ipv6"),
             "internal": kwargs.get("internal"),
@@ -66,7 +71,7 @@ class NetworksManager(Manager):
         with suppress(KeyError):
             self._prepare_ipam(data, kwargs["ipam"])
 
-        response = self.client.post(
+        response = self.api.post(
             "/networks/create",
             data=http_utils.prepare_body(data),
             headers={"Content-Type": "application/json"},
@@ -98,7 +103,7 @@ class NetworksManager(Manager):
             data["subnets"].append(subnet)
 
     def exists(self, key: str) -> bool:
-        response = self.client.get(f"/networks/{key}/exists")
+        response = self.api.get(f"/networks/{key}/exists")
         return response.ok
 
     def get(self, key: str) -> Network:
@@ -111,7 +116,7 @@ class NetworksManager(Manager):
             NotFound: when Network does not exist
             APIError: when error returned by service
         """
-        response = self.client.get(f"/networks/{key}")
+        response = self.api.get(f"/networks/{key}")
         response.raise_for_status()
 
         return self.prepare_model(attrs=response.json())
@@ -154,7 +159,7 @@ class NetworksManager(Manager):
         filters = prepare_filters(filters)
 
         params = {"filters": filters}
-        response = self.client.get("/networks/json", params=params)
+        response = self.api.get("/networks/json", params=params)
         response.raise_for_status()
 
         return [self.prepare_model(i) for i in response.json()]
@@ -173,7 +178,7 @@ class NetworksManager(Manager):
             APIError: when service reports error
         """
         params = {"filters": prepare_filters(filters)}
-        response = self.client.post("/networks/prune", params=params)
+        response = self.api.post("/networks/prune", params=params)
         response.raise_for_status()
 
         deleted: list[str] = []
@@ -201,5 +206,5 @@ class NetworksManager(Manager):
         if isinstance(name, Network):
             name = name.name
 
-        response = self.client.delete(f"/networks/{name}", params={"force": force})
+        response = self.api.delete(f"/networks/{name}", params={"force": force})
         response.raise_for_status()

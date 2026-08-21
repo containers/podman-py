@@ -2,11 +2,11 @@
 
 import sys
 import urllib
+from functools import cached_property
 from pathlib import Path
 from typing import Optional
 import json
 
-from podman.api import cached_property
 from podman.api.path_utils import get_xdg_config_home
 
 if sys.version_info >= (3, 11):
@@ -58,6 +58,11 @@ class ServiceConnection:
         if self.attrs.get("identity"):
             return Path(self.attrs.get("identity"))
         return Path(self.attrs.get("Identity"))
+
+    @cached_property
+    def is_machine(self) -> bool:
+        """bool: Returns True if connection is to a Podman machine."""
+        return self.attrs.get("IsMachine", False)
 
 
 class PodmanConfig:

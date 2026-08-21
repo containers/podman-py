@@ -1,10 +1,10 @@
 import unittest
-
-import pytest
 import re
+import pytest
 
 import podman.tests.integration.base as base
 from podman import PodmanClient
+from podman.tests.utils import PODMAN_VERSION, is_root
 
 # @unittest.skipIf(os.geteuid() != 0, 'Skipping, not running as root')
 
@@ -21,7 +21,7 @@ class ContainersIntegrationTest(base.IntegrationTest):
         self.alpine_image = self.client.images.pull("quay.io/libpod/alpine", tag="latest")
         self.containers = []
 
-    def tearUp(self):
+    def tearDown(self):
         for container in self.containers:
             container.remove(force=True)
 
@@ -278,6 +278,11 @@ class ContainersIntegrationTest(base.IntegrationTest):
         """Test passing shared memory size"""
         self._test_memory_limit('shm_size', 'ShmSize')
 
+    @pytest.mark.skipif(not is_root(), reason='Skipping, rootless user')
+    @pytest.mark.skipif(
+        PODMAN_VERSION >= (5, 6, 0),
+        reason="Test against this feature in Podman 5.6.0  or greater https://github.com/containers/podman/pull/25942",
+    )
     def test_container_mounts(self):
         """Test passing mounts"""
         with self.subTest("Check bind mount"):
@@ -350,9 +355,11 @@ class ContainersIntegrationTest(base.IntegrationTest):
 
             self.assertEqual(container.attrs.get('State', dict()).get('ExitCode', 256), 0)
 
-    @pytest.mark.pnext
-    # repeat this test against this upstream change
-    # https://github.com/containers/podman/pull/25942
+    @pytest.mark.skipif(not is_root(), reason='Skipping, rootless user')
+    @pytest.mark.skipif(
+        PODMAN_VERSION < (5, 6, 0),
+        reason="Test against this feature before Podman 5.6.0 https://github.com/containers/podman/pull/25942",
+    )
     def test_container_mounts_without_rw_as_default(self):
         """Test passing mounts"""
         with self.subTest("Check bind mount"):
@@ -389,6 +396,7 @@ class ContainersIntegrationTest(base.IntegrationTest):
                 f"size={mount['size']},rprivate,nosuid,nodev,tmpcopyup",
             )
 
+    @pytest.mark.skipif(not is_root(), reason='Skipping, rootless user')
     def test_container_devices(self):
         devices = ["/dev/null:/dev/foo", "/dev/zero:/dev/bar"]
         container = self.client.containers.create(

@@ -2,6 +2,7 @@ import base64
 import io
 import json
 import unittest
+from unittest.mock import MagicMock
 
 try:
     # Python >= 3.10
@@ -16,6 +17,7 @@ from podman import PodmanClient, tests
 from podman.domain.containers import Container
 from podman.domain.containers_manager import ContainersManager
 from podman.errors import APIError, NotFound
+from unittest.mock import patch
 
 FIRST_CONTAINER = {
     "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
@@ -225,8 +227,26 @@ class ContainersTestCase(unittest.TestCase):
             json={"StatusCode": 0},
         )
         container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
-        container.wait(condition="exited", interval=1)
+        container.wait(condition="exited", interval="23s")
         self.assertTrue(adapter.called_once)
+        self.maxDiff = None
+        self.assertEqual(adapter.last_request.qs['interval'], ['23s'])
+
+    @requests_mock.Mocker()
+    def test_wait_timeout(self, mock):
+        adapter = mock.post(
+            tests.LIBPOD_URL
+            + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/wait",
+            status_code=200,
+            json={"StatusCode": 0},
+        )
+        container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
+        container.wait(timeout=42)
+        self.assertTrue(adapter.called_once)
+        self.assertEqual(adapter.last_request.timeout, 42)
+
+        container.wait()
+        self.assertIsNone(adapter.last_request.timeout)
 
     @requests_mock.Mocker()
     def test_diff(self, mock):
@@ -454,6 +474,64 @@ class ContainersTestCase(unittest.TestCase):
             self.assertDictEqual(response, actual)
 
         self.assertTrue(adapter.called_once)
+
+    def test_exec_run_socket(self):
+        """exec_run(socket=True) sends the upgrade request and returns the hijacked socket."""
+        exec_resp = MagicMock()
+        exec_resp.raise_for_status.return_value = None
+        exec_resp.json.return_value = {"Id": "exec1"}
+
+        fake_sock = MagicMock()
+
+        start_resp = MagicMock()
+        start_resp.raise_for_status.return_value = None
+        start_resp.raw.connection.sock = fake_sock
+
+        container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
+
+        with (
+            patch.object(container.api, "post") as post,
+            patch.object(container.api, "get") as get,
+        ):
+            post.side_effect = [exec_resp, start_resp]
+
+            rc, sock = container.exec_run(
+                "/bin/bash",
+                stdin=True,
+                tty=True,
+                socket=True,
+            )
+
+        # return contract: (None, socket), matching docker-py
+        self.assertIsNone(rc)
+        self.assertIs(sock, fake_sock)
+        # the response is anchored on the socket to keep the hijacked
+        # connection out of the urllib3 pool
+        self.assertIs(fake_sock._hijacked_response, start_resp)
+
+        # exactly two POSTs (exec create + exec start), nothing else:
+        # the socket branch must return immediately, without the
+        # blocking start/inspect path
+        self.assertEqual(post.call_count, 2)
+        get.assert_not_called()
+
+        # first call: exec create
+        self.assertEqual(
+            post.call_args_list[0].args[0],
+            f"/containers/{container.name}/exec",
+        )
+
+        # second call: start with connection upgrade, unconsumed body
+        self.assertEqual(post.call_args_list[1].args[0], "/exec/exec1/start")
+        self.assertEqual(
+            post.call_args_list[1].kwargs["headers"],
+            {"Connection": "Upgrade", "Upgrade": "tcp"},
+        )
+        self.assertTrue(post.call_args_list[1].kwargs["stream"])
+        self.assertEqual(
+            json.loads(post.call_args_list[1].kwargs["data"]),
+            {"Detach": False, "Tty": True},
+        )
 
 
 if __name__ == '__main__':

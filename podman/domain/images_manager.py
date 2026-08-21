@@ -45,7 +45,7 @@ class ImagesManager(BuildMixin, Manager):
     def exists(self, key: str) -> bool:
         """Return true when image exists."""
         key = urllib.parse.quote_plus(key)
-        response = self.client.get(f"/images/{key}/exists")
+        response = self.api.get(f"/images/{key}/exists")
         return response.ok
 
     def list(self, **kwargs) -> builtins.list[Image]:
@@ -71,7 +71,7 @@ class ImagesManager(BuildMixin, Manager):
             "all": kwargs.get("all"),
             "filters": api.prepare_filters(filters=filters),
         }
-        response = self.client.get("/images/json", params=params)
+        response = self.api.get("/images/json", params=params)
         if response.status_code == requests.codes.not_found:
             return []
         response.raise_for_status()
@@ -90,7 +90,7 @@ class ImagesManager(BuildMixin, Manager):
             APIError: when service returns an error
         """
         name = urllib.parse.quote_plus(name)
-        response = self.client.get(f"/images/{name}/json")
+        response = self.api.get(f"/images/{name}/json")
         response.raise_for_status(not_found=ImageNotFound)
 
         return self.prepare_model(response.json())
@@ -146,25 +146,17 @@ class ImagesManager(BuildMixin, Manager):
                 "Only one parameter should be set from 'data' and 'file_path' parameters."
             )
 
-        post_data = data
-        if file_path:
-            # Convert to Path if file_path is a string
-            file_path_object = Path(file_path)
-            post_data = file_path_object.read_bytes()  # Read the tarball file as bytes
-
-        # Make the client request before entering the generator
-        response = self.client.post(
-            "/images/load", data=post_data, headers={"Content-type": "application/x-tar"}
-        )
-        response.raise_for_status()  # Catch any errors before proceeding
-
         def _generator(body: dict) -> Generator[Image, None, None]:
             # Iterate and yield images from response body
             for item in body["Names"]:
                 yield self.get(item)
 
-        # Pass the response body to the generator
-        return _generator(response.json())
+        with Path(file_path).open("rb") if file_path else io.BytesIO(data) as stream:
+            response = self.api.post(
+                "/images/load", data=stream, headers={"Content-type": "application/x-tar"}
+            )
+            response.raise_for_status()
+            return _generator(response.json())
 
     def prune(
         self,
@@ -199,7 +191,7 @@ class ImagesManager(BuildMixin, Manager):
             "filters": api.prepare_filters(filters),
         }
 
-        response = self.client.post("/images/prune", params=params)
+        response = self.api.post("/images/prune", params=params)
         response.raise_for_status()
 
         deleted: builtins.list[dict[str, str]] = []
@@ -277,7 +269,7 @@ class ImagesManager(BuildMixin, Manager):
 
         name = f'{repository}:{tag}' if tag else repository
         name = urllib.parse.quote_plus(name)
-        response = self.client.post(
+        response = self.api.post(
             f"/images/{name}/push", params=params, stream=stream, headers=headers
         )
         response.raise_for_status(not_found=ImageNotFound)
@@ -337,6 +329,7 @@ class ImagesManager(BuildMixin, Manager):
             decode (bool) – Decode the JSON data from the server into dicts.
                 Only applies with ``stream=True``
             platform (str) – Platform in the format os[/arch[/variant]]
+            policy (str) - Pull policy. "always" (default), "missing", "never", "newer"
             progress_bar (bool) - Display a progress bar with the image pull progress (uses
                 the compat endpoint). Default: False
             tls_verify (bool) - Require TLS verification. Default: True.
@@ -365,6 +358,7 @@ class ImagesManager(BuildMixin, Manager):
         }
 
         params = {
+            "policy": kwargs.get("policy", "always"),
             "reference": repository,
             "tlsVerify": kwargs.get("tls_verify", True),
             "compatMode": kwargs.get("compatMode", True),
@@ -398,7 +392,10 @@ class ImagesManager(BuildMixin, Manager):
             params["compatMode"] = True
             stream = True
 
-        response = self.client.post("/images/pull", params=params, stream=stream, headers=headers)
+        if not params["compatMode"] and not stream:
+            params["quiet"] = True
+
+        response = self.api.post("/images/pull", params=params, stream=stream, headers=headers)
         response.raise_for_status(not_found=ImageNotFound)
 
         if progress_bar:
@@ -482,7 +479,7 @@ class ImagesManager(BuildMixin, Manager):
         if isinstance(image, Image):
             image = image.id
 
-        response = self.client.delete(f"/images/{image}", params={"force": force})
+        response = self.api.delete(f"/images/{image}", params={"force": force})
         response.raise_for_status(not_found=ImageNotFound)
 
         body = response.json()
@@ -524,7 +521,7 @@ class ImagesManager(BuildMixin, Manager):
         if "listTags" in kwargs:
             params["listTags"] = kwargs.get("listTags")
 
-        response = self.client.get("/images/search", params=params)
+        response = self.api.get("/images/search", params=params)
         response.raise_for_status(not_found=ImageNotFound)
         return response.json()
 
@@ -551,7 +548,7 @@ class ImagesManager(BuildMixin, Manager):
         if dest is not None:
             params["destination"] = dest
 
-        response = self.client.post(f"/images/scp/{source}", params=params)
+        response = self.api.post(f"/images/scp/{source}", params=params)
         response.raise_for_status()
         return response.json()
 
@@ -570,8 +567,30 @@ class ImagesManager(BuildMixin, Manager):
                         break
                     if reader._fp.chunk_left:
                         data += reader.read(reader._fp.chunk_left)
+                    try:
+                        data_dictionary = json.loads(data)
+                    except json.JSONDecodeError as e:
+                        self._stream_error_helper("Service returned invalid JSON", e.msg)
+                    except UnicodeDecodeError as e:
+                        self._stream_error_helper("Service returned wrongly encoded data", e.msg)
+                    error = data_dictionary.get("error")
+                    if error:
+                        self._stream_error_helper(
+                            "Service returned an error after streaming started", error
+                        )
                     yield data
         else:
             # Response isn't chunked, meaning we probably
             # encountered an error immediately
             yield self._result(response, json=decode)
+
+    def _stream_error_helper(self, message, explanation):
+        """Helper to handle errors after streaming started."""
+        error_response = requests.Response()
+        error_response.status_code = 500
+        error_response.reason = "Internal Server Error"
+        raise APIError(
+            message,
+            response=error_response,
+            explanation=explanation,
+        )

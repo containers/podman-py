@@ -3,11 +3,11 @@
 import logging
 import os
 from contextlib import AbstractContextManager
+from functools import cached_property
 from pathlib import Path
 from typing import Any, Optional
 
 from podman.errors.exceptions import APIError, PodmanConnectionError
-from podman.api import cached_property
 from podman.api.client import APIClient
 from podman.api.path_utils import get_runtime_dir
 from podman.domain.config import PodmanConfig
@@ -20,6 +20,7 @@ from podman.domain.pods_manager import PodsManager
 from podman.domain.secrets import SecretsManager
 from podman.domain.system import SystemManager
 from podman.domain.volumes import VolumesManager
+from podman.domain.quadlets import QuadletsManager
 
 logger = logging.getLogger("podman")
 
@@ -70,8 +71,15 @@ class PodmanClient(AbstractContextManager):
             # Override configured identity, if provided in arguments
             api_kwargs["identity"] = kwargs.get("identity", str(connection.identity))
         elif "base_url" not in api_kwargs:
-            path = str(Path(get_runtime_dir()) / "podman" / "podman.sock")
-            api_kwargs["base_url"] = "http+unix://" + path
+            # Check if there's an active service configured and is a podman machine
+            active_service = config.active_service
+            if active_service and active_service.is_machine:
+                api_kwargs["base_url"] = active_service.url.geturl()
+                api_kwargs["identity"] = kwargs.get("identity", str(active_service.identity))
+            else:
+                # Fall back to local Unix socket
+                path = str(Path(get_runtime_dir()) / "podman" / "podman.sock")
+                api_kwargs["base_url"] = "http+unix://" + path
         self.api = APIClient(**api_kwargs)
 
         self._verify_connection()
@@ -153,11 +161,10 @@ class PodmanClient(AbstractContextManager):
         environment = environment or os.environ
         credstore_env = credstore_env or {}
 
-        if version == "auto":
-            version = None
+        api_version: Optional[str] = None if version == "auto" else version
 
         kwargs = {
-            'version': version,
+            'version': api_version,
             'timeout': timeout,
             'tls': False,
             'credstore_env': credstore_env,
@@ -194,6 +201,11 @@ class PodmanClient(AbstractContextManager):
     def volumes(self) -> VolumesManager:
         """Returns Manager for operations on volumes maintained by a Podman service."""
         return VolumesManager(client=self.api)
+
+    @cached_property
+    def quadlets(self) -> QuadletsManager:
+        """Returns Manager for operations on quadlets maintained by a Podman service."""
+        return QuadletsManager(client=self.api, podman_client=self)
 
     @cached_property
     def pods(self) -> PodsManager:

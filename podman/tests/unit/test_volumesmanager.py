@@ -137,6 +137,28 @@ class VolumesManagerTestCase(unittest.TestCase):
             actual, {"VolumesDeleted": ["dbase", "source"], "SpaceReclaimed": 2048}
         )
 
+    @requests_mock.Mocker()
+    def test_import(self, mock):
+        mock.post(
+            tests.LIBPOD_URL + "/volumes/dbase/import",
+            status_code=requests.codes.no_content,
+        )
+        actual = self.client.volumes.import_archive("dbase", data=b'mocked_archive')
+        self.assertIsInstance(actual, type(None))
+
+        with self.assertRaises(RuntimeError):
+            # The archive does not exist
+            self.client.volumes.import_archive("dbase", path="/path/to/archive.tar")
+
+    @requests_mock.Mocker()
+    def test_export(self, mock):
+        mock.get(
+            tests.LIBPOD_URL + "/volumes/dbase/export",
+            content=b'exported_archive',
+        )
+        actual = self.client.volumes.export_archive("dbase")
+        self.assertIsInstance(actual, bytes)
+
 
 if __name__ == '__main__':
     unittest.main()

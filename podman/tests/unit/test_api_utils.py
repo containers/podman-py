@@ -122,7 +122,7 @@ class TestUtilsCase(unittest.TestCase):
         self.assertEqual(actual, json.dumps(payload, sort_keys=True))
 
     def test_prepare_body_none(self) -> None:
-        payload = {
+        payload: dict[str, Any] = {
             "String": "",
             "Integer": None,
             "Boolean": False,

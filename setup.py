@@ -9,7 +9,7 @@ excluded = [
 ]
 
 
-class build_py(build_py_orig):
+class build_py(build_py_orig):  # noqa: N801
     def find_package_modules(self, package, package_dir):
         modules = super().find_package_modules(package, package_dir)
         return [

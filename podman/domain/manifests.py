@@ -89,7 +89,7 @@ class Manifest(PodmanResource):
             data["images"].append(img_item)
 
         data = api.prepare_body(data)
-        response = self.client.put(f"/manifests/{self.quoted_name}", data=data)
+        response = self.api.put(f"/manifests/{self.quoted_name}", data=data)
         response.raise_for_status(not_found=ImageNotFound)
         return self.reload()
 
@@ -126,7 +126,7 @@ class Manifest(PodmanResource):
         }
 
         destination_quoted = urllib.parse.quote_plus(destination)
-        response = self.client.post(
+        response = self.api.post(
             f"/manifests/{self.quoted_name}/registry/{destination_quoted}",
             params=params,
             headers=headers,
@@ -150,7 +150,7 @@ class Manifest(PodmanResource):
         data = {"operation": "remove", "images": [digest]}
         data = api.prepare_body(data)
 
-        response = self.client.put(f"/manifests/{self.quoted_name}", data=data)
+        response = self.api.put(f"/manifests/{self.quoted_name}", data=data)
         response.raise_for_status(not_found=ImageNotFound)
         return self.reload()
 
@@ -199,7 +199,7 @@ class ManifestsManager(Manager):
             params["all"] = all
 
         name_quoted = urllib.parse.quote_plus(name)
-        response = self.client.post(f"/manifests/{name_quoted}", params=params)
+        response = self.api.post(f"/manifests/{name_quoted}", params=params)
         response.raise_for_status(not_found=ImageNotFound)
 
         body = response.json()
@@ -212,7 +212,7 @@ class ManifestsManager(Manager):
 
     def exists(self, key: str) -> bool:
         key = urllib.parse.quote_plus(key)
-        response = self.client.get(f"/manifests/{key}/exists")
+        response = self.api.get(f"/manifests/{key}/exists")
         return response.ok
 
     def get(self, key: str) -> Manifest:
@@ -229,7 +229,7 @@ class ManifestsManager(Manager):
             APIError: when service reports an error
         """
         quoted_key = urllib.parse.quote_plus(key)
-        response = self.client.get(f"/manifests/{quoted_key}/json")
+        response = self.api.get(f"/manifests/{quoted_key}/json")
         response.raise_for_status()
 
         body = response.json()
@@ -247,7 +247,7 @@ class ManifestsManager(Manager):
         if isinstance(name, Manifest):
             name = name.name
 
-        response = self.client.delete(f"/manifests/{name}")
+        response = self.api.delete(f"/manifests/{name}")
         response.raise_for_status(not_found=ImageNotFound)
 
         body = response.json()

@@ -49,7 +49,7 @@ class Image(PodmanResource):
             APIError: when service returns an error
         """
 
-        response = self.client.get(f"/images/{self.id}/history")
+        response = self.api.get(f"/images/{self.id}/history")
         response.raise_for_status(not_found=ImageNotFound)
         return response.json()
 
@@ -105,7 +105,7 @@ class Image(PodmanResource):
                     raise InvalidArgument(f"'{named}' is not a valid tag for this image")
                 img = urllib.parse.quote(named)
 
-        response = self.client.get(
+        response = self.api.get(
             f"/images/{img}/get", params={"format": ["docker-archive"]}, stream=True
         )
         response.raise_for_status(not_found=ImageNotFound)
@@ -132,7 +132,7 @@ class Image(PodmanResource):
             APIError: when service returns an error
         """
         params = {"repo": repository, "tag": tag}
-        response = self.client.post(f"/images/{self.id}/tag", params=params)
+        response = self.api.post(f"/images/{self.id}/tag", params=params)
         if response.ok:
             return True
 

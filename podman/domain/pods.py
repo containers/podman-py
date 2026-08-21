@@ -37,7 +37,7 @@ class Pod(PodmanResource):
             NotFound: when pod not found
             APIError: when service reports an error
         """
-        response = self.client.post(f"/pods/{self.id}/kill", params={"signal": signal})
+        response = self.api.post(f"/pods/{self.id}/kill", params={"signal": signal})
         response.raise_for_status()
 
     def pause(self) -> None:
@@ -47,7 +47,7 @@ class Pod(PodmanResource):
             NotFound: when pod not found
             APIError: when service reports an error
         """
-        response = self.client.post(f"/pods/{self.id}/pause")
+        response = self.api.post(f"/pods/{self.id}/pause")
         response.raise_for_status()
 
     def remove(self, force: Optional[bool] = None) -> None:
@@ -69,7 +69,7 @@ class Pod(PodmanResource):
             NotFound: when pod not found
             APIError: when service reports an error
         """
-        response = self.client.post(f"/pods/{self.id}/restart")
+        response = self.api.post(f"/pods/{self.id}/restart")
         response.raise_for_status()
 
     def start(self) -> None:
@@ -79,7 +79,7 @@ class Pod(PodmanResource):
             NotFound: when pod not found
             APIError: when service reports an error
         """
-        response = self.client.post(f"/pods/{self.id}/start")
+        response = self.api.post(f"/pods/{self.id}/start")
         response.raise_for_status()
 
     def stop(self, timeout: _Timeout = None) -> None:
@@ -90,7 +90,7 @@ class Pod(PodmanResource):
             APIError: when service reports an error
         """
         params = {"t": timeout}
-        response = self.client.post(f"/pods/{self.id}/stop", params=params)
+        response = self.api.post(f"/pods/{self.id}/stop", params=params)
         response.raise_for_status()
 
     def top(self, **kwargs) -> dict[str, Any]:
@@ -107,7 +107,7 @@ class Pod(PodmanResource):
             "ps_args": kwargs.get("ps_args"),
             "stream": False,
         }
-        response = self.client.get(f"/pods/{self.id}/top", params=params)
+        response = self.api.get(f"/pods/{self.id}/top", params=params)
         response.raise_for_status()
 
         if len(response.text) == 0:
@@ -121,5 +121,5 @@ class Pod(PodmanResource):
             NotFound: when pod not found
             APIError: when service reports an error
         """
-        response = self.client.post(f"/pods/{self.id}/unpause")
+        response = self.api.post(f"/pods/{self.id}/unpause")
         response.raise_for_status()

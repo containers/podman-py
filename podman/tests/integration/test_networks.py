@@ -105,7 +105,6 @@ class NetworksIntegrationTest(base.IntegrationTest):
             post_count = network.containers
             self.assertGreater(pre_count, post_count)
 
-    @unittest.skip("Requires Podman 3.1")
     def test_network_prune(self):
         network = self.client.networks.create(
             "integration_test",
