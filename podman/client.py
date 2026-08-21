@@ -7,6 +7,7 @@ from functools import cached_property
 from pathlib import Path
 from typing import Any, Optional
 
+from podman.errors.exceptions import APIError, PodmanConnectionError
 from podman.api.client import APIClient
 from podman.api.path_utils import get_runtime_dir
 from podman.domain.config import PodmanConfig
@@ -80,6 +81,27 @@ class PodmanClient(AbstractContextManager):
                 path = str(Path(get_runtime_dir()) / "podman" / "podman.sock")
                 api_kwargs["base_url"] = "http+unix://" + path
         self.api = APIClient(**api_kwargs)
+
+        self._verify_connection()
+
+    def _verify_connection(self):
+        """Verify connection to Podman daemon during initialization.
+
+        Raises:
+            PodmanException: If unable to connect to Podman daemon
+        """
+        try:
+            # Attempt to get version info to verify connection
+            self.version()
+        except APIError as e:
+            if "No such file or directory" in str(e):
+                raise PodmanConnectionError(
+                    "Error while connecting to Podman daemon: "
+                    f"Could not find socket file - {str(e)}"
+                ) from e
+            raise PodmanConnectionError(f"Error while connecting to Podman daemon: {str(e)}") from e
+        except Exception as e:
+            raise PodmanConnectionError(f"Error while connecting to Podman daemon: {str(e)}") from e
 
     def __enter__(self) -> "PodmanClient":
         return self
