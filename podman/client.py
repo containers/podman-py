@@ -30,10 +30,11 @@ class PodmanClient(AbstractContextManager):
     Examples:
 
         with PodmanClient() as client:
-            ...  # connects to active service or local Unix socket by default
+            ...  # connects to active podman machine service if configured,
+                 # otherwise falls back to the local Unix socket
 
         with PodmanClient(base_url="ssh://root@api.example:22/run/podman/podman.sock?secure=True",
-            identity="~alice/.ssh/api_ed25519") as client:
+            identity="~/.ssh/api_ed25519") as client:
             ...
     """
 
@@ -42,8 +43,11 @@ class PodmanClient(AbstractContextManager):
 
         Keyword Args:
             base_url (str): Full URL to Podman service. Optional. If not provided,
-                the active configured service is used, falling back to the local
-                Unix socket at ``$XDG_RUNTIME_DIR/podman/podman.sock``.
+                the active configured podman machine service is used if available,
+                otherwise falls back to the local Unix socket resolved via
+                ``get_runtime_dir()`` (typically ``/run/user/$UID/podman/podman.sock``).
+                Rootful API users must explicitly pass ``base_url`` (e.g.
+                ``http+unix:///run/podman/podman.sock``) or use ``connection=``.
                 See examples.
             version (str): API version to use. Default: auto, use version from server
             timeout (int): Timeout for API calls, in seconds.
