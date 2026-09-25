@@ -56,7 +56,12 @@ class IntegrationTest(fixtures.TestWithFixtures):
 
         self.log_level = os.environ.get("PODMAN_LOG_LEVEL", "INFO")
 
-        self.test_dir = self.useFixture(fixtures.TempDir()).path
+        # Prefer /run over /tmp: sshd PrivateTmp can hide /tmp from stream-local forwards.
+        try:
+            self.test_dir = self.useFixture(fixtures.TempDir("/run")).path
+        except OSError:
+            self.test_dir = self.useFixture(fixtures.TempDir()).path
+
         self.socket_file = os.path.join(self.test_dir, uuid.uuid4().hex)
         self.socket_uri = f'unix://{self.socket_file}'
         self.service_launcher = utils.PodmanLauncher(

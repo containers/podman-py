@@ -21,7 +21,7 @@ require:
     /base_python:
         tag: [ base ]
         summary: Run all tests on the base python version
-        test: cd .. && make tests-ci-base-python
+        test: cd .. && PODMAN_SSH_IDENTITY=/root/.ssh/id_ecdsa make tests-ci-base-python
         duration: 10m
 
     /base_python_pnext:
@@ -33,5 +33,5 @@ require:
     /all_python:
         tag: [ matrix ]
         summary: Run all tests for all python versions available
-        test: cd .. && make tests-ci-all-python
+        test: cd .. && PODMAN_SSH_IDENTITY=/root/.ssh/id_ecdsa make tests-ci-all-python
         duration: 20m

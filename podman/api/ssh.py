@@ -8,6 +8,7 @@ import functools
 import logging
 import pathlib
 import random
+import select
 import socket
 import subprocess
 import urllib.parse
@@ -27,126 +28,151 @@ from .adapter_utils import _key_normalizer
 logger = logging.getLogger("podman.ssh_adapter")
 
 
+def _identity_args(identity: Optional[str]) -> list[str]:
+    if identity is None:
+        return []
+    path = pathlib.Path(identity).expanduser()
+    return ["-i", str(path)]
+
+
+def _runtime_forward_path() -> pathlib.Path:
+    runtime_dir = pathlib.Path(get_runtime_dir()) / "podman"
+    runtime_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+    return runtime_dir / f"podman-forward-{random.getrandbits(80):x}.sock"
+
+
+def _ssh_forward_target(uri: urllib.parse.ParseResult) -> str:
+    """Remote target for ssh -L (unix socket path or host:port)."""
+    query = urllib.parse.parse_qs(uri.query)
+    if "tcp_port" in query:
+        return f"127.0.0.1:{query['tcp_port'][0]}"
+    if uri.path:
+        return uri.path
+    raise ValueError(f"SSH URI must include a socket path or tcp_port query: {uri.geturl()}")
+
+
 class SSHSocket(socket.socket):
-    """Specialization of socket.socket to forward a UNIX domain socket via SSH."""
+    """Specialization of socket.socket to forward a Podman service via SSH."""
 
     def __init__(self, uri: str, identity: Optional[str] = None):
         """Initialize SSHSocket.
 
         Args:
-            uri: Full address of a Podman service including path to remote socket.
-            identity: path to file containing SSH key for authorization
+            uri: Full address of a Podman service. The SSH forward target is taken from the
+                URL path (remote Unix socket) or from the ``tcp_port`` query parameter (remote
+                ``127.0.0.1:<port>`` TCP service, for environments where stream-local forwarding
+                to a test socket is unreliable).
+            identity: Path to file containing SSH key for authorization.
 
         Examples:
             SSHSocket("http+ssh://alice@api.example:2222/run/user/1000/podman/podman.sock",
                       "~alice/.ssh/api_ed25519")
+            SSHSocket("http+ssh://root@localhost:22?tcp_port=8889", "/root/.ssh/id_ecdsa")
         """
         super().__init__(socket.AF_UNIX, socket.SOCK_STREAM)
         self.uri = uri
         self.identity = identity
         self._proc: Optional[subprocess.Popen] = None
-
-        runtime_dir = pathlib.Path(get_runtime_dir()) / "podman"
-        runtime_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
-
-        self.local_sock = runtime_dir / f"podman-forward-{random.getrandbits(80):x}.sock"
+        self.local_sock = _runtime_forward_path()
 
     def connect(self, **kwargs):  # pylint: disable=unused-argument
-        """Returns socket for SSH tunneled UNIX domain socket.
+        """Returns socket for SSH tunneled access to the Podman service.
 
         Raises:
-            subprocess.TimeoutExpired: when SSH client fails to create local socket
+            OSError: when the SSH channel cannot be established.
+            subprocess.TimeoutExpired: when SSH client fails to create local socket.
         """
         uri = urllib.parse.urlparse(self.uri)
-
+        remote_target = _ssh_forward_target(uri)
         command = [
             "ssh",
             "-N",
             "-o",
             "StrictHostKeyChecking no",
             "-L",
-            f"{self.local_sock}:{uri.path}",
+            f"{self.local_sock}:{remote_target}",
+            *_identity_args(self.identity),
+            f"ssh://{uri.netloc}",
         ]
+        cmd = " ".join(command)
+        expiration = time.monotonic() + 30
 
-        if self.identity is not None:
-            path = pathlib.Path(self.identity).expanduser()
-            command += ["-i", str(path)]
+        while time.monotonic() < expiration:
+            if self._proc is None or self._proc.poll() is not None:
+                with suppress(FileNotFoundError):
+                    self.local_sock.unlink()
+                self._proc = subprocess.Popen(  # pylint: disable=consider-using-with
+                    command,
+                    shell=False,
+                    stdout=subprocess.DEVNULL,
+                    stdin=subprocess.DEVNULL,
+                    stderr=subprocess.PIPE,
+                )
 
-        command += [f"ssh://{uri.netloc}"]
-        self._proc = subprocess.Popen(  # pylint: disable=consider-using-with
-            command,
-            shell=False,
-            stdout=subprocess.PIPE,
-            stdin=subprocess.PIPE,
-        )
+            while not self.local_sock.exists():
+                if time.monotonic() > expiration:
+                    raise subprocess.TimeoutExpired(cmd, expiration)
+                if self._proc.poll() is not None:
+                    break
+                logger.debug("Waiting on %s", self.local_sock)
+                time.sleep(0.2)
+            else:
+                try:
+                    super().connect(str(self.local_sock))
+                except OSError as exc:
+                    logger.debug("Forward socket not ready: %s", exc)
+                    time.sleep(0.2)
+                    continue
 
-        expiration = time.monotonic() + 300
-        while not self.local_sock.exists():
-            if time.monotonic() > expiration:
-                cmd = " ".join(command)
-                raise subprocess.TimeoutExpired(cmd, expiration)
+                # Socket connected — verify the remote channel actually works.
+                time.sleep(0.1)
+                if self._forward_channel_failed():
+                    logger.debug("SSH forward channel refused, retrying")
+                    self._reset_forward()
+                    time.sleep(0.2)
+                    continue
+                return
 
-            logger.debug("Waiting on %s", self.local_sock)
             time.sleep(0.2)
 
-        super().connect(str(self.local_sock))
+        raise subprocess.TimeoutExpired(cmd, expiration)
 
-    def send(self, data: bytes, flags=None) -> int:  # pylint: disable=unused-argument
-        """Write data to SSH forwarded UNIX domain socket.
+    def _reset_forward(self) -> None:
+        with suppress(OSError):
+            super().close()
+        if self._proc:
+            if self._proc.stderr:
+                with suppress(OSError):
+                    self._proc.stderr.close()
+            self._proc.terminate()
+            try:
+                self._proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self._proc.kill()
+            self._proc = None
+        with suppress(FileNotFoundError):
+            self.local_sock.unlink()
+        self.local_sock = _runtime_forward_path()
+        socket.socket.__init__(self, socket.AF_UNIX, socket.SOCK_STREAM)
 
-        Args:
-            data: Data to write.
-            flags: Ignored.
-
-        Returns:
-            The number of bytes written.
-
-        Raises:
-            RuntimeError: When socket has not been connected.
-        """
-        if not self._proc or self._proc.stdin.closed:
-            raise RuntimeError(f"SSHSocket({self.uri}) not connected.")
-
-        count = self._proc.stdin.write(data)
-        self._proc.stdin.flush()
-        return count
-
-    def recv(self, buffersize, flags=None) -> bytes:  # pylint: disable=unused-argument
-        """Read data from SSH forwarded UNIX domain socket.
-
-        Args:
-            buffersize: Maximum number of bytes to read.
-            flags: Ignored.
-
-        Raises:
-            RuntimeError: When socket has not been connected.
-        """
-        if not self._proc:
-            raise RuntimeError(f"SSHSocket({self.uri}) not connected.")
-        return self._proc.stdout.read(buffersize)
+    def _forward_channel_failed(self) -> bool:
+        if not self._proc or not self._proc.stderr:
+            return False
+        while True:
+            ready, _, _ = select.select([self._proc.stderr], [], [], 0.0)
+            if not ready:
+                break
+            line = self._proc.stderr.readline()
+            if not line:
+                break
+            text = line.decode(errors="replace")
+            if "open failed" in text.lower():
+                logger.debug("SSH forward stderr: %s", text.strip())
+                return True
+        return False
 
     def close(self):
-        """Release resources held by SSHSocket.
-
-        The SSH client is first sent SIGTERM, then a SIGKILL 20 seconds later if needed.
-        """
-        if not self._proc or self._proc.stdin.closed:
-            return
-
-        with suppress(BrokenPipeError):
-            self._proc.stdin.close()
-        self._proc.stdout.close()
-
-        self._proc.terminate()
-        try:
-            self._proc.wait(timeout=20)
-        except subprocess.TimeoutExpired:
-            logger.debug("SIGKILL required to stop SSH client.")
-            self._proc.kill()
-
-        self.local_sock.unlink()
-        self._proc = None
-        super().close()
+        self._reset_forward()
 
 
 class SSHConnection(urllib3.connection.HTTPConnection):
