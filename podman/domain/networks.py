@@ -36,6 +36,9 @@ class Network(PodmanResource):
     def id(self):  # pylint: disable=invalid-name
         """str: Returns the identifier of the network."""
         with suppress(KeyError):
+            return self.attrs["id"]
+
+        with suppress(KeyError):
             return self.attrs["Id"]
 
         with suppress(KeyError):
@@ -43,6 +46,12 @@ class Network(PodmanResource):
             return sha256.hexdigest()
 
         return None
+
+    def _get_compatible_id(self):
+        """str: Returns the identifier of the network (Docker-compatible format)."""
+        with suppress(KeyError):
+            return self.attrs["Id"]
+        return self.id
 
     @property
     def containers(self):
@@ -103,7 +112,7 @@ class Network(PodmanResource):
             "IPAddress": kwargs.get("ipv4_address", kwargs.get("ipv6_address")),
             "IPAMConfig": ipam,
             "Links": kwargs.get("link_local_ips"),
-            "NetworkID": self.id,
+            "NetworkID": self._get_compatible_id(),
         }
         endpoint_config = {
             k: v for (k, v) in endpoint_config.items() if not (v is None or len(v) == 0)

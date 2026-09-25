@@ -61,6 +61,10 @@ class NetworkTestCase(unittest.TestCase):
         self.addCleanup(self.client.close)
 
     def test_id(self):
+        expected = {"id": "1cf06390-709d-4ffa-a054-c3083abe367c"}
+        actual = Network(attrs=expected)
+        self.assertEqual(actual.id, expected["id"])
+
         expected = {"Id": "1cf06390-709d-4ffa-a054-c3083abe367c"}
         actual = Network(attrs=expected)
         self.assertEqual(actual.id, expected["Id"])
@@ -69,6 +73,11 @@ class NetworkTestCase(unittest.TestCase):
         self.assertEqual(
             actual.id, "3549b0028b75d981cdda2e573e9cb49dedc200185876df299f912b79f69dabd8"
         )
+
+    def test_compatible_id(self):
+        expected = {"Id": "1cf06390-709d-4ffa-a054-c3083abe367c"}
+        actual = Network(attrs=expected)
+        self.assertEqual(actual._get_compatible_id(), expected["Id"])
 
     def test_name(self):
         actual = Network(attrs={"Name": "database"})
