@@ -42,6 +42,31 @@ class TestUtilsCase(unittest.TestCase):
             if actual is not None:
                 self.assertIsInstance(actual, str)
 
+    def test_format_list_valued_filters(self) -> None:
+        cases: list[tuple[dict[str, Any], Optional[dict[str, list[str]]]]] = [
+            ({"label": ["team=platform", "env=test"]}, {"label": ["team=platform", "env=test"]}),
+            ({"label": ["enabled"], "exited": 0}, {"label": ["enabled"], "exited": ["0"]}),
+            ({"exited": [0, 1]}, {"exited": ["0", "1"]}),
+            ({"label": [], "status": "running"}, {"status": ["running"]}),
+            ({"label": [None, "enabled"], "status": None}, {"label": ["enabled"]}),
+            ({"label": []}, None),
+            ({"label": [None]}, None),
+        ]
+        cases.extend(
+            (
+                {
+                    key: tuple(value) if isinstance(value, list) else value
+                    for key, value in filters.items()
+                },
+                expected,
+            )
+            for filters, expected in list(cases)
+        )
+        for filters, expected in cases:
+            with self.subTest(filters=filters):
+                actual = api.prepare_filters(filters)
+                self.assertEqual(json.loads(actual) if actual is not None else None, expected)
+
     def test_containerignore_404(self) -> None:
         actual = api.prepare_containerignore("/does/not/exists")
         self.assertListEqual([], actual)
