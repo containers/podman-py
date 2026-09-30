@@ -542,6 +542,241 @@ class ContainersManagerTestCase(unittest.TestCase):
                 params = CreateMixin._render_payload({"image": "fedora", kwarg: value})
                 self.assertEqual(expected, params[key])
 
+    def test_create_network_shorthand(self):
+        params = CreateMixin._render_payload({"image": "fedora", "network": "first"})
+        self.assertEqual({"first": {}}, params["networks"])
+        self.assertEqual({"nsmode": "bridge"}, params["netns"])
+        self.assertNotIn("cni_networks", params)
+
+    def test_create_networks_default_bridge(self):
+        params = CreateMixin._render_payload(
+            {"image": "fedora", "networks": {"first": {"aliases": ["a"]}}}
+        )
+        self.assertEqual({"first": {"aliases": ["a"]}}, params["networks"])
+        self.assertEqual({"nsmode": "bridge"}, params["netns"])
+
+    def test_create_network_and_networks_merged(self):
+        networks = {"first": {"aliases": ["a"]}}
+        params = CreateMixin._render_payload(
+            {"image": "fedora", "network": "second", "networks": networks}
+        )
+        self.assertEqual({"first": {"aliases": ["a"]}, "second": {}}, params["networks"])
+        self.assertEqual({"first": {"aliases": ["a"]}}, networks)  # caller's dict untouched
+
+    def test_create_networks_explicit_network_mode(self):
+        params = CreateMixin._render_payload(
+            {"image": "fedora", "networks": {"first": {}}, "network_mode": "bridge"}
+        )
+        self.assertEqual({"nsmode": "bridge"}, params["netns"])
+
+    def test_create_no_network(self):
+        params = CreateMixin._render_payload({"image": "fedora"})
+        self.assertIsNone(params["networks"])
+        self.assertNotIn("netns", params)
+
+    def test_render_payload_network_mode_keywords(self):
+        cases = {
+            "host": {"nsmode": "host"},
+            "none": {"nsmode": "none"},
+            "private": {"nsmode": "private"},
+            "bridge": {"nsmode": "bridge"},
+            "pasta": {"nsmode": "pasta"},
+            "container:abc": {"nsmode": "container", "value": "abc"},
+            "ns:/run/netns/test": {"nsmode": "path", "value": "/run/netns/test"},
+            "default": {"nsmode": "private"},
+        }
+        for network, netns in cases.items():
+            with self.subTest(network=network):
+                params = CreateMixin._render_payload({"image": "alpine", "network": network})
+                self.assertEqual(params["netns"], netns)
+                self.assertIsNone(params["networks"])
+
+    def test_render_payload_network_mode_container(self):
+        params = CreateMixin._render_payload({"image": "alpine", "network_mode": "container:abc"})
+        self.assertEqual(params["netns"], {"nsmode": "container", "value": "abc"})
+
+    def test_render_payload_networks_with_non_bridge_mode(self):
+        for kwargs in (
+            {"network": "host", "networks": {"foo": {}}},
+            {"network_mode": "none", "networks": {"foo": {}}},
+        ):
+            with self.subTest(**kwargs):
+                with self.assertRaises(RuntimeError):
+                    CreateMixin._render_payload({"image": "alpine", **kwargs})
+        params = CreateMixin._render_payload(
+            {"image": "alpine", "network": "bridge", "networks": {"foo": {}}}
+        )
+        self.assertEqual(params["netns"], {"nsmode": "bridge"})
+        self.assertEqual(params["networks"], {"foo": {}})
+
+    def test_render_payload_network_pasta_options(self):
+        params = CreateMixin._render_payload({"image": "alpine", "network": "pasta:-T,8080"})
+        self.assertEqual(params["netns"], {"nsmode": "pasta"})
+        self.assertEqual(params["network_options"], {"pasta": ["-T", "8080"]})
+
+    def test_render_payload_network_name_not_mode(self):
+        # Without a value, "container" is not a mode keyword (as in the CLI): it is a network name.
+        params = CreateMixin._render_payload({"image": "alpine", "network": "container"})
+        self.assertEqual(params["networks"], {"container": {}})
+        self.assertEqual(params["netns"], {"nsmode": "bridge"})
+
+    def test_render_payload_network_and_network_mode(self):
+        with self.assertRaises(RuntimeError):
+            CreateMixin._render_payload(
+                {"image": "alpine", "network": "first", "network_mode": "host"}
+            )
+
+    def test_render_payload_network_name_list(self):
+        params = CreateMixin._render_payload(
+            {"image": "alpine", "network": "net1, net2", "networks": {"net3": {}}}
+        )
+        self.assertEqual(params["netns"], {"nsmode": "bridge"})
+        self.assertEqual(params["networks"], {"net1": {}, "net2": {}, "net3": {}})
+
+    def test_render_payload_network_empty_name(self):
+        for network in (":ip=10.89.0.5", "net1,,net2", "net1,", "   "):
+            with self.subTest(network=network):
+                with self.assertRaises(ValueError):
+                    CreateMixin._render_payload({"image": "alpine", "network": network})
+
+    def test_render_payload_network_none_with_network_mode(self):
+        params = CreateMixin._render_payload(
+            {"image": "alpine", "network": None, "network_mode": "host"}
+        )
+        self.assertEqual(params["netns"], {"nsmode": "host"})
+
+    def test_render_payload_network_mode_dict(self):
+        params = CreateMixin._render_payload(
+            {"image": "alpine", "network_mode": {"nsmode": "host"}}
+        )
+        self.assertEqual(params["netns"], {"nsmode": "host"})
+        with self.assertRaises(RuntimeError):
+            CreateMixin._render_payload(
+                {"image": "alpine", "network_mode": {"nsmode": "host"}, "networks": {"foo": {}}}
+            )
+
+    def test_render_payload_network_empty_options(self):
+        params = CreateMixin._render_payload({"image": "alpine", "network": "mynet:"})
+        self.assertEqual(params["networks"], {"mynet": {}})
+
+    def test_render_payload_network_options_also_in_networks(self):
+        for kwargs in (
+            {"network": "mynet:alias=a", "networks": {"mynet": {}}},
+            {"network": "bridge:ip=10.88.0.5", "networks": {"default": {}}},
+        ):
+            with self.subTest(network=kwargs["network"]):
+                with self.assertRaises(ValueError):
+                    CreateMixin._render_payload({"image": "alpine", **kwargs})
+
+    def test_render_payload_network_name_also_in_networks(self):
+        # A plain name carries no options, so the caller's entry in networks is kept.
+        params = CreateMixin._render_payload(
+            {"image": "alpine", "network": "mynet", "networks": {"mynet": {"aliases": ["x"]}}}
+        )
+        self.assertEqual(params["networks"], {"mynet": {"aliases": ["x"]}})
+
+    def test_render_payload_network_name_list_duplicates(self):
+        params = CreateMixin._render_payload({"image": "alpine", "network": "net1,net1"})
+        self.assertEqual(params["networks"], {"net1": {}})
+
+    def test_render_payload_network_slirp4netns_options(self):
+        params = CreateMixin._render_payload(
+            {"image": "alpine", "network": "slirp4netns:allow_host_loopback=true"}
+        )
+        self.assertEqual(params["netns"], {"nsmode": "slirp4netns"})
+        self.assertEqual(params["network_options"], {"slirp4netns": ["allow_host_loopback=true"]})
+
+    def test_render_payload_network_name_with_options(self):
+        params = CreateMixin._render_payload(
+            {"image": "alpine", "network": "mynet:ip=10.89.0.5,alias=web,interface_name=eth1"}
+        )
+        self.assertEqual(params["netns"], {"nsmode": "bridge"})
+        self.assertEqual(
+            params["networks"],
+            {"mynet": {"static_ips": ["10.89.0.5"], "aliases": ["web"], "interface_name": "eth1"}},
+        )
+
+    def test_render_payload_network_option_without_value(self):
+        # As in the CLI, an option without "=" is passed on (and rejected by the server).
+        params = CreateMixin._render_payload({"image": "alpine", "network": "bridge:ip"})
+        self.assertEqual(params["networks"], {"default": {"static_ips": [""]}})
+
+    def test_is_network_mode(self):
+        for network in (
+            "host",
+            "none",
+            "default",
+            "pod",
+            "private",
+            "bridge",
+            "bridge:ip=10.0.0.2",
+            "pasta",
+            "pasta:-T,8080",
+            "slirp4netns",
+            "container:abc",
+            "ns:/run/netns/x",
+        ):
+            with self.subTest(network=network):
+                self.assertTrue(CreateMixin._is_network_mode(network))
+        for network in ("first", "container", "ns", "host:x", "mynet:ip=10.0.0.2"):
+            with self.subTest(network=network):
+                self.assertFalse(CreateMixin._is_network_mode(network))
+
+    def test_render_payload_network_bridge_options(self):
+        params = CreateMixin._render_payload(
+            {
+                "image": "alpine",
+                "network": (
+                    "bridge:ip=10.88.0.5,mac=aa:bb:cc:dd:ee:ff,alias=web,interface_name=eth1"
+                ),
+            }
+        )
+        self.assertEqual(params["netns"], {"nsmode": "bridge"})
+        self.assertEqual(
+            params["networks"],
+            {
+                "default": {
+                    "static_ips": ["10.88.0.5"],
+                    "static_mac": "aa:bb:cc:dd:ee:ff",
+                    "aliases": ["web"],
+                    "interface_name": "eth1",
+                }
+            },
+        )
+
+    def test_render_payload_network_bridge_repeated_and_unknown_options(self):
+        params = CreateMixin._render_payload(
+            {
+                "image": "alpine",
+                "network_mode": "bridge:ip=10.88.0.5,ip6=fd00::5,alias=a,alias=b,metric=100",
+            }
+        )
+        self.assertEqual(
+            params["networks"],
+            {
+                "default": {
+                    "static_ips": ["10.88.0.5", "fd00::5"],
+                    "aliases": ["a", "b"],
+                    "options": {"metric": "100"},
+                }
+            },
+        )
+
+    def test_render_payload_network_bridge_without_options(self):
+        params = CreateMixin._render_payload({"image": "alpine", "network": "bridge"})
+        self.assertEqual(params["netns"], {"nsmode": "bridge"})
+        self.assertIsNone(params["networks"])
+
+    def test_render_payload_network_bridge_options_with_networks(self):
+        params = CreateMixin._render_payload(
+            {"image": "alpine", "network": "bridge:ip=10.88.0.5", "networks": {"foo": {}}}
+        )
+        self.assertEqual(params["netns"], {"nsmode": "bridge"})
+        self.assertEqual(
+            params["networks"],
+            {"foo": {}, "default": {"static_ips": ["10.88.0.5"]}},
+        )
+
     def test_create_unsupported_key(self):
         with self.assertRaises(TypeError):
             self.client.containers.create("fedora", "/usr/bin/ls", blkio_weight=100.0)
