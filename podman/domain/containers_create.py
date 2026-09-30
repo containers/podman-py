@@ -18,6 +18,14 @@ from podman.domain.secrets import Secret
 
 logger = logging.getLogger("podman.containers")
 
+# Network modes recognised by `podman run --network`, mirroring ParseNetworkFlag in
+# https://github.com/containers/podman/blob/main/pkg/specgen/namespaces.go
+# Any other value is the name of a network to attach to.
+_NETWORK_MODES = frozenset({"default", "host", "none", "pod", "private"})
+# "<mode>" or "<mode>:<options>"
+_NETWORK_MODES_WITH_OPTIONS = frozenset({"bridge", "pasta", "slirp4netns"})
+# only "<mode>:<value>"
+_NETWORK_MODES_WITH_VALUE = frozenset({"container", "ns"})
 NAMED_VOLUME_PATTERN = re.compile(r"[a-zA-Z0-9][a-zA-Z0-9_.-]*")
 
 
@@ -204,6 +212,17 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 ]
             name (str): The name for this container.
             nano_cpus (int):  CPU quota in units of 1e-9 CPUs.
+            network (str): Network to connect the container to at creation time, as accepted
+                by ``podman create --network``. One of:
+
+                - <name>[:<options>]: Name of a network (shorthand for
+                  ``networks={name: {...}}``), with optional per-network options
+                  (ip=, ip6=, mac=, alias=, interface_name=, or any other key=value).
+                - <name>,<name>,...: Several networks without options.
+                - A network mode keyword as accepted by ``network_mode``
+                  (e.g. ``host``, ``none``, ``container:<id>``).
+
+                Incompatible with ``network_mode``.
             networks (dict[str, dict[str, Union[str, list[str]]):
                 Networks which will be connected to container during container creation
                 Values of the network configuration can be :
@@ -213,13 +232,20 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             network_disabled (bool): Disable networking.
             network_mode (str): One of:
 
-                - bridge: Create a new network stack for the container
-                  on the bridge network.
+                - bridge[:<options>]: Create a new network stack for the container
+                  on the default bridge network, with optional per-network options
+                  (e.g. ip=, mac=, alias=, interface_name=).
                 - none: No networking for this container.
                 - container:<name|id>: Reuse another container's network
                   stack.
                 - host: Use the host network stack.
                 - ns:<path>: User defined netns path.
+                - private / default: Create a new, private network namespace.
+                - pod: Join the pod's network namespace.
+                - pasta[:<options>]: Use pasta for user-mode networking.
+                - slirp4netns[:<options>]: Use slirp4netns for user-mode networking.
+                  Only accepted by older Podman versions; newer ones reject it in
+                  favour of pasta.
 
                 Incompatible with network.
             oom_kill_disable (bool): Whether to disable OOM killer.
@@ -692,6 +718,33 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                     f"or int (found : {size_type})"
                 )
 
+        # Like the CLI (ParseNetworkFlag): `network` is either a namespace mode keyword
+        # or the name of a network to attach to (shorthand for `networks={network: {}}`).
+        networks = dict(pop("networks") or {})
+        network = pop("network")
+        network_mode = pop("network_mode")
+        if network and network_mode:
+            raise RuntimeError('The options "network" and "network_mode" can not be used together.')
+        if network:
+            if CreateMixin._is_network_mode(network):
+                network_mode = network
+            else:
+                name, sep, options = network.partition(":")
+                if sep:
+                    if not name:
+                        raise ValueError("network name cannot be empty")
+                    networks.setdefault(name, CreateMixin._parse_network_options(options))
+                else:
+                    # Comma-separated list of networks, kept by the CLI for backwards compatibility.
+                    for name in network.split(","):
+                        networks.setdefault(name, {})
+        if networks and network_mode:
+            mode = network_mode.partition(":")[0]
+            if mode != "bridge":
+                raise RuntimeError(
+                    f'networks can only be used with bridge network mode, got "{mode}"'
+                )
+
         # Transform keywords into parameters
         params = {
             "annotations": pop("annotations"),  # TODO document, podman only
@@ -700,7 +753,6 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "cap_drop": pop("cap_drop"),
             "cgroup_parent": pop("cgroup_parent"),
             "cgroups_mode": pop("cgroups_mode"),  # TODO document, podman only
-            "cni_networks": [pop("network")],
             "command": args.pop("command", args.pop("cmd", None)),
             "conmon_pid_file": pop("conmon_pid_file"),  # TODO document, podman only
             "containerCreateCommand": pop("containerCreateCommand"),  # TODO document, podman only
@@ -733,7 +785,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "name": pop("name"),
             "namespace": pop("namespace"),  # TODO What is this for?
             "network_options": pop("network_options"),  # TODO document, podman only
-            "networks": pop("networks"),
+            "networks": networks or None,
             "no_new_privileges": pop("no_new_privileges"),  # TODO document, podman only
             "oci_runtime": pop("runtime"),
             "oom_score_adj": pop("oom_score_adj"),
@@ -1070,13 +1122,34 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         if "ipc_mode" in args:
             params["ipcns"] = normalize_nsmode(args.pop("ipc_mode"))
 
-        if "network_mode" in args:
-            network_mode = args.pop("network_mode")
-            details = network_mode.split(":")
-            if len(details) == 2 and details[0] == "ns":
-                params["netns"] = {"nsmode": "path", "value": details[1]}
+        if network_mode:
+            # Mirrors ParseNetworkFlag: "<mode>:<value>" carries a value or options.
+            mode, _, value = network_mode.partition(":")
+            if mode == "ns":
+                params["netns"] = {"nsmode": "path", "value": value}
+            elif mode == "default":
+                params["netns"] = {"nsmode": "private"}
+            elif mode == "container":
+                params["netns"] = {"nsmode": "container", "value": value}
+            elif mode == "bridge":
+                params["netns"] = {"nsmode": "bridge"}
+                if value:
+                    # The server resolves the special "default" name to the default network.
+                    params["networks"] = {
+                        **(params["networks"] or {}),
+                        "default": CreateMixin._parse_network_options(value),
+                    }
+            elif mode in ("pasta", "slirp4netns") and value:
+                params["netns"] = {"nsmode": mode}
+                params["network_options"] = {
+                    **(params["network_options"] or {}),
+                    mode: value.split(","),
+                }
             else:
                 params["netns"] = {"nsmode": network_mode}
+        elif networks:
+            # As `podman run --network <name>` does: joining a network requires bridge mode.
+            params["netns"] = {"nsmode": "bridge"}
 
         if "pid_mode" in args:
             params["pidns"] = normalize_nsmode(args.pop("pid_mode"))
@@ -1095,3 +1168,32 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             )
 
         return params
+
+    @staticmethod
+    def _parse_network_options(options: str) -> dict[str, Any]:
+        """Map "ip=...,mac=...,alias=..." per-network options to the libpod format.
+
+        Mirrors parseBridgeNetworkOptions in Podman's pkg/specgen/namespaces.go.
+        """
+        opts: dict[str, Any] = {}
+        for item in options.split(","):
+            key, _, val = item.partition("=")
+            if key in ("ip", "ip6"):
+                opts.setdefault("static_ips", []).append(val)
+            elif key == "alias":
+                opts.setdefault("aliases", []).append(val)
+            elif key == "mac":
+                opts["static_mac"] = val
+            elif key == "interface_name":
+                opts["interface_name"] = val
+            else:
+                opts.setdefault("options", {})[key] = val
+        return opts
+
+    @staticmethod
+    def _is_network_mode(network: str) -> bool:
+        """Whether ``network`` is a namespace mode keyword rather than a network name."""
+        mode, sep, _ = network.partition(":")
+        if sep:
+            return mode in _NETWORK_MODES_WITH_OPTIONS or mode in _NETWORK_MODES_WITH_VALUE
+        return mode in _NETWORK_MODES or mode in _NETWORK_MODES_WITH_OPTIONS
