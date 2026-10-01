@@ -33,6 +33,12 @@ class IntegrationTest(fixtures.TestWithFixtures):
           inherited by other libraries like unittest and requests.
         - Logging output will start with stdout from the Podman service events, followed by
           results and logging captured by the unittest module test runner.
+        - Each test gets its own Podman service and socket.
+        - ``self.data_path`` (via ``utils.get_shared_data_path()``) is shared across every test
+          in the run.  Podman's ``--root`` (image/container storage) and ``--runroot`` (runtime
+          locks and state) are both derived from this directory.  They must share the same
+          lifecycle because Podman's runtime locks coordinate access to the storage graph.
+          Use ``self.test_dir`` for anything that should stay isolated to a single test.
     """
 
     podman: Optional[str] = None
@@ -64,8 +70,12 @@ class IntegrationTest(fixtures.TestWithFixtures):
 
         self.socket_file = os.path.join(self.test_dir, uuid.uuid4().hex)
         self.socket_uri = f'unix://{self.socket_file}'
+        self.data_path = utils.get_shared_data_path()
         self.service_launcher = utils.PodmanLauncher(
-            self.socket_uri, podman_path=IntegrationTest.podman, log_level=self.log_level
+            self.socket_uri,
+            podman_path=IntegrationTest.podman,
+            log_level=self.log_level,
+            data_path=self.data_path,
         )
         self.service_launcher.start()
         self.addCleanup(self.service_launcher.stop)

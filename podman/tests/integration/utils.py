@@ -14,11 +14,14 @@
 #
 """Integration Test Utils"""
 
+import atexit
+import functools
 import logging
 import os
 import shutil
 import socket
 import subprocess
+import tempfile
 import threading
 from contextlib import suppress
 from typing import Optional
@@ -28,6 +31,18 @@ import time
 from podman.tests import errors
 
 logger = logging.getLogger("podman.service")
+
+
+@functools.lru_cache(maxsize=1)
+def get_shared_data_path() -> str:
+    override = os.environ.get("PODMAN_PY_TEST_DATA")
+    if override:
+        os.makedirs(override, exist_ok=True)
+        return override
+
+    path = tempfile.mkdtemp()
+    atexit.register(shutil.rmtree, path, ignore_errors=True)
+    return path
 
 
 class PodmanLauncher:
@@ -40,6 +55,7 @@ class PodmanLauncher:
         timeout: int = 0,
         privileged: bool = False,
         log_level: str = "WARNING",
+        data_path: Optional[str] = None,
     ) -> None:
         """create a launcher and build podman command"""
         podman_exe: Optional[str] = podman_path
@@ -67,6 +83,16 @@ class PodmanLauncher:
 
         if os.environ.get("container") == "oci":
             self.cmd.append("--storage-driver=vfs")
+
+        if data_path:
+            self.cmd.extend(
+                [
+                    "--runroot",
+                    os.path.join(data_path, "run"),
+                    "--root",
+                    os.path.join(data_path, "storage"),
+                ]
+            )
 
         self.cmd.extend(
             [
