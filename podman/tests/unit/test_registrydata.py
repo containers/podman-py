@@ -1,4 +1,5 @@
 import unittest
+import urllib.parse
 
 import requests_mock
 
@@ -22,6 +23,33 @@ FIRST_IMAGE = {
     "Containers": 2,
     "Os": "linux",
     "Architecture": "amd64",
+}
+
+
+MANIFEST_LIST = {
+    "schemaVersion": 2,
+    "mediaType": "application/vnd.docker.distribution.manifest.list.v2+json",
+    "manifests": [
+        {
+            "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+            "size": 528,
+            "digest": "sha256:69704ef328d05a9f806b6b8502915e6a0a4faa4d72018dc42343f511490edf8a",
+            "platform": {
+                "architecture": "amd64",
+                "os": "linux",
+            },
+        },
+        {
+            "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+            "size": 528,
+            "digest": "sha256:2d16c52a0a2df992bb3b137456d95711c4e972ebff1c7a52c3c907a3465bbd69",
+            "platform": {
+                "architecture": "arm64",
+                "os": "linux",
+                "variant": "v8",
+            },
+        },
+    ],
 }
 
 
@@ -104,6 +132,98 @@ class RegistryDataTestCase(unittest.TestCase):
 
         with self.assertRaises(InvalidArgument):
             rd.has_platform("This/is/not/a/legal/image/name")
+
+    @requests_mock.Mocker()
+    def test_manifest_list_id_and_short_id(self, mock):
+        mock.get(
+            tests.LIBPOD_URL + "/version",
+            json={"Os": "linux", "Arch": "arm64"},
+        )
+        rd = RegistryData(
+            "quay.io/fedora:latest",
+            attrs=MANIFEST_LIST,
+            client=self.client.api,
+            collection=ImagesManager(client=self.client.api),
+        )
+        self.assertEqual(
+            rd.id, "sha256:2d16c52a0a2df992bb3b137456d95711c4e972ebff1c7a52c3c907a3465bbd69"
+        )
+        self.assertEqual(rd.short_id, "sha256:2d16c52a0a")
+
+    def test_manifest_list_has_platform(self):
+        rd = RegistryData(
+            "quay.io/fedora:latest",
+            attrs=MANIFEST_LIST,
+            collection=ImagesManager(client=self.client.api),
+        )
+        self.assertTrue(rd.has_platform("linux/amd64"))
+        self.assertTrue(rd.has_platform("linux/arm64"))
+        self.assertTrue(rd.has_platform("linux/arm64/v8"))
+        self.assertTrue(rd.has_platform({"os": "linux", "architecture": "arm64"}))
+        self.assertFalse(rd.has_platform("windows/amd64"))
+        self.assertFalse(rd.has_platform("linux/arm64/v7"))
+
+    def test_distribution_data(self):
+        dist_data = {
+            "Descriptor": {
+                "digest": (
+                    "sha256:dist1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd"
+                )
+            },
+            "Platforms": [
+                {"os": "linux", "architecture": "amd64"},
+            ],
+        }
+        rd = RegistryData(
+            "quay.io/fedora:latest",
+            attrs=dist_data,
+            collection=ImagesManager(client=self.client.api),
+        )
+        self.assertEqual(
+            rd.id, "sha256:dist1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd"
+        )
+        self.assertTrue(rd.has_platform("linux/amd64"))
+        self.assertFalse(rd.has_platform("linux/arm64"))
+
+    @requests_mock.Mocker()
+    def test_pull_platform(self, mock):
+        arm_digest = "sha256:2d16c52a0a2df992bb3b137456d95711c4e972ebff1c7a52c3c907a3465bbd69"
+        pull_url = (
+            tests.LIBPOD_URL
+            + f"/images/pull?policy=always&reference=quay.io%2ffedora%40{arm_digest}"
+            + "&tlsVerify=True&compatMode=True&OS=linux&Arch=arm64"
+        )
+        mock.post(
+            pull_url,
+            json={"id": arm_digest, "images": [arm_digest], "stream": "", "error": ""},
+        )
+        mock.get(
+            tests.LIBPOD_URL + f"/images/{urllib.parse.quote_plus(arm_digest)}/json",
+            json=FIRST_IMAGE,
+        )
+        rd = RegistryData(
+            "quay.io/fedora:latest",
+            attrs=MANIFEST_LIST,
+            client=self.client.api,
+            collection=ImagesManager(client=self.client.api),
+        )
+        image = rd.pull(platform="linux/arm64")
+        self.assertIsNotNone(image)
+
+    @requests_mock.Mocker()
+    def test_reload(self, mock):
+        mock.get(
+            tests.LIBPOD_URL + "/manifests/quay.io%2ffedora%3Alatest/json",
+            json=MANIFEST_LIST,
+        )
+        rd = RegistryData(
+            "quay.io/fedora:latest",
+            attrs=FIRST_IMAGE,
+            client=self.client.api,
+            collection=ImagesManager(client=self.client.api),
+        )
+        rd.reload()
+        self.assertEqual(rd.attrs, MANIFEST_LIST)
 
 
 if __name__ == '__main__':

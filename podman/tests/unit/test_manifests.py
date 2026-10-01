@@ -58,6 +58,30 @@ class ManifestTestCase(unittest.TestCase):
 
         self.assertTrue(adapter.called_once)
 
+    @requests_mock.Mocker()
+    def test_get(self, mock):
+        mock.get(
+            tests.LIBPOD_URL + "/manifests/quay.io%2Ffedora%3Alatest/json",
+            json=FIRST_MANIFEST,
+        )
+        manifest = self.client.manifests.get("quay.io/fedora:latest")
+        self.assertEqual(manifest.name, "quay.io/fedora:latest")
+
+    @requests_mock.Mocker()
+    def test_get_with_auth(self, mock):
+        adapter = mock.get(
+            tests.LIBPOD_URL + "/manifests/quay.io%2Ffedora%3Alatest/json",
+            request_headers={
+                "X-Registry-Auth": b"eyJ1c2VybmFtZSI6ICJ1c2VyIiwgInBhc3N3b3JkIjogInBhc3MifQ=="
+            },
+            json=FIRST_MANIFEST,
+        )
+        manifest = self.client.manifests.get(
+            "quay.io/fedora:latest", auth_config={"username": "user", "password": "pass"}
+        )
+        self.assertEqual(manifest.name, "quay.io/fedora:latest")
+        self.assertTrue(adapter.called_once)
+
 
 if __name__ == '__main__':
     unittest.main()
