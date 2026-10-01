@@ -183,7 +183,9 @@ class ContainersManagerTestCase(unittest.TestCase):
         self.assertEqual(len(mock.request_history), 1)
         # lower() needs to be enforced since the mocked url is transformed as lowercase and
         # this avoids %2f != %2F errors. Same applies for other instances of assertEqual
-        self.assertEqual(mock.request_history[0].url, tests.LIBPOD_URL.lower() + "/containers/json")
+        self.assertEqual(
+            mock.request_history[0].url.lower(), tests.LIBPOD_URL.lower() + "/containers/json"
+        )
 
     @requests_mock.Mocker()
     def test_list_sparse_libpod_false(self, mock):
@@ -216,10 +218,12 @@ class ContainersManagerTestCase(unittest.TestCase):
         self.assertEqual(len(mock.request_history), 3)
 
         # Verify the list endpoint was called first
-        self.assertEqual(mock.request_history[0].url, tests.LIBPOD_URL.lower() + "/containers/json")
+        self.assertEqual(
+            mock.request_history[0].url.lower(), tests.LIBPOD_URL.lower() + "/containers/json"
+        )
 
         # Verify the individual container detail endpoints were called
-        individual_urls = {req.url for req in mock.request_history[1:]}
+        individual_urls = {req.url.lower() for req in mock.request_history[1:]}
         expected_urls = {
             tests.LIBPOD_URL.lower() + f"/containers/{FIRST_CONTAINER['Id']}/json",
             tests.LIBPOD_URL.lower() + f"/containers/{SECOND_CONTAINER['Id']}/json",
@@ -256,11 +260,11 @@ class ContainersManagerTestCase(unittest.TestCase):
         # Should be 3 requests total: 1 for list + 2 for individual container details
         self.assertEqual(len(mock.request_history), 3)
         self.assertEqual(
-            mock.request_history[0].url, tests.COMPATIBLE_URL.lower() + "/containers/json"
+            mock.request_history[0].url.lower(), tests.COMPATIBLE_URL.lower() + "/containers/json"
         )
 
         # Verify the individual container detail endpoints were called
-        individual_urls = {req.url for req in mock.request_history[1:]}
+        individual_urls = {req.url.lower() for req in mock.request_history[1:]}
         expected_urls = {
             tests.COMPATIBLE_URL.lower() + f"/containers/{FIRST_CONTAINER['Id']}/json",
             tests.COMPATIBLE_URL.lower() + f"/containers/{SECOND_CONTAINER['Id']}/json",
@@ -287,7 +291,7 @@ class ContainersManagerTestCase(unittest.TestCase):
         # Should be only 1 request for the list endpoint
         self.assertEqual(len(mock.request_history), 1)
         self.assertEqual(
-            mock.request_history[0].url, tests.COMPATIBLE_URL.lower() + "/containers/json"
+            mock.request_history[0].url.lower(), tests.COMPATIBLE_URL.lower() + "/containers/json"
         )
 
     @requests_mock.Mocker()

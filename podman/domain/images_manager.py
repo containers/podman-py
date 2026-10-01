@@ -98,7 +98,7 @@ class ImagesManager(BuildMixin, Manager):
     def get_registry_data(
         self,
         name: str,
-        auth_config=Mapping[str, str],  # pylint: disable=unused-argument
+        auth_config: Optional[Mapping[str, str]] = None,
     ) -> RegistryData:
         """Returns registry data for an image.
 
@@ -109,13 +109,24 @@ class ImagesManager(BuildMixin, Manager):
             auth_config: Override configured credentials. Keys username and password are required.
 
         Raises:
+            ImageNotFound: when image is not found in the registry
             APIError: when service returns an error
         """
-        # FIXME populate attrs using auth_config
-        image = self.get(name)
+        headers = {}
+        if auth_config:
+            headers["X-Registry-Auth"] = api.encode_auth_header(auth_config)
+
+        quoted_name = urllib.parse.quote_plus(name)
+        response = self.api.get(f"/manifests/{quoted_name}/json", headers=headers or None)
+        response.raise_for_status(not_found=ImageNotFound)
+
+        attrs = response.json()
+        if "Docker-Content-Digest" in response.headers and "digest" not in attrs:
+            attrs["digest"] = response.headers["Docker-Content-Digest"]
+
         return RegistryData(
             image_name=name,
-            attrs=image.attrs,
+            attrs=attrs,
             client=self.client,
             collection=self,
         )
@@ -305,7 +316,7 @@ class ImagesManager(BuildMixin, Manager):
             else:
                 yield json.dumps(entry)
 
-    # pylint: disable=too-many-locals,too-many-branches
+    # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     def pull(
         self,
         repository: str,
@@ -366,6 +377,10 @@ class ImagesManager(BuildMixin, Manager):
 
         if all_tags:
             params["allTags"] = True
+        elif tag.startswith("sha256:") or tag.startswith("sha512:"):
+            params["reference"] = f"{repository}@{tag}"
+        elif tag.startswith("@"):
+            params["reference"] = f"{repository}{tag}"
         else:
             params["reference"] = f"{repository}:{tag}"
 

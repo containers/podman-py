@@ -1,6 +1,7 @@
 import io
 import types
 import unittest
+import urllib.parse
 from unittest.mock import patch
 
 try:
@@ -15,6 +16,7 @@ import requests_mock
 from podman import PodmanClient, tests
 from podman.domain.images import Image
 from podman.domain.images_manager import ImagesManager
+from podman.domain.registry_data import RegistryData
 from podman.errors import APIError, ImageNotFound, PodmanError
 
 FIRST_IMAGE = {
@@ -807,6 +809,101 @@ class ImagesManagerTestCase(unittest.TestCase):
 
         self.assertEqual(len(images), 1)
         self.assertIsInstance(images[0], Image)
+
+    @requests_mock.Mocker()
+    def test_get_registry_data(self, mock):
+        manifest_payload = {
+            "schemaVersion": 2,
+            "mediaType": "application/vnd.docker.distribution.manifest.list.v2+json",
+            "manifests": [
+                {
+                    "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+                    "size": 528,
+                    "digest": (
+                        "sha256:69704ef328d05a9f806b6b8502915e6a0a4faa4d72018dc42343f511490edf8a"
+                    ),
+                    "platform": {"architecture": "amd64", "os": "linux"},
+                }
+            ],
+        }
+        digest_header = (
+            "sha256:listdigest1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd"
+        )
+        adapter = mock.get(
+            tests.LIBPOD_URL + "/manifests/quay.io%2ffedora%3Alatest/json",
+            headers={"Docker-Content-Digest": digest_header},
+            json=manifest_payload,
+        )
+
+        reg_data = self.client.images.get_registry_data("quay.io/fedora:latest")
+        self.assertIsInstance(reg_data, RegistryData)
+        self.assertEqual(reg_data.image_name, "quay.io/fedora:latest")
+        self.assertEqual(reg_data.attrs.get("digest"), digest_header)
+        self.assertEqual(reg_data.id, digest_header)
+        self.assertTrue(reg_data.has_platform("linux/amd64"))
+        self.assertFalse(reg_data.has_platform("windows/amd64"))
+        self.assertTrue(adapter.called_once)
+
+    @requests_mock.Mocker()
+    def test_get_registry_data_with_auth(self, mock):
+        manifest_payload = {
+            "schemaVersion": 2,
+            "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+            "digest": "sha256:fedora1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd",
+        }
+        adapter = mock.get(
+            tests.LIBPOD_URL + "/manifests/quay.io%2ffedora%3Alatest/json",
+            request_headers={
+                "X-Registry-Auth": b"eyJ1c2VybmFtZSI6ICJ1c2VyIiwgInBhc3N3b3JkIjogInBhc3MifQ=="
+            },
+            json=manifest_payload,
+        )
+
+        reg_data = self.client.images.get_registry_data(
+            "quay.io/fedora:latest", auth_config={"username": "user", "password": "pass"}
+        )
+        self.assertEqual(
+            reg_data.id,
+            "sha256:fedora1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd",
+        )
+        self.assertTrue(adapter.called_once)
+
+    @requests_mock.Mocker()
+    def test_get_registry_data_not_found(self, mock):
+        mock.get(
+            tests.LIBPOD_URL + "/manifests/quay.io%2fnonexistent%3Alatest/json",
+            status_code=404,
+            json={"cause": "manifest unknown", "message": "manifest unknown"},
+        )
+
+        with self.assertRaises(ImageNotFound):
+            self.client.images.get_registry_data("quay.io/nonexistent:latest")
+
+    @requests_mock.Mocker()
+    def test_pull_digest(self, mock):
+        digest = "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
+        pull_url = (
+            tests.LIBPOD_URL
+            + f"/images/pull?policy=always&reference=quay.io%2ffedora%40{digest}"
+            + "&tlsVerify=True&compatMode=True"
+        )
+        adapter = mock.post(
+            pull_url,
+            json={
+                "error": "",
+                "id": digest,
+                "images": [digest],
+                "stream": "",
+            },
+        )
+        mock.get(
+            tests.LIBPOD_URL + f"/images/{urllib.parse.quote_plus(digest)}/json",
+            json=FIRST_IMAGE,
+        )
+
+        image = self.client.images.pull("quay.io/fedora", tag=digest)
+        self.assertEqual(image.id, FIRST_IMAGE["Id"])
+        self.assertTrue(adapter.called_once)
 
 
 if __name__ == '__main__':
