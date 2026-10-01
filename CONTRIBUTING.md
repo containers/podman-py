@@ -74,6 +74,22 @@ By default, our test suite uses the podman version that's found in the path, i.e
 PODMAN_BINARY=/path/to/podman/bin tox -e py -- ...
 ```
 
+##### Reusing pulled images across integration test runs
+
+Integration tests each start their own Podman service with isolated runroot/socket, but by
+default they all share one `--root` (image/container storage) directory for the lifetime of a
+single test invocation, so images such as `quay.io/libpod/alpine` are only pulled once per run
+instead of once per test. That directory is a temp dir removed automatically when the test run
+finishes.
+
+To reuse a warm image cache across multiple separate test invocations (e.g. repeated local runs
+of `tox -e py` while iterating), point `PODMAN_PY_TEST_STORAGE` at a directory you manage
+yourself; it will not be deleted automatically:
+
+```bash
+PODMAN_PY_TEST_STORAGE=$HOME/.cache/podman-py-test-storage tox -e py -- ...
+```
+
 ##### Testing future features
 
 Since `podman-py` follows stable releases of `podman`, tests are thought to be run against
