@@ -506,7 +506,6 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         for key in (
             "cpu_count",
             "cpu_percent",
-            "nano_cpus",
             "platform",  # used by caller
             "remove",  # used by caller
             "stderr",  # used by caller
@@ -835,11 +834,20 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
         params["resource_limits"]["pids"] = {"limit": args.pop("pids_limit", None)}
 
+        cpu_period = args.pop("cpu_period", None)
+        cpu_quota = args.pop("cpu_quota", None)
+        nano_cpus = args.pop("nano_cpus", None)
+        if nano_cpus is not None:
+            if cpu_period is None:
+                cpu_period = 100000
+            if cpu_quota is None:
+                cpu_quota = int(nano_cpus * cpu_period // 1_000_000_000)
+
         params["resource_limits"]["cpu"] = {
             "cpus": args.pop("cpuset_cpus", None),
             "mems": args.pop("cpuset_mems", None),
-            "period": args.pop("cpu_period", None),
-            "quota": args.pop("cpu_quota", None),
+            "period": cpu_period,
+            "quota": cpu_quota,
             "realtimePeriod": args.pop("cpu_rt_period", None),
             "realtimeRuntime": args.pop("cpu_rt_runtime", None),
             "shares": args.pop("cpu_shares", None),

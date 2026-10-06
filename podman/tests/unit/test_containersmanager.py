@@ -337,6 +337,29 @@ class ContainersManagerTestCase(unittest.TestCase):
         self.assertIsInstance(actual, Container)
 
     @requests_mock.Mocker()
+    def test_create_nano_cpus(self, mock):
+        mock.post(
+            tests.LIBPOD_URL + "/containers/create",
+            status_code=201,
+            json={
+                "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
+                "Warnings": [],
+            },
+        )
+        mock.get(
+            tests.LIBPOD_URL
+            + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
+            json=FIRST_CONTAINER,
+        )
+
+        actual = self.client.containers.create("fedora", "/usr/bin/ls", nano_cpus=500_000_000)
+        self.assertIsInstance(actual, Container)
+        payload = mock.request_history[0].json()
+        cpu_limits = payload["resource_limits"]["cpu"]
+        self.assertEqual(cpu_limits["period"], 100000)
+        self.assertEqual(cpu_limits["quota"], 50000)
+
+    @requests_mock.Mocker()
     def test_create_404(self, mock):
         # mock the first POST to return 404,
         # then the second POST (after pulling the image) to return 201
