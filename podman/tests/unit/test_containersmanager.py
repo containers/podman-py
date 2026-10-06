@@ -354,6 +354,60 @@ class ContainersManagerTestCase(unittest.TestCase):
         self.assertIsInstance(actual, Container)
 
     @requests_mock.Mocker()
+    def test_create_nano_cpus(self, mock):
+        container_id = FIRST_CONTAINER["Id"]
+        mock.post(
+            tests.LIBPOD_URL + "/containers/create",
+            status_code=201,
+            json={"Id": container_id, "Warnings": []},
+        )
+        mock.get(
+            tests.LIBPOD_URL + f"/containers/{container_id}/json",
+            json=FIRST_CONTAINER,
+        )
+
+        cases = (
+            ({"nano_cpus": 500_000_000}, {"period": 100_000, "quota": 50_000}),
+            ({"nano_cpus": 1_500_000_000}, {"period": 100_000, "quota": 150_000}),
+            ({"nano_cpus": 10_000_000}, {"period": 100_000, "quota": 1_000}),
+            (
+                {"nano_cpus": 500_000_000, "cpu_period": 0, "cpu_quota": 0},
+                {"period": 100_000, "quota": 50_000},
+            ),
+            ({"nano_cpus": 0}, {}),
+            ({"nano_cpus": None}, {}),
+            ({"cpu_period": 50_000, "cpu_quota": 20_000}, {"period": 50_000, "quota": 20_000}),
+            (
+                {"nano_cpus": 0, "cpu_period": 50_000, "cpu_quota": 20_000},
+                {"period": 50_000, "quota": 20_000},
+            ),
+        )
+        for options, expected in cases:
+            with self.subTest(options=options):
+                actual = self.client.containers.create("fedora", "/usr/bin/ls", **options)
+                self.assertIsInstance(actual, Container)
+                resources = mock.request_history[-2].json().get("resource_limits", {})
+                self.assertEqual(resources.get("cpu", {}), expected)
+
+    def test_create_nano_cpus_conflicts(self):
+        for options in ({"cpu_period": 50_000}, {"cpu_quota": 20_000}, {"cpu_quota": -1}):
+            with self.subTest(options=options):
+                with self.assertRaisesRegex(ValueError, "cannot be combined"):
+                    self.client.containers.create("fedora", nano_cpus=500_000_000, **options)
+
+    def test_create_nano_cpus_invalid_values(self):
+        with self.assertRaisesRegex(ValueError, "must be non-negative"):
+            self.client.containers.create("fedora", nano_cpus=-1)
+        for nano_cpus in (True, 500_000_000.5, "500000000"):
+            with self.subTest(nano_cpus=nano_cpus):
+                with self.assertRaisesRegex(TypeError, "must be an integer"):
+                    self.client.containers.create("fedora", nano_cpus=nano_cpus)
+
+    def test_create_nano_cpus_below_minimum_quota(self):
+        with self.assertRaisesRegex(ValueError, "below the minimum supported limit"):
+            self.client.containers.create("fedora", nano_cpus=9_999_999)
+
+    @requests_mock.Mocker()
     def test_create_404(self, mock):
         # mock the first POST to return 404,
         # then the second POST (after pulling the image) to return 201

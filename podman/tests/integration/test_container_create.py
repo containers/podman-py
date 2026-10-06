@@ -309,6 +309,22 @@ class ContainersIntegrationTest(base.IntegrationTest):
         hc = inspect['Config']['Healthcheck']
         self.assertEqual(hc['Test'], ['NONE'])
 
+    def test_container_nano_cpus(self):
+        """Verify that libpod reports the translated CPU limit."""
+        host = self.client.info()["host"]
+        if host.get("cgroupVersion") == "v1" and not is_root():
+            self.skipTest("Rootless CPU limits require cgroup v2")
+        controllers = host.get("cgroupControllers")
+        if controllers is not None and "cpu" not in controllers:
+            self.skipTest("CPU cgroup controller is unavailable")
+
+        container = self.client.containers.create(self.alpine_image, nano_cpus=500_000_000)
+        self.containers.append(container)
+        host_config = container.attrs["HostConfig"]
+        self.assertEqual(host_config["NanoCpus"], 500_000_000)
+        self.assertEqual(host_config["CpuPeriod"], 100_000)
+        self.assertEqual(host_config["CpuQuota"], 50_000)
+
     def test_container_mem_limit(self):
         """Test passing memory limit"""
         self._test_memory_limit('mem_limit', 'Memory')
