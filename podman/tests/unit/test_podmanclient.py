@@ -97,7 +97,8 @@ class PodmanClientTestCase(unittest.TestCase):
             with self.assertRaises(KeyError):
                 _ = PodmanClient(connection="not defined")
 
-    def test_connect_default(self):
+    @mock.patch("podman.client.os.geteuid", return_value=1000, create=True)
+    def test_connect_default(self, _):
         with mock.patch.multiple(Path, open=self.mocked_open, exists=MagicMock(return_value=True)):
             with PodmanClient() as client:
                 expected = "http+unix://" + urllib.parse.quote_plus(
@@ -108,6 +109,15 @@ class PodmanClientTestCase(unittest.TestCase):
             # Build path to support tests running as root or a user
             expected = Path(get_xdg_config_home()) / "containers" / "containers.conf"
             PodmanClientTestCase.opener.assert_called_with(expected, encoding="utf-8")
+
+    @mock.patch("podman.client.get_runtime_dir")
+    @mock.patch("podman.client.os.geteuid", return_value=0, create=True)
+    def test_connect_default_root(self, _, mock_runtime_dir):
+        with mock.patch.multiple(Path, open=self.mocked_open, exists=MagicMock(return_value=True)):
+            with PodmanClient() as client:
+                expected = "http+unix://" + urllib.parse.quote_plus("/run/podman/podman.sock")
+                self.assertEqual(client.api.base_url.geturl(), expected)
+        mock_runtime_dir.assert_not_called()
 
     def test_connect_with_connection_file(self):
         mock_config = MagicMock(spec=PodmanConfig)
