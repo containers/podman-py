@@ -37,7 +37,10 @@ class PodmanClient(AbstractContextManager):
         """Initialize PodmanClient.
 
         Keyword Args:
-            base_url (str): Full URL to Podman service. See examples.
+            base_url (str): Full URL to Podman service. See examples. Default: the active
+                Podman machine connection if any, otherwise the local socket of
+                `podman system service`: /run/podman/podman.sock when running as root,
+                $XDG_RUNTIME_DIR/podman/podman.sock otherwise.
             version (str): API version to use. Default: auto, use version from server
             timeout (int): Timeout for API calls, in seconds.
                 Default: socket._GLOBAL_DEFAULT_TIMEOUT.
@@ -76,8 +79,12 @@ class PodmanClient(AbstractContextManager):
                 api_kwargs["base_url"] = active_service.url.geturl()
                 api_kwargs["identity"] = kwargs.get("identity", str(active_service.identity))
             else:
-                # Fall back to local Unix socket
-                path = str(Path(get_runtime_dir()) / "podman" / "podman.sock")
+                # Fall back to the local Unix socket `podman system service` listens on by
+                # default: /run/podman/podman.sock for root, the runtime dir for rootless users.
+                if hasattr(os, "geteuid") and os.geteuid() == 0:
+                    path = "/run/podman/podman.sock"
+                else:
+                    path = str(Path(get_runtime_dir()) / "podman" / "podman.sock")
                 api_kwargs["base_url"] = "http+unix://" + path
         self.api = APIClient(**api_kwargs)
 
