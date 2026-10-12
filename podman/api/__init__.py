@@ -2,7 +2,12 @@
 
 from podman.api.client import APIClient
 from podman.api.api_versions import VERSION, COMPATIBLE_VERSION
-from podman.api.http_utils import encode_auth_header, prepare_body, prepare_filters
+from podman.api.http_utils import (
+    encode_auth_header,
+    encode_registry_config,
+    prepare_body,
+    prepare_filters,
+)
 from podman.api.parse_utils import (
     decode_header,
     frames,
@@ -26,6 +31,7 @@ __all__ = [
     'create_tar',
     'decode_header',
     'encode_auth_header',
+    'encode_registry_config',
     'frames',
     'parse_repository',
     'prepare_body',

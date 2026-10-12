@@ -70,6 +70,53 @@ class SystemTestCase(unittest.TestCase):
         mock.get(tests.LIBPOD_URL + "/version", json=body)
         self.assertDictEqual(self.client.version(), body)
 
+    @requests_mock.Mocker()
+    def test_login_stores_credentials(self, mock):
+        """Test that login stores credentials in the client."""
+        body = {
+            "IdentityToken": "",
+            "Status": "Login Succeeded",
+        }
+        mock.post(tests.COMPATIBLE_URL + "/auth", json=body)
+
+        registry = "https://quay.io/v2"
+        username = "testuser"
+        password = "testpass"
+
+        result = self.client.login(
+            registry=registry,
+            username=username,
+            password=password,
+        )
+
+        self.assertEqual(result["Status"], "Login Succeeded")
+
+        # Verify credentials were stored
+        stored_auth = self.client.api.get_registry_auth()
+        self.assertIn(registry, stored_auth)
+        self.assertEqual(stored_auth[registry]["username"], username)
+        self.assertEqual(stored_auth[registry]["password"], password)
+
+    @requests_mock.Mocker()
+    def test_login_without_registry(self, mock):
+        """Test that login without registry doesn't store credentials."""
+        body = {
+            "IdentityToken": "",
+            "Status": "Login Succeeded",
+        }
+        mock.post(tests.COMPATIBLE_URL + "/auth", json=body)
+
+        result = self.client.login(
+            username="testuser",
+            password="testpass",
+        )
+
+        self.assertEqual(result["Status"], "Login Succeeded")
+
+        # Verify no credentials were stored (no registry provided)
+        stored_auth = self.client.api.get_registry_auth()
+        self.assertEqual(len(stored_auth), 0)
+
 
 if __name__ == '__main__':
     unittest.main()

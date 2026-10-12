@@ -176,6 +176,7 @@ class APIClient(requests.Session):
         self.timeout = timeout
         self.pool_maxsize = num_pools or requests.adapters.DEFAULT_POOLSIZE
         self.credstore_env = credstore_env or {}
+        self._registry_auth: dict[str, dict[str, str]] = {}
 
         self.user_agent = user_agent or (
             f"PodmanPy/{__version__} (API v{self.version}; Compatible v{self.compatible_version})"
@@ -460,3 +461,32 @@ class APIClient(requests.Session):
             )
         except OSError as e:
             raise APIError(uri.geturl(), explanation=f"{method.upper()} operation failed") from e
+
+    def set_registry_auth(self, registry: str, auth_config: dict[str, str]) -> None:
+        """Store registry authentication credentials for use in subsequent operations.
+
+        Args:
+            registry: Registry URL (e.g., "https://quay.io/v2" or "docker.io")
+            auth_config: Dictionary containing authentication credentials
+                        (username, password, identitytoken, registrytoken, etc.)
+        """
+        self._registry_auth[registry] = auth_config
+
+    def get_registry_auth(self) -> dict[str, dict[str, str]]:
+        """Retrieve all stored registry authentication credentials.
+
+        Returns:
+            Dictionary mapping registry URLs to their auth configurations
+        """
+        return self._registry_auth.copy()
+
+    def clear_registry_auth(self, registry: Optional[str] = None) -> None:
+        """Clear stored registry authentication credentials.
+
+        Args:
+            registry: Specific registry to clear. If None, clears all credentials.
+        """
+        if registry is None:
+            self._registry_auth.clear()
+        elif registry in self._registry_auth:
+            del self._registry_auth[registry]

@@ -111,3 +111,20 @@ def _filter_values(mapping: Mapping[str, Any], recursion=False) -> dict[str, Any
 
 def encode_auth_header(auth_config: dict[str, str]) -> bytes:
     return base64.urlsafe_b64encode(json.dumps(auth_config).encode('utf-8'))
+
+
+def encode_registry_config(auth_configs: dict[str, dict[str, str]]) -> bytes:
+    """Encode registry authentication configurations for X-Registry-Config header.
+
+    Args:
+        auth_configs: Dictionary mapping registry URLs to auth config dicts
+                      (each containing username, password, etc.)
+
+    Returns:
+        Base64url-encoded JSON string suitable for X-Registry-Config header
+
+    The X-Registry-Config header format is a base64url-encoded JSON object
+    mapping registry URLs to their authentication configurations.
+    This is used by build endpoints to authenticate with private registries.
+    """
+    return base64.urlsafe_b64encode(json.dumps(auth_configs).encode('utf-8'))
