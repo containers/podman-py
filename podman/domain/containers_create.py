@@ -5,7 +5,7 @@ import copy
 import logging
 import re
 from contextlib import suppress
-from typing import Any, Union
+from typing import Any, Optional, Union
 from collections.abc import MutableMapping
 import requests
 
@@ -339,8 +339,19 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
                 For example: {"VARIABLE1": "NameOfSecret", "VARIABLE2": "NameOfAnotherSecret"}
 
-            security_opt (list[str]): A list[str]ing values to customize labels for MLS systems,
-                such as SELinux.
+            security_opt (list[str]): Security options, as accepted by
+                ``podman create --security-opt``:
+
+                - label=<option>: SELinux label option, e.g. label=disable,
+                  label=type:spc_t or label=nested
+                - apparmor=<profile>: AppArmor profile, or unconfined
+                - seccomp=<path>: Seccomp profile path, or unconfined
+                - no-new-privileges[=true|false]
+                - mask=<path>[:<path>...] / unmask=<path>[:<path>...]
+                - systempaths=unconfined
+                - proc-opts=<option>[,<option>...]
+
+                Other values are passed through as raw SELinux label options.
             shm_size (Union[str, int]): Size of /dev/shm (e.g. 1G).
             stdin_open (bool): Keep STDIN open even if not attached.
             stdout (bool): Return logs from STDOUT when detach=False. Default: True.
@@ -490,6 +501,64 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
             env_dict[key] = value
         return env_dict
+
+    @staticmethod
+    def _apply_security_opt(params: dict[str, Any], security_opt: Optional[list[str]]) -> None:
+        """Map security_opt entries onto the libpod container spec.
+
+        Mirrors ``podman create --security-opt``: each "key=value" (or the deprecated
+        "key:value") entry is routed to its own spec field, and the annotations used by
+        ``podman inspect`` to report HostConfig.SecurityOpt are set. Entries without a known
+        key, e.g. raw SELinux options such as "disable" or "type:spc_t", are passed through
+        to selinux_opts unchanged.
+
+        Args:
+            params: Container spec being built, updated in place.
+            security_opt: Security options as given to create().
+
+        Raises:
+            ValueError: If a known option has an invalid value.
+        """
+        annotations = {}
+        label_set = False
+        for opt in security_opt or []:
+            key, sep, value = opt.partition("=" if "=" in opt else ":")
+            if key == "label" and sep:
+                if value == "nested":
+                    params["label_nested"] = True
+                    continue
+                params["selinux_opts"] = (params["selinux_opts"] or []) + [value]
+                label_set = True
+            elif key == "apparmor" and sep:
+                params["apparmor_profile"] = value
+                annotations["io.podman.annotations.apparmor"] = value
+            elif key == "seccomp" and sep:
+                params["seccomp_profile_path"] = value
+                annotations["io.podman.annotations.seccomp"] = value
+            elif key == "no-new-privileges":
+                if not sep or value in ("1", "t", "T", "TRUE", "true", "True"):
+                    params["no_new_privileges"] = True
+                elif value in ("0", "f", "F", "FALSE", "false", "False"):
+                    params["no_new_privileges"] = False
+                else:
+                    raise ValueError(f"Invalid security_opt {opt!r}: expected a boolean value")
+            elif key in ("mask", "unmask") and sep:
+                params[key] = (params[key] or []) + value.split(":")
+            elif key == "systempaths" and sep:
+                if value != "unconfined":
+                    raise ValueError(
+                        f"Invalid security_opt {opt!r}: only 'systempaths=unconfined' is supported"
+                    )
+                params["unmask"] = (params["unmask"] or []) + ["ALL"]
+            elif key == "proc-opts" and sep:
+                params["procfs_opts"] = value.split(",")
+            else:
+                params["selinux_opts"] = (params["selinux_opts"] or []) + [opt]
+
+        if label_set:
+            annotations["io.podman.annotations.label"] = ",label=".join(params["selinux_opts"])
+        if annotations:
+            params["annotations"] = {**(params["annotations"] or {}), **annotations}
 
     # pylint: disable=too-many-locals,too-many-statements,too-many-branches
     @staticmethod
@@ -674,7 +743,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "seccomp_policy": pop("seccomp_policy"),  # TODO document, podman only
             "seccomp_profile_path": pop("seccomp_profile_path"),  # TODO document, podman only
             "secrets": [],  # TODO document, podman only
-            "selinux_opts": pop("security_opt"),
+            "selinux_opts": None,  # filled from security_opt by _apply_security_opt()
             "shm_size": to_bytes(pop("shm_size")),
             "static_mac": pop("mac_address"),
             "stdin": pop("stdin_open"),
@@ -932,6 +1001,8 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
         if "uts_mode" in args:
             params["utsns"] = normalize_nsmode(args.pop("uts_mode"))
+
+        CreateMixin._apply_security_opt(params, args.pop("security_opt", None))
 
         if len(args) > 0:
             raise TypeError(
