@@ -66,17 +66,17 @@ class PodmanResourceTestCase(unittest.TestCase):
         container.reload(compatible=True)
 
         self.assertEqual(len(mock.request_history), 4)
+        container_path = (
+            "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json"
+        )
         for i in range(3):
             self.assertEqual(
-                mock.request_history[i].url,
-                tests.LIBPOD_URL.lower()
-                + "/containers/"
-                + "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
+                tests.normalized_url(mock.request_history[i].url),
+                tests.normalized_url(tests.LIBPOD_URL + container_path),
             )
         self.assertEqual(
-            mock.request_history[3].url,
-            tests.COMPATIBLE_URL.lower()
-            + "/containers/87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd/json",
+            tests.normalized_url(mock.request_history[3].url),
+            tests.normalized_url(tests.COMPATIBLE_URL + container_path),
         )
 
 

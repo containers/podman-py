@@ -17,6 +17,7 @@
 import logging
 import os
 import shutil
+import socket
 import subprocess
 import threading
 from contextlib import suppress
@@ -104,12 +105,24 @@ class PodmanLauncher:
         if not check_socket:
             return
 
-        # wait for socket to be created
+        # wait for socket to be created and accepting connections
         timeout = time.monotonic() + 30
         while not os.path.exists(self.socket_file):
             if time.monotonic() > timeout:
                 raise subprocess.TimeoutExpired("podman service ", timeout)
             time.sleep(0.2)
+
+        while time.monotonic() < timeout:
+            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            try:
+                sock.connect(self.socket_file)
+                break
+            except OSError:
+                time.sleep(0.2)
+            finally:
+                sock.close()
+        else:
+            raise subprocess.TimeoutExpired("podman service (accepting)", timeout)
 
     def stop(self) -> None:
         """stop podman service"""

@@ -11,6 +11,7 @@ prepare:
       - make
       - python3-pip
       - podman
+      - openssh-server
 
   - name: pip dependencies
     how: shell
@@ -19,10 +20,18 @@ prepare:
 
   - name: ssh configuration
     how: shell
-    script:
-        - ssh-keygen -t ecdsa -b 521 -f /root/.ssh/id_ecdsa -P ""
-        - cp /root/.ssh/authorized_keys /root/.ssh/authorized_keys%
-        - cat /root/.ssh/id_ecdsa.pub >>/root/.ssh/authorized_keys
+    script: |
+        systemctl enable --now sshd
+        mkdir -p -m 700 /root/.ssh
+        ssh-keygen -t ecdsa -b 521 -f /root/.ssh/id_ecdsa -N "" -q
+        cat /root/.ssh/id_ecdsa.pub >> /root/.ssh/authorized_keys
+        chmod 600 /root/.ssh/id_ecdsa /root/.ssh/authorized_keys
+        sed -i 's/^#\?AllowStreamLocalForwarding.*/AllowStreamLocalForwarding yes/' /etc/ssh/sshd_config
+        grep -q 'AllowStreamLocalForwarding' /etc/ssh/sshd_config || echo 'AllowStreamLocalForwarding yes' >> /etc/ssh/sshd_config
+        sed -i 's/^#\?AllowTcpForwarding.*/AllowTcpForwarding yes/' /etc/ssh/sshd_config
+        grep -q 'AllowTcpForwarding' /etc/ssh/sshd_config || echo 'AllowTcpForwarding yes' >> /etc/ssh/sshd_config
+        systemctl restart sshd
+        ssh -o StrictHostKeyChecking=no -i /root/.ssh/id_ecdsa localhost exit
 
 # Run tests agains Podman Next builds.
 # These tests should NOT overlap with the ones who run in the distro plan and should only include
