@@ -136,8 +136,8 @@ class PodmanClientTestCase(unittest.TestCase):
             self.assertEqual(kwargs["identity"], "/home/qe/.ssh/id_rsa")
 
     @mock.patch('podman.client.APIClient.__init__', return_value=None)
-    def test_from_env_container_host_takes_precedence(self, mock_api_init):
-        """An explicit CONTAINER_HOST wins over CONTAINER_CONNECTION."""
+    def test_from_env_container_connection_takes_precedence(self, mock_api_init):
+        """CONTAINER_CONNECTION wins over CONTAINER_HOST, matching the podman CLI."""
         with mock.patch.multiple(Path, open=self.mocked_open, exists=MagicMock(return_value=True)):
             PodmanClient.from_env(
                 environment={
@@ -146,7 +146,8 @@ class PodmanClientTestCase(unittest.TestCase):
                 }
             )
             kwargs = mock_api_init.call_args[1]
-            self.assertEqual(kwargs["base_url"], "ssh://other@localhost:22/run/podman/podman.sock")
+            self.assertEqual(kwargs["base_url"], "ssh://qe@localhost:2222/run/podman/podman.sock")
+            self.assertEqual(kwargs["identity"], "/home/qe/.ssh/id_rsa")
 
     def test_from_env_unknown_connection(self):
         """from_env() raises ValueError for an unknown CONTAINER_CONNECTION."""

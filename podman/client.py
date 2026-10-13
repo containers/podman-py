@@ -107,8 +107,8 @@ class PodmanClient(AbstractContextManager):
             - DOCKER_HOST, CONTAINER_HOST: URL to Podman service
             - DOCKER_TLS_VERIFY, CONTAINER_TLS_VERIFY: Verify host against CA certificate
             - DOCKER_CERT_PATH, CONTAINER_CERT_PATH: Path to TLS certificates for host connection
-            - CONTAINER_CONNECTION: Name of a configured service connection to use
-              when CONTAINER_HOST/DOCKER_HOST are not set
+            - CONTAINER_CONNECTION: Name of a configured service connection to use,
+              taking precedence over CONTAINER_HOST/DOCKER_HOST (like the podman CLI)
 
         Args:
             version: API version to use. Default: auto, use version from server
@@ -140,20 +140,21 @@ class PodmanClient(AbstractContextManager):
             'max_pool_size': max_pool_size,
         }
 
-        host = environment.get("CONTAINER_HOST") or environment.get("DOCKER_HOST") or None
-        if host is not None:
-            kwargs['base_url'] = host
+        # The podman CLI checks CONTAINER_CONNECTION before CONTAINER_HOST,
+        # so a named connection takes precedence when both are set.
+        connection_name = environment.get("CONTAINER_CONNECTION")
+        if connection_name:
+            # Honour the same named connections as the podman CLI.
+            # Fail fast with a clear error; PodmanClient resolves the rest.
+            if connection_name not in PodmanConfig().services:
+                raise ValueError(
+                    f"CONTAINER_CONNECTION refers to unknown connection: {connection_name!r}"
+                )
+            kwargs["connection"] = connection_name
         else:
-            # Honour the same named connections as the podman CLI. An explicit
-            # CONTAINER_HOST/DOCKER_HOST URL takes precedence when both are set.
-            connection_name = environment.get("CONTAINER_CONNECTION")
-            if connection_name:
-                # Fail fast with a clear error; PodmanClient resolves the rest.
-                if connection_name not in PodmanConfig().services:
-                    raise ValueError(
-                        f"CONTAINER_CONNECTION refers to unknown connection: {connection_name!r}"
-                    )
-                kwargs["connection"] = connection_name
+            host = environment.get("CONTAINER_HOST") or environment.get("DOCKER_HOST") or None
+            if host is not None:
+                kwargs['base_url'] = host
 
         return PodmanClient(**kwargs)
 
