@@ -359,6 +359,35 @@ class ContainersManagerTestCase(unittest.TestCase):
         self.assertEqual(cpu_limits["period"], 100000)
         self.assertEqual(cpu_limits["quota"], 50000)
 
+    def test_create_nano_cpus_conflicts(self):
+        with self.assertRaises(ValueError) as ctx:
+            self.client.containers.create(
+                "fedora", "/usr/bin/ls", nano_cpus=1_500_000_000, cpu_quota=20000
+            )
+        self.assertIn("Conflicting options", str(ctx.exception))
+
+        with self.assertRaises(ValueError) as ctx:
+            self.client.containers.create(
+                "fedora", "/usr/bin/ls", nano_cpus=1_500_000_000, cpu_period=50000
+            )
+        self.assertIn("Conflicting options", str(ctx.exception))
+
+    def test_create_nano_cpus_invalid_values(self):
+        with self.assertRaises(ValueError) as ctx:
+            self.client.containers.create("fedora", "/usr/bin/ls", nano_cpus=0)
+        self.assertIn("greater than 0", str(ctx.exception))
+
+        with self.assertRaises(ValueError) as ctx:
+            self.client.containers.create("fedora", "/usr/bin/ls", nano_cpus=-1)
+        self.assertIn("greater than 0", str(ctx.exception))
+
+    def test_create_nano_cpus_below_minimum_quota(self):
+        # 5000 ns * 100000 period // 10^9 = 0 us (below 1000 us minimum)
+        with self.assertRaises(ValueError) as ctx:
+            self.client.containers.create("fedora", "/usr/bin/ls", nano_cpus=5000)
+        self.assertIn("below the minimum supported limit", str(ctx.exception))
+
+
     @requests_mock.Mocker()
     def test_create_404(self, mock):
         # mock the first POST to return 404,

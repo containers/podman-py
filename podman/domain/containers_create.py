@@ -838,10 +838,19 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         cpu_quota = args.pop("cpu_quota", None)
         nano_cpus = args.pop("nano_cpus", None)
         if nano_cpus is not None:
-            if cpu_period is None:
-                cpu_period = 100000
-            if cpu_quota is None:
-                cpu_quota = int(nano_cpus * cpu_period // 1_000_000_000)
+            if cpu_period is not None or cpu_quota is not None:
+                raise ValueError(
+                    "Conflicting options: nano_cpus cannot be combined with cpu_period or cpu_quota"
+                )
+            if nano_cpus <= 0:
+                raise ValueError("nano_cpus must be greater than 0")
+            cpu_period = 100000
+            cpu_quota = int(nano_cpus * cpu_period // 1_000_000_000)
+            if cpu_quota < 1000:
+                raise ValueError(
+                    f"nano_cpus value {nano_cpus} results in a cpu_quota of {cpu_quota} µs, "
+                    "which is below the minimum supported limit of 1000 µs (1 ms)"
+                )
 
         params["resource_limits"]["cpu"] = {
             "cpus": args.pop("cpuset_cpus", None),
