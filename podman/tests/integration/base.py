@@ -65,7 +65,7 @@ class IntegrationTest(fixtures.TestWithFixtures):
         # Prefer /run over /tmp: sshd PrivateTmp can hide /tmp from stream-local forwards.
         try:
             self.test_dir = self.useFixture(fixtures.TempDir("/run")).path
-        except OSError:
+        except Exception:
             self.test_dir = self.useFixture(fixtures.TempDir()).path
 
         self.socket_file = os.path.join(self.test_dir, uuid.uuid4().hex)
