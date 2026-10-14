@@ -11,7 +11,7 @@ import hashlib
 import json
 import logging
 from contextlib import suppress
-from typing import Optional, Union, TYPE_CHECKING
+from typing import Any, Optional, Union, TYPE_CHECKING
 
 from podman.domain.containers import Container
 from podman.domain.containers_manager import ContainersManager
@@ -77,11 +77,17 @@ class Network(PodmanResource):
 
         Keyword Args:
             aliases (list[str]): Aliases to add for this endpoint
-            driver_opt (dict[str, Any]): Options to provide to network driver
+            compatible (bool): Use the Docker compatible endpoint. Default: False
+            driver_opt (dict[str, str]): Options to provide to network driver
+            interface_name (str): Name of the interface inside the container (e.g. eth1).
+                Podman only.
             ipv4_address (str): IPv4 address for given Container on this network
             ipv6_address (str): IPv6 address for given Container on this network
-            link_local_ips (list[str]): list of link-local addresses
+            link_local_ips (list[str]): list of link-local addresses. Only used when
+                compatible=True.
             links (list[Union[str, Containers]]): Ignored
+            mac_address (str): Static MAC address for given Container on this network.
+                Podman only.
 
         Raises:
             APIError: when Podman service reports an error
@@ -89,28 +95,43 @@ class Network(PodmanResource):
         if isinstance(container, Container):
             container = container.id
 
-        # TODO Talk with baude on which IPAddress field is needed...
-        ipam = {
-            "IPv4Address": kwargs.get('ipv4_address'),
-            "IPv6Address": kwargs.get('ipv6_address'),
-            "Links": kwargs.get("link_local_ips"),
-        }
-        ipam = {k: v for (k, v) in ipam.items() if not (v is None or len(v) == 0)}
+        data: dict[str, Any]
+        if not kwargs.get("compatible"):
+            # The libpod endpoint expects the container and libpod's per-network options at
+            # the top level of the body, as podman's own bindings send them.
+            static_ips = [kwargs[k] for k in ("ipv4_address", "ipv6_address") if kwargs.get(k)]
+            data = {
+                "container": container,
+                "aliases": kwargs.get("aliases"),
+                "interface_name": kwargs.get("interface_name"),
+                "options": kwargs.get("driver_opt"),
+                "static_ips": static_ips,
+                "static_mac": kwargs.get("mac_address"),
+            }
+            data = {k: v for (k, v) in data.items() if v}
+        else:
+            # TODO Talk with baude on which IPAddress field is needed...
+            ipam = {
+                "IPv4Address": kwargs.get('ipv4_address'),
+                "IPv6Address": kwargs.get('ipv6_address'),
+                "Links": kwargs.get("link_local_ips"),
+            }
+            ipam = {k: v for (k, v) in ipam.items() if not (v is None or len(v) == 0)}
 
-        endpoint_config = {
-            "Aliases": kwargs.get("aliases"),
-            "DriverOpts": kwargs.get("driver_opt"),
-            "IPAddress": kwargs.get("ipv4_address", kwargs.get("ipv6_address")),
-            "IPAMConfig": ipam,
-            "Links": kwargs.get("link_local_ips"),
-            "NetworkID": self.id,
-        }
-        endpoint_config = {
-            k: v for (k, v) in endpoint_config.items() if not (v is None or len(v) == 0)
-        }
+            endpoint_config = {
+                "Aliases": kwargs.get("aliases"),
+                "DriverOpts": kwargs.get("driver_opt"),
+                "IPAddress": kwargs.get("ipv4_address", kwargs.get("ipv6_address")),
+                "IPAMConfig": ipam,
+                "Links": kwargs.get("link_local_ips"),
+                "NetworkID": self.id,
+            }
+            endpoint_config = {
+                k: v for (k, v) in endpoint_config.items() if not (v is None or len(v) == 0)
+            }
 
-        data = {"Container": container, "EndpointConfig": endpoint_config}
-        data = {k: v for (k, v) in data.items() if not (v is None or len(v) == 0)}  # type: ignore[arg-type]
+            data = {"Container": container, "EndpointConfig": endpoint_config}
+            data = {k: v for (k, v) in data.items() if not (v is None or len(v) == 0)}
 
         response = self.api.post(
             f"/networks/{self.name}/connect",

@@ -104,6 +104,51 @@ class NetworkTestCase(unittest.TestCase):
         self.assertDictEqual(
             adapter.last_request.json(),
             {
+                "container": "podman_ctnr",
+                "aliases": ["production"],
+                "static_ips": ["172.16.0.1"],
+            },
+        )
+
+    @requests_mock.Mocker()
+    def test_connect_libpod_options(self, mock):
+        adapter = mock.post(tests.LIBPOD_URL + "/networks/podman/connect")
+        net = Network(attrs=FIRST_NETWORK, client=self.client.api)
+
+        net.connect(
+            "podman_ctnr",
+            ipv4_address="172.16.0.1",
+            ipv6_address="fd00::1",
+            interface_name="eth1",
+            mac_address="92:d0:c6:0a:29:33",
+            driver_opt={"mtu": "1400"},
+        )
+        self.assertDictEqual(
+            adapter.last_request.json(),
+            {
+                "container": "podman_ctnr",
+                "interface_name": "eth1",
+                "options": {"mtu": "1400"},
+                "static_ips": ["172.16.0.1", "fd00::1"],
+                "static_mac": "92:d0:c6:0a:29:33",
+            },
+        )
+
+    @requests_mock.Mocker()
+    def test_connect_compatible(self, mock):
+        adapter = mock.post(tests.COMPATIBLE_URL + "/networks/podman/connect")
+        net = Network(attrs=FIRST_NETWORK, client=self.client.api)
+
+        net.connect(
+            "podman_ctnr",
+            aliases=["production"],
+            ipv4_address="172.16.0.1",
+            compatible=True,
+        )
+        self.assertEqual(adapter.call_count, 1)
+        self.assertDictEqual(
+            adapter.last_request.json(),
+            {
                 'Container': 'podman_ctnr',
                 "EndpointConfig": {
                     'Aliases': ['production'],
