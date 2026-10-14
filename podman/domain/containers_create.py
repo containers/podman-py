@@ -10,6 +10,7 @@ from collections.abc import MutableMapping
 import requests
 
 from podman import api
+from podman.api.parse_utils import HEALTH_ON_FAILURE_ACTION, prepare_duration_ns
 from podman.domain.containers import Container
 from podman.domain.images import Image
 from podman.domain.pods import Pod
@@ -91,38 +92,48 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             group_add (list[str]): List of additional group names and/or IDs that the container
                 process will run as.
             healthcheck (dict[str,Any]): Specify a test to perform to check that the
-                container is healthy.
+                container is healthy. Mutually exclusive with fine-grained health_* kwargs.
             health_check_on_failure_action (int): Specify an action if a healthcheck fails.
+                Mutually exclusive with health_on_failure.
             health_cmd (str): set a healthcheck command for the container ('None' disables the
                 existing healthcheck)
-            health_interval (str): set an interval for the healthcheck (a value of disable results
-                in no automatic timer setup)(Changing this setting resets timer.) (default "30s")
-            health_log_destination (str):  set the destination of the HealthCheck log. Directory
-                path, local or events_logger (local use container state file)(Warning: Changing
+            health_interval (str or int): set an interval for the healthcheck. Accepts a
+                Go-style duration string (e.g. "30s", "1m") or nanoseconds as int.
+                (a value of disable results in no automatic timer setup)
+                (Changing this setting resets timer.) (default "30s")
+            health_log_destination (str): set the destination of the HealthCheck log. Directory
+                path, local or events_logger (local use container state file) (Warning: Changing
                 this setting may cause the loss of previous logs.) (default "local")
             health_max_log_count (int): set maximum number of attempts in the HealthCheck log file.
                 ('0' value means an infinite number of attempts in the log file) (default 5)
             health_max_logs_size (int): set maximum length in characters of stored HealthCheck log.
                 ('0' value means an infinite log length) (default 500)
-            health_on_failure (str): action to take once the container turns unhealthy
-                (default "none")
+            health_on_failure (str): action to take once the container turns unhealthy.
+                One of: "none" (0), "kill" (2), "restart" (3), "stop" (4). Value 1 is
+                reserved as "invalid" in the Go enum. Mutually exclusive with
+                health_check_on_failure_action. (default "none")
             health_retries (int): the number of retries allowed before a healthcheck is considered
                 to be unhealthy (default 3)
-            health_start_period (str): the initialization time needed for a container to bootstrap
+            health_start_period (str or int): the initialization time needed for a container to
+                bootstrap. Accepts a Go-style duration string or nanoseconds as int.
                 (default "0s")
-            health_startup_cmd (str): Set a startup healthcheck command for the container
-            health_startup_interval (str): Set an interval for the startup healthcheck. Changing
-                this setting resets the timer, depending on the state of the container.
-                (default "30s")
-            health_startup_retries (int): Set the maximum number of retries before the startup
+            health_startup_cmd (str): set a startup healthcheck command for the container
+            health_startup_interval (str or int): set an interval for the startup healthcheck.
+                Accepts a Go-style duration string or nanoseconds as int. Changing this setting
+                resets the timer, depending on the state of the container. (default "30s")
+            health_startup_retries (int): set the maximum number of retries before the startup
                 healthcheck will restart the container
-            health_startup_success (int): Set the number of consecutive successes before the
+            health_startup_success (int): set the number of consecutive successes before the
                 startup healthcheck is marked as successful and the normal healthcheck begins
                 (0 indicates any success will start the regular healthcheck)
-            health_startup_timeout (str): Set the maximum amount of time that the startup
-                healthcheck may take before it is considered failed (default "30s")
-            health_timeout (str): the maximum time allowed to complete the healthcheck before an
-                interval is considered failed (default "30s")
+            health_startup_timeout (str or int): set the maximum amount of time that the startup
+                healthcheck may take before it is considered failed. Accepts a Go-style duration
+                string or nanoseconds as int. (default "30s")
+            health_timeout (str or int): the maximum time allowed to complete the healthcheck
+                before an interval is considered failed. Accepts a Go-style duration string or
+                nanoseconds as int. (default "30s")
+            no_healthcheck (bool): disable healthchecks for this container. Mutually exclusive
+                with health_* kwargs.
             hostname (str): Optional hostname for the container.
             init (bool): Run an init inside the container that forwards signals and reaps processes
             init_path (str): Path to the docker-init binary
@@ -807,7 +818,8 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             params["restart_tries"] = args["restart_policy"].get("MaximumRetryCount")
             args.pop("restart_policy")
 
-        health_commands_data = {
+        # Assemble fine-grained health kwargs into nested API objects.
+        health_kwargs = {
             "health_cmd",
             "health_interval",
             "health_log_destination",
@@ -823,15 +835,88 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "health_startup_timeout",
             "health_timeout",
         }
-        # the healthcheck section of parameters accepted can be either no_healthcheck or a series
-        # of healthcheck parameters
-        if args.get("no_healthcheck"):
-            if conflicts := set(args) & health_commands_data:
-                raise ValueError(f"Cannot set {conflicts.pop()} when no_healthcheck is True")
-            params["no_healthcheck"] = args.pop("no_healthcheck", None)
-        else:
-            for hc in set(args) & health_commands_data:
-                params[hc] = args.pop(hc, None)
+        present_health_kwargs = set(args) & health_kwargs
+        no_healthcheck = args.pop("no_healthcheck", None)
+
+        if no_healthcheck and present_health_kwargs:
+            raise ValueError(f"Cannot set {min(present_health_kwargs)} when no_healthcheck is True")
+
+        if params.get("healthconfig") and present_health_kwargs:
+            raise ValueError(
+                "Cannot combine 'healthcheck' dict with fine-grained health_* kwargs. "
+                "Use one or the other."
+            )
+
+        if no_healthcheck:
+            params["healthconfig"] = {"Test": ["NONE"]}
+        elif present_health_kwargs:
+            health_cmd = args.pop("health_cmd", None)
+            health_interval = args.pop("health_interval", None)
+            health_timeout = args.pop("health_timeout", None)
+            health_retries = args.pop("health_retries", None)
+            health_start_period = args.pop("health_start_period", None)
+
+            healthconfig = {}
+            if health_cmd is not None:
+                healthconfig["Test"] = ["CMD-SHELL", health_cmd]
+            if health_interval is not None:
+                healthconfig["Interval"] = prepare_duration_ns(health_interval)
+            if health_timeout is not None:
+                healthconfig["Timeout"] = prepare_duration_ns(health_timeout)
+            if health_retries is not None:
+                healthconfig["Retries"] = int(health_retries)
+            if health_start_period is not None:
+                healthconfig["StartPeriod"] = prepare_duration_ns(health_start_period)
+            if healthconfig:
+                params["healthconfig"] = healthconfig
+
+            startup_cmd = args.pop("health_startup_cmd", None)
+            startup_interval = args.pop("health_startup_interval", None)
+            startup_timeout = args.pop("health_startup_timeout", None)
+            startup_retries = args.pop("health_startup_retries", None)
+            startup_success = args.pop("health_startup_success", None)
+
+            startup_config = {}
+            if startup_cmd is not None:
+                startup_config["Test"] = ["CMD-SHELL", startup_cmd]
+            if startup_interval is not None:
+                startup_config["Interval"] = prepare_duration_ns(startup_interval)
+            if startup_timeout is not None:
+                startup_config["Timeout"] = prepare_duration_ns(startup_timeout)
+            if startup_retries is not None:
+                startup_config["Retries"] = int(startup_retries)
+            if startup_success is not None:
+                startup_config["Successes"] = int(startup_success)
+            if startup_config:
+                params["startupHealthConfig"] = startup_config
+
+            health_log_dest = args.pop("health_log_destination", None)
+            if health_log_dest is not None:
+                params["healthLogDestination"] = health_log_dest
+
+            health_max_count = args.pop("health_max_log_count", None)
+            if health_max_count is not None:
+                params["healthMaxLogCount"] = int(health_max_count)
+
+            health_max_size = args.pop("health_max_logs_size", None)
+            if health_max_size is not None:
+                params["healthMaxLogSize"] = int(health_max_size)
+
+            health_on_failure = args.pop("health_on_failure", None)
+            if health_on_failure is not None:
+                if params.get("health_check_on_failure_action") is not None:
+                    raise ValueError(
+                        "Cannot set both 'health_on_failure' and "
+                        "'health_check_on_failure_action'. Use one or the other."
+                    )
+                action = HEALTH_ON_FAILURE_ACTION.get(health_on_failure.lower())
+                if action is None:
+                    valid = ", ".join(sorted(HEALTH_ON_FAILURE_ACTION))
+                    raise ValueError(
+                        f"Invalid health_on_failure value: {health_on_failure!r}. "
+                        f"Must be one of: {valid}"
+                    )
+                params["health_check_on_failure_action"] = action
 
         params["resource_limits"]["pids"] = {"limit": args.pop("pids_limit", None)}
 

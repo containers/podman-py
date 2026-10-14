@@ -4,8 +4,10 @@ from podman.api.client import APIClient
 from podman.api.api_versions import VERSION, COMPATIBLE_VERSION
 from podman.api.http_utils import encode_auth_header, prepare_body, prepare_filters
 from podman.api.parse_utils import (
+    HEALTH_ON_FAILURE_ACTION,
     decode_header,
     frames,
+    prepare_duration_ns,
     parse_repository,
     prepare_cidr,
     prepare_timestamp,
@@ -22,11 +24,13 @@ __all__ = [
     'APIClient',
     'COMPATIBLE_VERSION',
     'DEFAULT_CHUNK_SIZE',
+    'HEALTH_ON_FAILURE_ACTION',
     'VERSION',
     'create_tar',
     'decode_header',
     'encode_auth_header',
     'frames',
+    'prepare_duration_ns',
     'parse_repository',
     'prepare_body',
     'prepare_cidr',

@@ -116,5 +116,115 @@ class ParseUtilsTestCase(unittest.TestCase):
             self.assertDictEqual(json.loads(expected), actual)  # type: ignore[arg-type]
 
 
+class PrepareDurationNsTestCase(unittest.TestCase):
+    """Test prepare_duration_ns utility."""
+
+    def test_none_returns_none(self):
+        self.assertIsNone(api.prepare_duration_ns(None))
+
+    def test_int_passthrough(self):
+        self.assertEqual(api.prepare_duration_ns(0), 0)
+        self.assertEqual(api.prepare_duration_ns(1), 1)
+        self.assertEqual(api.prepare_duration_ns(30_000_000_000), 30_000_000_000)
+
+    def test_seconds(self):
+        self.assertEqual(api.prepare_duration_ns("1s"), 1_000_000_000)
+        self.assertEqual(api.prepare_duration_ns("30s"), 30_000_000_000)
+        self.assertEqual(api.prepare_duration_ns("120s"), 120_000_000_000)
+
+    def test_minutes(self):
+        self.assertEqual(api.prepare_duration_ns("1m"), 60_000_000_000)
+        self.assertEqual(api.prepare_duration_ns("5m"), 300_000_000_000)
+
+    def test_hours(self):
+        self.assertEqual(api.prepare_duration_ns("1h"), 3_600_000_000_000)
+        self.assertEqual(api.prepare_duration_ns("2h"), 7_200_000_000_000)
+
+    def test_milliseconds(self):
+        self.assertEqual(api.prepare_duration_ns("1ms"), 1_000_000)
+        self.assertEqual(api.prepare_duration_ns("500ms"), 500_000_000)
+
+    def test_microseconds_us(self):
+        self.assertEqual(api.prepare_duration_ns("1us"), 1_000)
+        self.assertEqual(api.prepare_duration_ns("100us"), 100_000)
+
+    def test_microseconds_mu(self):
+        self.assertEqual(api.prepare_duration_ns("1µs"), 1_000)
+        self.assertEqual(api.prepare_duration_ns("100µs"), 100_000)
+
+    def test_nanoseconds(self):
+        self.assertEqual(api.prepare_duration_ns("1ns"), 1)
+        self.assertEqual(api.prepare_duration_ns("999ns"), 999)
+
+    def test_compound_duration(self):
+        self.assertEqual(api.prepare_duration_ns("1h30m"), 5_400_000_000_000)
+        self.assertEqual(api.prepare_duration_ns("1m30s"), 90_000_000_000)
+        self.assertEqual(api.prepare_duration_ns("2h30m15s"), 9_015_000_000_000)
+        self.assertEqual(api.prepare_duration_ns("1s500ms"), 1_500_000_000)
+
+    def test_bare_zero(self):
+        self.assertEqual(api.prepare_duration_ns("0"), 0)
+
+    def test_fractional_raises(self):
+        with self.assertRaises(ValueError):
+            api.prepare_duration_ns("1.5s")
+        with self.assertRaises(ValueError):
+            api.prepare_duration_ns("0.5s")
+
+    def test_whitespace_stripped(self):
+        self.assertEqual(api.prepare_duration_ns("  30s  "), 30_000_000_000)
+        self.assertEqual(api.prepare_duration_ns(" 1m "), 60_000_000_000)
+
+    def test_invalid_format_raises(self):
+        with self.assertRaises(ValueError):
+            api.prepare_duration_ns("invalid")
+
+    def test_empty_string_raises(self):
+        with self.assertRaises(ValueError):
+            api.prepare_duration_ns("")
+
+    def test_whitespace_only_raises(self):
+        with self.assertRaises(ValueError):
+            api.prepare_duration_ns("   ")
+
+    def test_number_without_unit_raises(self):
+        with self.assertRaises(ValueError):
+            api.prepare_duration_ns("30")
+
+    def test_unit_without_number_raises(self):
+        with self.assertRaises(ValueError):
+            api.prepare_duration_ns("s")
+
+    def test_wrong_type_raises(self):
+        with self.assertRaises(TypeError):
+            api.prepare_duration_ns(3.14)  # type: ignore
+        with self.assertRaises(TypeError):
+            api.prepare_duration_ns([30])  # type: ignore
+
+
+class HealthOnFailureActionTestCase(unittest.TestCase):
+    """Test HEALTH_ON_FAILURE_ACTION mapping."""
+
+    def test_none_maps_to_zero(self):
+        self.assertEqual(api.HEALTH_ON_FAILURE_ACTION["none"], 0)
+
+    def test_kill_maps_to_two(self):
+        self.assertEqual(api.HEALTH_ON_FAILURE_ACTION["kill"], 2)
+
+    def test_restart_maps_to_three(self):
+        self.assertEqual(api.HEALTH_ON_FAILURE_ACTION["restart"], 3)
+
+    def test_stop_maps_to_four(self):
+        self.assertEqual(api.HEALTH_ON_FAILURE_ACTION["stop"], 4)
+
+    def test_invalid_value_one_not_exposed(self):
+        self.assertNotIn(1, api.HEALTH_ON_FAILURE_ACTION.values())
+
+    def test_all_values_are_ints(self):
+        for key, value in api.HEALTH_ON_FAILURE_ACTION.items():
+            self.assertIsInstance(key, str)
+            self.assertIsInstance(value, int)
+
+
 if __name__ == '__main__':
     unittest.main()
