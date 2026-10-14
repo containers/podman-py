@@ -137,7 +137,8 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             hostname (str): Optional hostname for the container.
             init (bool): Run an init inside the container that forwards signals and reaps processes
             init_path (str): Path to the docker-init binary
-            ipc_mode (str): Set the IPC mode for the container.
+            ipc_mode (str): Set the IPC mode for the container, e.g. host, private, shareable,
+                none, container:<name|id> or ns:<path>.
             isolation (str): Isolation technology to use. Default: `None`.
             kernel_memory (int or str): Kernel memory limit
             labels (Union[dict[str, str], list[str]): A dictionary of name-value labels (e.g.
@@ -226,7 +227,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             oom_score_adj (int): An integer value containing the score given to the container in
                 order to tune OOM killer preferences.
             pid_mode (str): If set to host, use the host PID namespace
-                inside the container.
+                inside the container. Also accepts private, container:<name|id> and ns:<path>.
             pids_limit (int): Tune a container's pids limit. Set -1 for unlimited.
             platform (str): Platform in the format os[/arch[/variant]]. Only used if the method
                 needs to pull the requested image.
@@ -584,6 +585,11 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         ) -> dict[str, str]:
             if isinstance(mode, dict):
                 return mode
+            # Split "<mode>:<value>" the same way the podman CLI does, e.g.
+            # "container:<name|id>", "ns:<path>", "keep-id:uid=1000" or "auto:size=1024".
+            nsmode, sep, value = mode.partition(":")
+            if sep and nsmode in ("container", "ns", "keep-id", "auto"):
+                return {"nsmode": "path" if nsmode == "ns" else nsmode, "value": value}
             return {"nsmode": mode}
 
         def to_bytes(size: Union[int, str, None]) -> Union[int, None]:
@@ -1002,12 +1008,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             params["ipcns"] = normalize_nsmode(args.pop("ipc_mode"))
 
         if "network_mode" in args:
-            network_mode = args.pop("network_mode")
-            details = network_mode.split(":")
-            if len(details) == 2 and details[0] == "ns":
-                params["netns"] = {"nsmode": "path", "value": details[1]}
-            else:
-                params["netns"] = {"nsmode": network_mode}
+            params["netns"] = normalize_nsmode(args.pop("network_mode"))
 
         if "pid_mode" in args:
             params["pidns"] = normalize_nsmode(args.pop("pid_mode"))
