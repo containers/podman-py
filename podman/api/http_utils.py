@@ -45,12 +45,10 @@ def _format_dict(filters, criteria):
     for key, value in filters.items():
         if value is None:
             continue
-        str_value = str(value)
-
-        if key in criteria:
-            criteria[key].append(str_value)
-        else:
-            criteria[key] = [str_value]
+        values = value if isinstance(value, (list, tuple)) else [value]
+        for item in values:
+            if item is not None:
+                criteria.setdefault(key, []).append(str(item))
 
 
 def _format_string(filters, criteria):
