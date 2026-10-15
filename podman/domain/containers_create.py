@@ -204,6 +204,8 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 ]
             name (str): The name for this container.
             nano_cpus (int):  CPU quota in units of 1e-9 CPUs.
+            network (str): Name of the network this container will be connected to at creation
+                time. Shorthand for ``networks={network: {}}``.
             networks (dict[str, dict[str, Union[str, list[str]]):
                 Networks which will be connected to container during container creation
                 Values of the network configuration can be :
@@ -623,6 +625,13 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                     f"or int (found : {size_type})"
                 )
 
+        # `network` is a shorthand for `networks={network: {}}`: the libpod API has no
+        # equivalent field (`cni_networks` is ignored by netavark).
+        networks = dict(pop("networks") or {})
+        network = pop("network")
+        if network:
+            networks.setdefault(network, {})
+
         # Transform keywords into parameters
         params = {
             "annotations": pop("annotations"),  # TODO document, podman only
@@ -631,7 +640,6 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "cap_drop": pop("cap_drop"),
             "cgroup_parent": pop("cgroup_parent"),
             "cgroups_mode": pop("cgroups_mode"),  # TODO document, podman only
-            "cni_networks": [pop("network")],
             "command": args.pop("command", args.pop("cmd", None)),
             "conmon_pid_file": pop("conmon_pid_file"),  # TODO document, podman only
             "containerCreateCommand": pop("containerCreateCommand"),  # TODO document, podman only
@@ -664,7 +672,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             "name": pop("name"),
             "namespace": pop("namespace"),  # TODO What is this for?
             "network_options": pop("network_options"),  # TODO document, podman only
-            "networks": pop("networks"),
+            "networks": networks or None,
             "no_new_privileges": pop("no_new_privileges"),  # TODO document, podman only
             "oci_runtime": pop("runtime"),
             "oom_score_adj": pop("oom_score_adj"),
@@ -1008,6 +1016,9 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 params["netns"] = {"nsmode": "path", "value": details[1]}
             else:
                 params["netns"] = {"nsmode": network_mode}
+        elif networks:
+            # As `podman run --network <name>` does: joining a network requires bridge mode.
+            params["netns"] = {"nsmode": "bridge"}
 
         if "pid_mode" in args:
             params["pidns"] = normalize_nsmode(args.pop("pid_mode"))

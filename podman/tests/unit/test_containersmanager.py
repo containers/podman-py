@@ -484,6 +484,38 @@ class ContainersManagerTestCase(unittest.TestCase):
         ]
         self.assertEqual(expected_userns, actual_userns)
 
+    def test_create_network_shorthand(self):
+        params = CreateMixin._render_payload({"image": "fedora", "network": "first"})
+        self.assertEqual({"first": {}}, params["networks"])
+        self.assertEqual({"nsmode": "bridge"}, params["netns"])
+        self.assertNotIn("cni_networks", params)
+
+    def test_create_networks_default_bridge(self):
+        params = CreateMixin._render_payload(
+            {"image": "fedora", "networks": {"first": {"aliases": ["a"]}}}
+        )
+        self.assertEqual({"first": {"aliases": ["a"]}}, params["networks"])
+        self.assertEqual({"nsmode": "bridge"}, params["netns"])
+
+    def test_create_network_and_networks_merged(self):
+        networks = {"first": {"aliases": ["a"]}}
+        params = CreateMixin._render_payload(
+            {"image": "fedora", "network": "second", "networks": networks}
+        )
+        self.assertEqual({"first": {"aliases": ["a"]}, "second": {}}, params["networks"])
+        self.assertEqual({"first": {"aliases": ["a"]}}, networks)  # caller's dict untouched
+
+    def test_create_networks_explicit_network_mode(self):
+        params = CreateMixin._render_payload(
+            {"image": "fedora", "networks": {"first": {}}, "network_mode": "bridge"}
+        )
+        self.assertEqual({"nsmode": "bridge"}, params["netns"])
+
+    def test_create_no_network(self):
+        params = CreateMixin._render_payload({"image": "fedora"})
+        self.assertIsNone(params["networks"])
+        self.assertNotIn("netns", params)
+
     def test_create_unsupported_key(self):
         with self.assertRaises(TypeError):
             self.client.containers.create("fedora", "/usr/bin/ls", blkio_weight=100.0)
