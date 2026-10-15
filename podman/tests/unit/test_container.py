@@ -533,6 +533,19 @@ class ContainersTestCase(unittest.TestCase):
             {"Detach": False, "Tty": True},
         )
 
+    def test_status(self):
+        c_inspect = Container(attrs={"State": {"Status": "running"}}, client=self.client.api)
+        self.assertEqual(c_inspect.status, "running")
+
+        c_list = Container(attrs={"State": "created"}, client=self.client.api)
+        self.assertEqual(c_list.status, "created")
+
+        c_empty = Container(attrs={}, client=self.client.api)
+        self.assertEqual(c_empty.status, "unknown")
+
+        c_none = Container(attrs={"State": None}, client=self.client.api)
+        self.assertEqual(c_none.status, "unknown")
+
 
 if __name__ == '__main__':
     unittest.main()
