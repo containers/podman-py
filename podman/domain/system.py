@@ -84,6 +84,21 @@ class SystemManager:
             verify=tls_verify,  # Pass tls_verify to the client
         )
         response.raise_for_status()
+
+        # Store credentials for use in subsequent operations (e.g., build)
+        if registry:
+            auth_config = {
+                "username": username,
+                "password": password,
+                "email": email,
+                "auth": auth,
+                "identitytoken": identitytoken,
+                "registrytoken": registrytoken,
+            }
+            # Filter out None values
+            auth_config = {k: v for k, v in auth_config.items() if v is not None}
+            self.client.set_registry_auth(registry, auth_config)
+
         return response.json()
 
     def ping(self) -> bool:

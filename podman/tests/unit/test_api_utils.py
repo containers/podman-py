@@ -1,3 +1,4 @@
+import base64
 import json
 import pathlib
 import unittest
@@ -172,6 +173,30 @@ class TestUtilsCase(unittest.TestCase):
         expected = b"eyJ1c2VybmFtZSI6ICJ1c2VyIiwgInBhc3N3b3JkIjogInBhc3MifQ=="
         actual = api.encode_auth_header(auth_config)
         self.assertEqual(expected, actual)
+
+    def test_encode_registry_config(self):
+        auth_configs = {
+            "https://quay.io/v2": {
+                "username": "user1",
+                "password": "pass1",
+            },
+            "docker.io": {
+                "username": "user2",
+                "password": "pass2",
+            },
+        }
+        actual = api.encode_registry_config(auth_configs)
+        # Verify it's bytes and can be decoded back
+        self.assertIsInstance(actual, bytes)
+        decoded = json.loads(base64.urlsafe_b64decode(actual).decode('utf-8'))
+        self.assertEqual(decoded, auth_configs)
+
+    def test_encode_registry_config_empty(self):
+        auth_configs = {}
+        actual = api.encode_registry_config(auth_configs)
+        self.assertIsInstance(actual, bytes)
+        decoded = json.loads(base64.urlsafe_b64decode(actual).decode('utf-8'))
+        self.assertEqual(decoded, {})
 
 
 if __name__ == '__main__':

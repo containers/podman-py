@@ -178,6 +178,88 @@ class TestBuildCase(unittest.TestCase):
             img, _ = self.client.images.build(path="/tmp/context_dir")
         assert img.id == "unittest"
 
+    @patch.object(api, "create_tar")
+    @patch.object(api, "prepare_containerfile")
+    def test_build_with_registry_auth(self, mock_prepare_containerfile, mock_create_tar):
+        """Test that build passes X-Registry-Config header when credentials are stored."""
+        mock_prepare_containerfile.return_value = "Containerfile"
+        mock_create_tar.return_value = b"This is a mocked tarball."
+
+        stream = good_stream
+        buffer = io.StringIO()
+        for entry in stream:
+            buffer.write(json.dumps(entry))
+            buffer.write("\n")
+
+        # Set up registry credentials
+        auth_config = {
+            "username": "testuser",
+            "password": "testpass",
+        }
+        self.client.api.set_registry_auth("https://quay.io/v2", auth_config)
+
+        with requests_mock.Mocker() as mock:
+
+            def custom_matcher(request):
+                # Verify X-Registry-Config header is present
+                self.assertIn("X-Registry-Config", request.headers)
+                # Verify it's not empty
+                self.assertTrue(request.headers["X-Registry-Config"])
+                return True
+
+            mock.post(
+                tests.LIBPOD_URL + "/build",
+                additional_matcher=custom_matcher,
+                text=buffer.getvalue(),
+            )
+            mock.get(
+                tests.LIBPOD_URL + f"/images/{good_image_id}/json",
+                json={
+                    "Id": good_image_id,
+                },
+            )
+
+            img, _ = self.client.images.build(path="/tmp/context_dir")
+            assert img.id == good_image_id
+
+    @patch.object(api, "create_tar")
+    @patch.object(api, "prepare_containerfile")
+    def test_build_without_registry_auth(self, mock_prepare_containerfile, mock_create_tar):
+        """Test that build doesn't send X-Registry-Config header when no credentials are stored."""
+        mock_prepare_containerfile.return_value = "Containerfile"
+        mock_create_tar.return_value = b"This is a mocked tarball."
+
+        stream = good_stream
+        buffer = io.StringIO()
+        for entry in stream:
+            buffer.write(json.dumps(entry))
+            buffer.write("\n")
+
+        # Ensure no credentials are stored
+        self.client.api.clear_registry_auth()
+
+        with requests_mock.Mocker() as mock:
+
+            def custom_matcher(request):
+                # Verify X-Registry-Config header is NOT present
+                self.assertNotIn("X-Registry-Config", request.headers)
+                return True
+
+            mock.post(
+                tests.LIBPOD_URL + "/build",
+                additional_matcher=custom_matcher,
+                text=buffer.getvalue(),
+            )
+            mock.get(
+                tests.LIBPOD_URL + f"/images/{good_image_id}/json",
+                json={
+                    "Id": good_image_id,
+                },
+            )
+
+            img, _ = self.client.images.build(path="/tmp/context_dir")
+            assert img.id == good_image_id
+
 
 if __name__ == '__main__':
     unittest.main()
