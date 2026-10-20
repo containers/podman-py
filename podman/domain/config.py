@@ -54,10 +54,16 @@ class ServiceConnection:
 
     @cached_property
     def identity(self):
-        """Path: Returns Path to identity file for service connection."""
-        if self.attrs.get("identity"):
-            return Path(self.attrs.get("identity"))
-        return Path(self.attrs.get("Identity"))
+        """Optional[Path]: Returns Path to identity file for service connection.
+
+        Returns None when the connection has no identity configured, which is
+        the case for local unix:// connections and ssh:// connections added
+        without an identity file.
+        """
+        identity = self.attrs.get("identity") or self.attrs.get("Identity")
+        if identity:
+            return Path(identity)
+        return None
 
     @cached_property
     def is_machine(self) -> bool:

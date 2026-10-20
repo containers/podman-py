@@ -67,14 +67,19 @@ class PodmanClient(AbstractContextManager):
             connection = config.services[api_kwargs.get("connection")]
             api_kwargs["base_url"] = connection.url.geturl()
 
-            # Override configured identity, if provided in arguments
-            api_kwargs["identity"] = kwargs.get("identity", str(connection.identity))
+            # Override configured identity, if provided in arguments.
+            # A connection may have no identity configured; leave it unset then.
+            identity = kwargs.get("identity", connection.identity)
+            if identity is not None:
+                api_kwargs["identity"] = str(identity)
         elif "base_url" not in api_kwargs:
             # Check if there's an active service configured and is a podman machine
             active_service = config.active_service
             if active_service and active_service.is_machine:
                 api_kwargs["base_url"] = active_service.url.geturl()
-                api_kwargs["identity"] = kwargs.get("identity", str(active_service.identity))
+                identity = kwargs.get("identity", active_service.identity)
+                if identity is not None:
+                    api_kwargs["identity"] = str(identity)
             else:
                 # Fall back to local Unix socket
                 path = str(Path(get_runtime_dir()) / "podman" / "podman.sock")

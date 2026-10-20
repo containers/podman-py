@@ -166,5 +166,42 @@ class PodmanConfigTestCaseJSON(unittest.TestCase):
         self.assertEqual(config.services["production"].identity, Path("/home/root/.ssh/id_rsa"))
 
 
+class PodmanConfigTestCaseNoIdentity(unittest.TestCase):
+    """Connections without an identity file report identity as None."""
+
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.temp_dir = tempfile.mkdtemp()
+        self.data = """
+{
+  "Connection": {
+    "Default": "local",
+    "Connections": {
+      "local": {
+        "URI": "unix:///run/user/1000/podman/podman.sock"
+      },
+      "remote": {
+        "URI": "ssh://qe@localhost:2222/run/podman/podman.sock"
+      }
+    }
+  },
+  "Farm": {}
+}
+"""
+
+        self.path = os.path.join(self.temp_dir, 'podman-connections.json')
+        data = json.loads(self.data)
+        with open(self.path, 'w+') as file:
+            json.dump(data, file)
+
+    def test_identity_is_none_without_identity(self):
+        config = PodmanConfig(self.path)
+
+        self.assertIsNone(config.services["local"].identity)
+        self.assertIsNone(config.services["remote"].identity)
+        self.assertIsNone(config.active_service.identity)
+
+
 if __name__ == '__main__':
     unittest.main()
