@@ -454,7 +454,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 headers={"content-type": "application/json"},
                 data=payload,
             )
-            response.raise_for_status()
+        response.raise_for_status()
 
         container_id = response.json()["Id"]
 
