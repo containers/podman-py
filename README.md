@@ -35,13 +35,7 @@ pip install podman
 import json
 from podman import PodmanClient
 
-# Provide a URI path for the libpod service.  In libpod, the URI can be a unix
-# domain socket(UDS) or TCP.  The TCP connection has not been implemented in this
-# package yet.
-
-uri = "unix:///run/user/1000/podman/podman.sock"
-
-with PodmanClient(base_url=uri) as client:
+with PodmanClient() as client:
     version = client.version()
     print("Release: ", version["Version"])
     print("Compatible API: ", version["ApiVersion"])
