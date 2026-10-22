@@ -82,6 +82,17 @@ class ManifestTestCase(unittest.TestCase):
         self.assertEqual(manifest.name, "quay.io/fedora:latest")
         self.assertTrue(adapter.called_once)
 
+    @requests_mock.Mocker()
+    def test_get_keeps_content_digest_header(self, mock):
+        digest = "sha256:" + "a" * 64
+        mock.get(
+            tests.LIBPOD_URL + "/manifests/quay.io%2Ffedora%3Alatest/json",
+            headers={"Docker-Content-Digest": digest},
+            json=FIRST_MANIFEST,
+        )
+        manifest = self.client.manifests.get("quay.io/fedora:latest")
+        self.assertEqual(manifest.attrs["digest"], digest)
+
 
 if __name__ == '__main__':
     unittest.main()

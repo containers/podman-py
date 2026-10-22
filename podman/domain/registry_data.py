@@ -35,19 +35,21 @@ class RegistryData(PodmanResource):
             self.attrs = self.manager.get(image_name).attrs
 
     def _get_version(self) -> dict[str, Any]:
-        """Fetch version information from configured client."""
-        client = self.podman_client or self.client
-        if client is None:
+        """Fetch version information from the Podman service.
+
+        Returns an empty dict when no client is configured.
+
+        Raises:
+            APIError: when service reports an error
+        """
+        if self.podman_client is not None:
+            return self.podman_client.version()
+        if self.client is None:
             return {}
-        try:
-            if hasattr(client, "version") and callable(client.version):
-                return client.version()
-            if hasattr(client, "get"):
-                response = client.get("/version")
-                return response.json()
-        except Exception:  # pylint: disable=broad-except
-            pass
-        return {}
+
+        response = self.client.get("/version")
+        response.raise_for_status()
+        return response.json()
 
     @property
     def id(self) -> Optional[str]:  # pylint: disable=invalid-name
@@ -62,15 +64,7 @@ class RegistryData(PodmanResource):
         if self.attrs.get("digest"):
             return self.attrs["digest"]
 
-        manifest_digest = self._resolve_manifest_digest()
-        if manifest_digest is not None:
-            return manifest_digest
-
-        config = self.attrs.get("config")
-        if isinstance(config, dict) and config.get("digest"):
-            return config["digest"]
-
-        return None
+        return self._resolve_manifest_digest()
 
     def _resolve_manifest_digest(self) -> Optional[str]:
         """Resolve digest from manifests list."""
@@ -128,7 +122,7 @@ class RegistryData(PodmanResource):
             platform: Platform for which to pull Image. Default: None (all platforms.)
         """
         repository, _ = api.parse_repository(self.image_name)
-        pull_target = self.id
+        pull_target = None
         if platform is not None and isinstance(self.attrs.get("manifests"), list):
             target_platform = self._parse_platform(platform)
             for manifest in self.attrs["manifests"]:
@@ -137,6 +131,8 @@ class RegistryData(PodmanResource):
                         pull_target = manifest.get("digest")
                         break
 
+        if pull_target is None:
+            pull_target = self.id
         if pull_target is None:
             _, pull_target = api.parse_repository(self.image_name)
 

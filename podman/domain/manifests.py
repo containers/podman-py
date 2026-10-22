@@ -246,6 +246,8 @@ class ManifestsManager(Manager):
         body = response.json()
         if "names" not in body:
             body["names"] = key
+        if "digest" not in body and "Docker-Content-Digest" in response.headers:
+            body["digest"] = response.headers["Docker-Content-Digest"]
         return self.prepare_model(attrs=body)
 
     def list(self, **kwargs) -> list[Manifest]:

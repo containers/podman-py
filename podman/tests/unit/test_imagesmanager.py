@@ -811,6 +811,18 @@ class ImagesManagerTestCase(unittest.TestCase):
         self.assertIsInstance(images[0], Image)
 
     @requests_mock.Mocker()
+    def test_get_registry_data_single_arch_uses_digest_header(self, mock):
+        digest_header = "sha256:" + "c" * 64
+        mock.get(
+            tests.LIBPOD_URL + "/manifests/quay.io%2ffedora%3Alatest/json",
+            headers={"Docker-Content-Digest": digest_header},
+            json={"schemaVersion": 2, "manifests": None},
+        )
+
+        reg_data = self.client.images.get_registry_data("quay.io/fedora:latest")
+        self.assertEqual(reg_data.id, digest_header)
+
+    @requests_mock.Mocker()
     def test_get_registry_data(self, mock):
         manifest_payload = {
             "schemaVersion": 2,
@@ -826,14 +838,13 @@ class ImagesManagerTestCase(unittest.TestCase):
                 }
             ],
         }
-        digest_header = (
-            "sha256:listdigest1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd"
-        )
+        digest_header = "sha256:" + "b" * 64
         adapter = mock.get(
             tests.LIBPOD_URL + "/manifests/quay.io%2ffedora%3Alatest/json",
             headers={"Docker-Content-Digest": digest_header},
             json=manifest_payload,
         )
+        mock.get(tests.LIBPOD_URL + "/version", json={"Os": "linux", "Arch": "amd64"})
 
         reg_data = self.client.images.get_registry_data("quay.io/fedora:latest")
         self.assertIsInstance(reg_data, RegistryData)

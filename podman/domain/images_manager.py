@@ -17,8 +17,9 @@ from podman.domain.images import Image
 from podman.domain.images_build import BuildMixin
 from podman.domain.json_stream import json_stream
 from podman.domain.manager import Manager
+from podman.domain.manifests import ManifestsManager
 from podman.domain.registry_data import RegistryData
-from podman.errors import APIError, ImageNotFound, PodmanError
+from podman.errors import APIError, ImageNotFound, NotFound, PodmanError
 
 try:
     from rich.progress import (
@@ -112,21 +113,14 @@ class ImagesManager(BuildMixin, Manager):
             ImageNotFound: when image is not found in the registry
             APIError: when service returns an error
         """
-        headers = {}
-        if auth_config:
-            headers["X-Registry-Auth"] = api.encode_auth_header(auth_config)
-
-        quoted_name = urllib.parse.quote_plus(name)
-        response = self.api.get(f"/manifests/{quoted_name}/json", headers=headers or None)
-        response.raise_for_status(not_found=ImageNotFound)
-
-        attrs = response.json()
-        if "Docker-Content-Digest" in response.headers and "digest" not in attrs:
-            attrs["digest"] = response.headers["Docker-Content-Digest"]
+        try:
+            manifest = ManifestsManager(client=self.client).get(name, auth_config=auth_config)
+        except NotFound as e:
+            raise ImageNotFound(e.args[0], response=e.response, explanation=e.explanation) from e
 
         return RegistryData(
             image_name=name,
-            attrs=attrs,
+            attrs=manifest.attrs,
             client=self.client,
             collection=self,
         )
