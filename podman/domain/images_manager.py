@@ -17,8 +17,9 @@ from podman.domain.images import Image
 from podman.domain.images_build import BuildMixin
 from podman.domain.json_stream import json_stream
 from podman.domain.manager import Manager
+from podman.domain.manifests import ManifestsManager
 from podman.domain.registry_data import RegistryData
-from podman.errors import APIError, ImageNotFound, PodmanError
+from podman.errors import APIError, ImageNotFound, NotFound, PodmanError
 
 try:
     from rich.progress import (
@@ -98,7 +99,7 @@ class ImagesManager(BuildMixin, Manager):
     def get_registry_data(
         self,
         name: str,
-        auth_config=Mapping[str, str],  # pylint: disable=unused-argument
+        auth_config: Optional[Mapping[str, str]] = None,
     ) -> RegistryData:
         """Returns registry data for an image.
 
@@ -109,13 +110,17 @@ class ImagesManager(BuildMixin, Manager):
             auth_config: Override configured credentials. Keys username and password are required.
 
         Raises:
+            ImageNotFound: when image is not found in the registry
             APIError: when service returns an error
         """
-        # FIXME populate attrs using auth_config
-        image = self.get(name)
+        try:
+            manifest = ManifestsManager(client=self.client).get(name, auth_config=auth_config)
+        except NotFound as e:
+            raise ImageNotFound(e.args[0], response=e.response, explanation=e.explanation) from e
+
         return RegistryData(
             image_name=name,
-            attrs=image.attrs,
+            attrs=manifest.attrs,
             client=self.client,
             collection=self,
         )
@@ -305,7 +310,7 @@ class ImagesManager(BuildMixin, Manager):
             else:
                 yield json.dumps(entry)
 
-    # pylint: disable=too-many-locals,too-many-branches
+    # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     def pull(
         self,
         repository: str,
@@ -366,6 +371,10 @@ class ImagesManager(BuildMixin, Manager):
 
         if all_tags:
             params["allTags"] = True
+        elif tag.startswith("sha256:") or tag.startswith("sha512:"):
+            params["reference"] = f"{repository}@{tag}"
+        elif tag.startswith("@"):
+            params["reference"] = f"{repository}{tag}"
         else:
             params["reference"] = f"{repository}:{tag}"
 

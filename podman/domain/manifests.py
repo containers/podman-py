@@ -4,6 +4,7 @@ import logging
 import urllib.parse
 from contextlib import suppress
 from typing import Any, Optional, Union
+from collections.abc import Mapping
 
 from podman import api
 from podman.domain.images import Image
@@ -215,7 +216,12 @@ class ManifestsManager(Manager):
         response = self.api.get(f"/manifests/{key}/exists")
         return response.ok
 
-    def get(self, key: str) -> Manifest:
+    def get(
+        self,
+        key: str,
+        auth_config: Optional[Mapping[str, str]] = None,
+        **kwargs,
+    ) -> Manifest:
         """Returns the manifest by name.
 
         To have Manifest conform with other PodmanResource's, we use the key that
@@ -223,18 +229,25 @@ class ManifestsManager(Manager):
 
         Args:
             key: Manifest name for which to search
+            auth_config: Override configured credentials. Keys username and password are required.
 
         Raises:
             NotFound: when manifest could not be found
             APIError: when service reports an error
         """
+        headers = dict(kwargs.get("headers") or {})
+        if auth_config:
+            headers["X-Registry-Auth"] = api.encode_auth_header(auth_config)
+
         quoted_key = urllib.parse.quote_plus(key)
-        response = self.api.get(f"/manifests/{quoted_key}/json")
+        response = self.api.get(f"/manifests/{quoted_key}/json", headers=headers or None)
         response.raise_for_status()
 
         body = response.json()
         if "names" not in body:
             body["names"] = key
+        if "digest" not in body and "Docker-Content-Digest" in response.headers:
+            body["digest"] = response.headers["Docker-Content-Digest"]
         return self.prepare_model(attrs=body)
 
     def list(self, **kwargs) -> list[Manifest]:
