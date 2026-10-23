@@ -26,6 +26,9 @@ class PodmanConfigTestCaseDefault(unittest.TestCase):
       "production": {
         "URI": "ssh://root@localhost:22/run/podman/podman.sock",
         "Identity": "/home/root/.ssh/id_rsajson"
+      },
+      "no_identity": {
+        "URI": "ssh://root@localhost:22/run/podman/podman.sock"
       }
     }
   },
@@ -77,6 +80,7 @@ class PodmanConfigTestCaseDefault(unittest.TestCase):
         expected = urllib.parse.urlparse("ssh://qe@localhost:2222/run/podman/podman.sock")
         self.assertEqual(config.active_service.url, expected)
         self.assertEqual(config.services["production"].identity, Path("/home/root/.ssh/id_rsajson"))
+        self.assertIsNone(config.services["no_identity"].identity)
 
 
 class PodmanConfigTestCaseTOML(unittest.TestCase):
