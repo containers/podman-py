@@ -507,6 +507,67 @@ class ContainersManagerTestCase(unittest.TestCase):
         with self.assertRaises(TypeError):
             self.client.containers.create("fedora", "/usr/bin/ls", blkio_weight=100.0)
 
+    def test_create_security_opt(self):
+        params = CreateMixin._render_payload(
+            {
+                "image": "fedora",
+                "annotations": {"user": "kept"},
+                "security_opt": [
+                    "seccomp=unconfined",
+                    "apparmor=unconfined",
+                    "label=type:spc_t",
+                    "label:level:s0:c1,c2",
+                    "no-new-privileges",
+                    "mask=/proc/acpi:/sys/firmware",
+                    "unmask=/proc/kcore",
+                    "proc-opts=subset=pid",
+                ],
+            }
+        )
+        self.assertEqual("unconfined", params["seccomp_profile_path"])
+        self.assertEqual("unconfined", params["apparmor_profile"])
+        self.assertEqual(["type:spc_t", "level:s0:c1,c2"], params["selinux_opts"])
+        self.assertTrue(params["no_new_privileges"])
+        self.assertEqual(["/proc/acpi", "/sys/firmware"], params["mask"])
+        self.assertEqual(["/proc/kcore"], params["unmask"])
+        self.assertEqual(["subset=pid"], params["procfs_opts"])
+        self.assertEqual(
+            {
+                "user": "kept",
+                "io.podman.annotations.seccomp": "unconfined",
+                "io.podman.annotations.apparmor": "unconfined",
+                "io.podman.annotations.label": "type:spc_t,label=level:s0:c1,c2",
+            },
+            params["annotations"],
+        )
+
+    def test_create_security_opt_values(self):
+        cases = [
+            (["label=disable"], "selinux_opts", ["disable"]),
+            (["label=nested"], "label_nested", True),
+            (["no-new-privileges=false"], "no_new_privileges", False),
+            (["no-new-privileges:true"], "no_new_privileges", True),
+            (["systempaths=unconfined"], "unmask", ["ALL"]),
+            # Raw SELinux options keep working as before
+            (["disable"], "selinux_opts", ["disable"]),
+            (["type:spc_t", "level:s0"], "selinux_opts", ["type:spc_t", "level:s0"]),
+        ]
+        for security_opt, key, expected in cases:
+            with self.subTest(security_opt=security_opt):
+                params = CreateMixin._render_payload(
+                    {"image": "fedora", "security_opt": security_opt}
+                )
+                self.assertEqual(expected, params[key])
+
+        params = CreateMixin._render_payload({"image": "fedora", "security_opt": ["disable"]})
+        self.assertIsNone(params["annotations"])
+
+    def test_create_security_opt_invalid(self):
+        for security_opt in (["no-new-privileges=maybe"], ["systempaths=confined"]):
+            with self.subTest(security_opt=security_opt):
+                with self.assertRaises(ValueError):
+                    CreateMixin._render_payload({"image": "fedora", "security_opt": security_opt})
+
     def test_create_unknown_key(self):
         with self.assertRaises(TypeError):
             self.client.containers.create("fedora", "/usr/bin/ls", unknown_key=100.0)
