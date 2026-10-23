@@ -145,6 +145,20 @@ class ContainersManagerTestCase(unittest.TestCase):
         )
 
     @requests_mock.Mocker()
+    def test_list_multiple_labels(self, mock):
+        filters = {"label": ["team=platform", "env=test"], "status": "running"}
+        mock.get(tests.LIBPOD_URL + "/containers/json", json=[FIRST_CONTAINER])
+
+        actual = self.client.containers.list(filters=filters)
+
+        self.assertEqual([container.id for container in actual], [FIRST_CONTAINER["Id"]])
+        self.assertEqual(
+            json.loads(mock.last_request.qs["filters"][0]),
+            {"label": ["team=platform", "env=test"], "status": ["running"]},
+        )
+        self.assertEqual(filters, {"label": ["team=platform", "env=test"], "status": "running"})
+
+    @requests_mock.Mocker()
     def test_list_no_filters(self, mock):
         mock.get(
             tests.LIBPOD_URL + "/containers/json",
