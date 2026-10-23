@@ -517,6 +517,31 @@ class ContainersManagerTestCase(unittest.TestCase):
         ]
         self.assertEqual(expected_userns, actual_userns)
 
+    def test_create_nsmode_with_value(self):
+        cases = [
+            ("ipc_mode", "ipcns", "container:db", {"nsmode": "container", "value": "db"}),
+            ("ipc_mode", "ipcns", "shareable", {"nsmode": "shareable"}),
+            ("pid_mode", "pidns", "container:db", {"nsmode": "container", "value": "db"}),
+            ("pid_mode", "pidns", "ns:/proc/9/ns", {"nsmode": "path", "value": "/proc/9/ns"}),
+            ("uts_mode", "utsns", "host", {"nsmode": "host"}),
+            ("userns_mode", "userns", "keep-id", {"nsmode": "keep-id"}),
+            (
+                "userns_mode",
+                "userns",
+                "keep-id:uid=1000,gid=1000",
+                {"nsmode": "keep-id", "value": "uid=1000,gid=1000"},
+            ),
+            ("userns_mode", "userns", "auto:size=1024", {"nsmode": "auto", "value": "size=1024"}),
+            ("network_mode", "netns", "container:db", {"nsmode": "container", "value": "db"}),
+            ("network_mode", "netns", "ns:/run/ns/a", {"nsmode": "path", "value": "/run/ns/a"}),
+            ("network_mode", "netns", "host", {"nsmode": "host"}),
+            ("network_mode", "netns", "bridge", {"nsmode": "bridge"}),
+        ]
+        for kwarg, key, value, expected in cases:
+            with self.subTest(kwarg=kwarg, value=value):
+                params = CreateMixin._render_payload({"image": "fedora", kwarg: value})
+                self.assertEqual(expected, params[key])
+
     def test_create_unsupported_key(self):
         with self.assertRaises(TypeError):
             self.client.containers.create("fedora", "/usr/bin/ls", blkio_weight=100.0)
