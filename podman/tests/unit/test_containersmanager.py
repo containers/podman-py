@@ -16,7 +16,7 @@ from podman import PodmanClient, tests
 from podman.domain.containers import Container
 from podman.domain.containers_create import CreateMixin
 from podman.domain.containers_manager import ContainersManager
-from podman.errors import NotFound
+from podman.errors import APIError, NotFound
 
 FIRST_CONTAINER = {
     "Id": "87e1325c82424e49a00abdd4de08009eb76c7de8d228426a9b8af9318ced5ecd",
@@ -392,6 +392,25 @@ class ContainersManagerTestCase(unittest.TestCase):
         # 2 POSTs for create
         # 1 GET for container json
         self.assertEqual(mock.call_count, 3)
+
+    @requests_mock.Mocker()
+    def test_create_api_error(self, mock):
+        # Any error other than 404 must surface as APIError, not as a KeyError on "Id".
+        mock.post(
+            tests.LIBPOD_URL + "/containers/create",
+            status_code=500,
+            json={
+                "cause": "that name is already in use",
+                "message": "creating container storage: the container name is already in use",
+                "response": 500,
+            },
+        )
+        self.client.images.pull = MagicMock()
+        with self.assertRaises(APIError) as e:
+            self.client.containers.create("fedora", "/usr/bin/ls", name="dup")
+        self.assertEqual(e.exception.response.status_code, 500)
+        self.assertIn("already in use", str(e.exception))
+        self.client.images.pull.assert_not_called()
 
     @requests_mock.Mocker()
     def test_create_parse_host_port(self, mock):
