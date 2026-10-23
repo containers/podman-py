@@ -126,6 +126,43 @@ class PodmanClientTestCase(unittest.TestCase):
                     expected = "http+ssh://core@127.0.0.1:58468/run/user/501/podman/podman.sock"
                     self.assertEqual(client.api.base_url.geturl(), expected)
 
+    @mock.patch('podman.client.APIClient.__init__', return_value=None)
+    def test_from_env_container_connection(self, mock_api_init):
+        """from_env() resolves CONTAINER_CONNECTION through PodmanConfig.services."""
+        with mock.patch.multiple(Path, open=self.mocked_open, exists=MagicMock(return_value=True)):
+            PodmanClient.from_env(environment={"CONTAINER_CONNECTION": "testing"})
+            kwargs = mock_api_init.call_args[1]
+            self.assertEqual(kwargs["base_url"], "ssh://qe@localhost:2222/run/podman/podman.sock")
+            self.assertEqual(kwargs["identity"], "/home/qe/.ssh/id_rsa")
+
+    @mock.patch('podman.client.APIClient.__init__', return_value=None)
+    def test_from_env_container_connection_takes_precedence(self, mock_api_init):
+        """CONTAINER_CONNECTION wins over CONTAINER_HOST, matching the podman CLI."""
+        with mock.patch.multiple(Path, open=self.mocked_open, exists=MagicMock(return_value=True)):
+            PodmanClient.from_env(
+                environment={
+                    "CONTAINER_HOST": "ssh://other@localhost:22/run/podman/podman.sock",
+                    "CONTAINER_CONNECTION": "testing",
+                }
+            )
+            kwargs = mock_api_init.call_args[1]
+            self.assertEqual(kwargs["base_url"], "ssh://qe@localhost:2222/run/podman/podman.sock")
+            self.assertEqual(kwargs["identity"], "/home/qe/.ssh/id_rsa")
+
+    def test_from_env_unknown_connection(self):
+        """from_env() raises ValueError for an unknown CONTAINER_CONNECTION."""
+        with mock.patch.multiple(Path, open=self.mocked_open, exists=MagicMock(return_value=True)):
+            with self.assertRaisesRegex(ValueError, "unknown connection"):
+                PodmanClient.from_env(environment={"CONTAINER_CONNECTION": "not defined"})
+
+    @mock.patch('podman.client.APIClient.__init__', return_value=None)
+    def test_from_env_no_connection_env(self, mock_api_init):
+        """Without connection env vars, from_env() keeps the local-socket fallback."""
+        with mock.patch.multiple(Path, open=self.mocked_open, exists=MagicMock(return_value=True)):
+            PodmanClient.from_env(environment={"PATH": "/usr/bin"})
+            kwargs = mock_api_init.call_args[1]
+            self.assertTrue(kwargs["base_url"].startswith("http+unix://"))
+
 
 if __name__ == '__main__':
     unittest.main()
