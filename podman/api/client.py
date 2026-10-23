@@ -1,5 +1,6 @@
 """APIClient for connecting to Podman service."""
 
+import copy
 import json
 import warnings
 import urllib.parse
@@ -21,6 +22,9 @@ from podman.api.uds import UDSAdapter
 from podman.errors import APIError, NotFound, PodmanError
 from podman.tlsconfig import TLSConfig
 from podman.version import __version__
+
+# Imported at module level to avoid circular import
+from podman import api
 
 _Data = Union[
     None,
@@ -176,6 +180,7 @@ class APIClient(requests.Session):
         self.timeout = timeout
         self.pool_maxsize = num_pools or requests.adapters.DEFAULT_POOLSIZE
         self.credstore_env = credstore_env or {}
+        self._registry_auth: dict[str, dict[str, str]] = {}
 
         self.user_agent = user_agent or (
             f"PodmanPy/{__version__} (API v{self.version}; Compatible v{self.compatible_version})"
@@ -460,3 +465,40 @@ class APIClient(requests.Session):
             )
         except OSError as e:
             raise APIError(uri.geturl(), explanation=f"{method.upper()} operation failed") from e
+
+    def set_registry_auth(self, registry: str, auth_config: dict[str, str]) -> None:
+        """Store registry authentication credentials for use in subsequent operations.
+
+        Args:
+            registry: Registry URL (e.g., "https://quay.io/v2" or "docker.io")
+                        Normalized to canonical form (hostname[:port] without scheme or /v2)
+            auth_config: Dictionary containing authentication credentials
+                        (username, password, identitytoken, registrytoken, etc.)
+                        Note: A defensive deep copy is stored to prevent mutation
+                        of the caller's dictionary from affecting internal state.
+        """
+        normalized = api.normalize_registry(registry)
+        self._registry_auth[normalized] = copy.deepcopy(auth_config)
+
+    def get_registry_auth(self) -> dict[str, dict[str, str]]:
+        """Retrieve all stored registry authentication credentials.
+
+        Returns:
+            Dictionary mapping registry URLs to their auth configurations.
+            Returns a deep copy to prevent callers from mutating internal state.
+        """
+        return copy.deepcopy(self._registry_auth)
+
+    def clear_registry_auth(self, registry: Optional[str] = None) -> None:
+        """Clear stored registry authentication credentials.
+
+        Args:
+            registry: Specific registry to clear. If None, clears all credentials.
+                       Normalized to canonical form if provided.
+        """
+        if registry is None:
+            self._registry_auth.clear()
+        else:
+            normalized = api.normalize_registry(registry)
+            if normalized in self._registry_auth:
+                del self._registry_auth[normalized]
