@@ -32,6 +32,8 @@ class PodmanClientTestCase(unittest.TestCase):
     [engine.service_destinations.testing]
       uri = "ssh://qe@localhost:2222/run/podman/podman.sock"
       identity = "/home/qe/.ssh/id_rsa"
+    [engine.service_destinations.no_identity]
+      uri = "ssh://root@localhost:22/run/podman/podman.sock"
 
 [network]
 """
@@ -91,6 +93,55 @@ class PodmanClientTestCase(unittest.TestCase):
             # Build path to support tests running as root or a user
             expected = Path(get_xdg_config_home()) / "containers" / "containers.conf"
             PodmanClientTestCase.opener.assert_called_with(expected, encoding="utf-8")
+
+    @mock.patch('podman.client.APIClient.close')
+    @mock.patch('podman.client.APIClient.__init__', return_value=None)
+    def test_connect_no_identity(self, mock_api_init, mock_api_close):
+        with mock.patch.multiple(Path, open=self.mocked_open, exists=MagicMock(return_value=True)):
+            with PodmanClient(connection="no_identity"):
+                mock_api_init.assert_called_once()
+                kwargs = mock_api_init.call_args[1]
+                self.assertEqual(
+                    kwargs["base_url"], "ssh://root@localhost:22/run/podman/podman.sock"
+                )
+                self.assertNotIn("identity", kwargs)
+
+    @mock.patch('podman.client.APIClient.close')
+    @mock.patch('podman.client.APIClient.__init__', return_value=None)
+    def test_connect_explicit_identity(self, mock_api_init, mock_api_close):
+        with mock.patch.multiple(Path, open=self.mocked_open, exists=MagicMock(return_value=True)):
+            with PodmanClient(connection="no_identity", identity="/custom/key"):
+                mock_api_init.assert_called_once()
+                kwargs = mock_api_init.call_args[1]
+                self.assertEqual(kwargs["identity"], "/custom/key")
+
+    @mock.patch('podman.client.APIClient.close')
+    @mock.patch('podman.client.APIClient.__init__', return_value=None)
+    def test_connect_explicit_identity_override(self, mock_api_init, mock_api_close):
+        with mock.patch.multiple(Path, open=self.mocked_open, exists=MagicMock(return_value=True)):
+            with PodmanClient(connection="testing", identity="/custom/key2"):
+                mock_api_init.assert_called_once()
+                kwargs = mock_api_init.call_args[1]
+                self.assertEqual(kwargs["identity"], "/custom/key2")
+
+    @mock.patch('podman.client.APIClient.close')
+    @mock.patch('podman.client.APIClient.__init__', return_value=None)
+    def test_connect_active_service_no_identity(self, mock_api_init, mock_api_close):
+        mock_config = MagicMock(spec=PodmanConfig)
+        mock_service = MagicMock(spec=ServiceConnection)
+        mock_service.url.geturl.return_value = "http+ssh://root@localhost:22/run/podman/podman.sock"
+        mock_service.identity = None
+        mock_service.is_machine = True
+        mock_config.active_service = mock_service
+
+        with mock.patch('podman.client.PodmanConfig', return_value=mock_config):
+            with PodmanClient():
+                mock_api_init.assert_called_once()
+                kwargs = mock_api_init.call_args[1]
+                self.assertEqual(
+                    kwargs["base_url"], "http+ssh://root@localhost:22/run/podman/podman.sock"
+                )
+                self.assertNotIn("identity", kwargs)
 
     def test_connect_404(self):
         with mock.patch.multiple(Path, open=self.mocked_open, exists=MagicMock(return_value=True)):

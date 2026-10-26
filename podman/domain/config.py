@@ -53,11 +53,13 @@ class ServiceConnection:
         return urllib.parse.urlparse(self.attrs.get("URI"))
 
     @cached_property
-    def identity(self):
-        """Path: Returns Path to identity file for service connection."""
-        if self.attrs.get("identity"):
-            return Path(self.attrs.get("identity"))
-        return Path(self.attrs.get("Identity"))
+    def identity(self) -> Optional[Path]:
+        """Optional[Path]: Returns Path to identity file for service connection."""
+        for key in ("identity", "Identity"):
+            if key in self.attrs:
+                val = self.attrs[key]
+                return Path(val) if val else None
+        return None
 
     @cached_property
     def is_machine(self) -> bool:
