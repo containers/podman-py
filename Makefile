@@ -24,7 +24,7 @@ lint: tox
 .PHONY: tests
 tests: tox
 	# see tox.ini for environment variable settings
-	$(PYTHON) -m tox -e coverage,py39,py310,py311,py312,py313
+	$(PYTHON) -m tox -e coverage,py312,py313,py314,py315
 
 .PHONY: tests-ci-base-python-podman-next
 tests-ci-base-python-podman-next:
@@ -38,7 +38,7 @@ tests-ci-base-python:
 # 		but for now it's ok to leave it here so it's run
 .PHONY: tests-ci-all-python
 tests-ci-all-python:
-	$(PYTHON) -m tox -e coverage,py39,py310,py311,py312,py313
+	$(PYTHON) -m tox -e coverage,py312,py313,py314,py315
 
 .PHONY: unittest
 unittest:
@@ -53,9 +53,9 @@ integration:
 .PHONY: tox
 tox:
 ifeq (, $(shell which dnf))
-	brew install python@3.9 python@3.10 python@3.11 python@3.12 python@3.13
+	brew install python@3.12 python@3.13 python@3.14 python@3.15
 else
-	-dnf install -y python3 python3.9 python3.10 python3.11 python3.12 python3.13
+	-dnf install -y python3 python3.12 python3.13 python3.14 python3.15
 endif
 	# ensure tox is available. It will take care of other testing requirements
 	$(PYTHON) -m pip install --user tox

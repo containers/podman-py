@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "Bindings for Podman RESTful API"
 readme = "README.md"
 license = {file = "LICENSE"}
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 authors = [
     { name = "Brent Baude" },
     { name = "Jhon Honce", email = "jhonce@redhat.com" },
@@ -25,18 +25,16 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 # compatible releases
 # ~= with version numbers
 dependencies = [
     "requests >=2.24",
-    "tomli>=1.2.3; python_version<'3.11'",
     "urllib3",
 ]
 

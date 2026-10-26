@@ -1,24 +1,13 @@
 """Read containers.conf file."""
 
-import sys
+import json
 import urllib
 from functools import cached_property
 from pathlib import Path
+from tomllib import loads as toml_loads
 from typing import Optional
-import json
 
 from podman.api.path_utils import get_xdg_config_home
-
-if sys.version_info >= (3, 11):
-    from tomllib import loads as toml_loads
-else:
-    try:
-        from tomli import loads as toml_loads
-    except ImportError:
-        try:
-            from toml import loads as toml_loads
-        except ImportError:
-            from pytoml import loads as toml_loads
 
 
 class ServiceConnection:
