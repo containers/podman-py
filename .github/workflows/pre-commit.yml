@@ -8,7 +8,6 @@ permissions: {}
 
 jobs:
   pre-commit:
-    # setup-python does not publish 3.9 builds for ubuntu-26.04 (ubuntu-latest).
     runs-on: ubuntu-24.04
     permissions:
       contents: read
