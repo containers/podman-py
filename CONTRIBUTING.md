@@ -25,12 +25,10 @@ Please don't include any private/sensitive information in your issue!
 
 ## Tools we use
 
-- Python >= 3.9
+- Python (see `requires-python` in [pyproject.toml](pyproject.toml) for the minimum version)
 - [pre-commit](https://pre-commit.com/)
 - [ruff](https://docs.astral.sh/ruff/)
 - [tox](https://tox.readthedocs.io/en/latest/)
-- You may need to use [virtualenv](https://virtualenv.pypa.io/en/latest/) to
-  support Python 3.6
 
 ## Testing
 
