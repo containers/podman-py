@@ -1,21 +1,8 @@
 import os
-import pathlib
-import csv
 import re
 import subprocess
 
-try:
-    from platform import freedesktop_os_release
-except ImportError:
-
-    def freedesktop_os_release() -> dict[str, str]:
-        """This is a fallback for platforms that don't have the freedesktop_os_release function.
-        Python < 3.10
-        """
-        path = pathlib.Path("/etc/os-release")
-        with open(path) as f:
-            reader = csv.reader(f, delimiter="=")
-            return dict(reader)
+from platform import freedesktop_os_release
 
 
 def podman_version() -> tuple[int, ...]:

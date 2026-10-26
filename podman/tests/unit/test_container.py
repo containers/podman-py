@@ -2,14 +2,8 @@ import base64
 import io
 import json
 import unittest
+from collections.abc import Iterable
 from unittest.mock import MagicMock
-
-try:
-    # Python >= 3.10
-    from collections.abc import Iterable
-except ImportError:
-    # Python < 3.10
-    from collections.abc import Iterable
 
 import requests_mock
 
