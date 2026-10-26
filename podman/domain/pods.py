@@ -1,14 +1,14 @@
 """Model and Manager for Pod resources."""
 
 import logging
-from typing import Any, Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from podman.domain.manager import PodmanResource
 
 if TYPE_CHECKING:
     from podman.domain.pods_manager import PodsManager
 
-_Timeout = Union[None, int, tuple[int, int], tuple[int, None]]
+_Timeout = None | int | tuple[int, int] | tuple[int, None]
 
 logger = logging.getLogger("podman.pods")
 
@@ -27,7 +27,7 @@ class Pod(PodmanResource):
         """str: Returns name of pod."""
         return self.attrs.get("Name")
 
-    def kill(self, signal: Union[str, int, None] = None) -> None:
+    def kill(self, signal: str | int | None = None) -> None:
         """Send signal to pod.
 
         Args:
@@ -50,7 +50,7 @@ class Pod(PodmanResource):
         response = self.api.post(f"/pods/{self.id}/pause")
         response.raise_for_status()
 
-    def remove(self, force: Optional[bool] = None) -> None:
+    def remove(self, force: bool | None = None) -> None:
         """Delete pod.
 
         Args:

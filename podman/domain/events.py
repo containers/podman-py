@@ -3,7 +3,7 @@
 import json
 import logging
 from datetime import datetime
-from typing import Any, Optional, Union
+from typing import Any
 from collections.abc import Iterator
 
 from podman import api
@@ -25,11 +25,11 @@ class EventsManager:  # pylint: disable=too-few-public-methods
 
     def list(
         self,
-        since: Union[datetime, int, None] = None,
-        until: Union[datetime, int, None] = None,
-        filters: Optional[dict[str, Any]] = None,
+        since: datetime | int | None = None,
+        until: datetime | int | None = None,
+        filters: dict[str, Any] | None = None,
         decode: bool = False,
-    ) -> Iterator[Union[str, dict[str, Any]]]:
+    ) -> Iterator[str | dict[str, Any]]:
         """Report on networks.
 
         Args:

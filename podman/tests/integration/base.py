@@ -18,7 +18,6 @@ import logging
 import os
 import shutil
 import uuid
-from typing import Optional
 
 import fixtures
 
@@ -41,7 +40,7 @@ class IntegrationTest(fixtures.TestWithFixtures):
           Use ``self.test_dir`` for anything that should stay isolated to a single test.
     """
 
-    podman: Optional[str] = None
+    podman: str | None = None
 
     @classmethod
     def setUpClass(cls) -> None:

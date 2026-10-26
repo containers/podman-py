@@ -13,7 +13,6 @@ import socket
 import subprocess
 import urllib.parse
 from contextlib import suppress
-from typing import Optional, Union
 
 import time
 
@@ -28,7 +27,7 @@ from .adapter_utils import _key_normalizer
 logger = logging.getLogger("podman.ssh_adapter")
 
 
-def _identity_args(identity: Optional[str]) -> list[str]:
+def _identity_args(identity: str | None) -> list[str]:
     if identity is None:
         return []
     path = pathlib.Path(identity).expanduser()
@@ -54,7 +53,7 @@ def _ssh_forward_target(uri: urllib.parse.ParseResult) -> str:
 class SSHSocket(socket.socket):
     """Specialization of socket.socket to forward a Podman service via SSH."""
 
-    def __init__(self, uri: str, identity: Optional[str] = None):
+    def __init__(self, uri: str, identity: str | None = None):
         """Initialize SSHSocket.
 
         Args:
@@ -72,7 +71,7 @@ class SSHSocket(socket.socket):
         super().__init__(socket.AF_UNIX, socket.SOCK_STREAM)
         self.uri = uri
         self.identity = identity
-        self._proc: Optional[subprocess.Popen] = None
+        self._proc: subprocess.Popen | None = None
         self.local_sock = _runtime_forward_path()
 
     def connect(self, **kwargs):  # pylint: disable=unused-argument
@@ -182,7 +181,7 @@ class SSHConnection(urllib3.connection.HTTPConnection):
         self,
         host: str,
         port: int,
-        timeout: Union[float, urllib3.Timeout, None] = None,
+        timeout: float | urllib3.Timeout | None = None,
         strict=False,
         **kwargs,  # pylint: disable=unused-argument
     ) -> None:
@@ -198,7 +197,7 @@ class SSHConnection(urllib3.connection.HTTPConnection):
             uri: Full address of a Podman service including path to remote socket. Required.
             identity: path to file containing SSH key for authorization.
         """
-        self.sock: Optional[socket.socket] = None
+        self.sock: socket.socket | None = None
 
         connection_kwargs = kwargs.copy()
         connection_kwargs["port"] = port
@@ -293,7 +292,7 @@ class SSHAdapter(HTTPAdapter):
             timeout (float):
             identity (str): Optional path to ssh identity key
         """
-        self.poolmanager: Optional[SSHPoolManager] = None
+        self.poolmanager: SSHPoolManager | None = None
 
         # Parsed for fail-fast side effects
         _ = urllib.parse.urlparse(uri)

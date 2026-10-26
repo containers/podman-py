@@ -3,7 +3,7 @@
 import logging
 import urllib
 from collections.abc import Mapping
-from typing import Any, Optional, Union
+from typing import Any
 
 from podman import api
 from podman.domain.containers import Container
@@ -121,7 +121,7 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
 
         return containers
 
-    def prune(self, filters: Optional[Mapping[str, str]] = None) -> dict[str, Any]:
+    def prune(self, filters: Mapping[str, str] | None = None) -> dict[str, Any]:
         """Delete stopped containers.
 
         Args:
@@ -154,7 +154,7 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
             results["SpaceReclaimed"] += entry["Size"]
         return results
 
-    def remove(self, container_id: Union[Container, str], **kwargs):
+    def remove(self, container_id: Container | str, **kwargs):
         """Delete container.
 
         Podman only

@@ -6,7 +6,7 @@ import shutil
 import tarfile
 import tempfile
 from fnmatch import fnmatch
-from typing import BinaryIO, Optional
+from typing import BinaryIO
 
 import sys
 
@@ -64,7 +64,7 @@ def create_tar(
         gzip: When True, gzip compress tar file.
     """
 
-    def add_filter(info: tarfile.TarInfo) -> Optional[tarfile.TarInfo]:
+    def add_filter(info: tarfile.TarInfo) -> tarfile.TarInfo | None:
         """Filter files targeted to be added to tarfile.
 
         Args:

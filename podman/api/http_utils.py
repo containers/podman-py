@@ -4,13 +4,13 @@ import base64
 import collections.abc
 import json
 import urllib.parse
-from typing import Optional, Union, Any
+from typing import Any
 from collections.abc import Mapping
 
 
 def prepare_filters(
-    filters: Union[str, list[str], Mapping[str, Any], None],
-) -> Optional[str]:
+    filters: str | list[str] | Mapping[str, Any] | None,
+) -> str | None:
     """Return filters as an URL quoted JSON dict[str, list[Any]]."""
 
     if filters is None or len(filters) == 0:

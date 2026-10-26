@@ -1,7 +1,7 @@
 """SystemManager to provide system level information from Podman service."""
 
 import logging
-from typing import Any, Optional, Union
+from typing import Any
 
 from podman.api.client import APIClient
 from podman import api
@@ -39,15 +39,15 @@ class SystemManager:
     def login(  # pylint: disable=too-many-arguments,too-many-positional-arguments,unused-argument
         self,
         username: str,
-        password: Optional[str] = None,
-        email: Optional[str] = None,
-        registry: Optional[str] = None,
-        reauth: Optional[bool] = False,
-        dockercfg_path: Optional[str] = None,
-        auth: Optional[str] = None,
-        identitytoken: Optional[str] = None,
-        registrytoken: Optional[str] = None,
-        tls_verify: Optional[Union[bool, str]] = None,
+        password: str | None = None,
+        email: str | None = None,
+        registry: str | None = None,
+        reauth: bool | None = False,
+        dockercfg_path: str | None = None,
+        auth: str | None = None,
+        identitytoken: str | None = None,
+        registrytoken: str | None = None,
+        tls_verify: bool | str | None = None,
     ) -> dict[str, Any]:
         """Log into Podman service.
 

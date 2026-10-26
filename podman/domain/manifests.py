@@ -3,7 +3,7 @@
 import logging
 import urllib.parse
 from contextlib import suppress
-from typing import Any, Optional, Union
+from typing import Any
 from collections.abc import Mapping
 
 from podman import api
@@ -52,7 +52,7 @@ class Manifest(PodmanResource):
         """int: Returns the schema version type for this manifest."""
         return self.attrs.get("schemaVersion")
 
-    def add(self, images: list[Union[Image, str]], **kwargs) -> None:
+    def add(self, images: list[Image | str], **kwargs) -> None:
         """Add Image to manifest list.
 
         Args:
@@ -97,7 +97,7 @@ class Manifest(PodmanResource):
     def push(
         self,
         destination: str,
-        all: Optional[bool] = None,  # pylint: disable=redefined-builtin
+        all: bool | None = None,  # pylint: disable=redefined-builtin
         **kwargs,
     ) -> None:
         """Push a manifest list or image index to a registry.
@@ -114,7 +114,7 @@ class Manifest(PodmanResource):
             NotFound: when the Manifest could not be found
             APIError: when service reports an error
         """
-        auth_config: Optional[dict[str, str]] = kwargs.get("auth_config")
+        auth_config: dict[str, str] | None = kwargs.get("auth_config")
 
         headers = {
             # A base64url-encoded auth configuration
@@ -172,8 +172,8 @@ class ManifestsManager(Manager):
     def create(
         self,
         name: str,
-        images: Optional[list[Union[Image, str]]] = None,
-        all: Optional[bool] = None,  # pylint: disable=redefined-builtin
+        images: list[Image | str] | None = None,
+        all: bool | None = None,  # pylint: disable=redefined-builtin
     ) -> Manifest:
         """Create a Manifest.
 
@@ -219,7 +219,7 @@ class ManifestsManager(Manager):
     def get(
         self,
         key: str,
-        auth_config: Optional[Mapping[str, str]] = None,
+        auth_config: Mapping[str, str] | None = None,
         **kwargs,
     ) -> Manifest:
         """Returns the manifest by name.
@@ -255,7 +255,7 @@ class ManifestsManager(Manager):
 
         raise NotImplementedError("Podman service currently does not support listing manifests.")
 
-    def remove(self, name: Union[Manifest, str]) -> dict[str, Any]:
+    def remove(self, name: Manifest | str) -> dict[str, Any]:
         """Delete the manifest list from the Podman service."""
         if isinstance(name, Manifest):
             name = name.name

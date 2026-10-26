@@ -5,7 +5,6 @@ import urllib
 from functools import cached_property
 from pathlib import Path
 from tomllib import loads as toml_loads
-from typing import Optional
 
 from podman.api.path_utils import get_xdg_config_home
 
@@ -42,7 +41,7 @@ class ServiceConnection:
         return urllib.parse.urlparse(self.attrs.get("URI"))
 
     @cached_property
-    def identity(self) -> Optional[Path]:
+    def identity(self) -> Path | None:
         """Optional[Path]: Returns Path to identity file for service connection."""
         for key in ("identity", "Identity"):
             if key in self.attrs:
@@ -59,7 +58,7 @@ class ServiceConnection:
 class PodmanConfig:
     """PodmanConfig provides a representation of the containers.conf file."""
 
-    def __init__(self, path: Optional[str] = None):
+    def __init__(self, path: str | None = None):
         """Read Podman configuration from users XDG_CONFIG_HOME."""
 
         self.is_default = False

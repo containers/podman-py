@@ -5,8 +5,8 @@ import ipaddress
 import json
 import re
 import struct
-from datetime import datetime, timezone
-from typing import Any, Optional, Union
+from datetime import datetime, UTC
+from typing import Any
 from collections.abc import Iterator
 
 from podman.api.client import APIResponse
@@ -32,7 +32,7 @@ HEALTH_ON_FAILURE_ACTION = {
 }
 
 
-def prepare_duration_ns(value: Union[int, str, None]) -> Union[int, None]:
+def prepare_duration_ns(value: int | str | None) -> int | None:
     """Returns nanoseconds from given input.
 
     Accepts:
@@ -75,7 +75,7 @@ def prepare_duration_ns(value: Union[int, str, None]) -> Union[int, None]:
     return total_ns
 
 
-def parse_repository(name: str) -> tuple[str, Optional[str]]:
+def parse_repository(name: str) -> tuple[str, str | None]:
     """Parse repository image name from tag.
 
     Returns:
@@ -92,7 +92,7 @@ def parse_repository(name: str) -> tuple[str, Optional[str]]:
     return name, None
 
 
-def decode_header(value: Optional[str]) -> dict[str, Any]:
+def decode_header(value: str | None) -> dict[str, Any]:
     """Decode a base64 JSON header value."""
     if value is None:
         return {}
@@ -102,7 +102,7 @@ def decode_header(value: Optional[str]) -> dict[str, Any]:
     return json.loads(text)
 
 
-def prepare_timestamp(value: Union[datetime, int, None]) -> Optional[int]:
+def prepare_timestamp(value: datetime | int | None) -> int | None:
     """Returns a UTC UNIX timestamp from given input."""
     if value is None:
         return None
@@ -112,14 +112,14 @@ def prepare_timestamp(value: Union[datetime, int, None]) -> Optional[int]:
 
     if isinstance(value, datetime):
         if value.tzinfo is None:
-            value = value.replace(tzinfo=timezone.utc)
-        delta = value - datetime.fromtimestamp(0, timezone.utc)
+            value = value.replace(tzinfo=UTC)
+        delta = value - datetime.fromtimestamp(0, UTC)
         return delta.seconds + delta.days * 24 * 3600
 
     raise ValueError(f"Type '{type(value)}' is not supported by prepare_timestamp()")
 
 
-def prepare_cidr(value: Union[ipaddress.IPv4Network, ipaddress.IPv6Network]) -> tuple[str, str]:
+def prepare_cidr(value: ipaddress.IPv4Network | ipaddress.IPv6Network) -> tuple[str, str]:
     """Returns network address and Base64 encoded netmask from CIDR.
 
     The return values are dictated by the Go JSON decoder.
@@ -145,7 +145,7 @@ def frames(response: APIResponse) -> Iterator[bytes]:
 
 def stream_frames(
     response: APIResponse, demux: bool = False
-) -> Iterator[Union[bytes, tuple[bytes, bytes]]]:
+) -> Iterator[bytes | tuple[bytes, bytes]]:
     """Returns each frame from multiplexed streamed payload.
 
     If ``demux`` then output will be tuples where the first position is ``STDOUT`` and the second
@@ -172,7 +172,7 @@ def stream_frames(
 
 def stream_helper(
     response: APIResponse, decode_to_json: bool = False
-) -> Union[Iterator[bytes], Iterator[dict[str, Any]]]:
+) -> Iterator[bytes] | Iterator[dict[str, Any]]:
     """Helper to stream results and optionally decode to json"""
     for value in response.iter_lines():
         if decode_to_json:

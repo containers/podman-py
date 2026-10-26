@@ -1,7 +1,7 @@
 """Model and Manager for Secrets resources."""
 
 from contextlib import suppress
-from typing import Any, Optional, Union
+from typing import Any
 from collections.abc import Mapping
 
 from podman.api import APIClient
@@ -29,7 +29,7 @@ class Secret(PodmanResource):
 
     def remove(
         self,
-        all: Optional[bool] = None,  # pylint: disable=redefined-builtin
+        all: bool | None = None,  # pylint: disable=redefined-builtin
     ):
         """Delete secret.
 
@@ -95,8 +95,8 @@ class SecretsManager(Manager):
         self,
         name: str,
         data: bytes,
-        labels: Optional[Mapping[str, Any]] = None,  # pylint: disable=unused-argument
-        driver: Optional[str] = None,
+        labels: Mapping[str, Any] | None = None,  # pylint: disable=unused-argument
+        driver: str | None = None,
     ) -> Secret:
         """Create a Secret.
 
@@ -121,8 +121,8 @@ class SecretsManager(Manager):
 
     def remove(
         self,
-        secret_id: Union[Secret, str],
-        all: Optional[bool] = None,  # pylint: disable=redefined-builtin
+        secret_id: Secret | str,
+        all: bool | None = None,  # pylint: disable=redefined-builtin
     ):
         """Delete secret.
 

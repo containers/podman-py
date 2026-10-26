@@ -2,7 +2,7 @@
 
 import logging
 from collections.abc import Mapping
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal
 
 import requests
 import pathlib
@@ -28,7 +28,7 @@ class Volume(PodmanResource):
         """str: Returns the name of the volume."""
         return self.attrs.get("Name")
 
-    def remove(self, force: Optional[bool] = None) -> None:
+    def remove(self, force: bool | None = None) -> None:
         """Delete this volume.
 
         Args:
@@ -65,7 +65,7 @@ class VolumesManager(Manager):
         """Type[Volume]: prepare_model() will create Volume classes."""
         return Volume
 
-    def create(self, name: Optional[str] = None, **kwargs) -> Volume:
+    def create(self, name: str | None = None, **kwargs) -> Volume:
         """Create a Volume.
 
         Args:
@@ -133,7 +133,7 @@ class VolumesManager(Manager):
 
     def prune(
         self,
-        filters: Optional[Mapping[str, Any]] = None,
+        filters: Mapping[str, Any] | None = None,
     ) -> dict[Literal["VolumesDeleted", "SpaceReclaimed"], Any]:
         """Delete unused volumes.
 
@@ -174,7 +174,7 @@ class VolumesManager(Manager):
 
         return {"VolumesDeleted": volumes, "SpaceReclaimed": space_reclaimed}
 
-    def remove(self, name: Union[Volume, str], force: Optional[bool] = None) -> None:
+    def remove(self, name: Volume | str, force: bool | None = None) -> None:
         """Delete a volume.
 
         Podman only.
@@ -191,7 +191,7 @@ class VolumesManager(Manager):
         response = self.api.delete(f"/volumes/{name}", params={"force": force})
         response.raise_for_status()
 
-    def export_archive(self, name: Union[Volume, str]) -> bytes:
+    def export_archive(self, name: Volume | str) -> bytes:
         """Export a podman volume, returns the exported archive as bytes.
 
         Args:
@@ -207,7 +207,7 @@ class VolumesManager(Manager):
         return response._content
 
     def import_archive(
-        self, name: Union[Volume, str], data: Optional[bytes] = None, path: Optional[str] = None
+        self, name: Volume | str, data: bytes | None = None, path: str | None = None
     ):
         """Import a podman volume from tar.
         The podman volume archive must be provided either as bytes or as a path to the archive.

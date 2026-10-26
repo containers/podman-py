@@ -4,7 +4,6 @@ import collections
 import functools
 import logging
 import socket
-from typing import Optional, Union
 from urllib.parse import unquote, urlparse
 
 import urllib3
@@ -50,7 +49,7 @@ class UDSConnection(urllib3.connection.HTTPConnection):
         self,
         host: str,
         port: int,
-        timeout: Union[float, urllib3.Timeout, None] = None,
+        timeout: float | urllib3.Timeout | None = None,
         strict=False,
         **kwargs,  # pylint: disable=unused-argument
     ):
@@ -66,7 +65,7 @@ class UDSConnection(urllib3.connection.HTTPConnection):
             uds: Full address of a Podman service UNIX domain socket. Required.
         """
         connection_kwargs = kwargs.copy()
-        self.sock: Optional[socket.socket] = None
+        self.sock: socket.socket | None = None
 
         if timeout is not None:
             if isinstance(timeout, urllib3.Timeout):
@@ -155,7 +154,7 @@ class UDSAdapter(HTTPAdapter):
             requests.Session.mount(
                 "http://", UDSAdapter("http+unix:///run/user/1000/podman/podman.sock"))
         """
-        self.poolmanager: Optional[UDSPoolManager] = None
+        self.poolmanager: UDSPoolManager | None = None
 
         self._pool_kwargs = {"uds": uds}
 

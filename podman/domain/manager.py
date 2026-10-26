@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from collections import abc
-from typing import Any, Optional, TypeVar, Union, TYPE_CHECKING
+from typing import Any, Optional, TypeVar, TYPE_CHECKING
 from collections.abc import Mapping
 
 from podman.api.client import APIClient
@@ -23,8 +23,8 @@ class PodmanResource(ABC):  # noqa: B024
 
     def __init__(
         self,
-        attrs: Optional[Mapping[str, Any]] = None,
-        client: Optional[APIClient] = None,
+        attrs: Mapping[str, Any] | None = None,
+        client: APIClient | None = None,
         collection: Optional["Manager"] = None,
         podman_client: Optional["PodmanClient"] = None,
     ):
@@ -111,7 +111,7 @@ class Manager(ABC):
         """Type[PodmanResource]: Class which the factory method prepare_model() will use."""
 
     def __init__(
-        self, client: Optional[APIClient] = None, podman_client: Optional["PodmanClient"] = None
+        self, client: APIClient | None = None, podman_client: Optional["PodmanClient"] = None
     ) -> None:
         """Initialize Manager() object.
 
@@ -148,7 +148,7 @@ class Manager(ABC):
     def list(self, **kwargs) -> list[PodmanResourceType]:
         """Returns list of resources."""
 
-    def prepare_model(self, attrs: Union[PodmanResource, Mapping[str, Any]]) -> PodmanResourceType:
+    def prepare_model(self, attrs: PodmanResource | Mapping[str, Any]) -> PodmanResourceType:
         """Create a model from a set of attributes."""
 
         # Refresh existing PodmanResource.

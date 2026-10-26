@@ -5,7 +5,7 @@ import copy
 import logging
 import re
 from contextlib import suppress
-from typing import Any, Optional, Union
+from typing import Any
 from collections.abc import MutableMapping
 import requests
 
@@ -34,8 +34,8 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
     def create(
         self,
-        image: Union[Image, str],
-        command: Union[str, list[str], None] = None,
+        image: Image | str,
+        command: str | list[str] | None = None,
         **kwargs,
     ) -> Container:
         """Create a container.
@@ -544,7 +544,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         return env_dict
 
     @staticmethod
-    def _apply_security_opt(params: dict[str, Any], security_opt: Optional[list[str]]) -> None:
+    def _apply_security_opt(params: dict[str, Any], security_opt: list[str] | None) -> None:
         """Map security_opt entries onto the libpod container spec.
 
         Mirrors ``podman create --security-opt``: each "key=value" (or the deprecated
@@ -679,7 +679,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             return args.pop(k, None)
 
         def normalize_nsmode(
-            mode: Union[str, MutableMapping[str, str]],
+            mode: str | MutableMapping[str, str],
         ) -> dict[str, str]:
             if isinstance(mode, dict):
                 return mode
@@ -690,7 +690,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 return {"nsmode": "path" if nsmode == "ns" else nsmode, "value": value}
             return {"nsmode": mode}
 
-        def to_bytes(size: Union[int, str, None]) -> Union[int, None]:
+        def to_bytes(size: int | str | None) -> int | None:
             """
             Converts str or int to bytes.
             Input can be in the following forms :

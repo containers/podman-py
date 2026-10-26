@@ -5,7 +5,7 @@ import logging
 import shlex
 from collections.abc import Iterable, Iterator, Mapping
 from contextlib import suppress
-from typing import Any, Optional, Union
+from typing import Any
 
 import requests
 
@@ -72,7 +72,7 @@ class Container(PodmanResource):
             return self.attrs["NetworkSettings"]["Ports"]
         return {}
 
-    def attach(self, **kwargs) -> Union[str, Iterator[str]]:
+    def attach(self, **kwargs) -> str | Iterator[str]:
         """Attach to container's tty.
 
         Keyword Args:
@@ -139,7 +139,7 @@ class Container(PodmanResource):
     # pylint: disable=too-many-arguments
     def exec_run(
         self,
-        cmd: Union[str, list[str]],
+        cmd: str | list[str],
         *,
         stdout: bool = True,
         stderr: bool = True,
@@ -150,12 +150,12 @@ class Container(PodmanResource):
         detach: bool = False,
         stream: bool = False,
         socket: bool = False,
-        environment: Union[Mapping[str, str], list[str]] = None,
+        environment: Mapping[str, str] | list[str] = None,
         workdir: str = None,
         demux: bool = False,
     ) -> tuple[
-        Optional[int],
-        Union[Iterator[Union[bytes, tuple[bytes, bytes]]], Any, tuple[bytes, bytes]],
+        int | None,
+        Iterator[bytes | tuple[bytes, bytes]] | Any | tuple[bytes, bytes],
     ]:
         """Run given command inside container and return results.
 
@@ -318,7 +318,7 @@ class Container(PodmanResource):
         response.raise_for_status()
         return response.json()
 
-    def kill(self, signal: Union[str, int, None] = None) -> None:
+    def kill(self, signal: str | int | None = None) -> None:
         """Send signal to container.
 
         Raises:
@@ -327,7 +327,7 @@ class Container(PodmanResource):
         response = self.api.post(f"/containers/{self.id}/kill", params={"signal": signal})
         response.raise_for_status()
 
-    def logs(self, **kwargs) -> Union[bytes, Iterator[bytes]]:
+    def logs(self, **kwargs) -> bytes | Iterator[bytes]:
         """Get logs from the container.
 
         Keyword Args:
@@ -457,7 +457,7 @@ class Container(PodmanResource):
 
     def stats(
         self, **kwargs
-    ) -> Union[bytes, dict[str, Any], Iterator[bytes], Iterator[dict[str, Any]]]:
+    ) -> bytes | dict[str, Any] | Iterator[bytes] | Iterator[dict[str, Any]]:
         """Return statistics for container.
 
         Keyword Args:
@@ -512,7 +512,7 @@ class Container(PodmanResource):
         body = response.json()
         raise APIError(body["cause"], response=response, explanation=body["message"])
 
-    def top(self, **kwargs) -> Union[Iterator[dict[str, Any]], dict[str, Any]]:
+    def top(self, **kwargs) -> Iterator[dict[str, Any]] | dict[str, Any]:
         """Report on running processes in the container.
 
         Keyword Args:

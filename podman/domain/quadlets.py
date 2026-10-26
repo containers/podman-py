@@ -4,7 +4,7 @@ import builtins
 import logging
 import os
 import pathlib
-from typing import Any, Optional, Union
+from typing import Any, Union
 
 import requests
 
@@ -145,7 +145,7 @@ class QuadletsManager(Manager):
 
         return [self.prepare_model(attrs=i) for i in response.json()]
 
-    def get_contents(self, name: Union[Quadlet, str]) -> str:
+    def get_contents(self, name: Quadlet | str) -> str:
         """Get the contents of a quadlet file.
 
         Args:
@@ -164,7 +164,7 @@ class QuadletsManager(Manager):
         response.raise_for_status()
         return response.text
 
-    def print_contents(self, name: Union[Quadlet, str]) -> None:
+    def print_contents(self, name: Quadlet | str) -> None:
         """Print the contents of a quadlet file stripped
         of excess whitespace and newlines.
 
@@ -185,7 +185,7 @@ class QuadletsManager(Manager):
         print(response.text.strip())
 
     def delete(
-        self, name: Optional[Union[Quadlet, str]] = None, *_, all: Optional[bool] = None, **kwargs
+        self, name: Quadlet | str | None = None, *_, all: bool | None = None, **kwargs
     ) -> builtins.list:
         """Remove a quadlet file by name. Can force
         removal of running quadlets and control systemd
@@ -399,4 +399,4 @@ class QuadletsManager(Manager):
 
 
 # Type alias – importable for type annotations in calling code.
-QuadletFileItem = Union[tuple[str, Union[str, bytes]], str, os.PathLike]
+QuadletFileItem = tuple[str, str | bytes] | str | os.PathLike
