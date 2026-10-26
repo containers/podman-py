@@ -198,6 +198,55 @@ class TestUtilsCase(unittest.TestCase):
         actual = api.encode_auth_header(auth_config)
         self.assertEqual(expected, actual)
 
+    def test_normalize_registry(self):
+        """Test registry normalization for equivalent forms."""
+
+        @dataclass
+        class TestCase:
+            name: str
+            input: str
+            expected: str
+
+        cases = [
+            TestCase(name="with scheme and v2", input="https://quay.io/v2", expected="quay.io"),
+            TestCase(name="with scheme", input="https://quay.io", expected="quay.io"),
+            TestCase(name="without scheme", input="quay.io", expected="quay.io"),
+            TestCase(name="with trailing slash", input="quay.io/", expected="quay.io"),
+            TestCase(name="docker.io", input="docker.io", expected="docker.io"),
+            TestCase(name="localhost with port", input="localhost:5000", expected="localhost:5000"),
+            TestCase(
+                name="localhost with port and v2",
+                input="https://localhost:5000/v2",
+                expected="localhost:5000",
+            ),
+            TestCase(name="ghcr.io", input="ghcr.io", expected="ghcr.io"),
+            TestCase(
+                name="custom registry with port",
+                input="myregistry.com:8080",
+                expected="myregistry.com:8080",
+            ),
+            TestCase(name="http scheme", input="http://quay.io/v2", expected="quay.io"),
+        ]
+
+        for case in cases:
+            actual = api.normalize_registry(case.input)
+            self.assertEqual(
+                case.expected,
+                actual,
+                f"failed test {case.name}: expected {case.expected}, actual {actual}",
+            )
+
+    def test_normalize_registry_preserves_ports(self):
+        """Test that different ports are not normalized to the same value."""
+        port_5000 = api.normalize_registry("localhost:5000")
+        port_6000 = api.normalize_registry("localhost:6000")
+        self.assertNotEqual(port_5000, port_6000, "Different ports should not match")
+
+    def test_normalize_registry_empty(self):
+        """Test that empty registry raises ValueError."""
+        with self.assertRaises(ValueError):
+            api.normalize_registry("")
+
 
 if __name__ == '__main__':
     unittest.main()

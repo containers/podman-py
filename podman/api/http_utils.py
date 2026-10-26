@@ -3,6 +3,7 @@
 import base64
 import collections.abc
 import json
+import urllib.parse
 from typing import Optional, Union, Any
 from collections.abc import Mapping
 
@@ -107,5 +108,104 @@ def _filter_values(mapping: Mapping[str, Any], recursion=False) -> dict[str, Any
     return canonical
 
 
+def normalize_registry(registry: str) -> str:
+    """Normalize a registry identifier to a canonical form.
+
+    This function normalizes various equivalent registry forms to a consistent
+    format for credential storage and lookup. For example:
+    - https://quay.io/v2 -> quay.io
+    - quay.io -> quay.io
+    - https://quay.io -> quay.io
+    - https://localhost:5000/v2 -> localhost:5000
+    - docker.io -> docker.io
+
+    The normalization:
+    - Removes URL scheme (http:// or https://)
+    - Removes trailing slashes
+    - Removes /v2 suffix if present
+    - Preserves hostname and port distinctions
+    - Does not change case for hostnames (DNS is case-insensitive but we preserve input)
+
+    Args:
+        registry: Registry identifier in any of the common forms
+
+    Returns:
+        Canonical registry identifier (hostname[:port] without scheme or /v2)
+
+    Raises:
+        ValueError: If registry is empty or cannot be parsed
+    """
+    if not registry:
+        raise ValueError("Registry cannot be empty")
+
+    # Add a temporary scheme if not present to make urlparse work correctly
+    if "://" not in registry:
+        registry = f"https://{registry}"
+
+    # Parse as URL to handle scheme and path
+    parsed = urllib.parse.urlparse(registry)
+
+    # Extract hostname (netloc)
+    hostname = parsed.netloc
+
+    # Remove /v2 suffix from path if present
+    path = parsed.path.rstrip('/')
+    if path.endswith('/v2'):
+        path = path[:-3]
+        path = path.rstrip('/')
+
+    # For most cases, hostname is sufficient (e.g., quay.io, localhost:5000)
+    # If path remains after removing /v2, it's unusual but we preserve it
+    if path:
+        # Edge case: registry with additional path components
+        # Preserve them to avoid misidentification
+        result = f"{hostname}{path}"
+    else:
+        result = hostname
+
+    return result
+
+
+def _base64url_encode_json(data: Any) -> bytes:
+    """Helper to encode JSON data as base64url-encoded bytes.
+
+    Args:
+        data: Data to encode (will be JSON serialized)
+
+    Returns:
+        Base64url-encoded bytes
+    """
+    return base64.urlsafe_b64encode(json.dumps(data).encode('utf-8'))
+
+
 def encode_auth_header(auth_config: dict[str, str]) -> bytes:
-    return base64.urlsafe_b64encode(json.dumps(auth_config).encode('utf-8'))
+    """Encode a single auth configuration for X-Registry-Auth header.
+
+    The X-Registry-Auth header is used for pull/push operations and contains
+    a single auth configuration (flat dict with username, password, etc.).
+
+    Args:
+        auth_config: Dictionary containing authentication credentials
+                      (username, password, serveraddress, etc.)
+
+    Returns:
+        Base64url-encoded JSON bytes suitable for X-Registry-Auth header
+    """
+    return _base64url_encode_json(auth_config)
+
+
+def encode_registry_config(auth_configs: dict[str, dict[str, str]]) -> bytes:
+    """Encode registry authentication configurations for X-Registry-Config header.
+
+    The X-Registry-Config header is used for build operations and contains
+    a mapping of registry URLs to their auth configurations (nested dict).
+    This format differs from X-Registry-Auth which contains a single auth config.
+
+    Args:
+        auth_configs: Dictionary mapping registry URLs to auth config dicts
+                      (each containing username, password, etc.)
+
+    Returns:
+        Base64url-encoded JSON bytes suitable for X-Registry-Config header
+    """
+    return _base64url_encode_json(auth_configs)

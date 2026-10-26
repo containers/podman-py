@@ -13,9 +13,12 @@ except ImportError:
 
 import requests_mock
 
+import base64
+import json
+
 from podman import PodmanClient, tests
 from podman.domain.images import Image
-from podman.domain.images_manager import ImagesManager
+from podman.domain.images_manager import ImagesManager, _extract_registry
 from podman.domain.registry_data import RegistryData
 from podman.errors import APIError, ImageNotFound, PodmanError
 
@@ -552,6 +555,115 @@ class ImagesManagerTestCase(unittest.TestCase):
         self.assertEqual(report, expected)
 
     @requests_mock.Mocker()
+    def test_push_uses_stored_credentials(self, mock):
+        """Test that push uses stored credentials when no explicit auth_config is provided."""
+        captured_header = {}
+
+        def capture_header(request, context):
+            captured_header["X-Registry-Auth"] = request.headers.get("X-Registry-Auth", "")
+            return ""
+
+        mock.post(
+            tests.LIBPOD_URL + "/images/quay.io%2Ffedora%3Alatest/push",
+            text=capture_header,
+        )
+
+        # Store credentials for quay.io
+        self.client.api.set_registry_auth(
+            "quay.io", {"username": "storeduser", "password": "storedpass"}
+        )
+
+        # Push without explicit auth_config
+        report = self.client.images.push("quay.io/fedora", "latest")
+
+        # Verify the push was attempted
+        self.assertIn("Pushing repository quay.io/fedora", report)
+
+        # Verify X-Registry-Auth header contains the stored credentials
+        header_value = captured_header.get("X-Registry-Auth", "")
+        self.assertTrue(header_value, "X-Registry-Auth header should not be empty")
+
+        # Decode the base64url-encoded JSON
+        decoded = base64.urlsafe_b64decode(header_value).decode('utf-8')
+        auth_dict = json.loads(decoded)
+
+        # Verify the decoded credentials match what was stored
+        self.assertEqual(auth_dict["username"], "storeduser")
+        self.assertEqual(auth_dict["password"], "storedpass")
+
+    @requests_mock.Mocker()
+    def test_push_explicit_auth_overrides_stored(self, mock):
+        """Test that explicit auth_config overrides stored credentials."""
+        captured_header = {}
+
+        def capture_header(request, context):
+            captured_header["X-Registry-Auth"] = request.headers.get("X-Registry-Auth", "")
+            return ""
+
+        mock.post(
+            tests.LIBPOD_URL + "/images/quay.io%2Ffedora%3Alatest/push",
+            text=capture_header,
+        )
+
+        # Store credentials for quay.io
+        self.client.api.set_registry_auth(
+            "quay.io", {"username": "storeduser", "password": "storedpass"}
+        )
+
+        # Push with explicit auth_config
+        report = self.client.images.push(
+            "quay.io/fedora",
+            "latest",
+            auth_config={"username": "explicituser", "password": "explicitpass"},
+        )
+
+        # Verify the push was attempted
+        self.assertIn("Pushing repository quay.io/fedora", report)
+
+        # Verify X-Registry-Auth header contains the explicit credentials
+        header_value = captured_header.get("X-Registry-Auth", "")
+        self.assertTrue(header_value, "X-Registry-Auth header should not be empty")
+
+        # Decode the base64url-encoded JSON
+        decoded = base64.urlsafe_b64decode(header_value).decode('utf-8')
+        auth_dict = json.loads(decoded)
+
+        # Verify the decoded credentials match the explicit config, not stored
+        self.assertEqual(auth_dict["username"], "explicituser")
+        self.assertEqual(auth_dict["password"], "explicitpass")
+
+    @requests_mock.Mocker()
+    def test_push_mismatched_registry_no_credentials(self, mock):
+        """Test that push does not send credentials for a different registry."""
+        captured_header = {}
+
+        def capture_header(request, context):
+            captured_header["X-Registry-Auth"] = request.headers.get("X-Registry-Auth", "")
+            return ""
+
+        mock.post(
+            tests.LIBPOD_URL + "/images/quay.io%2Ffedora%3Alatest/push",
+            text=capture_header,
+        )
+
+        # Store credentials for a different registry
+        self.client.api.set_registry_auth(
+            "docker.io", {"username": "dockeruser", "password": "dockerpass"}
+        )
+
+        # Push to quay.io
+        report = self.client.images.push("quay.io/fedora", "latest")
+
+        # Verify the push was attempted
+        self.assertIn("Pushing repository quay.io/fedora", report)
+
+        # Verify X-Registry-Auth header is empty (no credentials for quay.io)
+        header_value = captured_header.get("X-Registry-Auth", "")
+        self.assertEqual(
+            header_value, "", "X-Registry-Auth should be empty for mismatched registry"
+        )
+
+    @requests_mock.Mocker()
     def test_pull(self, mock):
         image_id = "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
         mock.post(
@@ -592,6 +704,147 @@ class ImagesManagerTestCase(unittest.TestCase):
 
         image = self.client.images.pull("quay.io/fedora:latest")
         self.assertEqual(image.id, image_id)
+
+    @requests_mock.Mocker()
+    def test_pull_uses_stored_credentials(self, mock):
+        """Test that pull uses stored credentials when no explicit auth_config is provided."""
+        image_id = "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
+        captured_header = {}
+
+        def capture_header(request, context):
+            captured_header["X-Registry-Auth"] = request.headers.get("X-Registry-Auth", "")
+            return json.dumps(
+                {
+                    "error": "",
+                    "id": image_id,
+                    "images": [image_id],
+                    "stream": "",
+                }
+            )
+
+        mock.post(
+            tests.LIBPOD_URL + "/images/pull?reference=quay.io%2ffedora%3Alatest",
+            text=capture_header,
+        )
+        mock.get(
+            tests.LIBPOD_URL + "/images"
+            "/sha256%3A326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/json",
+            json=FIRST_IMAGE,
+        )
+
+        # Store credentials for quay.io
+        self.client.api.set_registry_auth(
+            "quay.io", {"username": "storeduser", "password": "storedpass"}
+        )
+
+        # Pull without explicit auth_config
+        image = self.client.images.pull("quay.io/fedora:latest")
+        self.assertEqual(image.id, image_id)
+
+        # Verify X-Registry-Auth header contains the stored credentials
+        header_value = captured_header.get("X-Registry-Auth", "")
+        self.assertTrue(header_value, "X-Registry-Auth header should not be empty")
+
+        # Decode the base64url-encoded JSON
+        decoded = base64.urlsafe_b64decode(header_value).decode('utf-8')
+        auth_dict = json.loads(decoded)
+
+        # Verify the decoded credentials match what was stored
+        self.assertEqual(auth_dict["username"], "storeduser")
+        self.assertEqual(auth_dict["password"], "storedpass")
+
+    @requests_mock.Mocker()
+    def test_pull_explicit_auth_overrides_stored(self, mock):
+        """Test that explicit auth_config overrides stored credentials."""
+        image_id = "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
+        captured_header = {}
+
+        def capture_header(request, context):
+            captured_header["X-Registry-Auth"] = request.headers.get("X-Registry-Auth", "")
+            return json.dumps(
+                {
+                    "error": "",
+                    "id": image_id,
+                    "images": [image_id],
+                    "stream": "",
+                }
+            )
+
+        mock.post(
+            tests.LIBPOD_URL + "/images/pull?reference=quay.io%2ffedora%3Alatest",
+            text=capture_header,
+        )
+        mock.get(
+            tests.LIBPOD_URL + "/images"
+            "/sha256%3A326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/json",
+            json=FIRST_IMAGE,
+        )
+
+        # Store credentials for quay.io
+        self.client.api.set_registry_auth(
+            "quay.io", {"username": "storeduser", "password": "storedpass"}
+        )
+
+        # Pull with explicit auth_config
+        image = self.client.images.pull(
+            "quay.io/fedora:latest",
+            auth_config={"username": "explicituser", "password": "explicitpass"},
+        )
+        self.assertEqual(image.id, image_id)
+
+        # Verify X-Registry-Auth header contains the explicit credentials
+        header_value = captured_header.get("X-Registry-Auth", "")
+        self.assertTrue(header_value, "X-Registry-Auth header should not be empty")
+
+        # Decode the base64url-encoded JSON
+        decoded = base64.urlsafe_b64decode(header_value).decode('utf-8')
+        auth_dict = json.loads(decoded)
+
+        # Verify the decoded credentials match the explicit config, not stored
+        self.assertEqual(auth_dict["username"], "explicituser")
+        self.assertEqual(auth_dict["password"], "explicitpass")
+
+    @requests_mock.Mocker()
+    def test_pull_mismatched_registry_no_credentials(self, mock):
+        """Test that pull does not send credentials for a different registry."""
+        image_id = "sha256:326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab"
+        captured_header = {}
+
+        def capture_header(request, context):
+            captured_header["X-Registry-Auth"] = request.headers.get("X-Registry-Auth", "")
+            return json.dumps(
+                {
+                    "error": "",
+                    "id": image_id,
+                    "images": [image_id],
+                    "stream": "",
+                }
+            )
+
+        mock.post(
+            tests.LIBPOD_URL + "/images/pull?reference=quay.io%2ffedora%3Alatest",
+            text=capture_header,
+        )
+        mock.get(
+            tests.LIBPOD_URL + "/images"
+            "/sha256%3A326dd9d7add24646a325e8eaa82125294027db2332e49c5828d96312c5d773ab/json",
+            json=FIRST_IMAGE,
+        )
+
+        # Store credentials for a different registry
+        self.client.api.set_registry_auth(
+            "docker.io", {"username": "dockeruser", "password": "dockerpass"}
+        )
+
+        # Pull from quay.io
+        image = self.client.images.pull("quay.io/fedora:latest")
+        self.assertEqual(image.id, image_id)
+
+        # Verify X-Registry-Auth header is empty (no credentials for quay.io)
+        header_value = captured_header.get("X-Registry-Auth", "")
+        self.assertEqual(
+            header_value, "", "X-Registry-Auth should be empty for mismatched registry"
+        )
 
     @requests_mock.Mocker()
     def test_pull_platform(self, mock):
@@ -915,6 +1168,22 @@ class ImagesManagerTestCase(unittest.TestCase):
         image = self.client.images.pull("quay.io/fedora", tag=digest)
         self.assertEqual(image.id, FIRST_IMAGE["Id"])
         self.assertTrue(adapter.called_once)
+
+    def test_extract_registry(self):
+        """Test _extract_registry helper function."""
+        # Full registry with domain
+        self.assertEqual(_extract_registry("quay.io/fedora"), "quay.io")
+        self.assertEqual(_extract_registry("docker.io/library/alpine"), "docker.io")
+        self.assertEqual(_extract_registry("ghcr.io/user/repo"), "ghcr.io")
+
+        # Registry with port
+        self.assertEqual(_extract_registry("localhost:5000/myimage"), "localhost:5000")
+        self.assertEqual(_extract_registry("myregistry.com:8080/repo"), "myregistry.com:8080")
+
+        # No registry (implicit docker.io or local)
+        self.assertIsNone(_extract_registry("fedora"))
+        self.assertIsNone(_extract_registry("myimage"))
+        self.assertIsNone(_extract_registry("user/repo"))  # Looks like user/repo, not registry
 
 
 if __name__ == '__main__':
