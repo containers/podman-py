@@ -5,7 +5,7 @@ import requests_mock
 
 from podman import PodmanClient, tests
 from podman.domain.volumes import Volume, VolumesManager
-from podman.errors import NotFound
+from podman.errors import APIError, NotFound
 
 FIRST_VOLUME = {
     "CreatedAt": "1985-04-12T23:20:50.52Z",
@@ -124,18 +124,47 @@ class VolumesManagerTestCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_prune(self, mock):
-        mock.post(
+        adapter = mock.post(
             tests.LIBPOD_URL + "/volumes/prune",
             json=[
                 {"Id": "dbase", "Size": 1024},
                 {"Id": "source", "Size": 1024},
             ],
+            complete_qs=True,
         )
 
         actual = self.client.volumes.prune()
         self.assertDictEqual(
             actual, {"VolumesDeleted": ["dbase", "source"], "SpaceReclaimed": 2048}
         )
+        self.assertTrue(adapter.called_once)
+        self.assertDictEqual(adapter.last_request.qs, {})
+
+    @requests_mock.Mocker()
+    def test_prune_filters(self, mock):
+        """Unit test filters param for Volumes prune()."""
+        adapter = mock.post(
+            tests.LIBPOD_URL + "/volumes/prune?filters=%7B%22label%22%3A+%5B%22keep%3Dno%22%5D%7D",
+            json=[{"Id": "dbase", "Size": 1024}],
+            complete_qs=True,
+        )
+
+        actual = self.client.volumes.prune(filters={"label": "keep=no"})
+        self.assertDictEqual(actual, {"VolumesDeleted": ["dbase"], "SpaceReclaimed": 1024})
+        self.assertTrue(adapter.called_once)
+        self.assertDictEqual(adapter.last_request.qs, {"filters": ['{"label": ["keep=no"]}']})
+
+    @requests_mock.Mocker()
+    def test_prune_error(self, mock):
+        adapter = mock.post(
+            tests.LIBPOD_URL + "/volumes/prune",
+            text="internal server error",
+            status_code=requests.codes.internal_server_error,
+        )
+
+        with self.assertRaises(APIError):
+            self.client.volumes.prune()
+        self.assertTrue(adapter.called_once)
 
     @requests_mock.Mocker()
     def test_import(self, mock):
