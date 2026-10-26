@@ -145,6 +145,7 @@ Feature work usually touches **domain** and **api**, with **unit** tests in `pod
 import pytest
 from podman.tests.utils import OS_RELEASE, PODMAN_VERSION
 
+
 @pytest.mark.skipif(
     PODMAN_VERSION < (5, 6, 0),
     reason="Feature introduced in Podman 5.6.0",
@@ -155,6 +156,7 @@ from podman.tests.utils import OS_RELEASE, PODMAN_VERSION
 )
 def test_feature():
     pass
+
 
 @pytest.mark.pnext
 def test_future_feature():
