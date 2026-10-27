@@ -20,7 +20,7 @@ jobs:
           persist-credentials: false
 
       - name: Build Python package
-        uses: ./.github/actions/build-python-package
+        uses: $/.github/actions/build-python-package
         with:
           upload-artifact: true
           artifact-name: python-package-distributions-pypi
