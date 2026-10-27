@@ -1,9 +1,3 @@
-# EL9 (incl. CentOS Stream 9 / EPEL 9) ships Python 3.9 as /usr/bin/python3.
-# podman-py requires Python >= 3.12; build against the python3.12 stack there.
-%if 0%{?rhel} && 0%{?rhel} == 9
-%global python3_pkgversion 3.12
-%endif
-
 %global pypi_name podman
 %global desc %{pypi_name} is a library of bindings to use the RESTful API for Podman.
 
@@ -65,10 +59,7 @@ export PBR_VERSION="0.0.0"
 
 %check
 
-# EL9 has no python3.12-rich in AppStream/CRB; the extra subpackage would be uninstallable.
-%if !%{defined rhel} || 0%{?rhel} != 9
 %pyproject_extras_subpkg -n python%{python3_pkgversion}-%{pypi_name} progress_bar
-%endif
 %files -n python%{python3_pkgversion}-%{pypi_name} -f %{pyproject_files}
 %license LICENSE
 %doc README.md

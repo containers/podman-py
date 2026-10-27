@@ -40,15 +40,6 @@ jobs:
     packages: [python-podman-centos]
     targets:
       - centos-stream-10
-      - centos-stream-9
-
-  # Copr builds for RHEL
-  - job: copr_build
-    trigger: pull_request
-    identifier: pr-rhel
-    packages: [python-podman-rhel]
-    targets:
-      - epel-9
 
   # Run on commit to main branch
   - job: copr_build
@@ -70,13 +61,11 @@ jobs:
         bash -c 'sed -i "s/^\(\s*\)ref: .*/\1ref: v${PACKIT_PROJECT_VERSION}/" ${PACKIT_DOWNSTREAM_REPO}/plans/main.fmf'
 
   # Downstream sync for CentOS Stream
-  # TODO: c9s enablement being tracked in https://issues.redhat.com/browse/RUN-2123
   - job: propose_downstream
     trigger: release
     packages: [python-podman-centos]
     dist_git_branches:
       - c10s
-      - c9s
 
   - job: koji_build
     trigger: commit
@@ -149,13 +138,4 @@ jobs:
     tmt_plan: /distro/base_python
     packages: [python-podman-centos]
     targets:
-      - centos-stream-9
       - centos-stream-10
-
-  - job: tests
-    trigger: pull_request
-    identifier: distro-rhel-base
-    tmt_plan: /distro/base_python
-    packages: [python-podman-rhel]
-    targets:
-      - epel-9
