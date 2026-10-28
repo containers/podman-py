@@ -1,6 +1,7 @@
 """Model and Manager for Volume resources."""
 
 import logging
+from collections.abc import Mapping
 from typing import Any, Literal, Optional, Union
 
 import requests
@@ -132,7 +133,7 @@ class VolumesManager(Manager):
 
     def prune(
         self,
-        filters: Optional[dict[str, str]] = None,
+        filters: Optional[Mapping[str, Any]] = None,
     ) -> dict[Literal["VolumesDeleted", "SpaceReclaimed"], Any]:
         """Delete unused volumes.
 
