@@ -130,7 +130,7 @@ class NetworksManager(Manager):
             filters (Mapping[str,str]): Criteria for listing networks. Available filters:
 
                 - driver="bridge": Matches a network's driver. Only "bridge" is supported.
-                - label=(Union[str, list[str]]): format either "key", "key=value"
+                - label=(str | list[str]): format either "key", "key=value"
                   or a list of such.
                 - type=(str): Filters networks by type, legal values are:
 

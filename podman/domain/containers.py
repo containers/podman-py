@@ -335,13 +335,13 @@ class Container(PodmanResource):
             stderr (bool): Include stderr. Default: True
             stream (bool): Return generator of strings as the response. Default: False
             timestamps (bool): Show timestamps in output. Default: False
-            tail (Union[str, int]): Output specified number of lines at the end of
+            tail (str | int): Output specified number of lines at the end of
                 logs.  Integer representing the number of lines to display, or the string all.
                 Default: all
-            since (Union[datetime, int]): Show logs since a given datetime or
+            since (datetime | int): Show logs since a given datetime or
                 integer epoch (in seconds)
             follow (bool): Follow log output. Default: False
-            until (Union[datetime, int]): Show logs that occurred before the given
+            until (datetime | int): Show logs that occurred before the given
                 datetime or integer epoch (in seconds)
         """
         stream = bool(kwargs.get("stream", False))
@@ -769,7 +769,7 @@ class Container(PodmanResource):
         """Block until the container enters given state.
 
         Keyword Args:
-            condition (Union[str, list[str]]): Container state on which to release.
+            condition (str | list[str]): Container state on which to release.
                 One or more of: "configured", "created", "running", "stopped",
                 "paused", "exited", "removing", "stopping".
             interval (str): Time interval to wait before polling for completion, e.g. '5s'

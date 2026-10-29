@@ -63,7 +63,7 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
 
                 - exited (int): Only containers with specified exit code
                 - status (str): One of restarting, running, paused, exited
-                - label (Union[str, list[str]]): Format either "key", "key=value" or a list of such.
+                - label (str | list[str]): Format either "key", "key=value" or a list of such.
                 - id (str): The id of the container.
                 - name (str): The name of the container.
                 - ancestor (str): Filter by container ancestor. Format of

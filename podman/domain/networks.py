@@ -95,7 +95,7 @@ class Network(PodmanResource):
             ipv6_address (str): IPv6 address for given Container on this network
             link_local_ips (list[str]): list of link-local addresses. Only used when
                 compatible=True.
-            links (list[Union[str, Containers]]): Ignored
+            links (list[str | Containers]): Ignored
             mac_address (str): Static MAC address for given Container on this network.
                 Podman only.
 

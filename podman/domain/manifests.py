@@ -44,7 +44,7 @@ class Manifest(PodmanResource):
 
     @property
     def media_type(self):
-        """Optional[str]: Returns the Media/MIME type for this manifest."""
+        """str | None: Returns the Media/MIME type for this manifest."""
         return self.attrs.get("mediaType")
 
     @property

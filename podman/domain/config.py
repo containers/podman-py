@@ -42,7 +42,7 @@ class ServiceConnection:
 
     @cached_property
     def identity(self) -> Path | None:
-        """Optional[Path]: Returns Path to identity file for service connection."""
+        """Path | None: Returns Path to identity file for service connection."""
         for key in ("identity", "Identity"):
             if key in self.attrs:
                 val = self.attrs[key]
@@ -149,7 +149,7 @@ class PodmanConfig:
 
     @cached_property
     def active_service(self):
-        """Optional[ServiceConnection]: Returns active connection."""
+        """ServiceConnection | None: Returns active connection."""
 
         # read the new json file format
         connection = self.attrs.get("Connection")

@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from collections import abc
-from typing import Any, Optional, TypeVar, TYPE_CHECKING
+from typing import Any, TypeVar, TYPE_CHECKING
 from collections.abc import Mapping
 
 from podman.api.client import APIClient
@@ -25,8 +25,8 @@ class PodmanResource(ABC):  # noqa: B024
         self,
         attrs: Mapping[str, Any] | None = None,
         client: APIClient | None = None,
-        collection: Optional["Manager"] = None,
-        podman_client: Optional["PodmanClient"] = None,
+        collection: "Manager | None" = None,
+        podman_client: "PodmanClient | None" = None,
     ):
         """Initialize base class for PodmanResource's.
 
@@ -111,7 +111,7 @@ class Manager(ABC):
         """Type[PodmanResource]: Class which the factory method prepare_model() will use."""
 
     def __init__(
-        self, client: APIClient | None = None, podman_client: Optional["PodmanClient"] = None
+        self, client: APIClient | None = None, podman_client: "PodmanClient | None" = None
     ) -> None:
         """Initialize Manager() object.
 

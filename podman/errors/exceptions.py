@@ -1,6 +1,6 @@
 """Podman API Errors."""
 
-from typing import Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from collections.abc import Iterable
 
 from requests import Response
@@ -18,7 +18,7 @@ class APIError(HTTPError):
     def __init__(
         self,
         message: str,
-        response: Union[Response, "APIResponse", None] = None,
+        response: Response | "APIResponse" | None = None,
         explanation: str | None = None,
     ):
         """Initialize APIError.
@@ -51,7 +51,7 @@ class APIError(HTTPError):
 
     @property
     def status_code(self):
-        """Optional[int]: HTTP status code from response."""
+        """int | None: HTTP status code from response."""
         if self.response is not None:
             return self.response.status_code
         return None

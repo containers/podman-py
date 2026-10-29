@@ -35,7 +35,7 @@ except (ImportError, ModuleNotFoundError):
 logger = logging.getLogger("podman.images")
 
 
-def _extract_registry(repository: str) -> Optional[str]:
+def _extract_registry(repository: str) -> str | None:
     """Extract registry URL from repository reference.
 
     This helper uses a simple heuristic: the first component is treated as a
@@ -67,9 +67,9 @@ def _extract_registry(repository: str) -> Optional[str]:
 
 def _resolve_auth_config(
     repository: str,
-    auth_config: Optional[dict[str, str]],
+    auth_config: dict[str, str] | None,
     api_client,
-) -> Optional[dict[str, str]]:
+) -> dict[str, str] | None:
     """Resolve authentication configuration for an image operation.
 
     This helper deduplicates the credential lookup logic used by pull and push.
@@ -118,11 +118,11 @@ class ImagesManager(BuildMixin, Manager):
         Keyword Args:
             name (str) – Only show images belonging to the repository name
             all (bool) – Show intermediate image layers. By default, these are filtered out.
-            filters (Mapping[str, Union[str, list[str]]) – Filters to be used on the image list.
+            filters (Mapping[str, str | list[str]]) – Filters to be used on the image list.
                 Available filters:
 
                 - dangling (bool)
-                - label (Union[str, list[str]]): format either "key" or "key=value"
+                - label (str | list[str]): format either "key" or "key=value"
 
         Raises:
             APIError: when service returns an error

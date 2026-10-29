@@ -40,7 +40,7 @@ class BuildMixin:
             forcerm (bool) – Always remove intermediate containers, even after unsuccessful builds
             dockerfile (str) – full path to the Dockerfile / Containerfile
             buildargs (Mapping[str,str) – A dictionary of build arguments
-            container_limits (dict[str, Union[int,str]]) –
+            container_limits (dict[str, int | str]) –
                 A dictionary of limits applied to each container created by the build process.
                     Valid keys:
 

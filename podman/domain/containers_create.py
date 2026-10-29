@@ -90,9 +90,9 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             dns (list[str]): Set custom DNS servers.
             dns_opt (list[str]): Additional options to be added to the container's resolv.conf file.
             dns_search (list[str]): DNS search domains.
-            domainname (Union[str, list[str]]): Set custom DNS search domains.
-            entrypoint (Union[str, list[str]]): The entrypoint for the container.
-            environment (Union[dict[str, str], list[str]): Environment variables to set inside
+            domainname (str | list[str]): Set custom DNS search domains.
+            entrypoint (str | list[str]): The entrypoint for the container.
+            environment (dict[str, str] | list[str]): Environment variables to set inside
                 the container, as a dictionary or a list[str] in the format
                 ["SOMEVARIABLE=xxx", "SOMEOTHERVARIABLE=xyz"].
             extra_hosts (dict[str, str]): Additional hostnames to resolve inside the container,
@@ -149,23 +149,23 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 none, container:<name|id> or ns:<path>.
             isolation (str): Isolation technology to use. Default: `None`.
             kernel_memory (int or str): Kernel memory limit
-            labels (Union[dict[str, str], list[str]): A dictionary of name-value labels (e.g.
+            labels (dict[str, str] | list[str]): A dictionary of name-value labels (e.g.
                 {"label1": "value1", "label2": "value2"}) or a list of names of labels to set
                 with empty values (e.g. ["label1", "label2"])
-            links (Optional[dict[str, str]]): Mapping of links using the {'container': 'alias'}
+            links (dict[str, str] | None): Mapping of links using the {'container': 'alias'}
                 format. The alias is optional. Containers declared in this dict will be linked to
                 the new container using the provided alias. Default: None.
             log_config (LogConfig): Logging configuration.
             lxc_config (dict[str, str]): LXC config.
             mac_address (str): MAC address to assign to the container.
-            mem_limit (Union[int, str]): Memory limit. Accepts float values (which represent the
+            mem_limit (int | str): Memory limit. Accepts float values (which represent the
                 memory limit of the created container in bytes) or a string with a units
                 identification char (100000b, 1000k, 128m, 1g). If a string is specified without
                 a units character, bytes are assumed as an intended unit.
-            mem_reservation (Union[int, str]): Memory soft limit.
+            mem_reservation (int | str): Memory soft limit.
             mem_swappiness (int): Tune a container's memory swappiness behavior. Accepts number
                 between 0 and 100.
-            memswap_limit (Union[int, str]): Maximum amount of memory + swap a container is allowed
+            memswap_limit (int | str): Maximum amount of memory + swap a container is allowed
                 to consume.
             mounts (list[Mount]): Specification for mounts to be added to the container. More
                 powerful alternative to volumes. Each item in the list is expected to be a
@@ -227,7 +227,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 in ``networks`` (``<name>:<options>``, or ``bridge:<options>`` with a
                 ``default`` entry) raise ``ValueError``; a plain name already in ``networks``
                 keeps that entry.
-            networks (dict[str, dict[str, Union[str, list[str]]):
+            networks (dict[str, dict[str, str | list[str]]]):
                 Networks which will be connected to container during container creation
                 Values of the network configuration can be :
 
@@ -264,20 +264,11 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 Only used if the method needs to pull the requested image.
             ports (
                 dict[
-                    Union[int, str],
-                    Union[
-                        int,
-                        Tuple[str, int],
-                        list[int],
-                        dict[
-                            str,
-                            Union[
-                                int,
-                                Tuple[str, int],
-                                list[int]
-                            ]
-                        ]
-                    ]
+                    int | str,
+                    int
+                    | tuple[str, int]
+                    | list[int]
+                    | dict[str, int | tuple[str, int] | list[int]],
                 ]): Ports to bind inside the container.
 
                 The keys of the dictionary are the ports to bind inside the container, either as an
@@ -333,7 +324,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             read_write_tmpfs (bool): Mount temporary file systems as read write,
                 in case of read_only options set to True. Default: False
             remove (bool): Remove the container when it has finished running. Default: False.
-            restart_policy (dict[str, Union[str, int]]): Restart the container when it exits.
+            restart_policy (dict[str, str | int]): Restart the container when it exits.
                 Configured as a dictionary with keys:
 
                 - Name: One of on-failure, or always.
@@ -341,7 +332,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
                 For example: {"Name": "on-failure", "MaximumRetryCount": 5}
             runtime (str): Runtime to use with this container.
-            secrets (list[Union[str, Secret, dict[str, Union[str, int]]]]): Secrets to
+            secrets (list[str | Secret | dict[str, str | int]]): Secrets to
                 mount to this container.
 
                 For example:
@@ -393,7 +384,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
                 - proc-opts=<option>[,<option>...]
 
                 Other values are passed through as raw SELinux label options.
-            shm_size (Union[str, int]): Size of /dev/shm (e.g. 1G).
+            shm_size (str | int): Size of /dev/shm (e.g. 1G).
             stdin_open (bool): Keep STDIN open even if not attached.
             stdout (bool): Return logs from STDOUT when detach=False. Default: True.
             stderr (bool): Return logs from STDERR when detach=False. Default: False.
@@ -415,7 +406,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             use_config_proxy (bool): If True, and if the docker client configuration
                 file (~/.config/containers/config.json by default) contains a proxy configuration,
                 the corresponding environment variables will be set in the container being built.
-            user (Union[str, int]): Username or UID to run commands as inside the container.
+            user (str | int): Username or UID to run commands as inside the container.
             userns_mode (str): Sets the user namespace mode for the container when user namespace
                 remapping option is enabled. Supported values documented
                 `here <https://docs.podman.io/en/latest/markdown/options/userns.container.html#userns-mode>`_
@@ -425,7 +416,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             version (str): The version of the API to use. Set to auto to automatically detect
                 the server's version. Default: 3.0.0
             volume_driver (str): The name of a volume driver/plugin.
-            volumes (dict[str, dict[str, Union[str, list]]]): A dictionary to configure
+            volumes (dict[str, dict[str, str | list]]): A dictionary to configure
                 volumes mounted inside the container.
                 The key is either the host path or a volume name, and the value is
                 a dictionary with the keys:
@@ -506,10 +497,10 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         """Convert a list of environment variables to a dictionary.
 
         Args:
-            env_list (List[str]): List of environment variables in the format ["KEY=value"]
+            env_list (list[str]): List of environment variables in the format ["KEY=value"]
 
         Returns:
-            Dict[str, str]: Dictionary of environment variables
+            dict[str, str]: Dictionary of environment variables
 
         Raises:
             ValueError: If any environment variable is not in the correct format

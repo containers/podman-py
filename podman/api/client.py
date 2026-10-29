@@ -478,7 +478,7 @@ class APIClient(requests.Session):
         """
         return copy.deepcopy(self._registry_auth)
 
-    def clear_registry_auth(self, registry: Optional[str] = None) -> None:
+    def clear_registry_auth(self, registry: str | None = None) -> None:
         """Clear stored registry authentication credentials.
 
         Args:

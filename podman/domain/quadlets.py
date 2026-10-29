@@ -4,7 +4,7 @@ import builtins
 import logging
 import os
 import pathlib
-from typing import Any, Union
+from typing import Any
 
 import requests
 
@@ -228,10 +228,7 @@ class QuadletsManager(Manager):
 
     def install(
         self,
-        files: Union[
-            "QuadletFileItem",
-            builtins.list["QuadletFileItem"],
-        ],
+        files: "QuadletFileItem" | builtins.list["QuadletFileItem"],
         *,
         replace: bool = False,
         reload_systemd: bool = True,
@@ -252,8 +249,8 @@ class QuadletsManager(Manager):
         items are uploaded as ``multipart/form-data``.
 
         Args:
-            files (Union[QuadletFileItem, list[QuadletFileItem]]): File(s) to install.
-                QuadletFileItem is a Union[tuple[str,Union[str, bytes]], str, os.PathLike].
+            files (QuadletFileItem | list[QuadletFileItem]): File(s) to install.
+                QuadletFileItem is tuple[str, str | bytes] | str | os.PathLike.
             replace (bool): Replace existing files if they already exist.
                 Defaults to False.
             reload_systemd (bool): Reload systemd after installing quadlets.
@@ -326,7 +323,7 @@ class QuadletsManager(Manager):
 
     @staticmethod
     def _validate_files_type(
-        files: Union["QuadletFileItem", builtins.list["QuadletFileItem"]],
+        files: "QuadletFileItem" | builtins.list["QuadletFileItem"],
     ) -> builtins.list["QuadletFileItem"]:
         """Validate *files* and return a normalized list of QuadletFileItems.
 

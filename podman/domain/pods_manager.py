@@ -138,7 +138,7 @@ class PodsManager(Manager):
 
         Keyword Args:
             all (bool): Provide statistics for all running pods.
-            name (Union[str, list[str]]): Pods to include in report.
+            name (str | list[str]): Pods to include in report.
             stream (bool): Stream statistics until cancelled. Default: False.
             decode (bool): If True, response will be decoded into dict. Default: False.
 
