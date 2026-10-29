@@ -72,7 +72,7 @@ class BuildMixin:
             secrets (list[str]) - Secret files/envs to expose to the build
             ssh (list[str]) - SSH agent socket or keys to expose to the build.
                 Format is the same as ``podman build --ssh``, e.g.
-                ``["default"]`` or ``["src=/path/to/key"]``.
+                ``["default"]`` or ``["mykey=/path/to/key"]``.
 
         Returns:
             first item is the podman.domain.images.Image built
