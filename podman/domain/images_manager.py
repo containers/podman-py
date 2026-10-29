@@ -35,6 +35,69 @@ except (ImportError, ModuleNotFoundError):
 logger = logging.getLogger("podman.images")
 
 
+def _extract_registry(repository: str) -> Optional[str]:
+    """Extract registry URL from repository reference.
+
+    This helper uses a simple heuristic: the first component is treated as a
+    registry only if it contains a '.' (domain) or ':' (port). Single-label
+    registry hostnames (e.g., 'my_private_reg/image') are not recognized by
+    this heuristic and will return None. For such registries, explicit daemon-side
+    authentication configuration may be needed.
+
+    Args:
+        repository: Image repository reference (e.g., "quay.io/fedora", "docker.io/library/alpine")
+
+    Returns:
+        Normalized registry identifier or None if not extractable
+        (e.g., for local images, implicit docker.io without explicit registry,
+        or single-label registry hostnames)
+    """
+    # Split on '/' to find registry
+    parts = repository.split('/')
+    if len(parts) <= 1:
+        # No registry specified, likely implicit docker.io or local
+        return None
+    if '.' not in parts[0] and ':' not in parts[0]:
+        # First part doesn't look like a registry (no domain or port)
+        return None
+    # First part is likely the registry
+    # Normalize it to canonical form for consistent credential lookup
+    return api.normalize_registry(parts[0])
+
+
+def _resolve_auth_config(
+    repository: str,
+    auth_config: Optional[dict[str, str]],
+    api_client,
+) -> Optional[dict[str, str]]:
+    """Resolve authentication configuration for an image operation.
+
+    This helper deduplicates the credential lookup logic used by pull and push.
+    It prioritizes explicitly provided credentials over stored credentials.
+
+    Args:
+        repository: Image repository reference
+        auth_config: Explicit credentials provided by caller (takes precedence)
+        api_client: APIClient instance for accessing stored credentials
+
+    Returns:
+        Auth configuration dict or None if no credentials are available
+    """
+    # Explicit credentials always take precedence
+    if auth_config is not None:
+        return auth_config
+
+    # Try to use stored credentials for the image's registry
+    registry = _extract_registry(repository)
+    if registry:
+        stored_auth = api_client.get_registry_auth()
+        if registry in stored_auth:
+            return stored_auth[registry]
+
+    # No credentials available
+    return None
+
+
 class ImagesManager(BuildMixin, Manager):
     """Specialized Manager for Image resources."""
 
@@ -256,7 +319,11 @@ class ImagesManager(BuildMixin, Manager):
         Raises:
             APIError: when service returns an error
         """
-        auth_config: Optional[dict[str, str]] = kwargs.get("auth_config")
+        auth_config = _resolve_auth_config(
+            repository,
+            kwargs.get("auth_config"),
+            self.api,
+        )
 
         headers = {
             # A base64url-encoded auth configuration
@@ -355,7 +422,11 @@ class ImagesManager(BuildMixin, Manager):
             else:
                 tag = "latest"
 
-        auth_config: Optional[dict[str, str]] = kwargs.get("auth_config")
+        auth_config = _resolve_auth_config(
+            repository,
+            kwargs.get("auth_config"),
+            self.api,
+        )
 
         headers = {
             # A base64url-encoded auth configuration

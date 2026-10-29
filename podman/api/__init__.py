@@ -2,7 +2,13 @@
 
 from podman.api.client import APIClient
 from podman.api.api_versions import VERSION, COMPATIBLE_VERSION
-from podman.api.http_utils import encode_auth_header, prepare_body, prepare_filters
+from podman.api.http_utils import (
+    encode_auth_header,
+    encode_registry_config,
+    normalize_registry,
+    prepare_body,
+    prepare_filters,
+)
 from podman.api.parse_utils import (
     HEALTH_ON_FAILURE_ACTION,
     decode_header,
@@ -29,13 +35,15 @@ __all__ = [
     'create_tar',
     'decode_header',
     'encode_auth_header',
+    'encode_registry_config',
     'frames',
-    'prepare_duration_ns',
+    'normalize_registry',
     'parse_repository',
     'prepare_body',
     'prepare_cidr',
     'prepare_containerfile',
     'prepare_containerignore',
+    'prepare_duration_ns',
     'prepare_filters',
     'prepare_timestamp',
     'stream_frames',

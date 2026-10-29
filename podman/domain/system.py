@@ -56,7 +56,14 @@ class SystemManager:
             password: Registry plaintext password
             email: Registry account email address
             registry: URL for registry access. For example,
-                https://quay.io/v2
+                https://quay.io/v2. When explicitly provided, successful
+                credentials are stored in the client-side credential store
+                for use in subsequent build operations (via X-Registry-Config)
+                and pull/push operations (via X-Registry-Auth). When omitted,
+                the Podman service defaults to Docker Hub, but the client
+                cannot reliably determine which registry was used from the
+                API response, so credentials are not persisted for client-side
+                reuse.
             reauth: Ignored: If True, refresh existing authentication. Default: False
             dockercfg_path: Ignored: Path to custom configuration file.
             auth: TODO: Add description based on the source code of Podman.
@@ -84,6 +91,27 @@ class SystemManager:
             verify=tls_verify,  # Pass tls_verify to the client
         )
         response.raise_for_status()
+
+        # Store credentials for use in subsequent operations (e.g., build)
+        # Only store credentials when registry is explicitly provided.
+        # When registry is omitted, the Podman service defaults to Docker Hub,
+        # but the client cannot reliably determine which registry was used
+        # from the API response. Users should provide the registry explicitly
+        # to enable credential persistence for build operations.
+        if registry:
+            auth_config = {
+                "username": username,
+                "password": password,
+                "email": email,
+                "auth": auth,
+                "identitytoken": identitytoken,
+                "registrytoken": registrytoken,
+            }
+            # Filter out None values
+            auth_config = {k: v for k, v in auth_config.items() if v is not None}
+            # Registry is normalized to canonical form for consistent lookup
+            self.client.set_registry_auth(registry, auth_config)
+
         return response.json()
 
     def ping(self) -> bool:

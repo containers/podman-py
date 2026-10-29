@@ -123,14 +123,22 @@ class BuildMixin:
         if kwargs.get("timeout"):
             post_kwargs["timeout"] = float(kwargs.get("timeout"))
 
+        # Prepare registry authentication header for build
+        headers = {
+            "Content-type": "application/x-tar",
+        }
+
+        # Get stored credentials and pass them via X-Registry-Config header
+        # This allows build operations to access private registries
+        registry_auth = self.api.get_registry_auth()  # type: ignore[attr-defined]
+        if registry_auth:
+            headers["X-Registry-Config"] = api.encode_registry_config(registry_auth)
+
         response = self.api.post(  # type: ignore[attr-defined]
             "/build",
             params=params,
             data=body,
-            headers={
-                "Content-type": "application/x-tar",
-                # "X-Registry-Config": "TODO",
-            },
+            headers=headers,
             stream=True,
             **post_kwargs,
         )
