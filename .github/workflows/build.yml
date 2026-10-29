@@ -21,4 +21,4 @@ jobs:
           persist-credentials: false
 
       - name: Build Python package
-        uses: ./.github/actions/build-python-package
+        uses: $/.github/actions/build-python-package
