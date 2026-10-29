@@ -235,7 +235,7 @@ class PodsManagerTestCase(unittest.TestCase):
         stream_results = self.client.pods.stats(stream=True, decode=True)
 
         self.assertIsInstance(stream_results, Iterable)
-        for response, actual in zip(stream_results, stream):
+        for response, actual in zip(stream_results, stream, strict=True):
             self.assertIsInstance(response, list)
             self.assertListEqual(response, actual)
 

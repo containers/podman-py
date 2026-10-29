@@ -463,7 +463,7 @@ class ContainersTestCase(unittest.TestCase):
         top_stats = container.top(stream=True)
 
         self.assertIsInstance(top_stats, Iterable)
-        for response, actual in zip(top_stats, stream):
+        for response, actual in zip(top_stats, stream, strict=True):
             self.assertIsInstance(response, dict)
             self.assertDictEqual(response, actual)
 

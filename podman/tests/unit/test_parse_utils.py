@@ -99,7 +99,7 @@ class ParseUtilsTestCase(unittest.TestCase):
         streamable = api.stream_helper(mock_response)
 
         self.assertIsInstance(streamable, Iterable)
-        for expected, actual in zip(streamed_results, streamable):
+        for expected, actual in zip(streamed_results, streamable, strict=True):
             self.assertIsInstance(actual, bytes)
             self.assertEqual(expected, actual)
 
@@ -111,7 +111,7 @@ class ParseUtilsTestCase(unittest.TestCase):
         streamable = api.stream_helper(mock_response, decode_to_json=True)
 
         self.assertIsInstance(streamable, Iterable)
-        for expected, actual in zip(streamed_results, streamable):
+        for expected, actual in zip(streamed_results, streamable, strict=True):
             self.assertIsInstance(actual, dict)
             self.assertDictEqual(json.loads(expected), actual)  # type: ignore[arg-type]
 
