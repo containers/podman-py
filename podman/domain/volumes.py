@@ -1,6 +1,7 @@
 """Model and Manager for Volume resources."""
 
 import logging
+from collections.abc import Mapping
 from typing import Any, Literal, Optional, Union
 
 import requests
@@ -132,23 +133,36 @@ class VolumesManager(Manager):
 
     def prune(
         self,
-        filters: Optional[dict[str, str]] = None,  # pylint: disable=unused-argument
+        filters: Optional[Mapping[str, Any]] = None,
     ) -> dict[Literal["VolumesDeleted", "SpaceReclaimed"], Any]:
         """Delete unused volumes.
 
         Args:
-            filters: Criteria for selecting volumes to delete. Ignored.
+            filters: Criteria for selecting volumes to delete. Available keys are:
+                - label (str): Only remove volumes with this label, as key or key=value
+                - label! (str): Only remove volumes without this label
+                - until (str): Only remove volumes created before this timestamp
+                - after / since (str): Only remove volumes created after the given volume
+                - all (bool): When true, remove named volumes as well as anonymous ones
+                  (Podman 6.0+, which prunes only anonymous volumes by default)
+                - anonymous (bool): Only remove anonymous (true) or named (false) volumes
+                  (Podman 6.0+)
+
+        Returns:
+            Keys:
+                - VolumesDeleted (list[str]): Names of deleted volumes.
+                - SpaceReclaimed (int): Amount of disk space reclaimed in bytes.
 
         Raises:
             APIError: when service reports error
         """
-        response = self.api.post("/volumes/prune")
-        data = response.json()
+        params = {"filters": api.prepare_filters(filters)}
+        response = self.api.post("/volumes/prune", params=params)
         response.raise_for_status()
 
         volumes: list[str] = []
         space_reclaimed = 0
-        for item in data:
+        for item in response.json():
             if "Err" in item:
                 raise APIError(
                     item["Err"],
