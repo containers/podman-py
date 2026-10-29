@@ -1,11 +1,22 @@
-# How to contribute
+# podman-py Contributing Guide
 
 Thank you in your interest in the podman-py project.  We need your help to make
 it successful.
 
+Please first read our organization-wide contributing guide:
+https://github.com/podman-container-tools/community/blob/main/CONTRIBUTING.md.
+It contains general guidance on issues, commits, and PRs. Below is advice
+specific to the podman-py repository.
+
+podman-py is hosted in the `containers` GitHub organization and is not yet a
+formal member of the [Podman Container Tools](https://github.com/podman-container-tools)
+CNCF project. Until the repository moves, that guide is used for consistency with
+sibling projects; org-wide Core Maintainers do not have direct authority over
+this repository until then.
+
 You may also want to look at:
 
-- [podman](https://github.com/containers/podman)
+- [podman](https://github.com/podman-container-tools/podman)
 - [podman Reference](https://podman.readthedocs.io/en/latest/Reference.html)
 
 ## Reporting Issues
