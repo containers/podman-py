@@ -114,6 +114,26 @@ class SystemManager:
 
         return response.json()
 
+    def logout(self, registry: str) -> None:
+        """Log out from a container registry by clearing stored credentials.
+
+        This removes client-side in-memory credentials for the specified registry.
+        Note: This does not affect Podman's auth.json file or any credential helpers
+        configured on the Podman service side. It only clears credentials stored
+        by the Python client's login() method for subsequent operations.
+
+        Args:
+            registry: Registry URL to log out from (e.g., "docker.io", "https://quay.io/v2").
+                      The registry is normalized to canonical form before lookup.
+
+        Raises:
+            ValueError: If registry is None or empty
+        """
+        if not registry:
+            raise ValueError("Registry must be provided for logout")
+
+        self.client.clear_registry_auth(registry)
+
     def ping(self) -> bool:
         """Returns True if service responded with OK."""
         response = self.client.head("/_ping")
