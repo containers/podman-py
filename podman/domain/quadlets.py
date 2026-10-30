@@ -14,6 +14,9 @@ from podman.errors import NotFound, PodmanError
 
 logger = logging.getLogger("podman.quadlets")
 
+# Type alias – importable for type annotations in calling code.
+QuadletFileItem = tuple[str, str | bytes] | str | os.PathLike
+
 
 class Quadlet(PodmanResource):
     """Details and configuration for a quadlet managed by the Podman service."""
@@ -228,7 +231,7 @@ class QuadletsManager(Manager):
 
     def install(
         self,
-        files: "QuadletFileItem" | builtins.list["QuadletFileItem"],
+        files: QuadletFileItem | builtins.list[QuadletFileItem],
         *,
         replace: bool = False,
         reload_systemd: bool = True,
@@ -314,7 +317,7 @@ class QuadletsManager(Manager):
         return response.json()
 
     @staticmethod
-    def _is_tar_path(item: "QuadletFileItem") -> bool:
+    def _is_tar_path(item: QuadletFileItem) -> bool:
         """Return True if *item* looks like a path to a tar archive."""
         if not isinstance(item, (str, os.PathLike)):
             return False
@@ -323,8 +326,8 @@ class QuadletsManager(Manager):
 
     @staticmethod
     def _validate_files_type(
-        files: "QuadletFileItem" | builtins.list["QuadletFileItem"],
-    ) -> builtins.list["QuadletFileItem"]:
+        files: QuadletFileItem | builtins.list[QuadletFileItem],
+    ) -> builtins.list[QuadletFileItem]:
         """Validate *files* and return a normalized list of QuadletFileItems.
 
         Raises:
@@ -334,7 +337,7 @@ class QuadletsManager(Manager):
                 or a tuple with the wrong number of elements.
         """
 
-        def _check_item(item: "QuadletFileItem") -> None:
+        def _check_item(item: QuadletFileItem) -> None:
             if isinstance(item, tuple):
                 if len(item) != 2:
                     raise ValueError(
@@ -370,7 +373,7 @@ class QuadletsManager(Manager):
 
     def _prepare_install_body(
         self,
-        items: builtins.list["QuadletFileItem"],
+        items: builtins.list[QuadletFileItem],
     ) -> dict[str, tuple[str, bytes]]:
         """Build a ``files`` dict for :pymethod:`requests.Session.request`.
 
@@ -393,7 +396,3 @@ class QuadletsManager(Manager):
                     raise FileNotFoundError(f"No such file: '{fp}'")
                 result[fp.name] = (fp.name, fp.read_bytes())
         return result
-
-
-# Type alias – importable for type annotations in calling code.
-QuadletFileItem = tuple[str, str | bytes] | str | os.PathLike
