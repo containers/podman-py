@@ -165,6 +165,47 @@ class SystemTestCase(unittest.TestCase):
         # This ensures registry isolation while providing convenience for common workflows
         # The actual HTTP headers are tested in images_manager tests
 
+    def test_logout_clears_specific_registry(self):
+        """Test that logout clears credentials for a specific registry."""
+        # Store credentials for two registries
+        self.client.api.set_registry_auth("docker.io", {"username": "user1", "password": "pass1"})
+        self.client.api.set_registry_auth("quay.io", {"username": "user2", "password": "pass2"})
+
+        # Verify both are stored
+        auth = self.client.api.get_registry_auth()
+        self.assertIn("docker.io", auth)
+        self.assertIn("quay.io", auth)
+
+        # Logout from docker.io
+        self.client.logout("docker.io")
+
+        # Verify docker.io is cleared but quay.io remains
+        auth = self.client.api.get_registry_auth()
+        self.assertNotIn("docker.io", auth)
+        self.assertIn("quay.io", auth)
+
+    def test_logout_normalizes_registry(self):
+        """Test that logout normalizes registry names."""
+        # Store credentials with normalized form
+        self.client.api.set_registry_auth("docker.io", {"username": "user", "password": "pass"})
+
+        # Logout using different form
+        self.client.logout("https://docker.io/v2")
+
+        # Verify credentials are cleared
+        auth = self.client.api.get_registry_auth()
+        self.assertNotIn("docker.io", auth)
+
+    def test_logout_with_empty_registry(self):
+        """Test that logout raises ValueError for empty registry."""
+        with self.assertRaises(ValueError):
+            self.client.logout("")
+
+    def test_logout_with_none_registry(self):
+        """Test that logout raises ValueError for None registry."""
+        with self.assertRaises(ValueError):
+            self.client.logout(None)
+
 
 if __name__ == '__main__':
     unittest.main()

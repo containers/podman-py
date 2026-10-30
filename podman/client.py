@@ -245,6 +245,11 @@ class PodmanClient(AbstractContextManager):
 
     login.__doc__ = SystemManager.login.__doc__
 
+    def logout(self, *args, **kwargs):  # pylint: disable=missing-function-docstring
+        return self.system.logout(*args, **kwargs)
+
+    logout.__doc__ = SystemManager.logout.__doc__
+
     def ping(self) -> bool:  # pylint: disable=missing-function-docstring
         return self.system.ping()
 
