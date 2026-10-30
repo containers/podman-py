@@ -1,0 +1,2 @@
+# renovate: datasource=python-version depName=python
+3.15
