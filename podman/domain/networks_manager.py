@@ -12,7 +12,7 @@ Example:
 import ipaddress
 import logging
 from contextlib import suppress
-from typing import Any, Optional, Literal, Union
+from typing import Any, Literal
 
 from podman.api import http_utils, prepare_filters
 from podman.domain.manager import Manager
@@ -130,7 +130,7 @@ class NetworksManager(Manager):
             filters (Mapping[str,str]): Criteria for listing networks. Available filters:
 
                 - driver="bridge": Matches a network's driver. Only "bridge" is supported.
-                - label=(Union[str, list[str]]): format either "key", "key=value"
+                - label=(str | list[str]): format either "key", "key=value"
                   or a list of such.
                 - type=(str): Filters networks by type, legal values are:
 
@@ -165,7 +165,7 @@ class NetworksManager(Manager):
         return [self.prepare_model(i) for i in response.json()]
 
     def prune(
-        self, filters: Optional[dict[str, Any]] = None
+        self, filters: dict[str, Any] | None = None
     ) -> dict[Literal["NetworksDeleted", "SpaceReclaimed"], Any]:
         """Delete unused Networks.
 
@@ -193,7 +193,7 @@ class NetworksManager(Manager):
 
         return {"NetworksDeleted": deleted, "SpaceReclaimed": 0}
 
-    def remove(self, name: Union[Network, str], force: Optional[bool] = None) -> None:
+    def remove(self, name: Network | str, force: bool | None = None) -> None:
         """Remove Network resource.
 
         Args:

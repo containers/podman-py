@@ -1,13 +1,6 @@
 import json
 import unittest
-
-try:
-    # Python >= 3.10
-    from collections.abc import Iterator
-except ImportError:
-    # Python < 3.10
-    from collections.abc import Iterator
-
+from collections.abc import Iterator
 from unittest.mock import DEFAULT, MagicMock, patch
 
 import requests_mock

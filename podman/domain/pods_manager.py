@@ -3,7 +3,7 @@
 import builtins
 import json
 import logging
-from typing import Any, Optional, Union
+from typing import Any
 from collections.abc import Iterator
 
 from podman import api
@@ -86,7 +86,7 @@ class PodsManager(Manager):
         response.raise_for_status()
         return [self.prepare_model(attrs=i) for i in response.json()]
 
-    def prune(self, filters: Optional[dict[str, str]] = None) -> dict[str, Any]:
+    def prune(self, filters: dict[str, str] | None = None) -> dict[str, Any]:
         """Delete unused Pods.
 
         Returns:
@@ -111,7 +111,7 @@ class PodsManager(Manager):
             deleted.append(item["Id"])
         return {"PodsDeleted": deleted, "SpaceReclaimed": 0}
 
-    def remove(self, pod_id: Union[Pod, str], force: Optional[bool] = None) -> None:
+    def remove(self, pod_id: Pod | str, force: bool | None = None) -> None:
         """Delete pod.
 
         Args:
@@ -133,12 +133,12 @@ class PodsManager(Manager):
 
     def stats(
         self, **kwargs
-    ) -> Union[builtins.list[dict[str, Any]], Iterator[builtins.list[dict[str, Any]]]]:
+    ) -> builtins.list[dict[str, Any]] | Iterator[builtins.list[dict[str, Any]]]:
         """Resource usage statistics for the containers in pods.
 
         Keyword Args:
             all (bool): Provide statistics for all running pods.
-            name (Union[str, list[str]]): Pods to include in report.
+            name (str | list[str]): Pods to include in report.
             stream (bool): Stream statistics until cancelled. Default: False.
             decode (bool): If True, response will be decoded into dict. Default: False.
 

@@ -3,7 +3,6 @@
 import logging
 import threading
 from contextlib import suppress
-from typing import Union
 from collections.abc import Generator, Iterator
 
 from podman.domain.containers import Container
@@ -18,14 +17,14 @@ class RunMixin:  # pylint: disable=too-few-public-methods
 
     def run(
         self,
-        image: Union[str, Image],
-        command: Union[str, list[str], None] = None,
+        image: str | Image,
+        command: str | list[str] | None = None,
         *,
         stdout=True,
         stderr=False,
         remove: bool = False,
         **kwargs,
-    ) -> Union[Container, Union[Generator[bytes, None, None], Iterator[bytes]]]:
+    ) -> Container | Generator[bytes, None, None] | Iterator[bytes]:
         """Run a container.
 
         By default, run() will wait for the container to finish and return its logs.

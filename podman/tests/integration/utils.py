@@ -24,7 +24,6 @@ import subprocess
 import tempfile
 import threading
 from contextlib import suppress
-from typing import Optional
 
 import time
 
@@ -51,14 +50,14 @@ class PodmanLauncher:
     def __init__(
         self,
         socket_uri: str,
-        podman_path: Optional[str] = None,
+        podman_path: str | None = None,
         timeout: int = 0,
         privileged: bool = False,
         log_level: str = "WARNING",
-        data_path: Optional[str] = None,
+        data_path: str | None = None,
     ) -> None:
         """create a launcher and build podman command"""
-        podman_exe: Optional[str] = podman_path
+        podman_exe: str | None = podman_path
         if not podman_exe:
             podman_exe = shutil.which('podman')
         if podman_exe is None:
@@ -67,7 +66,7 @@ class PodmanLauncher:
         self.socket_file: str = socket_uri.replace('unix://', '')
         self.log_level = log_level
 
-        self.proc: Optional[subprocess.Popen[bytes]] = None
+        self.proc: subprocess.Popen[bytes] | None = None
         self.reference_id = hash(time.monotonic())
 
         self.cmd: list[str] = []

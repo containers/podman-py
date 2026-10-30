@@ -5,7 +5,7 @@ import os
 from contextlib import AbstractContextManager
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from podman.api.client import APIClient
 from podman.api.path_utils import get_runtime_dir
@@ -115,12 +115,12 @@ class PodmanClient(AbstractContextManager):
         cls,
         *,
         version: str = "auto",
-        timeout: Optional[int] = None,
-        max_pool_size: Optional[int] = None,
-        ssl_version: Optional[int] = None,  # pylint: disable=unused-argument
+        timeout: int | None = None,
+        max_pool_size: int | None = None,
+        ssl_version: int | None = None,  # pylint: disable=unused-argument
         assert_hostname: bool = False,  # pylint: disable=unused-argument
-        environment: Optional[dict[str, str]] = None,
-        credstore_env: Optional[dict[str, str]] = None,
+        environment: dict[str, str] | None = None,
+        credstore_env: dict[str, str] | None = None,
         use_ssh_client: bool = True,  # pylint: disable=unused-argument
     ) -> "PodmanClient":
         """Returns connection to service using environment variables and parameters.
@@ -153,7 +153,7 @@ class PodmanClient(AbstractContextManager):
         environment = environment or os.environ
         credstore_env = credstore_env or {}
 
-        api_version: Optional[str] = None if version == "auto" else version
+        api_version: str | None = None if version == "auto" else version
 
         kwargs = {
             'version': api_version,

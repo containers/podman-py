@@ -1,7 +1,7 @@
 """Module for tracking registry metadata."""
 
 import logging
-from typing import Any, Optional, Union
+from typing import Any
 from collections.abc import Mapping
 
 from podman import api
@@ -52,7 +52,7 @@ class RegistryData(PodmanResource):
         return response.json()
 
     @property
-    def id(self) -> Optional[str]:  # pylint: disable=invalid-name
+    def id(self) -> str | None:  # pylint: disable=invalid-name
         """str: Returns the identifier / digest for the registry image."""
         if self.attrs.get("Id"):
             return self.attrs["Id"]
@@ -66,7 +66,7 @@ class RegistryData(PodmanResource):
 
         return self._resolve_manifest_digest()
 
-    def _resolve_manifest_digest(self) -> Optional[str]:
+    def _resolve_manifest_digest(self) -> str | None:
         """Resolve digest from manifests list."""
         manifests = self.attrs.get("manifests")
         if not isinstance(manifests, list) or not manifests:
@@ -92,7 +92,7 @@ class RegistryData(PodmanResource):
         return None
 
     @property
-    def short_id(self) -> Optional[str]:
+    def short_id(self) -> str | None:
         """str: Returns truncated identifier."""
         if self.id is None:
             return None
@@ -115,7 +115,7 @@ class RegistryData(PodmanResource):
             return False
         return True
 
-    def pull(self, platform: Optional[str] = None) -> Image:
+    def pull(self, platform: str | None = None) -> Image:
         """Returns Image pulled by identifier.
 
         Args:
@@ -138,7 +138,7 @@ class RegistryData(PodmanResource):
 
         return self.manager.pull(repository, tag=pull_target, platform=platform)
 
-    def _parse_platform(self, platform: Union[str, Mapping[str, Any], None]) -> dict[str, str]:
+    def _parse_platform(self, platform: str | Mapping[str, Any] | None) -> dict[str, str]:
         """Parse platform argument into standardized dict format."""
         invalid_platform = InvalidArgument(f"'{platform}' is not a valid platform descriptor.")
 
@@ -167,7 +167,7 @@ class RegistryData(PodmanResource):
 
         raise invalid_platform
 
-    def has_platform(self, platform: Union[str, Mapping[str, Any]]) -> bool:
+    def has_platform(self, platform: str | Mapping[str, Any]) -> bool:
         """Returns True if platform is available for Image.
 
         Args:

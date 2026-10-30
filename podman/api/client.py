@@ -8,8 +8,6 @@ from typing import (
     Any,
     ClassVar,
     IO,
-    Optional,
-    Union,
 )
 from collections.abc import Iterable, Mapping
 
@@ -24,20 +22,13 @@ from podman.errors import APIError, NotFound, PodmanError
 from podman.tlsconfig import TLSConfig
 from podman.version import __version__
 
-_Data = Union[
-    None,
-    str,
-    bytes,
-    Mapping[str, Any],
-    Iterable[tuple[str, Optional[str]]],
-    IO,
-]
+_Data = None | str | bytes | Mapping[str, Any] | Iterable[tuple[str, str | None]] | IO
 """Type alias for request data parameter."""
 
-_Params = Union[None, bytes, Mapping[str, Any]]
+_Params = None | bytes | Mapping[str, Any]
 """Type alias for request query parameter."""
 
-_Timeout = Union[None, float, tuple[float, float], tuple[float, None]]
+_Timeout = None | float | tuple[float, float] | tuple[float, None]
 """Type alias for request timeout parameter."""
 
 
@@ -105,12 +96,12 @@ class APIClient(requests.Session):
     def __init__(
         self,
         base_url: str = None,
-        version: Optional[str] = None,
-        timeout: Optional[float] = None,
-        tls: Union[TLSConfig, bool] = False,
-        user_agent: Optional[str] = None,
-        num_pools: Optional[int] = None,
-        credstore_env: Optional[Mapping[str, str]] = None,
+        version: str | None = None,
+        timeout: float | None = None,
+        tls: TLSConfig | bool = False,
+        user_agent: str | None = None,
+        num_pools: int | None = None,
+        credstore_env: Mapping[str, str] | None = None,
         use_ssh_client=True,
         max_pool_size=None,
         **kwargs,
@@ -211,12 +202,12 @@ class APIClient(requests.Session):
 
     def delete(
         self,
-        path: Union[str, bytes],
+        path: str | bytes,
         *,
         params: _Params = None,
-        headers: Optional[Mapping[str, str]] = None,
+        headers: Mapping[str, str] | None = None,
         timeout: _Timeout = None,
-        stream: Optional[bool] = False,
+        stream: bool | None = False,
         **kwargs,
     ) -> APIResponse:
         """HTTP DELETE operation against configured Podman service.
@@ -246,12 +237,12 @@ class APIClient(requests.Session):
 
     def get(
         self,
-        path: Union[str, bytes],
+        path: str | bytes,
         *,
         params: _Params = None,
-        headers: Optional[Mapping[str, str]] = None,
+        headers: Mapping[str, str] | None = None,
         timeout: _Timeout = None,
-        stream: Optional[bool] = False,
+        stream: bool | None = False,
         **kwargs,
     ) -> APIResponse:
         """HTTP GET operation against configured Podman service.
@@ -281,12 +272,12 @@ class APIClient(requests.Session):
 
     def head(
         self,
-        path: Union[str, bytes],
+        path: str | bytes,
         *,
         params: _Params = None,
-        headers: Optional[Mapping[str, str]] = None,
+        headers: Mapping[str, str] | None = None,
         timeout: _Timeout = None,
-        stream: Optional[bool] = False,
+        stream: bool | None = False,
         **kwargs,
     ) -> APIResponse:
         """HTTP HEAD operation against configured Podman service.
@@ -316,14 +307,14 @@ class APIClient(requests.Session):
 
     def post(
         self,
-        path: Union[str, bytes],
+        path: str | bytes,
         *,
         params: _Params = None,
         data: _Data = None,
-        files: Optional[Any] = None,
-        headers: Optional[Mapping[str, str]] = None,
+        files: Any | None = None,
+        headers: Mapping[str, str] | None = None,
         timeout: _Timeout = None,
-        stream: Optional[bool] = False,
+        stream: bool | None = False,
         **kwargs,
     ) -> APIResponse:
         """HTTP POST operation against configured Podman service.
@@ -359,13 +350,13 @@ class APIClient(requests.Session):
 
     def put(
         self,
-        path: Union[str, bytes],
+        path: str | bytes,
         *,
         params: _Params = None,
         data: _Data = None,
-        headers: Optional[Mapping[str, str]] = None,
+        headers: Mapping[str, str] | None = None,
         timeout: _Timeout = None,
-        stream: Optional[bool] = False,
+        stream: bool | None = False,
         **kwargs,
     ) -> APIResponse:
         """HTTP PUT operation against configured Podman service.
@@ -398,14 +389,14 @@ class APIClient(requests.Session):
     def _request(
         self,
         method: str,
-        path: Union[str, bytes],
+        path: str | bytes,
         *,
         data: _Data = None,
-        files: Optional[Any] = None,
+        files: Any | None = None,
         params: _Params = None,
-        headers: Optional[Mapping[str, str]] = None,
+        headers: Mapping[str, str] | None = None,
         timeout: _Timeout = None,
-        stream: Optional[bool] = None,
+        stream: bool | None = None,
         **kwargs,
     ) -> APIResponse:
         """HTTP operation against configured Podman service.
@@ -487,7 +478,7 @@ class APIClient(requests.Session):
         """
         return copy.deepcopy(self._registry_auth)
 
-    def clear_registry_auth(self, registry: Optional[str] = None) -> None:
+    def clear_registry_auth(self, registry: str | None = None) -> None:
         """Clear stored registry authentication credentials.
 
         Args:

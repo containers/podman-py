@@ -1,24 +1,12 @@
 """Read containers.conf file."""
 
-import sys
+import json
 import urllib
 from functools import cached_property
 from pathlib import Path
-from typing import Optional
-import json
+from tomllib import loads as toml_loads
 
 from podman.api.path_utils import get_xdg_config_home
-
-if sys.version_info >= (3, 11):
-    from tomllib import loads as toml_loads
-else:
-    try:
-        from tomli import loads as toml_loads
-    except ImportError:
-        try:
-            from toml import loads as toml_loads
-        except ImportError:
-            from pytoml import loads as toml_loads
 
 
 class ServiceConnection:
@@ -53,8 +41,8 @@ class ServiceConnection:
         return urllib.parse.urlparse(self.attrs.get("URI"))
 
     @cached_property
-    def identity(self) -> Optional[Path]:
-        """Optional[Path]: Returns Path to identity file for service connection."""
+    def identity(self) -> Path | None:
+        """Path | None: Returns Path to identity file for service connection."""
         for key in ("identity", "Identity"):
             if key in self.attrs:
                 val = self.attrs[key]
@@ -70,7 +58,7 @@ class ServiceConnection:
 class PodmanConfig:
     """PodmanConfig provides a representation of the containers.conf file."""
 
-    def __init__(self, path: Optional[str] = None):
+    def __init__(self, path: str | None = None):
         """Read Podman configuration from users XDG_CONFIG_HOME."""
 
         self.is_default = False
@@ -161,7 +149,7 @@ class PodmanConfig:
 
     @cached_property
     def active_service(self):
-        """Optional[ServiceConnection]: Returns active connection."""
+        """ServiceConnection | None: Returns active connection."""
 
         # read the new json file format
         connection = self.attrs.get("Connection")

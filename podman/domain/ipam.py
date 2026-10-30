@@ -3,7 +3,7 @@
 Provided for compatibility
 """
 
-from typing import Any, Optional
+from typing import Any
 from collections.abc import Mapping
 
 
@@ -12,10 +12,10 @@ class IPAMPool(dict):
 
     def __init__(
         self,
-        subnet: Optional[str] = None,
-        iprange: Optional[str] = None,
-        gateway: Optional[str] = None,
-        aux_addresses: Optional[Mapping[str, str]] = None,
+        subnet: str | None = None,
+        iprange: str | None = None,
+        gateway: str | None = None,
+        aux_addresses: Mapping[str, str] | None = None,
     ):
         """Create IPAMPool.
 
@@ -41,9 +41,9 @@ class IPAMConfig(dict):
 
     def __init__(
         self,
-        driver: Optional[str] = "host-local",
-        pool_configs: Optional[list[IPAMPool]] = None,
-        options: Optional[Mapping[str, Any]] = None,
+        driver: str | None = "host-local",
+        pool_configs: list[IPAMPool] | None = None,
+        options: Mapping[str, Any] | None = None,
     ):
         """Create IPAMConfig.
 

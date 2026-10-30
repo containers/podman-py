@@ -11,7 +11,7 @@ import hashlib
 import json
 import logging
 from contextlib import suppress
-from typing import Any, Optional, Union, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from podman import api
 from podman.domain.containers import Container
@@ -79,7 +79,7 @@ class Network(PodmanResource):
         latest = self.manager.get(self.name)
         self.attrs = latest.attrs
 
-    def connect(self, container: Union[str, Container], *_, **kwargs) -> None:
+    def connect(self, container: str | Container, *_, **kwargs) -> None:
         """Connect given container to this network.
 
         Args:
@@ -95,7 +95,7 @@ class Network(PodmanResource):
             ipv6_address (str): IPv6 address for given Container on this network
             link_local_ips (list[str]): list of link-local addresses. Only used when
                 compatible=True.
-            links (list[Union[str, Containers]]): Ignored
+            links (list[str | Containers]): Ignored
             mac_address (str): Static MAC address for given Container on this network.
                 Podman only.
 
@@ -143,7 +143,7 @@ class Network(PodmanResource):
         )
         response.raise_for_status()
 
-    def disconnect(self, container: Union[str, Container], **kwargs) -> None:
+    def disconnect(self, container: str | Container, **kwargs) -> None:
         """Disconnect given container from this network.
 
         Args:
@@ -162,7 +162,7 @@ class Network(PodmanResource):
         response = self.api.post(f"/networks/{self.name}/disconnect", data=json.dumps(data))
         response.raise_for_status()
 
-    def remove(self, force: Optional[bool] = None, **kwargs) -> None:
+    def remove(self, force: bool | None = None, **kwargs) -> None:
         """Remove this network.
 
         Args:

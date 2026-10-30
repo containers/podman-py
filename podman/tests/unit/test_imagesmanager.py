@@ -2,14 +2,8 @@ import io
 import types
 import unittest
 import urllib.parse
+from collections.abc import Iterable
 from unittest.mock import patch
-
-try:
-    # Python >= 3.10
-    from collections.abc import Iterable
-except ImportError:
-    # Python < 3.10
-    from collections.abc import Iterable
 
 import requests_mock
 

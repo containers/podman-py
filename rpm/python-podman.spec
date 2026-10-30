@@ -1,9 +1,3 @@
-# RHEL 8 envs has slightly different python deps
-# and also doesn't support dynamic (build)requires.
-%if %{defined rhel} && 0%{?rhel} == 8
-%define rhel8_py 1
-%endif
-
 %global pypi_name podman
 %global desc %{pypi_name} is a library of bindings to use the RESTful API for Podman.
 
@@ -36,15 +30,7 @@ BuildArch: noarch
 %package -n python%{python3_pkgversion}-%{pypi_name}
 BuildRequires: git-core
 BuildRequires: python%{python3_pkgversion}-devel
-%if %{defined rhel8_py}
-BuildRequires: python%{python3_pkgversion}-rpm-macros
-BuildRequires: python%{python3_pkgversion}-pytoml
-BuildRequires: python%{python3_pkgversion}-requests
-Requires: python%{python3_pkgversion}-pytoml
-Requires: python%{python3_pkgversion}-requests
-%else
 BuildRequires: pyproject-rpm-macros
-%endif
 Provides: %{pypi_name}-py = %{epoch}:%{version}-%{release}
 Provides: python%{python3_pkgversion}dist(%{pypi_name}) = %{pypi_dist}
 Provides: python%{python3_version}dist(%{pypi_name}) = %{pypi_dist}
@@ -59,40 +45,22 @@ Summary: %{summary}
 %prep
 %autosetup -Sgit -n %{pypi_name}-py-%{version}
 
-%if !%{defined rhel8_py}
 %generate_buildrequires
 %pyproject_buildrequires %{?with_tests:-t}
-%endif
 
 %build
 export PBR_VERSION="0.0.0"
-%if %{defined rhel8_py}
-%py3_build
-%else
 %pyproject_wheel
-%endif
 
 %install
 export PBR_VERSION="0.0.0"
-%if %{defined rhel8_py}
-%py3_install
-%else
 %pyproject_install
 %pyproject_save_files %{pypi_name}
-%endif
 
 %check
 
-%if %{defined rhel8_py}
-%files -n python%{python3_pkgversion}-%{pypi_name}
-%dir %{python3_sitelib}/%{pypi_name}-*-py%{python3_version}.egg-info
-%{python3_sitelib}/%{pypi_name}-*-py%{python3_version}.egg-info/*
-%dir %{python3_sitelib}/%{pypi_name}
-%{python3_sitelib}/%{pypi_name}/*
-%else
 %pyproject_extras_subpkg -n python%{python3_pkgversion}-%{pypi_name} progress_bar
 %files -n python%{python3_pkgversion}-%{pypi_name} -f %{pyproject_files}
-%endif
 %license LICENSE
 %doc README.md
 

@@ -6,7 +6,7 @@ import json
 import logging
 import os
 import urllib.parse
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal
 from collections.abc import Iterator, Mapping, Generator
 from pathlib import Path
 import requests
@@ -35,7 +35,7 @@ except (ImportError, ModuleNotFoundError):
 logger = logging.getLogger("podman.images")
 
 
-def _extract_registry(repository: str) -> Optional[str]:
+def _extract_registry(repository: str) -> str | None:
     """Extract registry URL from repository reference.
 
     This helper uses a simple heuristic: the first component is treated as a
@@ -67,9 +67,9 @@ def _extract_registry(repository: str) -> Optional[str]:
 
 def _resolve_auth_config(
     repository: str,
-    auth_config: Optional[dict[str, str]],
+    auth_config: dict[str, str] | None,
     api_client,
-) -> Optional[dict[str, str]]:
+) -> dict[str, str] | None:
     """Resolve authentication configuration for an image operation.
 
     This helper deduplicates the credential lookup logic used by pull and push.
@@ -118,11 +118,11 @@ class ImagesManager(BuildMixin, Manager):
         Keyword Args:
             name (str) – Only show images belonging to the repository name
             all (bool) – Show intermediate image layers. By default, these are filtered out.
-            filters (Mapping[str, Union[str, list[str]]) – Filters to be used on the image list.
+            filters (Mapping[str, str | list[str]]) – Filters to be used on the image list.
                 Available filters:
 
                 - dangling (bool)
-                - label (Union[str, list[str]]): format either "key" or "key=value"
+                - label (str | list[str]): format either "key" or "key=value"
 
         Raises:
             APIError: when service returns an error
@@ -162,7 +162,7 @@ class ImagesManager(BuildMixin, Manager):
     def get_registry_data(
         self,
         name: str,
-        auth_config: Optional[Mapping[str, str]] = None,
+        auth_config: Mapping[str, str] | None = None,
     ) -> RegistryData:
         """Returns registry data for an image.
 
@@ -189,7 +189,7 @@ class ImagesManager(BuildMixin, Manager):
         )
 
     def load(
-        self, data: Optional[bytes] = None, file_path: Optional[os.PathLike] = None
+        self, data: bytes | None = None, file_path: os.PathLike | None = None
     ) -> Generator[Image, None, None]:
         """Restore an image previously saved.
 
@@ -228,9 +228,9 @@ class ImagesManager(BuildMixin, Manager):
 
     def prune(
         self,
-        all: Optional[bool] = False,  # pylint: disable=redefined-builtin
-        external: Optional[bool] = False,
-        filters: Optional[Mapping[str, Any]] = None,
+        all: bool | None = False,  # pylint: disable=redefined-builtin
+        external: bool | None = False,
+        filters: Mapping[str, Any] | None = None,
     ) -> dict[Literal["ImagesDeleted", "SpaceReclaimed"], Any]:
         """Delete unused images.
 
@@ -298,8 +298,8 @@ class ImagesManager(BuildMixin, Manager):
         return {"CachesDeleted": [], "SpaceReclaimed": 0}
 
     def push(
-        self, repository: str, tag: Optional[str] = None, **kwargs
-    ) -> Union[str, Iterator[Union[str, dict[str, Any]]]]:
+        self, repository: str, tag: str | None = None, **kwargs
+    ) -> str | Iterator[str | dict[str, Any]]:
         """Push Image or repository to the registry.
 
         Args:
@@ -369,7 +369,7 @@ class ImagesManager(BuildMixin, Manager):
     @staticmethod
     def _push_helper(
         decode: bool, body: builtins.list[dict[str, Any]]
-    ) -> Iterator[Union[str, dict[str, Any]]]:
+    ) -> Iterator[str | dict[str, Any]]:
         """Helper needed to allow push() to return either a generator or a str."""
         for entry in body:
             if decode:
@@ -381,10 +381,10 @@ class ImagesManager(BuildMixin, Manager):
     def pull(
         self,
         repository: str,
-        tag: Optional[str] = None,
+        tag: str | None = None,
         all_tags: bool = False,
         **kwargs,
-    ) -> Union[Image, builtins.list[Image], Iterator[str]]:
+    ) -> Image | builtins.list[Image] | Iterator[str]:
         """Request Podman service to pull image(s) from repository.
 
         Args:
@@ -541,10 +541,10 @@ class ImagesManager(BuildMixin, Manager):
 
     def remove(
         self,
-        image: Union[Image, str],
-        force: Optional[bool] = None,
+        image: Image | str,
+        force: bool | None = None,
         noprune: bool = False,  # pylint: disable=unused-argument
-    ) -> builtins.list[dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[str, int]]]:
+    ) -> builtins.list[dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], str | int]]:
         """Delete image from Podman service.
 
         Args:
@@ -563,7 +563,7 @@ class ImagesManager(BuildMixin, Manager):
         response.raise_for_status(not_found=ImageNotFound)
 
         body = response.json()
-        results: builtins.list[dict[str, Union[int, str]]] = []
+        results: builtins.list[dict[str, int | str]] = []
         for key in ("Deleted", "Untagged", "Errors"):
             if key in body:
                 for element in body[key]:
@@ -608,8 +608,8 @@ class ImagesManager(BuildMixin, Manager):
     def scp(
         self,
         source: str,
-        dest: Optional[str] = None,
-        quiet: Optional[bool] = False,
+        dest: str | None = None,
+        quiet: bool | None = False,
     ) -> str:
         """Securely copy images between hosts.
 

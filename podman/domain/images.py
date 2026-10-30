@@ -1,7 +1,7 @@
 """Model and Manager for Image resources."""
 
 import logging
-from typing import Any, Optional, Literal, Union, TYPE_CHECKING
+from typing import Any, Literal, TYPE_CHECKING
 from collections.abc import Iterator
 
 import urllib.parse
@@ -55,7 +55,7 @@ class Image(PodmanResource):
 
     def remove(
         self, **kwargs
-    ) -> list[dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], Union[str, int]]]:
+    ) -> list[dict[Literal["Deleted", "Untagged", "Errors", "ExitCode"], str | int]]:
         """Delete image from Podman service.
 
         Podman only
@@ -75,8 +75,8 @@ class Image(PodmanResource):
 
     def save(
         self,
-        chunk_size: Optional[int] = DEFAULT_CHUNK_SIZE,
-        named: Union[str, bool] = False,
+        chunk_size: int | None = DEFAULT_CHUNK_SIZE,
+        named: str | bool = False,
     ) -> Iterator[bytes]:
         """Returns Image as tarball.
 
@@ -114,7 +114,7 @@ class Image(PodmanResource):
     def tag(
         self,
         repository: str,
-        tag: Optional[str],
+        tag: str | None,
         force: bool = False,  # pylint: disable=unused-argument
     ) -> bool:
         """Tag Image into repository.

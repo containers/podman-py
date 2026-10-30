@@ -1,7 +1,7 @@
 import json
 import pathlib
 import unittest
-from typing import Any, Optional
+from typing import Any
 from unittest import mock
 from unittest.mock import mock_open, patch
 
@@ -16,7 +16,7 @@ class TestUtilsCase(unittest.TestCase):
         class TestCase:
             name: str
             input: Any
-            expected: Optional[str]
+            expected: str | None
 
         cases = [
             TestCase(name="empty str", input="", expected=None),
@@ -43,7 +43,7 @@ class TestUtilsCase(unittest.TestCase):
                 self.assertIsInstance(actual, str)
 
     def test_format_list_valued_filters(self) -> None:
-        cases: list[tuple[dict[str, Any], Optional[dict[str, list[str]]]]] = [
+        cases: list[tuple[dict[str, Any], dict[str, list[str]] | None]] = [
             ({"label": ["team=platform", "env=test"]}, {"label": ["team=platform", "env=test"]}),
             ({"label": ["enabled"], "exited": 0}, {"label": ["enabled"], "exited": ["0"]}),
             ({"exited": [0, 1]}, {"exited": ["0", "1"]}),

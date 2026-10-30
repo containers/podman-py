@@ -4,7 +4,7 @@ import builtins
 import logging
 import os
 import pathlib
-from typing import Any, Optional, Union
+from typing import Any
 
 import requests
 
@@ -13,6 +13,9 @@ from podman.domain.manager import Manager, PodmanResource
 from podman.errors import NotFound, PodmanError
 
 logger = logging.getLogger("podman.quadlets")
+
+# Type alias – importable for type annotations in calling code.
+QuadletFileItem = tuple[str, str | bytes] | str | os.PathLike
 
 
 class Quadlet(PodmanResource):
@@ -145,7 +148,7 @@ class QuadletsManager(Manager):
 
         return [self.prepare_model(attrs=i) for i in response.json()]
 
-    def get_contents(self, name: Union[Quadlet, str]) -> str:
+    def get_contents(self, name: Quadlet | str) -> str:
         """Get the contents of a quadlet file.
 
         Args:
@@ -164,7 +167,7 @@ class QuadletsManager(Manager):
         response.raise_for_status()
         return response.text
 
-    def print_contents(self, name: Union[Quadlet, str]) -> None:
+    def print_contents(self, name: Quadlet | str) -> None:
         """Print the contents of a quadlet file stripped
         of excess whitespace and newlines.
 
@@ -185,7 +188,7 @@ class QuadletsManager(Manager):
         print(response.text.strip())
 
     def delete(
-        self, name: Optional[Union[Quadlet, str]] = None, *_, all: Optional[bool] = None, **kwargs
+        self, name: Quadlet | str | None = None, *_, all: bool | None = None, **kwargs
     ) -> builtins.list:
         """Remove a quadlet file by name. Can force
         removal of running quadlets and control systemd
@@ -228,10 +231,7 @@ class QuadletsManager(Manager):
 
     def install(
         self,
-        files: Union[
-            "QuadletFileItem",
-            builtins.list["QuadletFileItem"],
-        ],
+        files: QuadletFileItem | builtins.list[QuadletFileItem],
         *,
         replace: bool = False,
         reload_systemd: bool = True,
@@ -252,8 +252,8 @@ class QuadletsManager(Manager):
         items are uploaded as ``multipart/form-data``.
 
         Args:
-            files (Union[QuadletFileItem, list[QuadletFileItem]]): File(s) to install.
-                QuadletFileItem is a Union[tuple[str,Union[str, bytes]], str, os.PathLike].
+            files (QuadletFileItem | list[QuadletFileItem]): File(s) to install.
+                QuadletFileItem is tuple[str, str | bytes] | str | os.PathLike.
             replace (bool): Replace existing files if they already exist.
                 Defaults to False.
             reload_systemd (bool): Reload systemd after installing quadlets.
@@ -317,7 +317,7 @@ class QuadletsManager(Manager):
         return response.json()
 
     @staticmethod
-    def _is_tar_path(item: "QuadletFileItem") -> bool:
+    def _is_tar_path(item: QuadletFileItem) -> bool:
         """Return True if *item* looks like a path to a tar archive."""
         if not isinstance(item, (str, os.PathLike)):
             return False
@@ -326,8 +326,8 @@ class QuadletsManager(Manager):
 
     @staticmethod
     def _validate_files_type(
-        files: Union["QuadletFileItem", builtins.list["QuadletFileItem"]],
-    ) -> builtins.list["QuadletFileItem"]:
+        files: QuadletFileItem | builtins.list[QuadletFileItem],
+    ) -> builtins.list[QuadletFileItem]:
         """Validate *files* and return a normalized list of QuadletFileItems.
 
         Raises:
@@ -337,7 +337,7 @@ class QuadletsManager(Manager):
                 or a tuple with the wrong number of elements.
         """
 
-        def _check_item(item: "QuadletFileItem") -> None:
+        def _check_item(item: QuadletFileItem) -> None:
             if isinstance(item, tuple):
                 if len(item) != 2:
                     raise ValueError(
@@ -373,7 +373,7 @@ class QuadletsManager(Manager):
 
     def _prepare_install_body(
         self,
-        items: builtins.list["QuadletFileItem"],
+        items: builtins.list[QuadletFileItem],
     ) -> dict[str, tuple[str, bytes]]:
         """Build a ``files`` dict for :pymethod:`requests.Session.request`.
 
@@ -396,7 +396,3 @@ class QuadletsManager(Manager):
                     raise FileNotFoundError(f"No such file: '{fp}'")
                 result[fp.name] = (fp.name, fp.read_bytes())
         return result
-
-
-# Type alias – importable for type annotations in calling code.
-QuadletFileItem = Union[tuple[str, Union[str, bytes]], str, os.PathLike]

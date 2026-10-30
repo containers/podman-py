@@ -16,7 +16,7 @@ prepare:
   - name: pip dependencies
     how: shell
     script:
-      - pip3 install .[test]
+      - python3 -m pip install '.[test]'
 
   - name: ssh configuration
     how: shell
@@ -85,11 +85,10 @@ prepare:
           - name: install all python versions
             how: install
             package:
-              - python3.9
-              - python3.10
-              - python3.11
               - python3.12
               - python3.13
+              - python3.14
+              - python3.15
         discover+:
             filter: tag:matrix
 
@@ -112,11 +111,10 @@ prepare:
         - name: install all python versions
           how: install
           package:
-            - python3.9
-            - python3.10
-            - python3.11
             - python3.12
             - python3.13
+            - python3.14
+            - python3.15
       discover+:
           filter: tag:matrix
 

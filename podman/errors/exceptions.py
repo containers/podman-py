@@ -1,6 +1,8 @@
 """Podman API Errors."""
 
-from typing import Optional, Union, TYPE_CHECKING
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 from collections.abc import Iterable
 
 from requests import Response
@@ -18,8 +20,8 @@ class APIError(HTTPError):
     def __init__(
         self,
         message: str,
-        response: Union[Response, "APIResponse", None] = None,
-        explanation: Optional[str] = None,
+        response: Response | APIResponse | None = None,
+        explanation: str | None = None,
     ):
         """Initialize APIError.
 
@@ -51,7 +53,7 @@ class APIError(HTTPError):
 
     @property
     def status_code(self):
-        """Optional[int]: HTTP status code from response."""
+        """int | None: HTTP status code from response."""
         if self.response is not None:
             return self.response.status_code
         return None
@@ -111,11 +113,11 @@ class ContainerError(PodmanError):
 
     def __init__(
         self,
-        container: "Container",
+        container: Container,
         exit_status: int,
-        command: Union[str, list[str]],
+        command: str | list[str],
         image: str,
-        stderr: Optional[Iterable[bytes]] = None,
+        stderr: Iterable[bytes] | None = None,
     ):  # pylint: disable=too-many-positional-arguments
         """Initialize ContainerError.
 
