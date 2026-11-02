@@ -49,6 +49,9 @@ jobs:
     branch: main
     owner: rhcontainerbot
     project: podman-next
+    targets:
+      - fedora-all
+      - centos-stream-10
 
   # Downstream sync for Fedora
   - job: propose_downstream
