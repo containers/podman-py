@@ -1,8 +1,13 @@
 # podman-py
 [![PyPI Latest Version](https://img.shields.io/pypi/v/podman)](https://pypi.org/project/podman/)
 
-This python package is a library of bindings to use the RESTful API of [Podman](https://github.com/containers/podman).
+This python package is a library of bindings to use the RESTful API of [Podman](https://github.com/podman-container-tools/podman).
 It is currently under development and contributors are welcome!
+
+This repository is hosted under the `containers` GitHub organization and is not
+yet a formal member of the [Podman Container Tools](https://github.com/podman-container-tools)
+CNCF project; governance links in the repo follow sibling-project conventions
+until a future move.
 
 ## Installation
 
