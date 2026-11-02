@@ -1,0 +1,45 @@
+name: sync-python-versions
+
+# When Renovate pushes a tracker bump to a renovate/* branch,
+# run the sync script and commit the result back to the branch.
+on:
+  push:
+    branches:
+      - renovate/**
+    paths:
+      - contrib/renovate/python-renovate-tracker
+
+permissions: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.ref }}
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.x"
+
+      - name: Run sync script
+        run: python3 contrib/renovate/sync_python_versions.py --apply
+
+      - name: Commit and push changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --all
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "sync Python floor and test matrix"
+            git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
+            git push
+          fi

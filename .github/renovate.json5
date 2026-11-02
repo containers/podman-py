@@ -64,4 +64,36 @@ and/or use the pre-commit hook: https://github.com/renovatebot/pre-commit-hooks
   "pre-commit": {
     "enabled": true
   },
+
+  // Python minimum-version policy: when a new Python minor releases,
+  // Renovate bumps the tracker file. A GitHub Actions workflow then
+  // runs sync_python_versions.py to update the floor and test matrix
+  // across tox/CI/classifiers/packaging.
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["contrib/renovate/python-renovate-tracker"],
+      "matchStrings": [
+        "# renovate: datasource=python-version depName=python\\s+(?<currentValue>\\d+\\.\\d+)\\s*",
+      ],
+      "datasourceTemplate": "python-version",
+      "depNameTemplate": "python",
+      "versioningTemplate": "python",
+    },
+  ],
+  "packageRules": [
+    {
+      "description": "Do not let pep621 bump requires-python directly",
+      "matchDepTypes": ["requires-python"],
+      "enabled": false,
+    },
+    {
+      "description": "Python version policy tracker bump",
+      "matchManagers": ["custom.regex"],
+      "matchFileNames": ["contrib/renovate/python-renovate-tracker"],
+      "matchDepNames": ["python"],
+      "groupName": "python-version-policy",
+      "commitMessageTopic": "Python version policy",
+    },
+  ],
 }
