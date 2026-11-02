@@ -34,6 +34,12 @@ easier it is for us to reproduce it, the faster it'll be fixed!
 
 Please don't include any private/sensitive information in your issue!
 
+## Working on an issue
+
+To assign an issue to yourself, leave a new comment containing only `/assign`.
+The command adds you as an assignee and preserves any existing assignees. It
+works on issues in the upstream repository, not on pull requests or forks.
+
 ## Tools we use
 
 - Python (see `requires-python` in [pyproject.toml](pyproject.toml) for the minimum version)
