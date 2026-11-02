@@ -70,6 +70,11 @@ class BuildMixin:
             manifest (str) - add the image to the specified manifest list.
                 Creates manifest list if it does not exist.
             secrets (list[str]) - Secret files/envs to expose to the build
+            envs (list[str]) - Environment variables to set during the build and persist in
+                the final image. Each entry should be in KEY=VALUE format
+                (e.g. ["FOO=bar", "BAZ=qux"]). Equivalent to ``podman build --env``.
+            unsetenvs (list[str]) - Environment variable names to unset from the final image
+                (e.g. ["FOO", "BAZ"]). Equivalent to ``podman build --unsetenv``.
 
         Returns:
             first item is the podman.domain.images.Image built
@@ -223,6 +228,11 @@ class BuildMixin:
 
         if "secrets" in kwargs:
             params["secrets"] = json.dumps(kwargs.get("secrets"))
+
+        if "envs" in kwargs:
+            params["setenv"] = kwargs.get("envs")
+        if "unsetenvs" in kwargs:
+            params["unsetenv"] = kwargs.get("unsetenvs")
 
         # Remove any unset parameters
         return dict(filter(lambda i: i[1] is not None, params.items()))
