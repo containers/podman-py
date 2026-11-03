@@ -10,10 +10,11 @@ readme = "README.md"
 license = {file = "LICENSE"}
 requires-python = ">=3.12"
 authors = [
-    { name = "Brent Baude" },
     { name = "Jhon Honce", email = "jhonce@redhat.com" },
-    { name = "Urvashi Mohnani" },
-    { name = "Nicola Sella", email = "nsella@redhat.com" },
+    { name = "Filip Pobořil", email = "fpoboril@redhat.com" },
+    { name = "Jan Rodák", email = "jrodak@redhat.com" },
+    { name = "Tom Sweeney", email = "tsweeney@redhat.com" },
+    { name = "Tim Zhou", email = "tizhou@redhat.com" },
 ]
 keywords = [
     "libpod",
