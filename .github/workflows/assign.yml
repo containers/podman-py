@@ -1,0 +1,37 @@
+name: Assign Command
+
+on:
+  # Assigns only the commenter via API; does not check out or execute repository code.
+  # zizmor: ignore[dangerous-triggers]
+  issue_comment:
+    types: [created]
+
+permissions: {}
+
+jobs:
+  assign:
+    if: |
+      github.repository == 'containers/podman-py' &&
+      !github.event.issue.pull_request &&
+      github.event.comment.user.type == 'User' &&
+      contains(github.event.comment.body, '/assign')
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Assign the commenter
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          COMMENTER: ${{ github.event.comment.user.login }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          # Accept only a standalone command, allowing surrounding whitespace.
+          if [[ ! "$COMMENT_BODY" =~ ^[[:space:]]*/assign[[:space:]]*$ ]]; then
+            exit 0
+          fi
+
+          # Adding an assignee preserves any existing assignees.
+          gh api "repos/${REPO}/issues/${ISSUE_NUMBER}/assignees" \
+            --method POST --field "assignees[]=${COMMENTER}" --silent
