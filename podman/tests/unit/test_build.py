@@ -9,6 +9,7 @@ import requests_mock
 
 from podman import PodmanClient, api, tests
 from podman.domain.images import Image
+from podman.domain.images_build import BuildMixin
 from podman.errors import BuildError, DockerException
 
 good_image_id = "032b8b2855fc"
@@ -99,6 +100,53 @@ class TestBuildCase(unittest.TestCase):
                 labels={"Unittest": "true"},
                 manifest="example:v1.2.3",
                 secrets=["id=example,src=podman-build-secret123"],
+            )
+            self.assertIsInstance(image, Image)
+            self.assertEqual(image.id, good_image_id)
+            self.assertIsInstance(logs, Iterable)
+
+    @patch.object(api, "create_tar")
+    @patch.object(api, "prepare_containerfile")
+    def test_build_with_envs(self, mock_prepare_containerfile, mock_create_tar):
+        mock_prepare_containerfile.return_value = "Containerfile"
+        mock_create_tar.return_value = b"This is a mocked tarball."
+
+        stream = good_stream
+        buffer = io.StringIO()
+        for entry in stream:
+            buffer.write(json.JSONEncoder().encode(entry))
+            buffer.write("\n")
+
+        with requests_mock.Mocker() as mock:
+            mock.post(
+                tests.LIBPOD_URL + "/build"
+                "?t=latest"
+                "&setenv=FOO%3Dbar"
+                "&setenv=BAZ%3Dqux"
+                "&unsetenv=REMOVED",
+                text=buffer.getvalue(),
+            )
+            mock.get(
+                tests.LIBPOD_URL + f"/images/{good_image_id}/json",
+                json={
+                    "Id": good_image_id,
+                    "ParentId": "",
+                    "RepoTags": ["fedora:latest"],
+                    "RepoDigests": [],
+                    "Created": 1614033320,
+                    "Size": 23855104,
+                    "VirtualSize": 23855104,
+                    "SharedSize": 0,
+                    "Labels": {},
+                    "Containers": 0,
+                },
+            )
+
+            image, logs = self.client.images.build(
+                path="/tmp/context_dir",
+                tag="latest",
+                envs=["FOO=bar", "BAZ=qux"],
+                unsetenvs=["REMOVED"],
             )
             self.assertIsInstance(image, Image)
             self.assertEqual(image.id, good_image_id)
@@ -253,6 +301,40 @@ class TestBuildCase(unittest.TestCase):
 
             img, _ = self.client.images.build(path="/tmp/context_dir")
             assert img.id == good_image_id
+
+
+class TestRenderParamsCase(unittest.TestCase):
+    """Test BuildMixin._render_params() parameter mapping."""
+
+    def test_envs_mapped_to_setenv(self):
+        """Verify envs kwarg maps to the setenv API query parameter."""
+        params = BuildMixin._render_params(
+            {
+                "path": "/tmp/context_dir",
+                "envs": ["FOO=bar", "BAZ=qux"],
+            }
+        )
+        self.assertEqual(params["setenv"], ["FOO=bar", "BAZ=qux"])
+
+    def test_unsetenvs_mapped_to_unsetenv(self):
+        """Verify unsetenvs kwarg maps to the unsetenv API query parameter."""
+        params = BuildMixin._render_params(
+            {
+                "path": "/tmp/context_dir",
+                "unsetenvs": ["FOO", "BAR"],
+            }
+        )
+        self.assertEqual(params["unsetenv"], ["FOO", "BAR"])
+
+    def test_envs_not_present_when_omitted(self):
+        """Verify setenv is not in params when envs kwarg is not provided."""
+        params = BuildMixin._render_params(
+            {
+                "path": "/tmp/context_dir",
+            }
+        )
+        self.assertNotIn("setenv", params)
+        self.assertNotIn("unsetenv", params)
 
 
 if __name__ == '__main__':

@@ -90,6 +90,7 @@ def create_tar(
 
         # do not leak client information to service
         info.uid = 0
+        info.gid = 0
         info.uname = info.gname = "root"
 
         if sys.platform == "win32":
