@@ -189,7 +189,7 @@ class ImagesIntegrationTest(base.IntegrationTest):
         )
 
     def test_build_with_manifest(self):
-        buffer = io.StringIO("""FROM quay.io/libpod/alpine_labels:latest""")
+        buffer = io.StringIO("""FROM docker.io/library/alpine:3.22""")
 
         self.assertFalse(self.client.manifests.exists(self.test_manifest_name))
 
@@ -211,9 +211,7 @@ class ImagesIntegrationTest(base.IntegrationTest):
                 tar.addfile(tarinfo, fileobj)
 
             # Use a non-standard Dockerfile name to test the 'dockerfile' argument
-            add_file(
-                "MyDockerfile", ("FROM quay.io/libpod/alpine_labels:latest\nCOPY example.txt .\n")
-            )
+            add_file("MyDockerfile", ("FROM docker.io/library/alpine:3.22\nCOPY example.txt .\n"))
             add_file("example.txt", "This is an example file.\n")
 
         # Rewind to the start of the generated file so we can read it
@@ -235,14 +233,12 @@ class ImagesIntegrationTest(base.IntegrationTest):
         self.assertIsNotNone(image)
         self.assertIsNotNone(image.id)
 
-    # https://github.com/containers/podman-py/issues/636
-    @unittest.skipIf(platform.machine() != "x86_64", reason="test image only available on x86_64")
     def test_build_with_secret(self):
         with tempfile.TemporaryDirectory() as context_dir:
             dockerfile_path = os.path.join(context_dir, "Dockerfile")
             with open(dockerfile_path, "w") as f:
                 f.write("""
-                FROM quay.io/libpod/alpine_labels:latest
+                FROM docker.io/library/alpine:3.22
                 RUN --mount=type=secret,id=example cat /run/secrets/example > /output.txt
                 """)
 
