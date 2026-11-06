@@ -32,6 +32,16 @@ class PathUtilsTestCase(unittest.TestCase):
             self.skipTest('XDG_RUNTIME_DIR must be set to fetch a working dir.')
         self.assertNotEqual(self.xdg_runtime_dir, api.path_utils.get_runtime_dir())
 
+    @mock.patch.dict(os.environ, {'XDG_CONFIG_HOME': '/custom/config'}, clear=True)
+    def test_get_xdg_config_home_uses_environment(self):
+        self.assertEqual('/custom/config', api.path_utils.get_xdg_config_home)
+
+    @mock.patch.dict(os.environ, clear=True)
+    @mock.patch('podman.api.path_utils.os.path.expanduser', return_value='/home/testuser')
+    def test_get_xdg_config_home_defaults_to_home_config(self, expanduser):
+        self.assertEqual('/home/testuser/.config', api.path_utils.get_xdg_config_home())
+        expanduser.assert_called_once_with('~')
+
 
 if __name__ == '__main__':
     unittest.main()
