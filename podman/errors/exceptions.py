@@ -147,6 +147,10 @@ class InvalidArgument(PodmanError):
     """Parameter to method/function was not valid."""
 
 
+class PodmanConnectionError(PodmanError):
+    """Exception raised when connection to Podman service fails using environment configuration."""
+
+
 class StreamParseError(RuntimeError):
     def __init__(self, reason):
         self.msg = reason
