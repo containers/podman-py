@@ -607,7 +607,6 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         for key in (
             "cpu_count",
             "cpu_percent",
-            "nano_cpus",
             "platform",  # used by caller
             "remove",  # used by caller
             "stderr",  # used by caller
@@ -1051,11 +1050,29 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
         params["resource_limits"]["pids"] = {"limit": args.pop("pids_limit", None)}
 
+        cpu_period = args.pop("cpu_period", None)
+        cpu_quota = args.pop("cpu_quota", None)
+        nano_cpus = args.pop("nano_cpus", None)
+        if nano_cpus is not None:
+            if cpu_period is not None or cpu_quota is not None:
+                raise ValueError(
+                    "Conflicting options: nano_cpus cannot be combined with cpu_period or cpu_quota"
+                )
+            if nano_cpus <= 0:
+                raise ValueError("nano_cpus must be greater than 0")
+            cpu_period = 100000
+            cpu_quota = int(nano_cpus * cpu_period // 1_000_000_000)
+            if cpu_quota < 1000:
+                raise ValueError(
+                    f"nano_cpus value {nano_cpus} results in a cpu_quota of {cpu_quota} µs, "
+                    "which is below the minimum supported limit of 1000 µs (1 ms)"
+                )
+
         params["resource_limits"]["cpu"] = {
             "cpus": args.pop("cpuset_cpus", None),
             "mems": args.pop("cpuset_mems", None),
-            "period": args.pop("cpu_period", None),
-            "quota": args.pop("cpu_quota", None),
+            "period": cpu_period,
+            "quota": cpu_quota,
             "realtimePeriod": args.pop("cpu_rt_period", None),
             "realtimeRuntime": args.pop("cpu_rt_runtime", None),
             "shares": args.pop("cpu_shares", None),
