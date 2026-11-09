@@ -72,7 +72,7 @@ class ContainersManager(RunMixin, CreateMixin, Manager):
                     Give the container name or id.
                 - since (str): Only containers created after a particular container.
                     Give container name or id.
-            sparse: If False, return basic container information without additional
+            sparse: If True, return basic container information without additional
                 inspection requests. This improves performance when listing many containers
                 but might provide less detail. You can call Container.reload() on individual
                 containers later to retrieve complete attributes. Default: True.
