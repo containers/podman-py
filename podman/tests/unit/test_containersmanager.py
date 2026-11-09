@@ -263,7 +263,7 @@ class ContainersManagerTestCase(unittest.TestCase):
             actual[1].id, "6dc84cc0a46747da94e4c1571efcc01a756b4017261440b4b8985d37203c3c03"
         )
 
-        # Verify that individual reload() calls were made for compat default (sparse=True)
+        # Verify that individual reload() calls were made for compat default (sparse=False)
         # Should be 3 requests total: 1 for list + 2 for individual container details
         self.assertEqual(len(mock.request_history), 3)
         self.assertEqual(

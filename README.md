@@ -55,7 +55,8 @@ with PodmanClient() as client:
     for container in client.containers.list():
         # After a list call you would probably want to reload the container
         # to get the information about the variables such as status.
-        # Note that list() ignores the sparse option and assumes True by default.
+        # Note that list() is sparse by default; pass sparse=False to attempt
+        # an inspection of each container.
         container.reload()
         print(container, container.id, "\n")
         print(container, container.status, "\n")
