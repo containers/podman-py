@@ -18,6 +18,10 @@ from podman.domain.secrets import Secret
 
 logger = logging.getLogger("podman.containers")
 
+_NANO_CPUS_PER_CPU = 1_000_000_000
+_DEFAULT_CPU_PERIOD_US = 100_000
+_MIN_CPU_QUOTA_US = 1_000
+
 # Network modes recognised by `podman run --network`, mirroring ParseNetworkFlag in
 # https://github.com/containers/podman/blob/main/pkg/specgen/namespaces.go
 # Any other value is the name of a network to attach to.
@@ -212,7 +216,9 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
                 ]
             name (str): The name for this container.
-            nano_cpus (int):  CPU quota in units of 1e-9 CPUs.
+            nano_cpus (int): CPU limit in units of 1e-9 CPUs. Zero leaves the limit unset.
+                A positive value must be at least 10,000,000 (0.01 CPUs) and cannot be
+                combined with nonzero cpu_period or cpu_quota.
             network (str): Network to connect the container to at creation time, as accepted
                 by ``podman create --network``. One of:
 
@@ -607,7 +613,6 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
         for key in (
             "cpu_count",
             "cpu_percent",
-            "nano_cpus",
             "platform",  # used by caller
             "remove",  # used by caller
             "stderr",  # used by caller
@@ -1051,11 +1056,32 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
 
         params["resource_limits"]["pids"] = {"limit": args.pop("pids_limit", None)}
 
+        cpu_period = args.pop("cpu_period", None)
+        cpu_quota = args.pop("cpu_quota", None)
+        nano_cpus = args.pop("nano_cpus", None)
+        if nano_cpus is not None:
+            if isinstance(nano_cpus, bool) or not isinstance(nano_cpus, int):
+                raise TypeError("nano_cpus must be an integer")
+            if nano_cpus < 0:
+                raise ValueError("nano_cpus must be non-negative")
+        if nano_cpus:
+            if cpu_period not in (None, 0) or cpu_quota not in (None, 0):
+                raise ValueError(
+                    "Conflicting options: nano_cpus cannot be combined with cpu_period or cpu_quota"
+                )
+            cpu_period = _DEFAULT_CPU_PERIOD_US
+            cpu_quota = nano_cpus * cpu_period // _NANO_CPUS_PER_CPU
+            if cpu_quota < _MIN_CPU_QUOTA_US:
+                raise ValueError(
+                    f"nano_cpus value {nano_cpus} results in a cpu_quota of {cpu_quota} µs, "
+                    f"which is below the minimum supported limit of {_MIN_CPU_QUOTA_US} µs (1 ms)"
+                )
+
         params["resource_limits"]["cpu"] = {
             "cpus": args.pop("cpuset_cpus", None),
             "mems": args.pop("cpuset_mems", None),
-            "period": args.pop("cpu_period", None),
-            "quota": args.pop("cpu_quota", None),
+            "period": cpu_period,
+            "quota": cpu_quota,
             "realtimePeriod": args.pop("cpu_rt_period", None),
             "realtimeRuntime": args.pop("cpu_rt_runtime", None),
             "shares": args.pop("cpu_shares", None),
