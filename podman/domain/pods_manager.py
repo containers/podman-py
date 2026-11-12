@@ -9,7 +9,7 @@ from collections.abc import Iterator
 from podman import api
 from podman.domain.manager import Manager
 from podman.domain.pods import Pod
-from podman.errors import APIError
+from podman.errors import APIError, InvalidArgument
 
 logger = logging.getLogger("podman.pods")
 
@@ -89,6 +89,11 @@ class PodsManager(Manager):
     def prune(self, filters: dict[str, str] | None = None) -> dict[str, Any]:
         """Delete unused Pods.
 
+        Args:
+            filters: Not supported. The service ignores filters for this endpoint and
+                prunes every stopped pod, so passing any filter raises InvalidArgument
+                before a request is sent.
+
         Returns:
             Dictionary Keys:
                 - PodsDeleted (list[str]): List of pod ids deleted.
@@ -96,8 +101,15 @@ class PodsManager(Manager):
 
         Raises:
             APIError: when service reports error
+            InvalidArgument: when filters are given
         """
-        response = self.api.post("/pods/prune", params={"filters": api.prepare_filters(filters)})
+        if api.prepare_filters(filters) is not None:
+            raise InvalidArgument(
+                "pods.prune() does not support filters: the service would prune all"
+                " stopped pods. List the pods with filters and remove them instead."
+            )
+
+        response = self.api.post("/pods/prune")
         response.raise_for_status()
 
         deleted: builtins.list[str] = []
