@@ -133,8 +133,9 @@ class PodsManagerTestCase(unittest.TestCase):
     def test_prune_filters_rejected(self, mock):
         adapter = mock.post(tests.LIBPOD_URL + "/pods/prune", json=[])
 
-        with self.assertRaises(InvalidArgument):
-            self.client.pods.prune(filters={"label": "app=web"})
+        for filters in ({"label": "app=web"}, {"label": None}, {"label": []}):
+            with self.subTest(filters=filters), self.assertRaises(InvalidArgument):
+                self.client.pods.prune(filters=filters)
         self.assertFalse(adapter.called)
 
         # Empty filters mean "no filter" and still prune.

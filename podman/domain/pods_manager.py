@@ -103,7 +103,7 @@ class PodsManager(Manager):
             APIError: when service reports error
             InvalidArgument: when filters are given
         """
-        if api.prepare_filters(filters) is not None:
+        if filters:
             raise InvalidArgument(
                 "pods.prune() does not support filters: the service would prune all"
                 " stopped pods. List the pods with filters and remove them instead."
