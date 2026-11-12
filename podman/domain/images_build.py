@@ -115,6 +115,11 @@ class BuildMixin:
                 shutil.copyfileobj(kwargs["fileobj"], file)
             body = api.create_tar(anchor=path.name, gzip=kwargs.get("gzip", False))
         elif "path" in kwargs:
+            if "dockerfile" not in kwargs:
+                for name in ("Containerfile", "Dockerfile"):
+                    if (pathlib.Path(kwargs["path"]) / name).exists():
+                        params["dockerfile"] = name
+                        break
             filename = pathlib.Path(kwargs["path"]) / params["dockerfile"]
             # The Dockerfile will be copied into the context_dir if needed
             params["dockerfile"] = api.prepare_containerfile(kwargs["path"], str(filename))
