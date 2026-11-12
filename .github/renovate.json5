@@ -101,5 +101,12 @@ and/or use the pre-commit hook: https://github.com/renovatebot/pre-commit-hooks
       "groupName": "python-version-policy",
       "commitMessageTopic": "Python version policy",
     },
+    {
+      "description": "Skip patch updates for renovatebot/pre-commit-hooks",
+      "matchManagers": ["pre-commit"],
+      "matchPackageNames": ["renovatebot/pre-commit-hooks"],
+      "matchUpdateTypes": ["patch"],
+      "enabled": false,
+    },
   ],
 }
