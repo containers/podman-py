@@ -144,13 +144,19 @@ def frames(response: APIResponse) -> Iterator[bytes]:
 
 
 def stream_frames(
-    response: APIResponse, demux: bool = False
-) -> Iterator[bytes | tuple[bytes, bytes]]:
-    """Returns each frame from multiplexed streamed payload.
+    response: APIResponse, demux: bool = False, tty: bool = False
+) -> Iterator[bytes | tuple[bytes | None, bytes | None]]:
+    """Returns each frame from streamed payload.
 
     If ``demux`` then output will be tuples where the first position is ``STDOUT`` and the second
-    is ``STDERR``.
+    is ``STDERR``. TTY streams are not multiplexed and are returned as raw chunks.
     """
+    if tty:
+        for data in response.iter_content(chunk_size=8192):
+            if data:
+                yield (data, None) if demux else data
+        return
+
     while True:
         header = response.raw.read(8)
         if not header:
