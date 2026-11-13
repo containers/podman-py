@@ -152,7 +152,29 @@ def stream_frames(
     is ``STDERR``. TTY streams are not multiplexed and are returned as raw chunks.
     """
     if tty:
-        for data in response.iter_content(chunk_size=8192):
+        raw = response.raw
+        http_response = getattr(raw, "_fp", None)
+        read1 = getattr(http_response, "read1", None)
+        if read1 is None:
+            # Non-urllib3 response wrappers may not expose an incremental read API.
+            for data in response.iter_content(chunk_size=1):
+                if data:
+                    yield (data, None) if demux else data
+            return
+
+        # urllib3.read/stream wait for the requested amount or EOF. The wrapped
+        # http.client response's read1 returns currently available body bytes.
+        raw._init_decoder()
+        with raw._error_catcher():
+            while data := read1(8192):
+                raw._fp_bytes_read += len(data)
+                if raw.length_remaining is not None:
+                    raw.length_remaining -= len(data)
+                data = raw._decode(data, decode_content=True, flush_decoder=False)
+                if data:
+                    yield (data, None) if demux else data
+
+            data = raw._decode(b"", decode_content=True, flush_decoder=True)
             if data:
                 yield (data, None) if demux else data
         return
