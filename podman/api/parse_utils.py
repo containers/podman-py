@@ -9,6 +9,8 @@ from datetime import datetime, UTC
 from typing import Any
 from collections.abc import Iterator
 
+from urllib3.exceptions import IncompleteRead
+
 from podman.api.client import APIResponse
 from .output_utils import demux_output
 
@@ -177,6 +179,13 @@ def stream_frames(
             data = raw._decode(b"", decode_content=True, flush_decoder=True)
             if data:
                 yield (data, None) if demux else data
+            if (
+                getattr(raw, "enforce_content_length", False)
+                and raw.length_remaining not in (0, None)
+            ):
+                # ``read1`` does not perform urllib3's usual Content-Length
+                # check, so preserve its incomplete-response error at EOF.
+                raise IncompleteRead(raw._fp_bytes_read, raw.length_remaining)
         return
 
     while True:
