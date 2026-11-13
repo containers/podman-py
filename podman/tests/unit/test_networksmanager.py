@@ -150,6 +150,33 @@ class NetworksManagerTestCase(unittest.TestCase):
         self.assertEqual(actual[1].name, "database")
 
     @requests_mock.Mocker()
+    def test_list_filters_name_and_id(self, mock):
+        adapter = mock.get(tests.LIBPOD_URL + "/networks/json", json=[FIRST_NETWORK_LIBPOD])
+
+        filters = {"name": "podman", "id": "2f259bab93aa"}
+        self.client.networks.list(filters=filters)
+
+        self.assertEqual(
+            adapter.last_request.qs["filters"],
+            ['{"id": ["2f259bab93aa"], "name": ["podman"]}'],
+        )
+        # The caller's dict is left as it was.
+        self.assertDictEqual(filters, {"name": "podman", "id": "2f259bab93aa"})
+
+    @requests_mock.Mocker()
+    def test_list_names_and_ids(self, mock):
+        adapter = mock.get(tests.LIBPOD_URL + "/networks/json", json=[FIRST_NETWORK_LIBPOD])
+
+        filters = {"driver": "bridge"}
+        self.client.networks.list(names=["podman"], ids=["2f259bab93aa"], filters=filters)
+
+        self.assertEqual(
+            adapter.last_request.qs["filters"],
+            ['{"driver": ["bridge"], "id": ["2f259bab93aa"], "name": ["podman"]}'],
+        )
+        self.assertDictEqual(filters, {"driver": "bridge"})
+
+    @requests_mock.Mocker()
     def test_create_libpod(self, mock):
         adapter = mock.post(tests.LIBPOD_URL + "/networks/create", json=FIRST_NETWORK_LIBPOD)
 

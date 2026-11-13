@@ -153,9 +153,13 @@ class NetworksManager(Manager):
         Raises:
             APIError: when error returned by service
         """
-        filters = kwargs.get("filters", {})
-        filters["name"] = kwargs.get("names")
-        filters["id"] = kwargs.get("ids")
+        # Copy so the caller's mapping is not changed, and only let names/ids
+        # replace the "name"/"id" filters when they are given.
+        filters = dict(kwargs.get("filters") or {})
+        if names := kwargs.get("names"):
+            filters["name"] = names
+        if ids := kwargs.get("ids"):
+            filters["id"] = ids
         filters = prepare_filters(filters)
 
         params = {"filters": filters}
