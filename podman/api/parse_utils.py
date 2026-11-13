@@ -9,6 +9,8 @@ from datetime import datetime, UTC
 from typing import Any
 from collections.abc import Iterator
 
+from urllib3.exceptions import IncompleteRead
+
 from podman.api.client import APIResponse
 from .output_utils import demux_output
 
@@ -144,13 +146,48 @@ def frames(response: APIResponse) -> Iterator[bytes]:
 
 
 def stream_frames(
-    response: APIResponse, demux: bool = False
-) -> Iterator[bytes | tuple[bytes, bytes]]:
-    """Returns each frame from multiplexed streamed payload.
+    response: APIResponse, demux: bool = False, tty: bool = False
+) -> Iterator[bytes | tuple[bytes | None, bytes | None]]:
+    """Returns each frame from streamed payload.
 
     If ``demux`` then output will be tuples where the first position is ``STDOUT`` and the second
-    is ``STDERR``.
+    is ``STDERR``. TTY streams are not multiplexed and are returned as raw chunks.
     """
+    if tty:
+        raw = response.raw
+        http_response = getattr(raw, "_fp", None)
+        read1 = getattr(http_response, "read1", None)
+        if read1 is None:
+            # Non-urllib3 response wrappers may not expose an incremental read API.
+            for data in response.iter_content(chunk_size=1):
+                if data:
+                    yield (data, None) if demux else data
+            return
+
+        # urllib3.read/stream wait for the requested amount or EOF. The wrapped
+        # http.client response's read1 returns currently available body bytes.
+        raw._init_decoder()
+        with raw._error_catcher():
+            while data := read1(8192):
+                raw._fp_bytes_read += len(data)
+                if raw.length_remaining is not None:
+                    raw.length_remaining -= len(data)
+                data = raw._decode(data, decode_content=True, flush_decoder=False)
+                if data:
+                    yield (data, None) if demux else data
+
+            data = raw._decode(b"", decode_content=True, flush_decoder=True)
+            if data:
+                yield (data, None) if demux else data
+            if (
+                getattr(raw, "enforce_content_length", False)
+                and raw.length_remaining not in (0, None)
+            ):
+                # ``read1`` does not perform urllib3's usual Content-Length
+                # check, so preserve its incomplete-response error at EOF.
+                raise IncompleteRead(raw._fp_bytes_read, raw.length_remaining)
+        return
+
     while True:
         header = response.raw.read(8)
         if not header:
