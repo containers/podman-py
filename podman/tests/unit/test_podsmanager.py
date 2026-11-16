@@ -8,7 +8,7 @@ import requests_mock
 from podman import PodmanClient, tests
 from podman.domain.pods import Pod
 from podman.domain.pods_manager import PodsManager
-from podman.errors import NotFound
+from podman.errors import InvalidArgument, NotFound
 
 FIRST_POD = {
     "ID": "c8b9f5b17dc1406194010c752fc6dcb330192032e27648db9b14060447ecf3b8",
@@ -128,6 +128,20 @@ class PodsManagerTestCase(unittest.TestCase):
             ],
         )
         self.assertEqual(actual["SpaceReclaimed"], 0)
+
+    @requests_mock.Mocker()
+    def test_prune_filters_rejected(self, mock):
+        adapter = mock.post(tests.LIBPOD_URL + "/pods/prune", json=[])
+
+        for filters in ({"label": "app=web"}, {"label": None}, {"label": []}):
+            with self.subTest(filters=filters), self.assertRaises(InvalidArgument):
+                self.client.pods.prune(filters=filters)
+        self.assertFalse(adapter.called)
+
+        # Empty filters mean "no filter" and still prune.
+        self.client.pods.prune(filters={})
+        self.assertEqual(adapter.call_count, 1)
+        self.assertNotIn("filters", adapter.last_request.qs)
 
     @requests_mock.Mocker()
     def test_stats(self, mock):
