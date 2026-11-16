@@ -212,3 +212,18 @@ class NetworksManager(Manager):
 
         response = self.api.delete(f"/networks/{name}", params={"force": force})
         response.raise_for_status()
+
+        # The service can report a deletion failure in the response body
+        # while still returning HTTP 200, so check the report's Err field
+        # the same way prune() checks Error.
+        if response.content:
+            reports = response.json() or []
+            if isinstance(reports, dict):
+                reports = [reports]
+            for report in reports:
+                if report.get("Err"):
+                    raise APIError(
+                        report["Err"],
+                        response=response,
+                        explanation=f"Failed to remove network '{report.get('Name', name)}'",
+                    )
