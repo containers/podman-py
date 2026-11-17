@@ -3,11 +3,18 @@ import io
 import json
 import unittest
 from collections.abc import Iterable
+from concurrent.futures import ThreadPoolExecutor
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from threading import Event, Thread
 from unittest.mock import MagicMock
 
+import requests
 import requests_mock
+from urllib3.exceptions import ProtocolError
 
 from podman import PodmanClient, tests
+from podman.api.client import APIResponse
+from podman.api.parse_utils import stream_frames
 from podman.domain.containers import Container
 from podman.domain.containers_manager import ContainersManager
 from podman.errors import APIError, NotFound
@@ -526,6 +533,107 @@ class ContainersTestCase(unittest.TestCase):
             json.loads(post.call_args_list[1].kwargs["data"]),
             {"Detach": False, "Tty": True},
         )
+
+    @requests_mock.Mocker()
+    def test_exec_run_stream_tty(self, mock):
+        """TTY output is raw and must not be parsed as multiplexed frames."""
+        mock.post(
+            tests.LIBPOD_URL + "/containers/evil_ptolemy/exec",
+            json={"Id": "exec1"},
+        )
+        mock.post(
+            tests.LIBPOD_URL + "/exec/exec1/start",
+            content=b"hello world\r\n",
+        )
+
+        container = Container(attrs=FIRST_CONTAINER, client=self.client.api)
+        exit_code, output = container.exec_run(["printf", "hello world\\n"], tty=True, stream=True)
+
+        self.assertIsNone(exit_code)
+        self.assertEqual(b"".join(output), b"hello world\r\n")
+
+    def test_stream_tty_yields_before_response_closes(self):
+        """TTY output should not wait for an 8 KiB read or the response to close."""
+        release_response = Event()
+
+        class StreamingHandler(BaseHTTPRequestHandler):
+            protocol_version = "HTTP/1.0"
+
+            def do_POST(self):
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b"ready")
+                self.wfile.flush()
+                release_response.wait(timeout=5)
+
+            def log_message(self, format, *args):
+                return
+
+        server = ThreadingHTTPServer(("127.0.0.1", 0), StreamingHandler)
+        server_thread = Thread(target=server.serve_forever, daemon=True)
+        server_thread.start()
+        response = None
+        try:
+            response = requests.post(
+                f"http://127.0.0.1:{server.server_port}/stream",
+                stream=True,
+                timeout=(1, 10),
+            )
+            output = stream_frames(APIResponse(response), tty=True)
+            with ThreadPoolExecutor(max_workers=1) as executor:
+
+                def read_ready_marker():
+                    received = bytearray()
+                    while len(received) < len(b"ready"):
+                        received.extend(next(output))
+                    return bytes(received)
+
+                ready_marker = executor.submit(read_ready_marker)
+                try:
+                    self.assertEqual(ready_marker.result(timeout=1), b"ready")
+                finally:
+                    release_response.set()
+        finally:
+            release_response.set()
+            if response is not None:
+                response.close()
+            server.shutdown()
+            server.server_close()
+            server_thread.join(timeout=1)
+
+    def test_stream_tty_rejects_truncated_content_length(self):
+        """A TTY stream must report when EOF arrives before Content-Length."""
+
+        class TruncatedHandler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200)
+                self.send_header("Content-Length", "10")
+                self.end_headers()
+                self.wfile.write(b"short")
+                self.wfile.flush()
+
+            def log_message(self, format, *args):
+                return
+
+        server = ThreadingHTTPServer(("127.0.0.1", 0), TruncatedHandler)
+        server_thread = Thread(target=server.serve_forever, daemon=True)
+        server_thread.start()
+        response = None
+        try:
+            response = requests.get(
+                f"http://127.0.0.1:{server.server_port}/stream",
+                stream=True,
+                timeout=(1, 10),
+            )
+            output = stream_frames(APIResponse(response), tty=True)
+            with self.assertRaises((requests.exceptions.ChunkedEncodingError, ProtocolError)):
+                b"".join(output)
+        finally:
+            if response is not None:
+                response.close()
+            server.shutdown()
+            server.server_close()
+            server_thread.join(timeout=1)
 
     def test_status(self):
         c_inspect = Container(attrs={"State": {"Status": "running"}}, client=self.client.api)
