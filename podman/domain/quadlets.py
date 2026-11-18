@@ -10,7 +10,7 @@ import requests
 
 from podman import api
 from podman.domain.manager import Manager, PodmanResource
-from podman.errors import NotFound, PodmanError
+from podman.errors import APIError, NotFound, PodmanError
 
 logger = logging.getLogger("podman.quadlets")
 
@@ -206,6 +206,10 @@ class QuadletsManager(Manager):
 
         Returns:
             List of removed quadlet names.
+
+        Raises:
+            APIError: when service reports an error, including failures
+                listed in the response's Errors field on an HTTP 200
         """
 
         if name is None and all is None:
@@ -227,7 +231,26 @@ class QuadletsManager(Manager):
             response = self.api.delete(f"/quadlets/{name}", params=params)
 
         response.raise_for_status()
-        return response.json()["Removed"]
+
+        # The service can report failures in the response's Errors field
+        # while still returning HTTP 200, so surface them instead of
+        # returning only the successfully removed names.
+        data = response.json()
+        errors = data.get("Errors") or {}
+        if errors:
+            if isinstance(errors, dict):
+                detail = "; ".join(f"{quadlet}: {message}" for quadlet, message in errors.items())
+                failed = ", ".join(errors)
+                explanation = f"Failed to remove quadlet(s): {failed}: {detail}"
+            else:
+                detail = "; ".join(str(error) for error in errors)
+                explanation = f"Failed to remove quadlet(s): {detail}"
+            raise APIError(
+                detail,
+                response=response,
+                explanation=explanation,
+            )
+        return data["Removed"]
 
     def install(
         self,

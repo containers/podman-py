@@ -5,6 +5,7 @@ import requests_mock
 from podman import PodmanClient, tests
 from podman.domain.networks import Network
 from podman.domain.networks_manager import NetworksManager
+from podman.errors import APIError
 
 FIRST_NETWORK = {
     "Name": "podman",
@@ -243,6 +244,33 @@ class NetworksManagerTestCase(unittest.TestCase):
 
         actual = self.client.networks.prune()
         self.assertListEqual(actual["NetworksDeleted"], ["podman", "database"])
+
+    @requests_mock.Mocker()
+    def test_remove_reports_error(self, mock):
+        mock.delete(
+            tests.LIBPOD_URL + "/networks/podman?force=False",
+            json=[{"Name": "podman", "Err": "default network podman cannot be removed"}],
+            status_code=200,
+        )
+
+        with self.assertRaises(APIError) as context:
+            self.client.networks.remove("podman", force=False)
+
+        self.assertEqual(context.exception.args[0], "default network podman cannot be removed")
+        self.assertIn(
+            "Failed to remove network 'podman': default network podman cannot be removed",
+            str(context.exception),
+        )
+
+    @requests_mock.Mocker()
+    def test_remove_succeeds_when_no_error_reported(self, mock):
+        mock.delete(
+            tests.LIBPOD_URL + "/networks/podman?force=False",
+            json=[{"Name": "podman", "Err": None}],
+            status_code=200,
+        )
+
+        self.client.networks.remove("podman", force=False)
 
 
 if __name__ == '__main__':
