@@ -741,7 +741,7 @@ class QuadletsManagerTestCase(unittest.TestCase):
 
     @requests_mock.Mocker()
     def test_delete_all_with_partial_errors(self, mock):
-        """Test delete all with some quadlets failing doesn't raise exception."""
+        """Test delete all raises APIError when some quadlets fail."""
         mock.delete(
             tests.LIBPOD_URL + "/quadlets",
             json={
@@ -751,12 +751,37 @@ class QuadletsManagerTestCase(unittest.TestCase):
             status_code=200,
         )
 
-        # Should return successfully removed quadlets
-        result = self.client.quadlets.delete(all=True)
-        self.assertIsInstance(result, list)
-        self.assertEqual(len(result), 2)
-        self.assertIn("success1.container", result)
-        self.assertIn("success2.container", result)
+        with self.assertRaises(APIError) as context:
+            self.client.quadlets.delete(all=True)
+
+        self.assertIn("failed.container", context.exception.args[0])
+        self.assertIn(
+            "Failed to remove quadlet(s): failed.container: "
+            "failed.container: could not locate quadlet failed.container",
+            str(context.exception),
+        )
+
+    @requests_mock.Mocker()
+    def test_delete_reports_error(self, mock):
+        """Test delete raises APIError when the response lists an error."""
+        mock.delete(
+            tests.LIBPOD_URL + "/quadlets/myapp.container",
+            json={
+                "Removed": [],
+                "Errors": {"myapp.container": "quadlet myapp.container is running"},
+            },
+            status_code=200,
+        )
+
+        with self.assertRaises(APIError) as context:
+            self.client.quadlets.delete("myapp.container")
+
+        self.assertIn("myapp.container", context.exception.args[0])
+        self.assertIn(
+            "Failed to remove quadlet(s): myapp.container: "
+            "myapp.container: quadlet myapp.container is running",
+            str(context.exception),
+        )
 
     def test_install_single_file_not_found(self):
         """Test install raises FileNotFoundError for nonexistent file path."""
