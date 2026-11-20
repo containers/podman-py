@@ -235,7 +235,7 @@ class ImagesManager(BuildMixin, Manager):
         url: str | None = None,
         reference: str | None = None,
         message: str | None = None,
-        changes: str | None = None,
+        changes: list(str) | None = None,
         os: str | None = None,
         architecture: str | None = None,
         variant: str | None = None,
