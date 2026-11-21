@@ -144,13 +144,35 @@ def frames(response: APIResponse) -> Iterator[bytes]:
 
 
 def stream_frames(
-    response: APIResponse, demux: bool = False
-) -> Iterator[bytes | tuple[bytes, bytes]]:
-    """Returns each frame from multiplexed streamed payload.
+    response: APIResponse, demux: bool = False, tty: bool = False
+) -> Iterator[bytes | tuple[bytes | None, bytes | None]]:
+    """Returns each frame from streamed payload.
 
     If ``demux`` then output will be tuples where the first position is ``STDOUT`` and the second
-    is ``STDERR``.
+    is ``STDERR``. TTY streams are not multiplexed and are returned as raw chunks.
     """
+    if tty:
+        raw = response.raw
+        # urllib3 1.26 defaults this off, so enable its documented truncation
+        # check explicitly before either streaming path reads the response.
+        if hasattr(raw, "enforce_content_length"):
+            raw.enforce_content_length = True
+
+        read1 = getattr(raw, "read1", None)
+        if read1 is None:
+            # Older response wrappers may not expose an incremental read API.
+            for data in response.iter_content(chunk_size=1):
+                if data:
+                    yield (data, None) if demux else data
+            return
+
+        # urllib3.read/stream may wait for the requested amount or EOF. Its
+        # read1 returns available bytes and preserves decoding and length checks.
+        while data := read1(8192, decode_content=True):
+            if data:
+                yield (data, None) if demux else data
+        return
+
     while True:
         header = response.raw.read(8)
         if not header:
