@@ -1113,7 +1113,7 @@ class CreateMixin:  # pylint: disable=too-few-public-methods
             if not isinstance(extended_mode, list):
                 raise ValueError("'extended_mode' value should be a list")
 
-            options = extended_mode
+            options = list(extended_mode)
             mode = value.get("mode")
             if mode is not None:
                 if not isinstance(mode, str):
