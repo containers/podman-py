@@ -408,6 +408,27 @@ class ContainersManagerTestCase(unittest.TestCase):
             self.client.containers.create("fedora", nano_cpus=9_999_999)
 
     @requests_mock.Mocker()
+    def test_create_volumes_does_not_modify_caller_options(self, mock):
+        container_id = FIRST_CONTAINER["Id"]
+        mock.post(
+            tests.LIBPOD_URL + "/containers/create",
+            status_code=201,
+            json={"Id": container_id, "Warnings": []},
+        )
+        mock.get(
+            tests.LIBPOD_URL + f"/containers/{container_id}/json",
+            json=FIRST_CONTAINER,
+        )
+
+        volumes = {"/host/data": {"bind": "/data", "extended_mode": ["noexec"], "mode": "rw"}}
+        for _ in range(2):
+            self.client.containers.create("fedora", "/usr/bin/ls", volumes=volumes)
+            mounts = mock.request_history[-2].json()["mounts"]
+            self.assertEqual(mounts[0]["options"], ["noexec", "rw"])
+
+        self.assertEqual(volumes["/host/data"]["extended_mode"], ["noexec"])
+
+    @requests_mock.Mocker()
     def test_create_404(self, mock):
         # mock the first POST to return 404,
         # then the second POST (after pulling the image) to return 201
