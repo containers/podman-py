@@ -255,7 +255,7 @@ class Container(PodmanResource):
         start_resp.raise_for_status()
 
         if stream:
-            return None, api.stream_frames(start_resp, demux=demux)
+            return None, api.stream_frames(start_resp, demux=demux, tty=tty)
 
         # get and return exec information
         response = self.api.get(f"/exec/{exec_id}/json")
